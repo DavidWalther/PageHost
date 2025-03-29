@@ -45,12 +45,12 @@ describe('SQL-Actions', () => {
       const actionGet = new ActionGet();
       actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
       actionGet.setTableName('TestTable');
-      actionGet.setTableFields(['Id', 'Name', 'Value']);
+      actionGet.setTableFields(['Id', 'Name', 'Value', 'coverId']);
       actionGet.setConditionApplicationKey('TestApplicationKey');
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Id, Name, Value FROM TestTable WHERE ((applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR applicationIncluded = \'*\') AND (applicationExcluded isNull OR applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\'))');
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Id, Name, Value, coverId FROM TestTable WHERE ((applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR applicationIncluded = \'*\') AND (applicationExcluded isNull OR applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\'))');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -61,14 +61,14 @@ describe('SQL-Actions', () => {
       const actionGet = new ActionGet();
       actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
       actionGet.setTableName('TestTable');
-      actionGet.setTableFields(['Id', 'Name', 'Value']);
+      actionGet.setTableFields(['Id', 'Name', 'Value', 'coverId']);
       actionGet.setConditionId('1337');
       actionGet.setConditionPublishDate('2021-01-01');
       actionGet.setConditionApplicationKey('TestApplicationKey');
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Id, Name, Value FROM TestTable WHERE (id = \'1337\' AND PublishDate <= \'2021-01-01 00:00:00\' AND (applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR applicationIncluded = \'*\') AND (applicationExcluded isNull OR applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\'))');
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Id, Name, Value, coverId FROM TestTable WHERE (id = \'1337\' AND PublishDate <= \'2021-01-01 00:00:00\' AND (applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR applicationIncluded = \'*\') AND (applicationExcluded isNull OR applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\'))');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -86,7 +86,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON TestTable.Id = TestChildTable.parentId WHERE (((Story.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Story.applicationIncluded = \'*\') AND (Story.applicationExcluded isNull OR Story.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')) AND ((Chapter.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Chapter.applicationIncluded = \'*\') AND (Chapter.applicationExcluded isNull OR Chapter.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')))');
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON TestTable.Id = TestChildTable.parentId WHERE (((Story.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Story.applicationIncluded = \'*\') AND (Story.applicationExcluded isNull OR Story.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')) AND ((Chapter.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Chapter.applicationIncluded = \'*\') AND (Chapter.applicationExcluded isNull OR Chapter.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')))');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -104,7 +104,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded FROM Story WHERE (id = \'1337\')');
+      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (id = \'1337\')');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -122,7 +122,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.id = \'1337\')');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.id = \'1337\')');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -139,7 +139,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded FROM Story WHERE (PublishDate <= NOW())');
+      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (PublishDate <= NOW())');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -154,7 +154,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded FROM Story');
+      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -169,7 +169,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded FROM Story WHERE (PublishDate <= \'2021-01-01 00:00:00\')');
+      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (PublishDate <= \'2021-01-01 00:00:00\')');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -187,7 +187,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.PublishDate <= NOW() AND Chapter.PublishDate <= NOW())');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.PublishDate <= NOW() AND Chapter.PublishDate <= NOW())');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -205,7 +205,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -223,7 +223,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.PublishDate <= \'2021-01-01 00:00:00\' AND Chapter.PublishDate <= \'2021-01-01 00:00:00\')');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.PublishDate <= \'2021-01-01 00:00:00\' AND Chapter.PublishDate <= \'2021-01-01 00:00:00\')');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -241,7 +241,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded FROM Story ORDER BY SortNumber ASC');
+      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story ORDER BY SortNumber ASC');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -260,7 +260,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Story.SortNumber ASC');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Story.SortNumber ASC');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -279,7 +279,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Chapter.SortNumber ASC');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Chapter.SortNumber ASC');
       resultPromise.then((result) => {
       expect(result).toBeTruthy();
       });
@@ -300,7 +300,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Story.SortNumber ASC, Chapter.SortNumber ASC');
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Story.SortNumber ASC, Chapter.SortNumber ASC');
       resultPromise.then((result) => {
       expect(result).toBeTruthy();
       });
