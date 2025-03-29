@@ -1,7 +1,7 @@
 class TableStory {
   constructor() {
     this.tableName = 'Story';
-    this.tableFields = ['Id', 'Name', 'LastUpdate', 'SortNumber', 'PublishDate', 'applicationincluded', 'applicationexcluded'];
+    this.tableFields = ['Id', 'Name', 'LastUpdate', 'SortNumber', 'PublishDate', 'applicationincluded', 'applicationexcluded', 'coverId'];
     this.tableHeadDataFields = ['Id', 'Name', 'SortNumber'];
     this.tableKeyPrefix = '000s';
   }
