@@ -1,0 +1,18 @@
+<template id="template-main">
+    <header class="slds-global-header_container">
+        <div class="slds-global-header">
+            <div class="slds-global-header__item">
+                <!-- Logo Content Here -->
+                <slot name="logo"></slot>
+            </div>
+            <div class="slds-global-header__item slds-global-header__item_search">
+                <!-- Global Search Content Here -->
+                <slot name="search"></slot>
+            </div>
+            <div class="slds-global-header__item">
+                <!-- Global Actions Content Here -->
+                <slot name="actions"></slot>
+            </div>
+        </div>
+    </header>
+</template>

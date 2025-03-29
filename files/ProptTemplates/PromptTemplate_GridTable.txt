@@ -1,0 +1,11 @@
+<div class="slds-grid slds-wrap">
+  <div class="slds-col">
+    <div class="slds-box slds-box_x-small slds-text-align_center">{Token-Element-1}</div>
+  </div>
+  <div class="slds-col">
+    <div class="slds-box slds-box_x-small slds-text-align_center">{Token-Element-2}</div>
+  </div>
+  <div class="slds-col">
+    <div class="slds-box slds-box_x-small slds-text-align_center">{Token-Element-3}</div>
+  </div>
+</div>

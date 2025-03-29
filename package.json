@@ -1,0 +1,43 @@
+{
+  "name": "progressivewebapp001",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "create": "node private/scripts/importScripts/create.js",
+    "cache:flush": "node private/scripts/cacheOperations.js --operation 'flush'",
+    "cache:read": "node private/scripts/cacheOperations.js --operation 'read'",
+    "chapter:create": "node private/scripts/chapterCreate.js",
+    "chapter:delete": "node private/scripts/chapterDelete.js",
+    "chapter:read": "node private/scripts/chapterRead.js",
+    "chapter:update": "node private/scripts/chapterUpdate.js",
+    "import:json": "node private/scripts/importScripts/importJson.js",
+    "paragraph:create": "node private/scripts/paragraphCreate.js",
+    "paragraph:delete": "node private/scripts/paragraphDelete.js",
+    "paragraph:read": "node private/scripts/paragraphRead.js",
+    "paragraph:update": "node private/scripts/paragraphUpdate.js",
+    "story:create": "node private/scripts/storyCreate.js",
+    "story:update": "node private/scripts/storyUpdate.js",
+    "story:read": "node private/scripts/storyRead.js",
+    "story:delete": "node private/scripts/storyDelete.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "gitBranchMergedDelete": " git branch --merged | xargs -n1 -I{} git branch -d {}",
+    "gitLogGraphOnlineAll": " git log --graph --oneline --all"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@salesforce-ux/design-system": "^2.22.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "minimist": "^1.2.8",
+    "postgres": "^3.4.3",
+    "redis": "^4.6.13"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

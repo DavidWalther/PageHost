@@ -1,0 +1,21 @@
+Ich möchte eine Auflistung in ein eine auflistung im html format übertragen. 
+Das ergebnis muss als einzeiliger String zurückgegeben werden. Anführungszeichen müssen mit einem Backslash versehen werden.
+
+Hier sind Beispiele für das Format:
+
+Beispiel 1:
+
+HtmlContent: <slds-card no-footer><span slot=\"header\" >Update 2024-06-12</span><div><ul class=\"slds-list_dotted\" ><li class=\"slds-item\">Die fehlenden Kapitel von <a href=\"/000s00000000000009\">Stell dir mal vor ...</a> sind dazu gekommen.</li></ul></div></slds-card>
+
+Beispiel 2:
+
+HtmlContent: <slds-card no-footer><span slot=\"header\" >Update 2024-06-23</span><div><ul class=\"slds-list_dotted\"><li class=\"slds-item\" >Ein neues Kapitel für \"Stell dir mal vor ...\" ist dazu gekommen. <a href=\"/000c00000000000029\">Hier geht es zum Kapitel</a></li></ul></div></slds-card>
+
+Beispiel 3:
+
+HtmlContent: <slds-card no-footer><span slot=\"header\">Update 2024-07-14</span><div><ul class=\"slds-list_dotted\" ><li class=\"slds-item\">Ich habe den Namen von \"Sie, das Haustier\" ein kleins bisschen geändert. Sie heißt jetzt \"Sie. Das Haustier.\"</li><li class=\"slds-item\">Außerdem habe is die Geschichte komplett hier auf die neue Seite kopiert. <a href=\"/000s00000000000013\">Hier geht es zur Geschichte</a></li></ul></div></slds-card>
+
+Beispiel 4:
+
+HtmlContent: <slds-card no-footer><span slot=\"header\">Update 2024-07-28</span><div><ul class=\"slds-list_dotted\" ><li class=\"slds-item\">Ich habe <a href=\"/000c00000000000008\">Kapitel 13</a>, noch ein bisschen (viel) erweitert. Damit sind es jetzt über 4.500 Worte.<br />Schaut es euch schnell an. Ihr habt ja  lange genug gewartet. :)</li></ul></div></slds-card>
+

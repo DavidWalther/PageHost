@@ -1,0 +1,92 @@
+# ============== Table Story ==============
+
+CREATE SEQUENCE story_sequence;
+
+CREATE TABLE Story (
+    Id VARCHAR(18) PRIMARY KEY CHECK (Id LIKE '000s%'),
+    Name VARCHAR(255),
+    LastUpdate TIMESTAMP,
+    PublishDate TIMESTAMP,
+    recordnumber int4 DEFAULT nextval('story_sequence'),
+    sortnumber int4,
+    Description TEXT,
+    coverid VARCHAR(18)
+);
+
+CREATE OR REPLACE FUNCTION update_story_id()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.id := '000s' || LPAD(NEW.recordnumber::text, 14, '0');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_story_id
+BEFORE INSERT ON Story
+FOR EACH ROW EXECUTE FUNCTION update_story_id();
+
+# ============== Table Chapter ==============
+
+CREATE SEQUENCE chapter_sequence;
+
+CREATE TABLE Chapter (
+    Id VARCHAR(18) PRIMARY KEY CHECK (Id LIKE '000c%'),
+    Name VARCHAR(255),
+    LastUpdate TIMESTAMP,
+    StoryId VARCHAR(18),
+    SortNumber INT,
+    recordnumber int4 DEFAULT nextval('chapter_sequence'),
+    PublishDate TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION update_chapter_id()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.id := '000c' || LPAD(NEW.recordnumber::text, 14, '0');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER trigger_update_chapter_id
+BEFORE INSERT ON Chapter
+FOR EACH ROW EXECUTE FUNCTION update_chapter_id();
+
+
+# ============== Table Paragraph ==============
+
+CREATE SEQUENCE paragraph_sequence;
+
+CREATE TABLE paragraph (
+    Id VARCHAR(18) PRIMARY KEY CHECK (Id LIKE '000p%'),
+    Name VARCHAR(255),
+    LastUpdate TIMESTAMP,
+    PublishDate TIMESTAMP,
+    chapterid VARCHAR(18),
+    content Text,
+    htmlcontent Text,
+    recordnumber int4 DEFAULT nextval('paragraph_sequence'),
+    sortnumber int4,
+    storyid VARCHAR(18)
+);
+
+
+CREATE OR REPLACE FUNCTION update_paragraph_id()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.id := '000p' || LPAD(NEW.recordnumber::text, 14, '0');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_paragraph_id
+BEFORE INSERT ON paragraph
+FOR EACH ROW EXECUTE FUNCTION update_paragraph_id();
+
+# ============== Table Configuration ==============
+
+CREATE TABLE Configuration (
+    Key VARCHAR(255),
+    Value VARCHAR(255),
+    application VARCHAR(255)
+);

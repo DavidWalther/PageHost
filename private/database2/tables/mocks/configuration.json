@@ -1,0 +1,23 @@
+[
+  {
+    "id": "000m00000000000001",
+    "key": "metaTitle",
+    "value": "Mock Tabtitle",
+    "applicationincluded": "app1, app2",
+    "applicationexcluded": "app3"
+  },
+  {
+    "id": "000m00000000000002",
+    "key": "pageHeaderHeadline",
+    "value": "Mock Headline",
+    "applicationincluded": "app1, app2",
+    "applicationexcluded": "app3"
+  },
+  {
+    "id": "000m00000000000003",
+    "key": "pageSidebarTitle",
+    "value": "Mock Contents",
+    "applicationincluded": "app1, app2",
+    "applicationexcluded": "app3"
+  }
+]

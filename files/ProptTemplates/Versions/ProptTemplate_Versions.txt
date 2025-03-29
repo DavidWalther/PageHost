@@ -1,0 +1,73 @@
+Ich möchte eine Auflistung in ein eine auflistung im html format übertragen. 
+Das ergebnis muss als einzeiliger String zurückgegeben werden. Anführungszeichen müssen mit einem Backslash versehen werden.
+
+Hier sind Beispiele für das Format:
+
+{
+  "paragraphs": [
+    {
+      "name": "version-1.3.0 (2024-03-23)",
+      "sortnumber": 1,
+      "content": "Sidebar ausblenden wenn auf den Hintergrund geklickt wird",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.3.0 (2024-03-23)</span><ul class=\"slds-list_dotted\"><li>Sidebar ausblenden wenn auf den Hintergrund geklickt wird</li></ul></slds-card>"
+      "applicationincluded": "*",
+      "applicationexcluded": null
+      },
+    {
+      "name": "version-1.5.0 (2024-04-06)",
+      "sortnumber": 2,
+      "content": "Neue Spinner Komponente",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.5.0 (2024-04-06)</span><ul class=\"slds-list_dotted\"><li>Neue Spinner Komponente</li></ul></slds-card>"
+      "applicationincluded": "*",
+      "applicationexcluded": null
+      },
+    {
+      "name": "version-1.1.0 (2024-03-03)",
+      "sortnumber": 3,
+      "content": "Nur veröffentlichte Stories anzeigen",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.1.0 (2024-03-03)</span><ul class=\"slds-list_dotted\"><li>Nur veröffentlichte Stories anzeigen</li></ul></slds-card>"
+      "applicationincluded": "*",
+      "applicationexcluded": null
+      },
+    {
+      "name": "version-1.0.0 (2024-03-02)",
+      "sortnumber": 4,
+      "content": "Erste Version",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.0.0 (2024-03-02)</span><ul class=\"slds-list_dotted\"><li>Erste Version</li></ul></slds-card>"
+      "applicationincluded": "*",
+      "applicationexcluded": null
+      },
+    {
+      "name": "version-1.2.0 (2024-03-17)",
+      "sortnumber": 5,
+      "content": "ausgewähltes Kapitel anzeigen\n* Kapitel-Buttons in eine Zeile anzeigen",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.2.0 (2024-03-17)</span><ul class=\"slds-list_dotted\"><li>ausgewähltes Kapitel anzeigen</li><li>Kapitel-Buttons in eine Zeile anzeigen</li></ul></slds-card>"
+      "applicationincluded": "*",
+      "applicationexcluded": null
+      },
+    {
+      "name": "version-1.6.0 (2024-05-10)",
+      "sortnumber": 6,
+      "content": "Funktionen:\n  * Link zu Buch/Kapitel kopieren\nTechnisch:\n  * abstraktere Datenbankverknüpfung\n  * gemeinsamer Endpunkt für Datenbankabfragen\n  * Sprechendere Server-Logs",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.6.0 (2024-05-10)</span><div><span>Funktionen:</span><ul class=\"slds-list_dotted\"><li>Link zu Buch/Kapitel kopieren</li></ul></div><div><span>Technisch:</span><ul class=\"slds-list_dotted\"><li>abstraktere Datenbankverknüpfung</li><li>gemeinsamer Endpunkt für Datenbankabfragen</li><li>Sprechendere Server-Logs</li></ul></div></slds-card>"
+      "applicationincluded": "*",
+      "applicationexcluded": null
+    },
+    {
+      "name": "version-1.10.0 (2024-07-14)",
+      "sortnumber": 7,
+      "content": "Bugfix\n  * Text in der Kapitel-Auswahl kann nicht mehr bearbeitet werden\nTechnisch\n  * Neue query-events für metadaten\n  * Neue query-events für Geschichten\n  * Neue query-events für Kapitel\n  * Neue query-events für Absätze\n  * Jeder Absatz wird jetzt separat geladen",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.10.0 (2024-07-14)</span><div><ul><li><span>Bugfix</span></li><li><ul class=\"slds-list_dotted\"><li class=\"slds-item\" >Text in der Kapitel-Auswahl kann nicht mehr bearbeitet werden</li></ul></li><li><span>Technisch</span></li><li><ul class=\"slds-list_dotted\"><li class=\"slds-item\" >Neue query-events für metadaten</li><li class=\"slds-item\" >Neue query-events für Geschichten</li><li class=\"slds-item\" >Neue query-events für Kapitel</li><li class=\"slds-item\" >Neue query-events für Absätze</li><li class=\"slds-item
+      "applicationincluded": "*",
+      "applicationexcluded": null
+    },
+    {
+      "name": "version-1.13.1 (2024-10-26)",
+      "sortnumber": 8,
+      "content": "Technisch:\n  * content-card erstellt, um den Rand der Karte zu verbergen",
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >version-1.13.1 (2024-10-26)</span><div><span>Technisch:</span><ul class=\"slds-list_dotted\"><li>content-card erstellt, um den Rand der Karte zu verbergen</li></ul></div></slds-card>",
+      "applicationincluded": "*",
+      "applicationexcluded": null
+    }
+  ]
+}

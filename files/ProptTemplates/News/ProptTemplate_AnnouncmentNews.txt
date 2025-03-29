@@ -1,0 +1,111 @@
+Du hast die Aufgabe in ein bis zwei Sätzen über die Veröffentlichung eines neuen Kapitels zu schrieben
+Die Ankündigung soll neugierde wecken und die Leser dazu bringen, sich die Veröffentlichung anzusehen.
+
+
+Hier sind Beispiele für das Format:
+
+Beispiel 1:
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >Update 2024-06-12</span><div><ul class=\"slds-list_dotted\" ><li class=\"slds-item\">Die fehlenden Kapitel von <a href=\"/000s00000000000009\">Stell dir mal vor ...</a> sind dazu gekommen.</li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"* Die fehlenden Kapitel von Stell dir mal vor ... sind dazu gekommen.",
+      "name":"Update 2024-06-12",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}
+
+Beispiel 2:
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\" >Update 2024-06-23</span><div><ul class=\"slds-list_dotted\"><li class=\"slds-item\" >Ein neues Kapitel für \"Stell dir mal vor ...\" ist dazu gekommen. <a href=\"/000c00000000000029\">Hier geht es zum Kapitel</a></li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"",
+      "name":"Update 2024-06-23",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}
+
+Beispiel 3:
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\">Update 2024-07-14</span><div><ul class=\"slds-list_dotted\" ><li class=\"slds-item\">Ich habe den Namen von \"Sie, das Haustier\" ein kleins bisschen geändert. Sie heißt jetzt \"Sie. Das Haustier.\"</li><li class=\"slds-item\">Außerdem habe is die Geschichte komplett hier auf die neue Seite kopiert. <a href=\"/000s00000000000013\">Hier geht es zur Geschichte</a></li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"",
+      "name":"Update 2024-07-14",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}
+
+
+Beispiel 4:
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\">Update 2024-07-28</span><div><ul class=\"slds-list_dotted\" ><li class=\"slds-item\">Ich habe <a href=\"/000c00000000000008\">Kapitel 13</a>, noch ein bisschen (viel) erweitert. Damit sind es jetzt über 4.500 Worte.<br />Schaut es euch schnell an. Ihr habt ja  lange genug gewartet. :)</li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"",
+      "name":"Update 2024-07-28",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}
+
+Beispiel 5:
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot="header">Update 2024-09-25</span><div><ul class="slds-list_dotted"><li class="slds-item">In dem neuen Kapitel von <a href="/000s00000000000009">Stell dir mal vor ...</a> habe ich mal mit dem Layout und mit Bildern experimentiert. <a href="/000c00000000000033">Schaut es euch an</a>.</li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"- In dem neuen Kapitel von Stell dir mal vor ... habe ich mal mit dem Layout und mit Bildern experimentiert. Schaut es euch an.",
+      "name":"",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}
+
+
+Beispiel 6:
+Wer mich etwas mehr kennenlernen möchte und Wattpad bisher gemieden hat, hat jetzt die Möglichkeit. Schaut in meine neue <a href="/000s00000000000014">Geschichte</a>.
+
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\">Update 2024-10-09</span><div><ul class=\"slds-list_dotted\"><li class=\"slds-item\">Wer mich etwas mehr kennenlernen möchte und Wattpad bisher gemieden hat, hat jetzt die Möglichkeit. Schaut in meine neue <a href=\"/000s00000000000014\">Geschichte</a>.</li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"- Wer mich etwas mehr kennenlernen möchte und Wattpad bisher gemieden hat, hat jetzt die Möglichkeit. Schaut in meine neue Geschichte.",
+      "name":"Update 2024-10-09",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}
+
+Beispiel 7:
+Id for new Story: 000s00000000000015
+
+Ich wurde immer wieder darum gebeten, meine Positionen endlich zu erweitern. Und ich will sie schon lange auf die neue Seite bringen. Jetzt ist es endlich soweit. Schaut sie euch <a href="/000s00000000000015">hier</a> an.
+
+{
+  "paragraphs": [
+    {
+      "htmlcontent": "<slds-card no-footer><span slot=\"header\">Update 2024-10-09</span><div><ul class=\"slds-list_dotted\"><li class=\"slds-item\">Ich wurde immer wieder darum gebeten, meine Positionen endlich zu erweitern. Und ich will sie schon lange auf die neue Seite bringen. Jetzt ist es endlich soweit. Schaut sie euch <a href=\"/000s00000000000015\">hier</a> an.</li></ul></div></slds-card>",
+      "sortnumber": null,
+      "content":"- Ich wurde immer wieder darum gebeten, meine Positionen endlich zu erweitern. Und ich will sie schon lange auf die neue Seite bringen. Jetzt ist es endlich soweit. Schaut sie euch an.",
+      "name":"Update 2024-10-09",
+      "applicationincluded": null,
+      "applicationexcluded": null
+    }
+  ]
+}

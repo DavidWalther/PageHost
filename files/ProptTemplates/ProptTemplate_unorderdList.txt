@@ -1,0 +1,33 @@
+Ich möchte eine Auflistung in ein eine auflistung im html format übertragen.
+Das ergebnis muss als einzeiliger String zurückgegeben werden. Anführungszeichen müssen mit einem Backslash versehen werden.
+
+Hier sind Beispiele für das Format:
+
+Beispiel (einfache Liste):
+
+<ul class=\"slds-list_dotted\">
+  <li class=\"slds-item\" >Erster Listen eintrag</li>
+  <li class=\"slds-item\" >Zweiter Listen eintrag</li>
+</ul>
+
+Beispiel (geschachtelte Liste):
+
+<ul>
+  <li><span>Gruppe 1</span></li>
+  <li>
+    <ul class=\"slds-list_dotted\">
+      <li class=\"slds-item\" >Eintrag 1, Gruppe 1</li>
+      <li class=\"slds-item\" >Eintrag 2, Gruppe 1</li>
+    </ul>
+  </li>
+  <li><span>Gruppe 2</span></li>
+  <li>
+    <ul class=\"slds-list_dotted\">
+      <li class=\"slds-item\" >Eintrag 1, Gruppe 2</li>
+      <li class=\"slds-item\" >Eintrag 2, Gruppe 2</li>
+      <li class=\"slds-item\" >Eintrag 3, Gruppe 2</li>
+    </ul>
+</ul>
+
+
+Diese Liste ist zu übertragen

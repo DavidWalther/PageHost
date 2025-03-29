@@ -1,0 +1,24 @@
+<template id="template-main">
+  <div class="slds-form-element">
+    <label class="slds-form-element__label" for="input-sample1">Input Label</label>
+    <slot name="placeholder-input"></slot>
+  </div>
+</template>
+
+<template id="template-type-text">
+  <div class="slds-form-element__control">
+    <input type="text" id="input-text" class="slds-input input-element" />
+  </div>
+</template>
+
+<template id="template-type-date">
+  <div class="slds-form-element__control">
+    <input type="date" id="input-date" class="slds-input input-element" />
+  </div>
+</template>
+
+<template id="template-type-textarea">
+  <div class="slds-form-element__control">
+    <textarea id="input-textarea" placeholder="Placeholder text…" class="slds-textarea input-element"></textarea>
+  </div>
+</template>

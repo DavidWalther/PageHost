@@ -1,0 +1,43 @@
+<template id="template-main" >
+  <slds-card no-footer no-header >
+    <custom-global-header>
+      <div slot="left" class="slds-text-align_center">
+        <slds-button-icon
+          id="button-panel_open"
+          icon="utility:rows"
+          size="small"
+          variant="container-transparent"
+        ></slds-button-icon>
+      </div>
+      <div slot="mid"  class="slds-text-align_center slds-text-heading_large" ><span id="page-header-headline"></span></div>
+    </custom-global-header>
+  </slds-card>
+
+  <slds-panel id="sidebar">
+    <span id="sidebar-title" slot="header"></span>
+    <div id="pill-container" ></div>
+  </slds-panel>
+
+  <div id="bookshelf" class="slds-grid slds-grid_vertical slds-m-top--small" >
+    <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
+      <custom-story></custom-story>
+    </div>
+    <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
+      <custom-chapter></custom-chapter>
+    </div>
+  </div>
+</template>
+
+<template id="template-story_not_found" >
+  <div class="slds-text-align_center slds-text-heading_large" >
+    <span >Entschuldigung. Da war leider nichts zu finden.</span>
+  </div>
+</template>
+
+<template id="template-pill">
+  <div>
+    <span class="slds-pill" role="option" aria-selected="true">
+      <span class="slds-pill__label" title="Full pill label verbiage mirrored here"></span>
+    </span>
+  </div>
+</template>
