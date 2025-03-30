@@ -3,6 +3,11 @@
 ### Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+## 2.17.4 (2025-03-29)
+
+Bugfix
+- Stories with chapter defined as cover are loading it again
+
 ## 2.17.3 (2025-03-28)
 
 Feature
