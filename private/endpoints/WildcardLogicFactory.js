@@ -1,5 +1,5 @@
 const { Logging } = require('../modules/logging');
-const WildcardEndpointLogic = require('./*/WildcardEndpointLogic');
+const IndexHtmlEndpointLogic = require('./*/IndexHtmlEndpointLogic');
 const NotFoundEndpointLogic = require('./misc/NotFoundEndpointLogic');
 const ManifestEndpointLogic = require('./*/ManifestEndpointLogic');
 const RobotsEndpointLogic = require('./*/RobotsEndpointLogic');
@@ -24,8 +24,10 @@ class WildcardLogicFactory {
         return new SitemapEndpointLogic();
       case 'manifest.json':
         return new ManifestEndpointLogic();
+      case 'index.html':
+        return new IndexHtmlEndpointLogic();
       default:
-        return new WildcardEndpointLogic(); // Will later be replaced with a 404
+        return new IndexHtmlEndpointLogic(); // Will later be replaced with a 404
     }
   }
 }
