@@ -1,6 +1,6 @@
 const { Logging } = require('../modules/logging');
 const ManifestEndpointLogic = require('./metadata/MetaDataEndpointLogic');
-const WildcardEndpointLogic = require('./*/WildcardEndpointLogic');
+const IndexHtmlEndpointLogic = require('./*/IndexHtmlEndpointLogic');
 
 class MetadataEndpointLogicFactory {
   static getProduct(requestObject) {
@@ -17,7 +17,7 @@ class MetadataEndpointLogicFactory {
       case 'metadata':
         return new ManifestEndpointLogic();
       default:
-        return new WildcardEndpointLogic(); // Will later be replaced with a 'Bad Request'
+        return new IndexHtmlEndpointLogic(); // Will later be replaced with a 'Bad Request'
     }
   }
 }

@@ -4,19 +4,19 @@ const { EndpointLogic } = require('../EndpointLogic');
 const RELATIVE_FILE_PATH = '/private/endpoints/*';
 const ABSOLUTE_FILE_PATH = __dirname;
 
-class WildcardEndpointLogic extends EndpointLogic {
+class IndexHtmlEndpointLogic extends EndpointLogic {
   constructor() {
     super();
   }
 
   async execute() {
-    const LOCATION = 'Server.WildcardEndpoint.execute';
+    const LOCATION = 'Server.IndexEndpoint.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing wildcard logic', location: LOCATION});
+    Logging.debugMessage({severity:'INFO', message: 'Executing index logic', location: LOCATION});
 
     return new Promise((resolve) => {
       Logging.debugMessage({severity:'INFO', message: `Request received - ${this.requestObject.url}`, location: LOCATION});
-      Logging.debugMessage({severity:'FINER', message: 'Executed wildcard request', location: LOCATION});
+      Logging.debugMessage({severity:'FINER', message: 'Executed index request', location: LOCATION});
 
 //      let indexPath = ABSOLUTE_FILE_PATH.replace(RELATIVE_FILE_PATH, '') + '/public/index.html';
 
@@ -66,4 +66,4 @@ class WildcardEndpointLogic extends EndpointLogic {
   }
 }
 
-module.exports = WildcardEndpointLogic
+module.exports = IndexHtmlEndpointLogic

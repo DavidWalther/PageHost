@@ -1,10 +1,10 @@
-const WildcardEndpointLogic = require('../WildcardEndpointLogic');
+const IndexHtmlEndpointLogic = require('../IndexHtmlEndpointLogic');
 const { Logging } = require('../../../modules/logging');
 
 jest.mock('../../../modules/logging');
 
-describe('WildcardEndpointLogic', () => {
-  let wildcardEndpointLogic;
+describe('IndexHtmlEndpointLogic', () => {
+  let indexHtmlEndpointLogic;
   let mockResponseObject;
   let mockRequestObject;
 
@@ -13,8 +13,8 @@ describe('WildcardEndpointLogic', () => {
     mockResponseObject = {
       send: jest.fn()
     };
-    wildcardEndpointLogic = new WildcardEndpointLogic();
-    wildcardEndpointLogic.setRequestObject(mockRequestObject).setResponseObject(mockResponseObject);
+    indexHtmlEndpointLogic = new IndexHtmlEndpointLogic();
+    indexHtmlEndpointLogic.setRequestObject(mockRequestObject).setResponseObject(mockResponseObject);
   });
 
   afterEach(() => {
@@ -22,7 +22,7 @@ describe('WildcardEndpointLogic', () => {
   });
 
   it('should deliver index.html with correct content', async () => {
-    await wildcardEndpointLogic.execute();
+    await indexHtmlEndpointLogic.execute();
 
     expect(mockResponseObject.send).toHaveBeenCalledWith(expect.stringContaining('<!DOCTYPE html>'));
     expect(mockResponseObject.send).toHaveBeenCalledWith(expect.stringContaining('<meta charset="UTF-8">'));
