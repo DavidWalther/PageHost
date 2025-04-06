@@ -8,10 +8,14 @@ const { DataQueryLogicFactory } = require('./private/endpoints/DataQueryLogicFac
 const WildcardLogicFactory = require('./private/endpoints/WildcardLogicFactory.js');
 const MetadataEndpointLogicFactory = require('./private/endpoints/MetadataEndpointLogicFactory.js');
 const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/environmetVariables.js');
+const OpenIdConnectClient = require('./private/modules/oAuth2/OpenIdConnectClient.js');
+const crypto = require('crypto');
+const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/oAuth2/CodeExchangeEndpoint.js');
 
 const environment = new Environment().getEnvironment();
 
 const app = express();
+app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
@@ -62,6 +66,16 @@ app.get('/api/1.0/env/variables', (req, res) => {
   const endpoint = new EnvironmentVariablesEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Environment Variables Endpoint executed`, location: LOCATION });
+  });
+});
+
+app.post('/api/1.0/oAuth2/codeexchange', async (req, res) => {
+  const LOCATION = 'Server.post(\'/api/1.0/oAuth2/codeexchange\')';
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  const endpoint = new CodeExchangeEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'FINER', message: `Code Exchange Endpoint executed`, location: LOCATION });
   });
 });
 

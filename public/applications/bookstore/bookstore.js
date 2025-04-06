@@ -10,16 +10,6 @@ const recordIdPrefixToPostgresTableName = {
   '000p' : 'Paragraph'
 };
 
-async function getGoogleAuthConfig() {
-  return new Promise((resolve) => {
-    fetch('/api/1.0/env/variables')
-    .then(response => response.json())
-    .then(variables => {
-      resolve(variables.auth.google);
-    });
-  });
-}
-
 class Bookstore extends HTMLElement {
 
   constructor() {
@@ -75,12 +65,48 @@ class Bookstore extends HTMLElement {
 
     // Listen for navigation events
     this.addEventListener('navigation', this.handleNavigationEvent);
+    this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
+    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event)); 
   }
 
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
+// =========== Authentication =================
+
+async getGoogleAuthConfig() {
+  return new Promise((resolve) => {
+    fetch('/api/1.0/env/variables')
+    .then(response => response.json())
+    .then(variables => {
+      resolve(variables.auth.google);
+    });
+  });
+}
+
+async handleOIDCAuthenticated(event) {
+  /**
+   * Do something with the authentication result
+   * For example, you can store the token in local storage or session storage
+   */
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
+async handleOIDCClick(event) {
+  const callback = event.detail.callback;
+  const googleAuthConfig = await this.getGoogleAuthConfig();
+
+  callback({
+    client_id: googleAuthConfig.clientId,
+    redirect_uri: googleAuthConfig.redirect_uri,
+    scope: googleAuthConfig.scope,
+    response_type: googleAuthConfig.response_type,
+  });
+}
+
+
+// ============ Handle RedirectId =================
 
   /**
    * Description: 
