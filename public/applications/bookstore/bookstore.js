@@ -10,6 +10,16 @@ const recordIdPrefixToPostgresTableName = {
   '000p' : 'Paragraph'
 };
 
+async function getGoogleAuthConfig() {
+  return new Promise((resolve) => {
+    fetch('/api/1.0/env/variables')
+    .then(response => response.json())
+    .then(variables => {
+      resolve(variables.auth.google);
+    });
+  });
+}
+
 class Bookstore extends HTMLElement {
 
   constructor() {

@@ -7,6 +7,7 @@ const {Logging} = require('./private/modules/logging.js');
 const { DataQueryLogicFactory } = require('./private/endpoints/DataQueryLogicFactory.js');
 const WildcardLogicFactory = require('./private/endpoints/WildcardLogicFactory.js');
 const MetadataEndpointLogicFactory = require('./private/endpoints/MetadataEndpointLogicFactory.js');
+const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/environmetVariables.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -47,6 +48,20 @@ app.get('/data/query/*', (req, res) => {
   }).catch(error => {
     Logging.debugMessage({severity:'FINER', message: `Error executing endpoint: ${error}`, location: LOCATION});
     handleWildcardRequest(req, res, LOCATION);
+  });
+});
+
+/**
+ * This endpoint provides the frontend with the necessary configuration without exposing sensitive data.
+ */
+app.get('/api/1.0/env/variables', (req, res) => {
+  const LOCATION = 'Server.get(\'/api/1.0/env/variables\')';
+
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  const endpoint = new EnvironmentVariablesEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'FINER', message: `Environment Variables Endpoint executed`, location: LOCATION });
   });
 });
 
