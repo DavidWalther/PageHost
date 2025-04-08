@@ -103,9 +103,12 @@ class OIDCComponent extends HTMLElement {
     }
 
     // Check for authorization code in URL
-    const authCode = new URLSearchParams(window.location.search).get('code');
-    if (authCode) {
-      this.exchangeAuthCode(authCode, serverEndpoint);
+    let authParams = {
+      auth_code: new URLSearchParams(window.location.search).get('code'),
+      state: new URLSearchParams(window.location.search).get('state')
+    }
+    if (authParams.auth_code !== null && authParams.state !== null) {
+      this.exchangeAuthCode(authParams, serverEndpoint);
     }
   }
 
@@ -139,11 +142,14 @@ class OIDCComponent extends HTMLElement {
   }
 
   async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('oidc_state', state);
     const parameters = {
       client_id,
       redirect_uri,
       scope: scope.join(' '),
-      response_type
+      response_type,
+      state
     };
 
     if (!authorization_endpoint && this.providerEndpointOpenIdConfiguration) {
@@ -156,9 +162,15 @@ class OIDCComponent extends HTMLElement {
     window.location = url;
   }
 
-  async exchangeAuthCode(authCode, serverEndpoint) {
-    let exchangePayload = {};
-    exchangePayload['auth_code'] = authCode;
+  async exchangeAuthCode(exchangePayload, serverEndpoint) {
+    if(sessionStorage.getItem('oidc_state') !== exchangePayload.state) {
+      console.error('State mismatch. Possible CSRF attack.');
+      return;
+    }
+
+    // Remove 'state' key from exchangePayload
+    sessionStorage.removeItem('oidc_state');
+    delete exchangePayload.state;
 
     try {
       const response = await fetch(serverEndpoint, {
