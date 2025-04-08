@@ -32,29 +32,37 @@ class CodeExchangeEndpoint {
     Logging.debugMessage({ severity: 'INFO', message: `Executing code exchange`, location: LOCATION });
 
     const HOST = this.environment.HOST || `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
-    const { auth_code } = this.requestObject.body;
+    const { auth_code, code_verifier } = this.requestObject.body;
 
-    if (!auth_code) {
-      this.responseObject.status(400).json({ error: 'Missing authentication code' });
-      Logging.debugMessage({ severity: 'INFO', message: `Missing authentication code`, location: LOCATION });
+    if (!auth_code || !code_verifier) {
+      this.responseObject.status(400).json({ error: 'Missing authentication code or code verifier' });
+      Logging.debugMessage({ severity: 'INFO', message: `Missing authentication code or code verifier`, location: LOCATION });
       return;
     }
 
-    let cache = new DataCache2(this.environment);
-    let auth_code_cache_key = 'used-auth-codes.' + auth_code;
-    let usedAuthCodesCacheKeyGenerator = await cache.get(auth_code_cache_key);
-
+    // ====== Check if the auth_code is already used - Start ======
+    /**
+     * Save the auth_code in the cache to prevent replay attacks. 
+     * The Cache stores 'used-auth-codes.*'-keys for 20 minutes.
+     */
+    let cache = new DataCache2(this.environment); // instantiate the cache-module
+    let auth_code_cache_key = 'used-auth-codes.' + auth_code; // generate a unique cache key for the auth_code
+    let usedAuthCodesCacheKeyGenerator = await cache.get(auth_code_cache_key); // try to get the auth_code from the cache
     if ( usedAuthCodesCacheKeyGenerator ) {
+      // If the auth_code was actually found in the cache, it means it was already used
       this.responseObject.status(401).json({ error: 'Authentication code already used' });
       Logging.debugMessage({ severity: 'INFO', message: `Authentication code already used`, location: LOCATION });
       return;
     }
     await cache.set(auth_code_cache_key, true);
+    // ====== Check if the auth_code is already used - End =======
+
 
     const oidcClient = new OpenIdConnectClient().setRedirectUri(HOST)
       .setClientId(process.env.GOOGLE_CLIENT_ID)
       .setClientSecret(process.env.GOOGLE_CLIENT_SECRET)
-      .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN);
+      .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
+      .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
 
     const tokenResponse = await oidcClient.exchangeAuthorizationCode(auth_code);
 

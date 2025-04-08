@@ -36,6 +36,11 @@ class OpenIdConnectClient {
     return this;
   }
 
+  setCodeVerifier(codeVerifier) {
+    this._codeVerifier = codeVerifier;
+    return this;
+  }
+
   async executeCalloutWellKnownConfig() {
     return new Promise((resolve, reject) => {
       if(!this._wellKnownEndpoint) {
@@ -73,11 +78,13 @@ class OpenIdConnectClient {
     if(!this._clientSecret) { throw new Error('Client Secret is not set'); }
     if(!this._redirectUri) { throw new Error('Redirect Uri is not set'); }
 
+
     const token_parameters = {
       code: authCode,
       client_id: this._clientId,
       client_secret: this._clientSecret,
       redirect_uri: this._redirectUri,
+      code_verifier: this._codeVerifier,
       grant_type: 'authorization_code'
     };
 

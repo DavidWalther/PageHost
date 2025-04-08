@@ -141,15 +141,44 @@ class OIDCComponent extends HTMLElement {
     );
   }
 
+  // Utility function to generate a random string
+  generateRandomString(length = 128) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return result;
+  }
+
+  // Utility function to generate a code challenge
+  async generateCodeChallenge(verifier) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+  }
+
   async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
     const state = crypto.randomUUID();
     sessionStorage.setItem('oidc_state', state);
+    const codeVerifier = this.generateRandomString();
+    const codeChallenge = await this.generateCodeChallenge(codeVerifier);
+
+    sessionStorage.setItem('pkce_code_verifier', codeVerifier);
+    // Save the code verifier in session storage
+
     const parameters = {
       client_id,
       redirect_uri,
       scope: scope.join(' '),
       response_type,
-      state
+      state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256'
     };
 
     if (!authorization_endpoint && this.providerEndpointOpenIdConfiguration) {
@@ -172,6 +201,10 @@ class OIDCComponent extends HTMLElement {
     sessionStorage.removeItem('oidc_state');
     delete exchangePayload.state;
 
+    // Check if the code_verifier is present in session storage
+    exchangePayload.code_verifier = sessionStorage.getItem('pkce_code_verifier');
+    sessionStorage.removeItem('pkce_code_verifier');
+
     try {
       const response = await fetch(serverEndpoint, {
         method: 'POST',
@@ -180,6 +213,17 @@ class OIDCComponent extends HTMLElement {
         },
         body: JSON.stringify(exchangePayload)
       });
+
+      // if status_code is 401 dispatch rejected event
+      if (response.status === 401) {
+        this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Unauthorized' } }));
+        return;
+      }
+      // if status_code is 400 dispatch rejected event
+      if (response.status === 400) {
+        this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Bad Request' } }));
+        return;
+      }
 
       // Dispatch event with the response
       const exchange_response = await response.json();
