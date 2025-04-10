@@ -88,9 +88,10 @@ class OpenIdConnectClient {
       grant_type: 'authorization_code'
     };
 
-    await this.executeCalloutWellKnownConfig();
+    let openIdConfig = await this.executeCalloutWellKnownConfig();
+    //console.table(openIdConfig);
 
-    return fetch(this._tokenEndpoint, {
+    let exchangeResponse = await fetch(this._tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -98,6 +99,31 @@ class OpenIdConnectClient {
       body: new URLSearchParams(token_parameters)
     })
     .then(response => response.json());
+
+    let jwskKendpointResponse = await fetch(openIdConfig.jwks_uri)
+    .then(response => response.json());
+
+
+    let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
+
+    console.log('Decoded ID Token');
+    console.table(decodedIdToken.header);
+
+
+    let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
+      return key.kid === decodedIdToken.header.kid;
+    });
+
+    if (!matching_jwksKey) {
+      console.error('No matching JWKs key found for the given kid');
+      return;
+    }
+    
+
+    
+    return new Promise((resolve) => {
+      resolve(exchangeResponse)
+    });
   }
 
   decodeIdToken(id_token) {
@@ -108,14 +134,9 @@ class OpenIdConnectClient {
       const buffer = Buffer.from(base64, 'base64');
       return buffer.toString('utf-8');
     };
-    // console.log('recieved header:', header);
-    let decodedHeader = decodeBase64Url(header);
-    // console.log('recieved decodedHeader:', decodedHeader);
-    let parsedHeader = JSON.parse(decodedHeader);
-    // console.log('recieved parsedHeader:', parsedHeader);
 
     return {
-      header: parsedHeader,
+      header: JSON.parse(decodeBase64Url(header)),
       payload: JSON.parse(decodeBase64Url(payload)),
       signature: decodeBase64Url(signature)
     };
