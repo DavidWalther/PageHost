@@ -119,11 +119,7 @@ class OpenIdConnectClient {
       return;
     }
     
-
-    
-    return new Promise((resolve) => {
-      resolve(exchangeResponse)
-    });
+    return exchangeResponse;
   }
 
   decodeIdToken(id_token) {
