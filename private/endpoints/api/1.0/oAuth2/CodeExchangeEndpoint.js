@@ -64,25 +64,26 @@ class CodeExchangeEndpoint {
       .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
       .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
 
-    const tokenResponse = await oidcClient.exchangeAuthorizationCode(auth_code);
 
-    if (tokenResponse.error) {
-      this.responseObject.status(401).json(tokenResponse);
-      return;
-    }
+    oidcClient.exchangeAuthorizationCode(auth_code)
+    .then(tokenResponse => {
+      const [tokenHeader, tokenPayload] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
+      const randomToken = crypto.randomBytes(128).toString('hex');
 
-    const [tokenHeader, tokenPayload] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
-    const randomToken = crypto.randomBytes(128).toString('hex');
+      const response = {
+        server_token: randomToken,
+        providerResponse: {
+          providedInfo: tokenResponse,
+          tokenPayload: JSON.parse(tokenPayload)
+        }
+      };
 
-    const response = {
-      server_token: randomToken,
-      providerResponse: {
-        providedInfo: tokenResponse,
-        tokenPayload: JSON.parse(tokenPayload)
-      }
-    };
-
-    this.responseObject.json(response);
+      return this.responseObject.json(response);
+    })
+    .catch(error => {
+      Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
+      this.responseObject.status(500).json({ error: 'Internal server error' });
+    });
   }
 }
 

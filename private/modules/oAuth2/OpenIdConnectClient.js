@@ -103,13 +103,11 @@ class OpenIdConnectClient {
     });
     exchangeResponse = await exchangeResponse.json();
     if (exchangeResponse.error) {
-      console.error('Error exchanging authorization code:', exchangeResponse.error);
-      return exchangeResponse;
+      throw new Error('Error exchanging authorization code: ' + exchangeResponse.error);
     }
     // Check if the id_token is present in the response
     if (!exchangeResponse.id_token) {
-      console.error('No id_token found in the response');
-      return { error: 'No id_token found in the response' };
+      throw new Error('No id_token found in the response');
     }
 
     let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
@@ -126,8 +124,6 @@ class OpenIdConnectClient {
     }
     // Check if the id_token is not yet valid
     if (decodedIdToken.payload.iat - clockSkew > currentTime) {
-      console.log('payload.iat:', decodedIdToken.payload.iat);
-      console.log('currentTime:', currentTime);
       throw new Error('ID token is not yet valid');
     }
     // Check if the id_token is issued for the correct audience
@@ -160,8 +156,7 @@ class OpenIdConnectClient {
     const publicKey = rsaPemFromModExp(modulus, exponent);
 
     try {
-      const verifiedPayload = jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
-      console.log('Verified ID Token Payload:', verifiedPayload);
+      jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
     } catch (error) {
       throw new Error('Invalid ID token: Signature verification failed');
     }
