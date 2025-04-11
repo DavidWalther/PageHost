@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const rsaPemFromModExp = require('rsa-pem-from-mod-exp');
+const { Logging } = require('../../modules/logging.js');
 
 class OpenIdConnectClient {
   constructor() {}
@@ -103,10 +104,20 @@ class OpenIdConnectClient {
     });
     exchangeResponse = await exchangeResponse.json();
     if (exchangeResponse.error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Error exchanging authorization code: ${exchangeResponse.error}. Possible reason: Invalid or tampered authorization code.`,
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+      });
       throw new Error('Error exchanging authorization code: ' + exchangeResponse.error);
     }
     // Check if the id_token is present in the response
     if (!exchangeResponse.id_token) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `No id_token found in the response. Possible reason: Malicious response from the token endpoint.`,
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+      });
       throw new Error('No id_token found in the response');
     }
 
@@ -139,6 +150,11 @@ class OpenIdConnectClient {
     let jwskKendpointResponse = await fetch(openIdConfig.jwks_uri);
     jwskKendpointResponse = await jwskKendpointResponse.json();
     if (!jwskKendpointResponse.keys || jwskKendpointResponse.keys.length === 0) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `No keys found in the JWKs response. Possible reason: Compromised or misconfigured JWKs endpoint.`,
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+      });
       throw new Error('No keys found in the JWKs response');
     }
 
@@ -147,6 +163,11 @@ class OpenIdConnectClient {
       return key.kid === decodedIdToken.header.kid;
     });
     if (!matching_jwksKey) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `No matching JWKs key found for the given kid. Possible reason: Tampered or invalid ID token.`,
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+      });
       throw new Error('No matching JWKs key found for the given kid');
     }
 
@@ -158,6 +179,11 @@ class OpenIdConnectClient {
     try {
       jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
     } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Invalid ID token: Signature verification failed. Possible reason: Forged or tampered ID token. Error: ${error.message}`,
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+      });
       throw new Error('Invalid ID token: Signature verification failed');
     }
 
