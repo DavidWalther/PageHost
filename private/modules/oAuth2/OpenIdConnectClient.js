@@ -88,38 +88,81 @@ class OpenIdConnectClient {
       grant_type: 'authorization_code'
     };
 
-    let openIdConfig = await this.executeCalloutWellKnownConfig();
-    //console.table(openIdConfig);
+    let openIdConfig = await this.executeCalloutWellKnownConfig(); // fetches the openId configuration and stores it in this._wellKnownConfig
 
-    let exchangeResponse = await fetch(this._tokenEndpoint, {
+
+    let promisArray = [];
+    promisArray.push(fetch(this._tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams(token_parameters)
+    }));
+    promisArray.push(fetch(openIdConfig.jwks_uri));
+    
+    let exchangeResult = await Promise.all(promisArray)
+    .then(responseArray => {
+      let jsonPromiseArray = [];
+      jsonPromiseArray.push(responseArray[0].json());
+      jsonPromiseArray.push(responseArray[1].json());
+      return Promise.all(jsonPromiseArray);
     })
-    .then(response => response.json());
+    .then(jsonArray => {
+      let exchangeResponse = jsonArray[0];
+      let jwskKendpointResponse = jsonArray[1];
 
-    let jwskKendpointResponse = await fetch(openIdConfig.jwks_uri)
-    .then(response => response.json());
+      let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
+      console.log('Decoded ID Token');
+      console.table(decodedIdToken.header);
 
+      console.log('publicKey');
+      console.table(jwskKendpointResponse.keys);
 
-    let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
+      return exchangeResponse;
+/*
+      let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
+        return key.kid === decodedIdToken.header.kid;
+      });
 
-    console.log('Decoded ID Token');
-    console.table(decodedIdToken.header);
-
-
-    let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
-      return key.kid === decodedIdToken.header.kid;
+      if (!matching_jwksKey) {
+        console.error('No matching JWKs key found for the given kid');
+        return;
+      }
+*/
     });
 
-    if (!matching_jwksKey) {
-      console.error('No matching JWKs key found for the given kid');
-      return;
-    }
+    return exchangeResult;
+
+    // let exchangeResponse = await fetch(this._tokenEndpoint, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/x-www-form-urlencoded'
+    //   },
+    //   body: new URLSearchParams(token_parameters)
+    // })
+    // .then(response => response.json());
+
+    // let jwskKendpointResponse = await fetch(openIdConfig.jwks_uri)
+    // .then(response => response.json());
+
+
+    // let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
+
+    // console.log('Decoded ID Token');
+    // console.table(decodedIdToken.header);
+
+
+    // let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
+    //   return key.kid === decodedIdToken.header.kid;
+    // });
+
+    // if (!matching_jwksKey) {
+    //   console.error('No matching JWKs key found for the given kid');
+    //   return;
+    // }
     
-    return exchangeResponse;
+    // return exchangeResponse;
   }
 
   decodeIdToken(id_token) {
