@@ -94,61 +94,81 @@ class OpenIdConnectClient {
     let openIdConfig = await this.executeCalloutWellKnownConfig(); // fetches the openId configuration and stores it in this._wellKnownConfig
 
 
-    let promisArray = [];
-    promisArray.push(fetch(this._tokenEndpoint, {
+    let exchangeResponse = await fetch(this._tokenEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams(token_parameters)
-    }));
-    promisArray.push(fetch(openIdConfig.jwks_uri));
-
-    let exchangeResult = await Promise.all(promisArray)
-    .then(responseArray => {
-      let jsonPromiseArray = [];
-      jsonPromiseArray.push(responseArray[0].json());
-      jsonPromiseArray.push(responseArray[1].json());
-      return Promise.all(jsonPromiseArray);
-    })
-    .then(jsonArray => {
-      let exchangeResponse = jsonArray[0];
-      let jwskKendpointResponse = jsonArray[1];
-
-      let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
-      console.log('publicKey');
-      console.table(jwskKendpointResponse.keys);
-
-
-      // Check if the kid in the id_token header matches any of the keys in the JWKs response
-      let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
-        return key.kid === decodedIdToken.header.kid;
-      });
-
-      if (!matching_jwksKey) {
-        console.error('No matching JWKs key found for the given kid');
-        return;
-      }
-
-      // Verify the signature of the id_token using the public key from the JWKs response
-
-      const modulus = matching_jwksKey.n; // Base64URL-encoded modulus
-      const exponent = matching_jwksKey.e; // Base64URL-encoded exponent
-      const publicKey = rsaPemFromModExp(modulus, exponent);
-
-
-      try {
-        const verifiedPayload = jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
-        console.log('Verified ID Token Payload:', verifiedPayload);
-      } catch (error) {
-        console.error('ID Token verification failed:', error);
-        throw new Error('Invalid ID token: Signature verification failed');
-      }
-
-      return exchangeResponse;
     });
+    exchangeResponse = await exchangeResponse.json();
+    if (exchangeResponse.error) {
+      console.error('Error exchanging authorization code:', exchangeResponse.error);
+      return exchangeResponse;
+    }
+    // Check if the id_token is present in the response
+    if (!exchangeResponse.id_token) {
+      console.error('No id_token found in the response');
+      return { error: 'No id_token found in the response' };
+    }
 
-    return exchangeResult;
+    let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
+
+    // ======== Response Validation - Start ========
+
+    // --- simple checks of the id_token ---
+
+    // Check if the id_token is expired
+    const currentTime = Math.floor(Date.now() / 1000);
+    const clockSkew = 5; // Allow a 2 second clock skew
+    if (decodedIdToken.payload.exp + clockSkew < currentTime) { // Allow a 2 second clock skew
+      throw new Error('ID token is expired');
+    }
+    // Check if the id_token is not yet valid
+    if (decodedIdToken.payload.iat - clockSkew > currentTime) {
+      console.log('payload.iat:', decodedIdToken.payload.iat);
+      console.log('currentTime:', currentTime);
+      throw new Error('ID token is not yet valid');
+    }
+    // Check if the id_token is issued for the correct audience
+    if (decodedIdToken.payload.iss !== openIdConfig.issuer) {
+      throw new Error('Invalid issuer');
+    }
+    if (decodedIdToken.payload.aud !== this._clientId) {
+      throw new Error('Invalid audience');
+    }
+
+    // --- complex checks using public key ---
+
+    let jwskKendpointResponse = await fetch(openIdConfig.jwks_uri);
+    jwskKendpointResponse = await jwskKendpointResponse.json();
+    if (!jwskKendpointResponse.keys || jwskKendpointResponse.keys.length === 0) {
+      throw new Error('No keys found in the JWKs response');
+    }
+
+    // Check if the kid in the id_token header matches any of the keys in the JWKs response
+    let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
+      return key.kid === decodedIdToken.header.kid;
+    });
+    if (!matching_jwksKey) {
+      throw new Error('No matching JWKs key found for the given kid');
+    }
+
+    // Verify the signature of the id_token using the public key from the JWKs response
+    const modulus = matching_jwksKey.n; // Base64URL-encoded modulus
+    const exponent = matching_jwksKey.e; // Base64URL-encoded exponent
+    const publicKey = rsaPemFromModExp(modulus, exponent);
+
+    try {
+      const verifiedPayload = jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
+      console.log('Verified ID Token Payload:', verifiedPayload);
+    } catch (error) {
+      throw new Error('Invalid ID token: Signature verification failed');
+    }
+
+    // ======== Response Validation - End ========
+
+    return exchangeResponse;
   }
 
   decodeIdToken(id_token) {
