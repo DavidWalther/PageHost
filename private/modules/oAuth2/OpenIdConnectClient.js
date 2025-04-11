@@ -1,3 +1,6 @@
+const jwt = require('jsonwebtoken');
+const rsaPemFromModExp = require('rsa-pem-from-mod-exp');
+
 class OpenIdConnectClient {
   constructor() {}
 
@@ -113,13 +116,11 @@ class OpenIdConnectClient {
       let jwskKendpointResponse = jsonArray[1];
 
       let decodedIdToken = this.decodeIdToken(exchangeResponse.id_token);
-      console.log('Decoded ID Token');
-      console.table(decodedIdToken.header);
-
       console.log('publicKey');
       console.table(jwskKendpointResponse.keys);
 
 
+      // Check if the kid in the id_token header matches any of the keys in the JWKs response
       let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
         return key.kid === decodedIdToken.header.kid;
       });
@@ -127,6 +128,21 @@ class OpenIdConnectClient {
       if (!matching_jwksKey) {
         console.error('No matching JWKs key found for the given kid');
         return;
+      }
+
+      // Verify the signature of the id_token using the public key from the JWKs response
+
+      const modulus = matching_jwksKey.n; // Base64URL-encoded modulus
+      const exponent = matching_jwksKey.e; // Base64URL-encoded exponent
+      const publicKey = rsaPemFromModExp(modulus, exponent);
+
+
+      try {
+        const verifiedPayload = jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
+        console.log('Verified ID Token Payload:', verifiedPayload);
+      } catch (error) {
+        console.error('ID Token verification failed:', error);
+        throw new Error('Invalid ID token: Signature verification failed');
       }
 
       return exchangeResponse;
