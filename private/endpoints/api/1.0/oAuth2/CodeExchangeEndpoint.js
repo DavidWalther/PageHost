@@ -67,7 +67,7 @@ class CodeExchangeEndpoint {
     const oidcClient = new OpenIdConnectClient().setRedirectUri(HOST)
       .setClientId(this.environment.GOOGLE_CLIENT_ID)
       .setClientSecret(this.environment.GOOGLE_CLIENT_SECRET)
-      .setWellKnownEndpoint(this.environment.GOOGLE_ENDPOINT_WELLKNOWN)
+      .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
       .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
 
 
