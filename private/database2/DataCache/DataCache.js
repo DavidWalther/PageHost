@@ -117,9 +117,8 @@ class UsedAuthCodesCacheKeyGenerator extends GlobalCacheKeyGenerator {
     return null;
   }
 
-  getExpireTime() {
-    // cache expiration time in seconds
-    return 60 * 20; // 10 minutes
+  getKeyLifetimeInSeconds() {
+    return 60 * 20; // 20 minutes
   }
 }
 
@@ -210,7 +209,7 @@ class DataCache2 {
     const LOCATION = 'DataCache2.set';
     const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
     let cacheKey = cacheKeyGenerator.generateCacheKey(key);
-    const cacheExpirationSeconds = cacheKeyGenerator.getExpireTime();
+    const cacheExpirationSeconds = cacheKeyGenerator.getKeyLifetimeInSeconds();
 
     Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
     await this.redis.connect();
