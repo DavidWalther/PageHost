@@ -11,7 +11,7 @@ jest.mock('crypto');
 jest.mock('../../../../../database2/DataCache/DataCache.js');
 
 const mockJwtHeader = { "test": "abc"};
-const mockJwtPayload = { "email": "test@email.com"};
+const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890  };
 const mockJwtSignature = '';
 
 function createMockJwt(header, payload, signature) {

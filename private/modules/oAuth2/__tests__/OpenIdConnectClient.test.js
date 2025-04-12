@@ -1,8 +1,21 @@
 const OpenIdConnectClient = require('../OpenIdConnectClient');
 
-const mockJwtHeader = { "test": "abc"};
-const mockJwtPayload = { "email": "test@email.com"};
+const mockJwtHeader = { "kid": "mockKid", "test": "abc"};
+const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 2000000000, "iat": 170000000  };
 const mockJwtSignature = '';
+
+const mockJwksResponse = {
+  keys: [
+    {
+      kid: 'mockKid',
+      n: 'test-modulus',
+      e: 'AQAB',
+      kty: 'RSA',
+      alg: 'RS256',
+      use: 'sig'
+    }
+  ]
+};
 
 function createMockJwt(header, payload, signature) {
   const encodeBase64 = (str) => {
@@ -35,9 +48,9 @@ describe('OpenIdConnectClient', () => {
   beforeAll(() => {
     oidcClient.setClientId(clientId);
     oidcClient.setClientSecret('test-client-secret');
-    oidcClient.setRedirectUri('test-redirect-uri');
     oidcClient.setTokenEndpoint('test-token-endpoint');
     oidcClient.setWellKnownEndpoint('test-well-known-endpoint');
+    oidcClient.setRedirectUri('test-redirect-uri');
 
     const mockJwt = createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature);
     global.fetch = jest.fn().mockResolvedValue({
@@ -49,7 +62,7 @@ describe('OpenIdConnectClient', () => {
     const authCode = 'test-auth-code';
     const tokenResponse = {
       access_token: 'test-access-token',
-      id_token: 'test-id-token'
+      id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature)
     };
     fetch.mockResolvedValue({
       json: jest.fn().mockResolvedValue(tokenResponse)
