@@ -10,6 +10,33 @@ jest.mock('../../../../../modules/oAuth2/OpenIdConnectClient');
 jest.mock('crypto');
 jest.mock('../../../../../database2/DataCache/DataCache.js');
 
+const mockJwtHeader = { "test": "abc"};
+const mockJwtPayload = { "email": "test@email.com"};
+const mockJwtSignature = '';
+
+function createMockJwt(header, payload, signature) {
+  const encodeBase64 = (str) => {
+    const buffer = Buffer.from(str, 'utf-8');
+    return buffer.toString('base64');
+  };
+
+  let jwtParts = [];
+  //console.log('Test: json headser: ', mockJwtHeader);
+  let stringifiedHeader = JSON.stringify(mockJwtHeader);
+  //console.log('Test: stringifiedHeader: ', stringifiedHeader);
+  let encodedHeader = encodeBase64(stringifiedHeader);
+  //console.log('Test: encodedHeader: ', encodedHeader);
+  jwtParts.push(encodedHeader);
+
+  let stringifiedPayload = JSON.stringify(mockJwtPayload);
+  let encodedPayload = encodeBase64(stringifiedPayload);
+  jwtParts.push(encodedPayload);
+
+  let encodedSignature = encodeBase64(mockJwtSignature);
+  jwtParts.push(encodedSignature);
+
+  return jwtParts.join('.');
+}
 
 const encode64 = (str) => Buffer.from(str).toString('base64');
 const mockIdToken = [
@@ -44,7 +71,7 @@ describe('CodeExchangeEndpoint', () => {
       setClientId: jest.fn().mockReturnThis(),
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
-      exchangeAuthorizationCode: jest.fn().mockResolvedValue({ id_token: mockIdToken}),
+      exchangeAuthorizationCode: jest.fn().mockResolvedValue({ id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature) }),
       setCodeVerifier: jest.fn().mockReturnThis(),
     }));
 
