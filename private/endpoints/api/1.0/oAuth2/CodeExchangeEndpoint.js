@@ -34,11 +34,17 @@ class CodeExchangeEndpoint {
     const HOST = this.environment.HOST || `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     const { auth_code, code_verifier } = this.requestObject.body;
 
-    if (!auth_code || !code_verifier) {
-      this.responseObject.status(400).json({ error: 'Missing authentication code or code verifier' });
-      Logging.debugMessage({ severity: 'INFO', message: `Missing authentication code or code verifier`, location: LOCATION });
+    if (!auth_code ){
+      this.responseObject.status(400).json({ error: 'Invalid code' });
+      Logging.debugMessage({ severity: 'INFO', message: `Missing authentication code`, location: LOCATION });
+      return;
+    }  
+    if(!code_verifier) {
+      this.responseObject.status(400).json({ error: 'Invalid code' });
+      Logging.debugMessage({ severity: 'INFO', message: `Missing code verifier`, location: LOCATION });
       return;
     }
+
 
     // ====== Check if the auth_code is already used - Start ======
     /**
@@ -59,13 +65,13 @@ class CodeExchangeEndpoint {
 
 
     const oidcClient = new OpenIdConnectClient().setRedirectUri(HOST)
-      .setClientId(process.env.GOOGLE_CLIENT_ID)
-      .setClientSecret(process.env.GOOGLE_CLIENT_SECRET)
-      .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
+      .setClientId(this.environment.GOOGLE_CLIENT_ID)
+      .setClientSecret(this.environment.GOOGLE_CLIENT_SECRET)
+      .setWellKnownEndpoint(this.environment.GOOGLE_ENDPOINT_WELLKNOWN)
       .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
 
 
-    oidcClient.exchangeAuthorizationCode(auth_code)
+    await oidcClient.exchangeAuthorizationCode(auth_code)
     .then(tokenResponse => {
       const [tokenHeader, tokenPayload] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
       const randomToken = crypto.randomBytes(128).toString('hex');
@@ -78,12 +84,14 @@ class CodeExchangeEndpoint {
         }
       };
 
-      return this.responseObject.json(response);
+      this.responseObject.json(response);
     })
     .catch(error => {
       Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
-      this.responseObject.status(500).json({ error: 'Internal server error' });
+      this.responseObject.status(400).json({ error: 'Bad Request' });
     });
+    Logging.debugMessage({ severity: 'INFO', message: `Code exchange completed`, location: LOCATION });
+    return this.responseObject;
   }
 }
 
