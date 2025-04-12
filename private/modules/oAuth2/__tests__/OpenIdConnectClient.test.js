@@ -1,5 +1,15 @@
+const jwt = require('jsonwebtoken');
 const OpenIdConnectClient = require('../OpenIdConnectClient');
+const rsaPemFromModExp = require('rsa-pem-from-mod-exp');
 
+jest.mock('rsa-pem-from-mod-exp');
+jest.mock('jsonwebtoken', () => ({
+  verify: jest.fn().mockImplementation((token, publicKey, options, callback) => {
+    return true;
+  })
+}));
+
+  
 const mockJwtHeader = { "kid": "mockKid", "test": "abc"};
 const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 2000000000, "iat": 170000000  };
 const mockJwtSignature = '';
@@ -87,7 +97,7 @@ describe('OpenIdConnectClient', () => {
     const response = await oidcClient.exchangeAuthorizationCode(authCode);
     expect(response).toEqual(tokenResponse);
   });
-/*
+
   it('should decode ID token', () => {
     const mockJwt = createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature);
     const decodedToken = oidcClient.decodeIdToken(mockJwt);
@@ -96,5 +106,5 @@ describe('OpenIdConnectClient', () => {
       payload: mockJwtPayload,
       signature: mockJwtSignature
     });
-  });*/
+  });
 });
