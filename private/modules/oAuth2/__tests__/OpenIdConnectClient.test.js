@@ -66,6 +66,22 @@ describe('OpenIdConnectClient', () => {
     oidcClient.setWellKnownEndpoint('test-well-known-endpoint');
     oidcClient.setRedirectUri('test-redirect-uri');
 
+    // Global fetch mock
+    global.fetch = jest.fn((url) => {
+      if (url === 'test-token-endpoint') {
+        return mockTokenEndpoint();
+      } else if (url === 'test-well-known-endpoint') {
+        return mockWellKnownEndpoint();
+      } else if (url === 'test-jwks-uri') {
+        return mockJwksEndpoint();
+      } else {
+        return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
+      }
+    });
+  });
+
+  beforeEach(() => {
+
     // Default mock implementations
     mockTokenEndpoint = jest.fn(() =>
       Promise.resolve({
@@ -90,19 +106,8 @@ describe('OpenIdConnectClient', () => {
         json: jest.fn().mockResolvedValue(mockJwksResponse),
       })
     );
-
-    // Global fetch mock
-    global.fetch = jest.fn((url) => {
-      if (url === 'test-token-endpoint') {
-        return mockTokenEndpoint();
-      } else if (url === 'test-well-known-endpoint') {
-        return mockWellKnownEndpoint();
-      } else if (url === 'test-jwks-uri') {
-        return mockJwksEndpoint();
-      } else {
-        return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
-      }
-    });
+    // Reset the global fetch mock
+    global.fetch.mockClear();
   });
 
   it('should exchange authorization code for tokens',   async () => {
