@@ -55,43 +55,61 @@ describe('OpenIdConnectClient', () => {
   const clientId = 'test-client-id';
   const oidcClient = new OpenIdConnectClient();
 
+  let mockTokenEndpoint;
+  let mockWellKnownEndpoint;
+  let mockJwksEndpoint;
+
   beforeAll(() => {
     oidcClient.setClientId(clientId);
     oidcClient.setClientSecret('test-client-secret');
     oidcClient.setTokenEndpoint('test-token-endpoint');
     oidcClient.setWellKnownEndpoint('test-well-known-endpoint');
     oidcClient.setRedirectUri('test-redirect-uri');
-  
+
+    // Default mock implementations
+    mockTokenEndpoint = jest.fn(() =>
+      Promise.resolve({
+        json: jest.fn().mockResolvedValue({
+          access_token: 'test-access-token',
+          id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature),
+        }),
+      })
+    );
+
+    mockWellKnownEndpoint = jest.fn(() =>
+      Promise.resolve({
+        json: jest.fn().mockResolvedValue({
+          token_endpoint: 'test-token-endpoint',
+          jwks_uri: 'test-jwks-uri',
+        }),
+      })
+    );
+
+    mockJwksEndpoint = jest.fn(() =>
+      Promise.resolve({
+        json: jest.fn().mockResolvedValue(mockJwksResponse),
+      })
+    );
+
+    // Global fetch mock
     global.fetch = jest.fn((url) => {
       if (url === 'test-token-endpoint') {
-        return Promise.resolve({
-          json: jest.fn().mockResolvedValue({
-            access_token: 'test-access-token',
-            id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature) 
-          }),
-        });
+        return mockTokenEndpoint();
       } else if (url === 'test-well-known-endpoint') {
-        return Promise.resolve({
-          json: jest.fn().mockResolvedValue({
-            token_endpoint: 'test-token-endpoint',
-            jwks_uri: 'test-jwks-uri'
-          }),
-        });
+        return mockWellKnownEndpoint();
       } else if (url === 'test-jwks-uri') {
-        return Promise.resolve({
-          json: jest.fn().mockResolvedValue(mockJwksResponse),
-        });
+        return mockJwksEndpoint();
       } else {
         return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
       }
     });
-  }); 
+  });
 
   it('should exchange authorization code for tokens', async () => {
     const authCode = 'test-auth-code';
     const tokenResponse = {
       access_token: 'test-access-token',
-      id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature)
+      id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature),
     };
 
     const response = await oidcClient.exchangeAuthorizationCode(authCode);
@@ -104,37 +122,19 @@ describe('OpenIdConnectClient', () => {
     expect(decodedToken).toEqual({
       header: mockJwtHeader,
       payload: mockJwtPayload,
-      signature: mockJwtSignature
+      signature: mockJwtSignature,
     });
   });
 
   it('should throw an error if JWKS endpoint delivers no keys', async () => {
     const authCode = 'test-auth-code';
 
-    // Mock fetch to return an empty keys array for the JWKS endpoint
-    global.fetch = jest.fn((url) => {
-      if (url === 'test-token-endpoint') {
-        return Promise.resolve({
-          json: jest.fn().mockResolvedValue({
-            access_token: 'test-access-token',
-            id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature)
-          }),
-        });
-      } else if (url === 'test-well-known-endpoint') {
-        return Promise.resolve({
-          json: jest.fn().mockResolvedValue({
-            token_endpoint: 'test-token-endpoint',
-            jwks_uri: 'test-jwks-uri'
-          }),
-        });
-      } else if (url === 'test-jwks-uri') {
-        return Promise.resolve({
-          json: jest.fn().mockResolvedValue({ keys: [] }), // No keys in the response
-        });
-      } else {
-        return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
-      }
-    });
+    // Override the JWKS endpoint mock for this test
+    mockJwksEndpoint = jest.fn(() =>
+      Promise.resolve({
+        json: jest.fn().mockResolvedValue({ keys: [] }), // No keys in the response
+      })
+    );
 
     await expect(oidcClient.exchangeAuthorizationCode(authCode)).rejects.toThrow('No keys found in the JWKs response');
   });
