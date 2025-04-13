@@ -138,4 +138,23 @@ describe('OpenIdConnectClient', () => {
 
     await expect(oidcClient.exchangeAuthorizationCode(authCode)).rejects.toThrow('No keys found in the JWKs response');
   });
+
+  it('should throw an error if JWKS endpoint delivers three keys but none matches', async () => {
+    const authCode = 'test-auth-code';
+
+    // Override the JWKS endpoint mock for this test
+    mockJwksEndpoint = jest.fn(() =>
+      Promise.resolve({
+        json: jest.fn().mockResolvedValue({
+          keys: [
+            { kid: 'nonMatchingKid1', n: 'modulus1', e: 'AQAB', kty: 'RSA', alg: 'RS256', use: 'sig' },
+            { kid: 'nonMatchingKid2', n: 'modulus2', e: 'AQAB', kty: 'RSA', alg: 'RS256', use: 'sig' },
+            { kid: 'nonMatchingKid3', n: 'modulus3', e: 'AQAB', kty: 'RSA', alg: 'RS256', use: 'sig' },
+          ],
+        }),
+      })
+    );
+
+    await expect(oidcClient.exchangeAuthorizationCode(authCode)).rejects.toThrow('No matching JWKs key found for the given kid');
+  });
 });
