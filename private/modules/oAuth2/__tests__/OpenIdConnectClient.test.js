@@ -55,7 +55,7 @@ describe('OpenIdConnectClient', () => {
   const clientId = 'test-client-id';
   const oidcClient = new OpenIdConnectClient();
 
-   beforeAll(() => {
+  beforeAll(() => {
     oidcClient.setClientId(clientId);
     oidcClient.setClientSecret('test-client-secret');
     oidcClient.setTokenEndpoint('test-token-endpoint');
@@ -106,5 +106,36 @@ describe('OpenIdConnectClient', () => {
       payload: mockJwtPayload,
       signature: mockJwtSignature
     });
+  });
+
+  it('should throw an error if JWKS endpoint delivers no keys', async () => {
+    const authCode = 'test-auth-code';
+
+    // Mock fetch to return an empty keys array for the JWKS endpoint
+    global.fetch = jest.fn((url) => {
+      if (url === 'test-token-endpoint') {
+        return Promise.resolve({
+          json: jest.fn().mockResolvedValue({
+            access_token: 'test-access-token',
+            id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature)
+          }),
+        });
+      } else if (url === 'test-well-known-endpoint') {
+        return Promise.resolve({
+          json: jest.fn().mockResolvedValue({
+            token_endpoint: 'test-token-endpoint',
+            jwks_uri: 'test-jwks-uri'
+          }),
+        });
+      } else if (url === 'test-jwks-uri') {
+        return Promise.resolve({
+          json: jest.fn().mockResolvedValue({ keys: [] }), // No keys in the response
+        });
+      } else {
+        return Promise.reject(new Error(`Unhandled fetch URL: ${url}`));
+      }
+    });
+
+    await expect(oidcClient.exchangeAuthorizationCode(authCode)).rejects.toThrow('No keys found in the JWKs response');
   });
 });
