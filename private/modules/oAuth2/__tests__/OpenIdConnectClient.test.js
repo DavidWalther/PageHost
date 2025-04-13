@@ -9,7 +9,7 @@ jest.mock('jsonwebtoken', () => ({
   })
 }));
 
-  
+
 const mockJwtHeader = { "kid": "mockKid", "test": "abc"};
 const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 2000000000, "iat": 170000000  };
 const mockJwtSignature = '';
@@ -105,16 +105,22 @@ describe('OpenIdConnectClient', () => {
     });
   });
 
-  it('should exchange authorization code for tokens', async () => {
-    const authCode = 'test-auth-code';
-    const tokenResponse = {
-      access_token: 'test-access-token',
-      id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature),
-    };
+  it('should exchange authorization code for tokens',   async () => {
+      const authCode = 'test-auth-code';
+      const tokenResponse = {
+        access_token: 'test-access-token',
+        id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature),
+      };
+      oidcClient.setCodeVerifier('test-code-verifier');
+      const response = await oidcClient.exchangeAuthorizationCode(authCode);
+      expect(response).toEqual(tokenResponse);
+      expect(global.fetch).toHaveBeenCalledTimes(3); // 1. openId config, 2. token endpoint, 3. JWKS endpoint
 
-    const response = await oidcClient.exchangeAuthorizationCode(authCode);
-    expect(response).toEqual(tokenResponse);
-  });
+      // Check the order of calls
+      expect(global.fetch).toHaveBeenNthCalledWith(1, 'test-well-known-endpoint');
+      expect(global.fetch).toHaveBeenNthCalledWith(2, 'test-token-endpoint', expect.any(Object));
+      //expect(global.fetch).toHaveBeenNthCalledWith(3, 'test-jwks-uri', expect.any(Object));
+    });
 
   it('should decode ID token', () => {
     const mockJwt = createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature);
