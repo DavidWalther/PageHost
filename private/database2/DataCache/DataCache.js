@@ -28,6 +28,11 @@ class GlobalCacheKeyGenerator {
 
     return keyElements.join('-');
   }
+
+  getKeyLifetimeInSeconds() {
+    // cache expiration time in seconds
+    return this.environmentVars.CACHE_CONTAINER_EXPIRATION_SECONDS;
+  }
 }
 
 class MetaDataCacheKeyGenerator extends GlobalCacheKeyGenerator {
@@ -100,6 +105,22 @@ class StoriesAllCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
+class UsedAuthCodesCacheKeyGenerator extends GlobalCacheKeyGenerator {
+  constructor(environmentVars) {
+    super(environmentVars);
+  }
+  generateCacheKey(code) {
+    return this.generateGlobalKeyPrefix() + '-used-auth-codes' + code;
+  }
+
+  generateCacheKeyDeprecated() {
+    return null;
+  }
+
+  getKeyLifetimeInSeconds() {
+    return 60 * 20; // 20 minutes
+  }
+}
 
 class CacheKeyGeneratorFactory {
   constructor(environmentVars) {
@@ -112,6 +133,10 @@ class CacheKeyGeneratorFactory {
     Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key: ${key}` });
 
     // first check for special keys
+    if (key.startsWith('used-auth-codes')) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating UsedAuthCodesCacheKeyGenerator' });
+      return new UsedAuthCodesCacheKeyGenerator(this.environmentVars);
+    }
     if(key === 'metadata') {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MetaDataCacheKeyGenerator' });
       return new MetaDataCacheKeyGenerator(this.environmentVars);
@@ -162,10 +187,10 @@ class DataCache2 {
     let cacheKeyDeprecated = cacheKeyGenerator.generateCacheKeyDeprecated(key);
 
     await this.redis.connect();
-    let getPromises = [
-      this.redis.get(cacheKeyCurrent),
-      this.redis.get(cacheKeyDeprecated)
-    ];
+    let getPromises = [];
+    getPromises.push(this.redis.get(cacheKeyCurrent));
+    if(cacheKeyDeprecated) { this.redis.get(cacheKeyDeprecated)};
+
     let promiseResults = await Promise.all(getPromises);
     await this.redis.disconnect();
 
@@ -184,8 +209,7 @@ class DataCache2 {
     const LOCATION = 'DataCache2.set';
     const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
     let cacheKey = cacheKeyGenerator.generateCacheKey(key);
-
-    const cacheExpirationSeconds = this.environment.CACHE_CONTAINER_EXPIRATION_SECONDS;
+    const cacheExpirationSeconds = cacheKeyGenerator.getKeyLifetimeInSeconds();
 
     Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
     await this.redis.connect();
