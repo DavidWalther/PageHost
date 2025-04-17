@@ -21,6 +21,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/assets'));
 
+const stateCache = new Map(); // In-memory cache for state values
+
+function generateRandomState(length = 32) {
+  return crypto.randomBytes(length).toString('hex');
+}
+
 function handleWildcardRequest(req, res, LOCATION) {
   Logging.debugMessage({severity:'INFO', message: `Request received - ${req.url}`, location: LOCATION});
   res.sendFile(__dirname + '/public/index.html');
@@ -67,6 +73,22 @@ app.get('/api/1.0/env/variables', (req, res) => {
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Environment Variables Endpoint executed`, location: LOCATION });
   });
+});
+
+app.get('/api/1.0/oAuth2/state', (req, res) => {
+  const LOCATION = 'Server.get(\'/api/1.0/oAuth2/state\')';
+
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  const state = generateRandomState();
+  const expirationTime = 20 * 60 * 1000; // 20 minutes in milliseconds
+
+  stateCache.set(state, Date.now() + expirationTime);
+
+  setTimeout(() => stateCache.delete(state), expirationTime); // Automatically delete after expiration
+
+  res.json({ state });
+  Logging.debugMessage({ severity: 'INFO', message: `State generated and sent: ${state}`, location: LOCATION });
 });
 
 app.post('/api/1.0/oAuth2/codeexchange', async (req, res) => {

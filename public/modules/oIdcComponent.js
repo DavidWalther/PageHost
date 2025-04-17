@@ -163,13 +163,16 @@ class OIDCComponent extends HTMLElement {
   }
 
   async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
-    const state = crypto.randomUUID();
+    const stateResponse = await fetch('/api/1.0/oAuth2/state');
+    const { state } = await stateResponse.json();
+
     sessionStorage.setItem('oidc_state', state);
+
     const codeVerifier = this.generateRandomString();
     const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
-    sessionStorage.setItem('pkce_code_verifier', codeVerifier);
     // Save the code verifier in session storage
+    sessionStorage.setItem('pkce_code_verifier', codeVerifier);
 
     const parameters = {
       client_id,
