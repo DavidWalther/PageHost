@@ -170,7 +170,7 @@ class CacheKeyGeneratorFactory {
 }
 
 class DataCache2 {
-  constructor(environmentObject) {22
+  constructor(environmentObject) {
     if (!environmentObject) {
       throw new Error('Environment object is required');
     }
@@ -214,6 +214,17 @@ class DataCache2 {
     Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
     await this.redis.connect();
     await this.redis.setEx(cacheKey, cacheExpirationSeconds, JSON.stringify(value));
+    return await this.redis.disconnect();
+  }
+
+  async del(key) {
+    const LOCATION = 'DataCache2.del';
+    const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
+    let cacheKey = cacheKeyGenerator.generateCacheKey(key);
+
+    Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
+    await this.redis.connect();
+    await this.redis.del(key);
     return await this.redis.disconnect();
   }
 
