@@ -81,7 +81,6 @@ app.get('/api/1.0/oAuth2/state', async (req, res) => {
   Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
 
   const state = generateRandomState();
-  const expirationTime = 20 * 60 * 1000; // 20 minutes in milliseconds
 
   const PREFIX_FOR_SHORT_TERM_CACHE = 'short-term';
   let auth_state_cache_key = PREFIX_FOR_SHORT_TERM_CACHE + '-auth-state-' + state // generate a unique cache key for the auth_code
@@ -89,9 +88,7 @@ app.get('/api/1.0/oAuth2/state', async (req, res) => {
   let cache = new DataCache2(environment); // instantiate the cache-module
   cache.set(auth_state_cache_key, true); // just setting any value. this will later prove the state is legit
 
-  setTimeout(() => stateCache.delete(state), expirationTime); // Automatically delete after expiration
-
-  res.json({ state });
+  res.json( state );
   Logging.debugMessage({ severity: 'INFO', message: `State generated and sent: ${state}`, location: LOCATION });
 });
 
@@ -99,6 +96,37 @@ app.post('/api/1.0/oAuth2/codeexchange', async (req, res) => {
   const LOCATION = 'Server.post(\'/api/1.0/oAuth2/codeexchange\')';
   Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
 
+  const { state, auth_code } = await req.body;
+  if (!state) {
+    Logging.debugMessage({ severity: 'INFO', message: 'Missing state in request', location: LOCATION });
+    return res.status(400).json({ error: 'Missing state or auth_code' });
+  }
+  if (!auth_code) {
+    Logging.debugMessage({ severity: 'INFO', message: 'Missing auth_code in request', location: LOCATION });
+    return res.status(400).json({ error: 'Missing state or auth_code' });
+  }
+
+  Logging.debugMessage({ severity: 'INFO', message: `State and  Auth Code are provided`, location: LOCATION });
+
+  const PREFIX_FOR_SHORT_TERM_CACHE = 'short-term';
+
+  const auth_state_cache_key = PREFIX_FOR_SHORT_TERM_CACHE + '-auth-state-' + state;
+
+  const cache = new DataCache2(environment);
+
+  // Check if the state exists in the cache
+  const isStateValid = await cache.get(auth_state_cache_key);
+  if (!isStateValid) {
+    Logging.debugMessage({ severity: 'INFO', message: 'Invalid or expired state', location: LOCATION });
+    return res.status(400).json({ error: 'Invalid or expired state' });
+  }
+
+  Logging.debugMessage({ severity: 'INFO', message: `State is valid`, location: LOCATION });
+  // Remove the state from the cache
+  await cache.del(auth_state_cache_key);
+  Logging.debugMessage({ severity: 'INFO', message: 'State validated and removed from cache', location: LOCATION });
+
+  // Proceed with the main part of the code exchange
   const endpoint = new CodeExchangeEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Code Exchange Endpoint executed`, location: LOCATION });
