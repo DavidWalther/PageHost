@@ -11,7 +11,7 @@ const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/en
 const OpenIdConnectClient = require('./private/modules/oAuth2/OpenIdConnectClient.js');
 const crypto = require('crypto');
 const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/oAuth2/CodeExchangeEndpoint.js');
-
+const { DataCache2 } = require('./private/database2/DataCache/DataCache.js');
 const environment = new Environment().getEnvironment();
 
 const app = express();
@@ -75,7 +75,7 @@ app.get('/api/1.0/env/variables', (req, res) => {
   });
 });
 
-app.get('/api/1.0/oAuth2/state', (req, res) => {
+app.get('/api/1.0/oAuth2/state', async (req, res) => {
   const LOCATION = 'Server.get(\'/api/1.0/oAuth2/state\')';
 
   Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
@@ -83,7 +83,11 @@ app.get('/api/1.0/oAuth2/state', (req, res) => {
   const state = generateRandomState();
   const expirationTime = 20 * 60 * 1000; // 20 minutes in milliseconds
 
-  stateCache.set(state, Date.now() + expirationTime);
+  const PREFIX_FOR_SHORT_TERM_CACHE = 'short-term';
+  let auth_state_cache_key = PREFIX_FOR_SHORT_TERM_CACHE + '-auth-state-' + state // generate a unique cache key for the auth_code
+
+  let cache = new DataCache2(environment); // instantiate the cache-module
+  cache.set(auth_state_cache_key, true); // just setting any value. this will later prove the state is legit
 
   setTimeout(() => stateCache.delete(state), expirationTime); // Automatically delete after expiration
 
