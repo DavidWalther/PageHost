@@ -64,6 +64,10 @@ class OIDCComponent extends HTMLElement {
     return this.getAttribute('server-endpoint-auth-code-exchange');
   }
 
+  get serverEndpointAuthStateRequest() {
+    return this.getAttribute('server-endpoint-auth-state-request');
+  }
+
   get noSave() {
     return this.hasAttribute('no-save');
   }
@@ -163,9 +167,17 @@ class OIDCComponent extends HTMLElement {
   }
 
   async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
-    const stateResponse = await fetch('/api/1.0/oAuth2/state');
-    const { state } = await stateResponse.json();
+    let state;
+    if(this.serverEndpointAuthStateRequest ) {
+      // if an endpoint to generate the state is provided, use it
+      const stateResponse = await fetch(this.serverEndpointAuthStateRequest);
+      state  = await stateResponse.json();
+    } else {
+      // if no endpoint is provided, generate a random state locally
+      state = this.generateRandomString();
+    }
 
+    // Save the state in session storage
     sessionStorage.setItem('oidc_state', state);
 
     const codeVerifier = this.generateRandomString();
@@ -200,9 +212,7 @@ class OIDCComponent extends HTMLElement {
       return;
     }
 
-    // Remove 'state' key from exchangePayload
     sessionStorage.removeItem('oidc_state');
-    delete exchangePayload.state;
 
     // Check if the code_verifier is present in session storage
     exchangePayload.code_verifier = sessionStorage.getItem('pkce_code_verifier');
