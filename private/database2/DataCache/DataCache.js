@@ -105,12 +105,12 @@ class StoriesAllCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
-class UsedAuthCodesCacheKeyGenerator extends GlobalCacheKeyGenerator {
+class ShortTermCacheKeyGenerator extends GlobalCacheKeyGenerator {
   constructor(environmentVars) {
     super(environmentVars);
   }
-  generateCacheKey(code) {
-    return this.generateGlobalKeyPrefix() + '-used-auth-codes' + code;
+  generateCacheKey(key) {
+    return this.generateGlobalKeyPrefix() + '-' + key;
   }
 
   generateCacheKeyDeprecated() {
@@ -133,9 +133,9 @@ class CacheKeyGeneratorFactory {
     Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key: ${key}` });
 
     // first check for special keys
-    if (key.startsWith('used-auth-codes')) {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating UsedAuthCodesCacheKeyGenerator' });
-      return new UsedAuthCodesCacheKeyGenerator(this.environmentVars);
+    if (key.startsWith('short-term')) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ShortTermCacheKeyGenerator' });
+      return new ShortTermCacheKeyGenerator(this.environmentVars);
     }
     if(key === 'metadata') {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MetaDataCacheKeyGenerator' });

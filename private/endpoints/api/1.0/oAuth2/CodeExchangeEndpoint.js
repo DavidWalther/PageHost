@@ -38,7 +38,7 @@ class CodeExchangeEndpoint {
       this.responseObject.status(400).json({ error: 'Invalid code' });
       Logging.debugMessage({ severity: 'INFO', message: `Missing authentication code`, location: LOCATION });
       return;
-    }  
+    }
     if(!code_verifier) {
       this.responseObject.status(400).json({ error: 'Invalid code' });
       Logging.debugMessage({ severity: 'INFO', message: `Missing code verifier`, location: LOCATION });
@@ -48,13 +48,14 @@ class CodeExchangeEndpoint {
 
     // ====== Check if the auth_code is already used - Start ======
     /**
-     * Save the auth_code in the cache to prevent replay attacks. 
+     * Save the auth_code in the cache to prevent replay attacks.
      * The Cache stores 'used-auth-codes.*'-keys for 20 minutes.
      */
     let cache = new DataCache2(this.environment); // instantiate the cache-module
-    let auth_code_cache_key = 'used-auth-codes.' + auth_code; // generate a unique cache key for the auth_code
-    let usedAuthCodesCacheKeyGenerator = await cache.get(auth_code_cache_key); // try to get the auth_code from the cache
-    if ( usedAuthCodesCacheKeyGenerator ) {
+    const PREFIX_FOR_SHORT_TERM_CACHE = 'short-term';
+    let auth_code_cache_key = PREFIX_FOR_SHORT_TERM_CACHE + '-used-auth-code-' + auth_code; // generate a unique cache key for the auth_code
+    let ShortTermCacheKeyGenerator = await cache.get(auth_code_cache_key); // try to get the auth_code from the cache
+    if ( ShortTermCacheKeyGenerator ) {
       // If the auth_code was actually found in the cache, it means it was already used
       this.responseObject.status(401).json({ error: 'Authentication code already used' });
       Logging.debugMessage({ severity: 'INFO', message: `Authentication code already used`, location: LOCATION });
