@@ -105,12 +105,12 @@ class StoriesAllCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
-class UsedAuthCodesCacheKeyGenerator extends GlobalCacheKeyGenerator {
+class ShortTermCacheKeyGenerator extends GlobalCacheKeyGenerator {
   constructor(environmentVars) {
     super(environmentVars);
   }
-  generateCacheKey(code) {
-    return this.generateGlobalKeyPrefix() + '-used-auth-codes' + code;
+  generateCacheKey(key) {
+    return this.generateGlobalKeyPrefix() + '-' + key;
   }
 
   generateCacheKeyDeprecated() {
@@ -133,9 +133,9 @@ class CacheKeyGeneratorFactory {
     Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key: ${key}` });
 
     // first check for special keys
-    if (key.startsWith('used-auth-codes')) {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating UsedAuthCodesCacheKeyGenerator' });
-      return new UsedAuthCodesCacheKeyGenerator(this.environmentVars);
+    if (key.startsWith('short-term')) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ShortTermCacheKeyGenerator' });
+      return new ShortTermCacheKeyGenerator(this.environmentVars);
     }
     if(key === 'metadata') {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MetaDataCacheKeyGenerator' });
@@ -170,7 +170,7 @@ class CacheKeyGeneratorFactory {
 }
 
 class DataCache2 {
-  constructor(environmentObject) {22
+  constructor(environmentObject) {
     if (!environmentObject) {
       throw new Error('Environment object is required');
     }
@@ -214,6 +214,17 @@ class DataCache2 {
     Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
     await this.redis.connect();
     await this.redis.setEx(cacheKey, cacheExpirationSeconds, JSON.stringify(value));
+    return await this.redis.disconnect();
+  }
+
+  async del(key) {
+    const LOCATION = 'DataCache2.del';
+    const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
+    let cacheKey = cacheKeyGenerator.generateCacheKey(key);
+
+    Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
+    await this.redis.connect();
+    await this.redis.del(cacheKey);
     return await this.redis.disconnect();
   }
 

@@ -37,6 +37,7 @@ let mockDisconnect = jest.fn().mockImplementation(() => {
 });
 let mockGet = jest.fn().mockResolvedValue(JSON.stringify(MOCK_GET_VALUE));
 let mockSetEx = jest.fn().mockResolvedValue();
+let mockDel = jest.fn().mockResolvedValue();
 let mockIsReady = jest.fn().mockReturnValue(false);
 let mockIsOpen = jest.fn().mockReturnValue(false);
 
@@ -46,6 +47,7 @@ RedisConnector.mockImplementation(() => {
     disconnect: mockDisconnect,
     get: mockGet,
     setEx: mockSetEx,
+    del: mockDel,
     isReady: mockIsReady,
     isOpen: mockIsOpen
   };
@@ -58,6 +60,8 @@ describe('Basics', () => {
     mockConnect.mockClear();
     mockDisconnect.mockClear();
     mockGet.mockClear();
+    mockSetEx.mockClear();
+    mockDel.mockClear();
     valueIsReady = false;
   });
 
@@ -141,5 +145,36 @@ describe('Cache Keys', () => {
     await setPromise;
     expect(mockSetEx).toHaveBeenCalled();
     expect(mockSetEx).toHaveBeenCalledWith(expectedKey, MOCK_ENVIRONMENT.CACHE_CONTAINER_EXPIRATION_SECONDS, JSON.stringify(value));
+  });
+});
+
+describe('Cache Deletion', () => {
+  beforeEach(() => {
+    RedisConnector.mockClear();
+    mockConnect.mockClear();
+    mockDisconnect.mockClear();
+    mockGet.mockClear();
+    mockSetEx.mockClear();
+    mockDel.mockClear();
+    mockIsReady.mockClear();
+    mockIsOpen.mockClear();
+    valueIsReady = false;
+  });
+
+  it('should call RedisConnector.del with the correct key when "del" is called', async () => {
+    const dataCache = new DataCache2(MOCK_ENVIRONMENT);
+
+    const key = 'short-term-auth-state-testState';
+    const expectedKey = `${MOCK_ENVIRONMENT.CACHE_KEY_PREFIX}-${MOCK_ENVIRONMENT.APPLICATION_APPLICATION_KEY}-${MOCK_ENVIRONMENT.CACHE_DATA_INCREMENT}-${key}`;
+
+    // const mockDel = jest.fn().mockResolvedValue(true);
+    // dataCache.redis.del = mockDel;
+
+    await dataCache.del(key);
+
+    expect(mockDel).toHaveBeenCalled();
+    expect(mockDel).toHaveBeenCalledWith(expectedKey);
+    expect(mockConnect).toHaveBeenCalled();
+    expect(mockDisconnect).toHaveBeenCalled();
   });
 });

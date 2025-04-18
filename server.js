@@ -11,7 +11,8 @@ const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/en
 const OpenIdConnectClient = require('./private/modules/oAuth2/OpenIdConnectClient.js');
 const crypto = require('crypto');
 const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/oAuth2/CodeExchangeEndpoint.js');
-
+const { DataCache2 } = require('./private/database2/DataCache/DataCache.js');
+const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/oAuth2/requestAuthStateEndpoint.js');
 const environment = new Environment().getEnvironment();
 
 const app = express();
@@ -20,6 +21,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/assets'));
+
+const stateCache = new Map(); // In-memory cache for state values
+
+function generateRandomState(length = 32) {
+  return crypto.randomBytes(length).toString('hex');
+}
 
 function handleWildcardRequest(req, res, LOCATION) {
   Logging.debugMessage({severity:'INFO', message: `Request received - ${req.url}`, location: LOCATION});
@@ -66,6 +73,16 @@ app.get('/api/1.0/env/variables', (req, res) => {
   const endpoint = new EnvironmentVariablesEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Environment Variables Endpoint executed`, location: LOCATION });
+  });
+});
+
+app.get('/api/1.0/oAuth2/requestAuthState', async (req, res) => {
+  const LOCATION = 'Server.get(\'/api/1.0/oAuth2/requestAuthState\')';
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  const endpoint = new RequestAuthStateEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'FINER', message: `RequestAuthState Endpoint executed`, location: LOCATION });
   });
 });
 
