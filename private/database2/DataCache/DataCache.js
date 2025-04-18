@@ -224,7 +224,7 @@ class DataCache2 {
 
     Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
     await this.redis.connect();
-    await this.redis.del(key);
+    await this.redis.del(cacheKey);
     return await this.redis.disconnect();
   }
 
