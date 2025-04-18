@@ -40,7 +40,7 @@ class RequestAuthStateEndpoint {
     await cache.set(auth_state_cache_key, true);
 
     this.responseObject.json(state);
-    Logging.debugMessage({ severity: 'INFO', message: `State generated and sent: ${state}`, location: LOCATION });
+    Logging.debugMessage({ severity: 'INFO', message: `State generated and sent`, location: LOCATION });
   }
 }
 

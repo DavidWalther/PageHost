@@ -45,12 +45,7 @@ const mockIdToken = [
   encode64('test-signature')
 ].join('.');
 
-DataCache2.mockImplementation(() => {
-  return {
-    get: jest.fn().mockResolvedValue(false),
-    set: jest.fn().mockResolvedValue(true)
-  }
-});
+let mockCacheGet = jest.fn().mockResolvedValue(true);
 
 describe('CodeExchangeEndpoint', () => {
   let endpoint;
@@ -60,11 +55,19 @@ describe('CodeExchangeEndpoint', () => {
 
   beforeEach(() => {
     mockEnvironment = { HOST: 'http://localhost', GOOGLE_CLIENT_ID: 'test-client-id', GOOGLE_CLIENT_SECRET: 'test-client-secret', GOOGLE_ENDPOINT_WELLKNOWN: 'test-wellknown' };
-    mockRequestObject = { protocol: 'http', get: jest.fn().mockReturnValue('localhost'), body: { auth_code: 'test-auth-code', code_verifier: 'test-auth-verifier'} };
+    mockRequestObject = { protocol: 'http', get: jest.fn().mockReturnValue('localhost'), body: { auth_code: 'test-auth-code', state : 'test-state', code_verifier: 'test-code-verifier'} };
     mockResponseObject = { status: jest.fn().mockReturnThis(), json: jest.fn() };
 
     endpoint = new CodeExchangeEndpoint();
     endpoint.setEnvironment(mockEnvironment).setRequestObject(mockRequestObject).setResponseObject(mockResponseObject);
+
+    DataCache2.mockImplementation(() => {
+      return {
+        get: mockCacheGet,
+        set: jest.fn().mockResolvedValue(true),
+        del: jest.fn().mockResolvedValue(true)
+      }
+    });
 
     OpenIdConnectClient.mockImplementation(() => ({
       setRedirectUri: jest.fn().mockReturnThis(),
@@ -82,15 +85,27 @@ describe('CodeExchangeEndpoint', () => {
     jest.clearAllMocks();
   });
 
-  it('should return 400 if auth_code is missing', async () => {
-    mockRequestObject.body = {};
+  it('should return 400 if auth_state is missing', async () => {
+    delete mockRequestObject.body.state;
     await endpoint.execute();
 
     expect(mockResponseObject.status).toHaveBeenCalledWith(400);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Invalid code' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Missing auth_state' });
   });
 
-  it('should return 401 if token exchange fails', async () => {
+  it('should return 400 if auth_code is missing', async () => {
+    delete mockRequestObject.body.auth_code;
+    await endpoint.execute();
+
+    expect(mockResponseObject.status).toHaveBeenCalledWith(400);
+    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Missing auth_code' });
+  });
+
+  it('should return 401 if authentication is denied by provider', async () => {
+    mockCacheGet = jest.fn()
+      .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
+      .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
+
     OpenIdConnectClient.mockImplementation(() => ({
       setRedirectUri: jest.fn().mockReturnThis(),
       setClientId: jest.fn().mockReturnThis(),
@@ -102,11 +117,18 @@ describe('CodeExchangeEndpoint', () => {
 
     await endpoint.execute();
 
+    expect(mockCacheGet).toHaveBeenNthCalledWith(1, 'short-term-auth-state-test-state');
+    expect(mockCacheGet).toHaveBeenNthCalledWith(2, 'short-term-used-auth-code-test-auth-code');
+    expect(mockCacheGet).toHaveBeenCalledTimes(2);
     expect(mockResponseObject.status).toHaveBeenCalledWith(400);
     expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Bad Request' });
   });
 
   it('should return a valid response on successful token exchange', async () => {
+    mockCacheGet = jest.fn()
+      .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
+      .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
+
     await endpoint.execute();
 
     expect(mockResponseObject.json).toHaveBeenCalledWith(expect.objectContaining({
