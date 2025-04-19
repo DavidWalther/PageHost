@@ -1,17 +1,29 @@
 const CodeExchangeEndpoint = require('../CodeExchangeEndpoint');
 const { Logging } = require('../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
-const crypto = require('crypto');
 const { json } = require('stream/consumers');
 const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const {Environment}= require('../../../../../modules/environment.js');
 
+
+jest.mock('../../../../../modules/environment.js');
 jest.mock('../../../../../modules/logging');
 jest.mock('../../../../../modules/oAuth2/OpenIdConnectClient');
-jest.mock('crypto');
 jest.mock('../../../../../database2/DataCache/DataCache.js');
 
+Environment.mockImplementation(() => {
+  return {
+    GOOGLE_CLIENT_ID: 'test-client-id',
+    GOOGLE_CLIENT_SECRET: 'test-client-secret',
+    GOOGLE_ENDPOINT_WELLKNOWN: 'https://accounts.google.com/.well-known/openid-configuration',
+    HOST: 'http://localhost',
+    AUTH_REGISTERED_USER_EMAL: 'legit.user@test.com',
+    AUTH_SERVER_SECRET: 'secret'
+  };
+});
+
 const mockJwtHeader = { "test": "abc"};
-const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890  };
+const mockJwtPayload = { "email": "legit.user@test.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890, "iss": "https://accounts.google.com", "sub": "test-subject" };
 const mockJwtSignature = '';
 
 function createMockJwt(header, payload, signature) {
@@ -77,8 +89,6 @@ describe('CodeExchangeEndpoint', () => {
       exchangeAuthorizationCode: jest.fn().mockResolvedValue({ id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature) }),
       setCodeVerifier: jest.fn().mockReturnThis(),
     }));
-
-    crypto.randomBytes.mockReturnValue({ toString: jest.fn().mockReturnValue('random-token') });
   });
 
   afterEach(() => {
@@ -129,14 +139,17 @@ describe('CodeExchangeEndpoint', () => {
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
 
-    await endpoint.execute();
+    let environment = new Environment();
+    await endpoint.setEnvironment(environment).execute();
 
     expect(mockResponseObject.json).toHaveBeenCalledWith(expect.objectContaining({
-      server_token: 'random-token',
-      providerResponse: expect.objectContaining({
-        providedInfo: expect.any(Object),
-        tokenPayload: expect.any(Object)
-      })
+      authenticationResult: {
+        access: {
+          access_token: expect.any(String),
+          scopes: expect.any(Array)
+        },
+        user: expect.any(Object)
+      }
     }));
   });
 });
