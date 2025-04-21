@@ -2,6 +2,7 @@ const { Logging } = require('../../../../modules/logging');
 const OpenIdConnectClient = require('../../../../modules/oAuth2/OpenIdConnectClient');
 const { DataCache2 } = require('../../../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
+const AccessTokenService = require('../../../../modules/oAuth2/AccessTokenService.js');
 
 const GOOGLE_ENDPOINT_WELLKNOWN = 'https://accounts.google.com/.well-known/openid-configuration';
 
@@ -94,18 +95,50 @@ class CodeExchangeEndpoint {
 
     await oidcClient.exchangeAuthorizationCode(auth_code)
     .then(tokenResponse => {
-      const [tokenHeader, tokenPayload] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
-      const randomToken = crypto.randomBytes(128).toString('hex');
+      const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
+      let tokenPayload = JSON.parse(tokenPayloadStr);
+      /** 
+       * The user checks and create on of the bearer token will eventually be moved to a separate module.
+       */
 
-      const response = {
-        server_token: randomToken,
-        providerResponse: {
-          providedInfo: tokenResponse,
-          tokenPayload: JSON.parse(tokenPayload)
-        }
-      };
+      let accessTokenService = new AccessTokenService();
+      accessTokenService.setEnvironment(this.environment);
 
-      this.responseObject.json(response);
+      if(!accessTokenService.isUserValid(tokenPayload)) {
+        this.responseObject.status(401).json({ error: 'No new users allowed' });
+        Logging.debugMessage({ severity: 'INFO', message: `No new users allowed`, location: LOCATION });
+        return;
+      }
+
+      // extract the relevant information from the token response
+      // relevant: first_name, last_name, picture, display_name, email
+      
+      let scopes = accessTokenService.getUserScopes(tokenPayload);
+      accessTokenService.createBearer(tokenPayload)
+      .then( bearerToken => {
+
+          Logging.debugMessage({ severity: 'INFO', message: `Bearer token created for scope ${scopes}`, location: LOCATION });
+          let user = {
+            provider: 'google',
+            first_name: tokenPayload.given_name,
+            last_name: tokenPayload.family_name,
+            picture: tokenPayload.picture,
+            display_name: tokenPayload.name,
+            email: tokenPayload.email
+          };
+          const auth_response = {
+            authenticationResult: {
+              user,
+              access: {
+                access_token: bearerToken,
+                scopes
+              }
+            }
+          };
+          
+          // send the response to the client
+          this.responseObject.json(auth_response);
+        });
     })
     .catch(error => {
       Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });

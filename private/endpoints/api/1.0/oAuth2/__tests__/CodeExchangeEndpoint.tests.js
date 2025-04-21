@@ -1,17 +1,19 @@
 const CodeExchangeEndpoint = require('../CodeExchangeEndpoint');
 const { Logging } = require('../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
-const crypto = require('crypto');
 const { json } = require('stream/consumers');
 const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const {Environment}= require('../../../../../modules/environment.js');
+const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
 
+jest.mock('../../../../../modules/oAuth2/AccessTokenService');
+jest.mock('../../../../../modules/environment.js');
 jest.mock('../../../../../modules/logging');
 jest.mock('../../../../../modules/oAuth2/OpenIdConnectClient');
-jest.mock('crypto');
 jest.mock('../../../../../database2/DataCache/DataCache.js');
 
 const mockJwtHeader = { "test": "abc"};
-const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890  };
+const mockJwtPayload = { "email": "legit.user@test.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890, "iss": "https://accounts.google.com", "sub": "test-subject" };
 const mockJwtSignature = '';
 
 function createMockJwt(header, payload, signature) {
@@ -37,6 +39,27 @@ function createMockJwt(header, payload, signature) {
 
   return jwtParts.join('.');
 }
+
+AccessTokenService.mockImplementation(() => {
+  return {
+    isUserValid: jest.fn().mockReturnValue(true),
+    setEnvironment: jest.fn().mockReturnThis(),
+    getUserScopes: jest.fn().mockReturnValue(['edit']),
+    createBearer: jest.fn().mockResolvedValue('test-bearer-token'),
+    getBearerCacheKey: jest.fn().mockReturnValue('test-bearer-cache-key')
+  };
+});
+
+Environment.mockImplementation(() => {
+  return {
+    GOOGLE_CLIENT_ID: 'test-client-id',
+    GOOGLE_CLIENT_SECRET: 'test-client-secret',
+    GOOGLE_ENDPOINT_WELLKNOWN: 'https://accounts.google.com/.well-known/openid-configuration',
+    HOST: 'http://localhost',
+    AUTH_REGISTERED_USER_EMAL: 'legit.user@test.com',
+    AUTH_SERVER_SECRET: 'secret'
+  };
+});
 
 const encode64 = (str) => Buffer.from(str).toString('base64');
 const mockIdToken = [
@@ -68,7 +91,9 @@ describe('CodeExchangeEndpoint', () => {
         del: jest.fn().mockResolvedValue(true)
       }
     });
+  });
 
+  beforeEach(() => {
     OpenIdConnectClient.mockImplementation(() => ({
       setRedirectUri: jest.fn().mockReturnThis(),
       setClientId: jest.fn().mockReturnThis(),
@@ -78,10 +103,6 @@ describe('CodeExchangeEndpoint', () => {
       setCodeVerifier: jest.fn().mockReturnThis(),
     }));
 
-    crypto.randomBytes.mockReturnValue({ toString: jest.fn().mockReturnValue('random-token') });
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
   });
 
@@ -129,14 +150,17 @@ describe('CodeExchangeEndpoint', () => {
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
 
-    await endpoint.execute();
+    let environment = new Environment();
+    await endpoint.setEnvironment(environment).execute();
 
-    expect(mockResponseObject.json).toHaveBeenCalledWith(expect.objectContaining({
-      server_token: 'random-token',
-      providerResponse: expect.objectContaining({
-        providedInfo: expect.any(Object),
-        tokenPayload: expect.any(Object)
-      })
-    }));
+    expect(mockResponseObject.json).toHaveBeenCalledWith({
+      authenticationResult: {
+        access: {
+          access_token: expect.any(String),
+          scopes: expect.any(Array)
+        },
+        user: expect.any(Object)
+      }
+    });
   });
 });

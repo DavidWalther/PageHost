@@ -122,6 +122,23 @@ class ShortTermCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
+class MidTermCacheKeyGenerator extends GlobalCacheKeyGenerator {
+  constructor(environmentVars) {
+    super(environmentVars);
+  }
+  generateCacheKey(key) {
+    return this.generateGlobalKeyPrefix() + '-' + key;
+  }
+
+  generateCacheKeyDeprecated() {
+    return null;
+  }
+
+  getKeyLifetimeInSeconds() {
+    return 60 * 60 * 2; // 2 hours
+  }
+}
+
 class CacheKeyGeneratorFactory {
   constructor(environmentVars) {
     this.environmentVars = environmentVars;
@@ -136,6 +153,10 @@ class CacheKeyGeneratorFactory {
     if (key.startsWith('short-term')) {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ShortTermCacheKeyGenerator' });
       return new ShortTermCacheKeyGenerator(this.environmentVars);
+    }
+    if (key.startsWith('mid-term')) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MidTermCacheKeyGenerator' });
+      return new MidTermCacheKeyGenerator(this.environmentVars);
     }
     if(key === 'metadata') {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MetaDataCacheKeyGenerator' });
