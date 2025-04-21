@@ -53,10 +53,10 @@ const HTML_TEMPLATE = `
 <div >
   <div class="button-container">
     <div class="button-container-item" name="botton" role="button" tabindex="0" >
-      <slot name="auth-button"></slot>
+      <slot name="auth-button-login"></slot>
     </div>
-    <div class="button-container-item">
-      <button >Logout</button>
+    <div name="button-logout" class="button-container-item">
+      <slot name="auth-button-logout"></slot>
     </div>
   </div>
 </div>
@@ -111,7 +111,7 @@ class OIDCComponent extends HTMLElement {
     button.addEventListener('keydown', (event) => this.handleKeyDown(event).bind(this));
 
     // check if the proided slot is empty
-    const slot = this.shadowRoot.querySelector('slot[name="auth-button"]');
+    const slot = this.shadowRoot.querySelector('slot[name="auth-button-login"]');
     if (!slot.assignedNodes().length) {
       // if the slot is empty, use the default button template
       const template = this.shadowRoot.getElementById('tpl-default-button');
@@ -131,6 +131,7 @@ class OIDCComponent extends HTMLElement {
     if (authParams.auth_code !== null && authParams.state !== null) {
       this.exchangeAuthCode(authParams, serverEndpoint);
     }
+    this.createButton_Logout();
   }
 
   // ----------- event handlers ----------------
@@ -140,6 +141,12 @@ class OIDCComponent extends HTMLElement {
     event.preventDefault();
     event.stopPropagation();
     this.actionStartAuthentication();
+  }
+
+  handleClickLogout(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Logout clicked');
   }
 
   handleKeyDown(event) {
@@ -152,6 +159,32 @@ class OIDCComponent extends HTMLElement {
 
   // ----------- actions ----------------
 
+  createButton_Logout() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
+    let slot= buttonContainer.querySelector('slot');
+
+    // === identify wheather the slot is empty or not ===
+    let button_logout;
+    if (!slot.assignedNodes().length) {
+      // there is nothing defined in the slot.
+      // a default button must be created
+      button_logout = document.createElement('button')
+      button_logout.innerText = 'Logout';
+
+      buttonContainer.innerHTML = '';
+      buttonContainer.appendChild(button_logout);
+    }
+    else {
+      // there is something defined in the slot.
+      // the slot must be used
+      button_logout = slot.assignedNodes()[0];
+    }
+
+    // === add event listeners to the button ===
+    button_logout.addEventListener('click', (event) => this.handleClickLogout(event));
+  }
+
+  // Action to start the authentication flow
   actionStartAuthentication() {
     this.dispatchEvent(
       new CustomEvent('click', {
