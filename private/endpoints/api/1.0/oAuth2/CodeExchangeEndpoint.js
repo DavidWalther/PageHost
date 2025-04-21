@@ -2,6 +2,7 @@ const { Logging } = require('../../../../modules/logging');
 const OpenIdConnectClient = require('../../../../modules/oAuth2/OpenIdConnectClient');
 const { DataCache2 } = require('../../../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
+const AccessTokenService = require('../../../../modules/oAuth2/AccessTokenService.js');
 
 const GOOGLE_ENDPOINT_WELLKNOWN = 'https://accounts.google.com/.well-known/openid-configuration';
 
@@ -100,52 +101,44 @@ class CodeExchangeEndpoint {
        * The user checks and create on of the bearer token will eventually be moved to a separate module.
        */
 
-      // extracint the relevant information from the token response
-      // relevant: first_name, last_name, picture, display_name, email
-      let user = {
-        provider: 'google',
-        first_name: tokenPayload.given_name,
-        last_name: tokenPayload.family_name,
-        picture: tokenPayload.picture,
-        display_name: tokenPayload.name,
-        email: tokenPayload.email
-      };
+      let accessTokenService = new AccessTokenService();
+      accessTokenService.setEnvironment(this.environment);
 
-      // temporarily there is only one user who's email is saved in an environment variable
-      if (user.email !== this.environment.AUTH_REGISTERED_USER_EMAL) {
-        this.responseObject.status(401).json({ error: 'Unauthorized' });
-        Logging.debugMessage({ severity: 'INFO', message: `User not authorized`, location: LOCATION });
+      if(!accessTokenService.isUserValid(tokenPayload)) {
+        this.responseObject.status(401).json({ error: 'No new users allowed' });
+        Logging.debugMessage({ severity: 'INFO', message: `No new users allowed`, location: LOCATION });
         return;
       }
-      let scopes = ['edit']; // will later be read from database
-      const serverSecret = this.environment.AUTH_SERVER_SECRET;
 
-      const bearerToken = this.createBearerForUser(serverSecret, tokenPayload, scopes);
-
-
-      //keep in cache, mapped by bearerToken:
-      // {id_token, scopes}
+      // extract the relevant information from the token response
+      // relevant: first_name, last_name, picture, display_name, email
       
-      const bearerTokenCacheKey = `mid-term-bearer-token-${bearerToken}`;
-      const bearerTokenCacheValue = {
-        id_token: tokenResponse.id_token,
-        scopes: scopes
-      };
-      cache.set(bearerTokenCacheKey, bearerTokenCacheValue)
+      let scopes = accessTokenService.getUserScopes(tokenPayload);
+      accessTokenService.createBearer(tokenPayload)
+      .then( bearerToken => {
 
-
-      const auth_response = {
-        authenticationResult: {
-          user,
-          access: {
-            access_token: bearerToken,
-            scopes
-          }
-        }
-      };
-      // send the response to the client
-
-      this.responseObject.json(auth_response);
+          Logging.debugMessage({ severity: 'INFO', message: `Bearer token created for scope ${scopes}`, location: LOCATION });
+          let user = {
+            provider: 'google',
+            first_name: tokenPayload.given_name,
+            last_name: tokenPayload.family_name,
+            picture: tokenPayload.picture,
+            display_name: tokenPayload.name,
+            email: tokenPayload.email
+          };
+          const auth_response = {
+            authenticationResult: {
+              user,
+              access: {
+                access_token: bearerToken,
+                scopes
+              }
+            }
+          };
+          
+          // send the response to the client
+          this.responseObject.json(auth_response);
+        });
     })
     .catch(error => {
       Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
@@ -153,20 +146,6 @@ class CodeExchangeEndpoint {
     });
     Logging.debugMessage({ severity: 'INFO', message: `Code exchange completed`, location: LOCATION });
     return this.responseObject;
-  }
-
-  createBearerForUser(serverSecret, id_token, scopes) {
-    // create and return a hash value over input
-    const hash = crypto.createHash('sha256');
-    hash.update(serverSecret);
-    hash.update(id_token.iss); // issuer
-    hash.update(id_token.email); // email
-    hash.update(id_token.aud); // audience
-    hash.update(scopes.join(','));
-    const hashValue = hash.digest('hex');
-
-    return hashValue;
-  
   }
 }
 
