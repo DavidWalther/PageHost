@@ -48,11 +48,19 @@ const HTML_TEMPLATE = `
     align-items: center;
   }
 
+  button {
+    border: 0px;
+    background: lightgray;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 3px 0;
+    cursor: pointer;
+  }
 
 </style>
 <div >
   <div class="button-container">
-    <div class="button-container-item" name="botton" role="button" tabindex="0" >
+    <div name="botton-login" class="button-container-item" role="button" tabindex="0" >
       <slot name="auth-button-login"></slot>
     </div>
     <div name="button-logout" class="button-container-item">
@@ -106,7 +114,7 @@ class OIDCComponent extends HTMLElement {
     this.shadowRoot.innerHTML = HTML_TEMPLATE;
 
     // add event listeners to authenticate button
-    const button = this.shadowRoot.querySelector('div[name="botton"]');
+    const button = this.shadowRoot.querySelector('div[name="botton-login"]');
     button.addEventListener('click', (event) => this.handleClickAuthenticate(event).bind(this));
     button.addEventListener('keydown', (event) => this.handleKeyDown(event).bind(this));
 
@@ -123,6 +131,8 @@ class OIDCComponent extends HTMLElement {
       button.appendChild(clone);
     }
 
+    this.createButton_Logout();
+
     // Check for authorization code in URL
     let authParams = {
       auth_code: new URLSearchParams(window.location.search).get('code'),
@@ -131,7 +141,6 @@ class OIDCComponent extends HTMLElement {
     if (authParams.auth_code !== null && authParams.state !== null) {
       this.exchangeAuthCode(authParams, serverEndpoint);
     }
-    this.createButton_Logout();
   }
 
   // ----------- event handlers ----------------
@@ -161,7 +170,7 @@ class OIDCComponent extends HTMLElement {
 
   createButton_Logout() {
     const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
-    let slot= buttonContainer.querySelector('slot');
+    let slot = buttonContainer.querySelector('slot');
 
     // === identify wheather the slot is empty or not ===
     let button_logout;
@@ -170,7 +179,7 @@ class OIDCComponent extends HTMLElement {
       // a default button must be created
       button_logout = document.createElement('button')
       button_logout.innerText = 'Logout';
-
+      button_logout.tabIndex = 1;
       buttonContainer.innerHTML = '';
       buttonContainer.appendChild(button_logout);
     }
