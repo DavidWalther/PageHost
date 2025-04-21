@@ -57,6 +57,10 @@ const HTML_TEMPLATE = `
     cursor: pointer;
   }
 
+  .hidden {
+    display: none;
+  }
+
 </style>
 <div >
   <div class="button-container">
@@ -105,6 +109,14 @@ class OIDCComponent extends HTMLElement {
     return this.getAttribute('session-storage-key') || 'code_exchange_response';
   }
 
+  get isSessionStored() {
+    let storedValue = sessionStorage.getItem(this.sessionStorageKey);
+    if (!storedValue) {
+      return false;
+    }
+    return true;
+  }
+
   // ----------- lifecycle hooks ----------------
 
   connectedCallback() {
@@ -139,6 +151,12 @@ class OIDCComponent extends HTMLElement {
     event.preventDefault();
     event.stopPropagation();
     console.log('Logout clicked');
+    this.hideLogoutButton();
+    this.showLoginButton();
+    this.dispatchEvent(new CustomEvent('logout', { detail: {} }));
+
+    // Clear session storage
+    sessionStorage.removeItem(this.sessionStorageKey);
   }
 
   handleKeyDown(event) {
@@ -198,6 +216,27 @@ class OIDCComponent extends HTMLElement {
     // === add event listeners to the button ===
     button_login.addEventListener('click', (event) => this.handleClickAuthenticate(event));
     button_login.addEventListener('keydown', (event) => this.handleKeyDown(event));
+  }
+
+  showLoginButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
+    const buttonLogin = buttonContainer.querySelector('button');
+    buttonLogin.classList.remove('hidden');
+  }
+  hideLoginButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
+    const buttonLogin = buttonContainer.querySelector('button');
+    buttonLogin.classList.add('hidden');
+  }
+  showLogoutButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
+    const buttonLogout = buttonContainer.querySelector('button');
+    buttonLogout.classList.remove('hidden');
+  }
+  hideLogoutButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
+    const buttonLogout = buttonContainer.querySelector('button');
+    buttonLogout.classList.add('hidden');
   }
 
   // Action to start the authentication flow
@@ -304,10 +343,13 @@ class OIDCComponent extends HTMLElement {
         return;
       }
 
+      // Hide the login button and show the logout button
+      this.hideLoginButton();
+      this.showLogoutButton();
+
       // Dispatch event with the response
       const exchange_response = await response.json();
       this.dispatchEvent(new CustomEvent('authenticated', { detail: exchange_response }));
-
       // Save the response in session storage
       if(this.noSave) { return; }
 
