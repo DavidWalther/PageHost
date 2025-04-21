@@ -113,24 +113,7 @@ class OIDCComponent extends HTMLElement {
 
     this.shadowRoot.innerHTML = HTML_TEMPLATE;
 
-    // add event listeners to authenticate button
-    const button = this.shadowRoot.querySelector('div[name="botton-login"]');
-    button.addEventListener('click', (event) => this.handleClickAuthenticate(event).bind(this));
-    button.addEventListener('keydown', (event) => this.handleKeyDown(event).bind(this));
-
-    // check if the proided slot is empty
-    const slot = this.shadowRoot.querySelector('slot[name="auth-button-login"]');
-    if (!slot.assignedNodes().length) {
-      // if the slot is empty, use the default button template
-      const template = this.shadowRoot.getElementById('tpl-default-button');
-      const clone = document.importNode(template.content, true);
-      if (this.buttonLabel) {
-        clone.querySelector('div').innerText = this.buttonLabel;
-      }
-      button.innerHTML = '';
-      button.appendChild(clone);
-    }
-
+    this.createButton_Login();
     this.createButton_Logout();
 
     // Check for authorization code in URL
@@ -191,6 +174,30 @@ class OIDCComponent extends HTMLElement {
 
     // === add event listeners to the button ===
     button_logout.addEventListener('click', (event) => this.handleClickLogout(event));
+  }
+
+  createButton_Login() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
+    let slot = buttonContainer.querySelector('slot');
+    // === identify wheather the slot is empty or not ===
+    let button_login;
+    if (!slot.assignedNodes().length) {
+      // there is nothing defined in the slot.
+      // a default button must be created
+      button_login = document.createElement('button')
+      button_login.innerText = this.buttonLabel;
+      button_login.tabIndex = 1;
+      buttonContainer.innerHTML = '';
+      buttonContainer.appendChild(button_login);
+    }
+    else {
+      // there is something defined in the slot.
+      // the slot must be used
+      button_login = slot.assignedNodes()[0];
+    }
+    // === add event listeners to the button ===
+    button_login.addEventListener('click', (event) => this.handleClickAuthenticate(event));
+    button_login.addEventListener('keydown', (event) => this.handleKeyDown(event));
   }
 
   // Action to start the authentication flow
