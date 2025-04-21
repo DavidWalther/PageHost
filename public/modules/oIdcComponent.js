@@ -1,5 +1,15 @@
 const HTML_TEMPLATE = `
 <style>
+  div.button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  div.button-container-item {
+    text-align: center;
+    padding: 5px;
+  }
+
   div[name="botton"] {
     background-color: transparent;
     cursor: pointer;
@@ -40,8 +50,15 @@ const HTML_TEMPLATE = `
 
 
 </style>
-<div name="botton" role="button" tabindex="0" >
-  <slot name="auth-button"></slot>
+<div >
+  <div class="button-container">
+    <div class="button-container-item" name="botton" role="button" tabindex="0" >
+      <slot name="auth-button"></slot>
+    </div>
+    <div class="button-container-item">
+      <button >Logout</button>
+    </div>
+  </div>
 </div>
 <template id="tpl-default-button">
   <div class="center button-colors button-border default-button"></div>
