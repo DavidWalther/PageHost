@@ -136,6 +136,16 @@ class OIDCComponent extends HTMLElement {
     if (authParams.auth_code !== null && authParams.state !== null) {
       this.exchangeAuthCode(authParams, serverEndpoint);
     }
+
+    if(this.isSessionStored) {
+      // if the session storage is not empty, show the logout button
+      this.hideLoginButton();
+      this.showLogoutButton();
+    } else {
+      // if the session storage is empty, show the login button
+      this.showLoginButton();
+      this.hideLogoutButton();
+    }
   }
 
   // ----------- event handlers ----------------
