@@ -105,6 +105,31 @@ class AccessTokenService {
 
     return isBearedRCreatedForRequestedScopes;
   }
+
+  async deleteBearer(bearer) {
+    // Guard clauses
+    if (!bearer) {
+      return false;
+    }
+
+    const cache = new DataCache2(this.environment);
+    const cacheKey = this.getBearerCacheKey(bearer);
+
+    await cache.del(cacheKey);
+  }
+
+  async isBearerValid(bearer) {
+    // Guard clauses
+    if (!bearer) {
+      return false;
+    }
+
+    const cache = new DataCache2(this.environment);
+    const cacheKey = this.getBearerCacheKey(bearer);
+    const cacheValue = await cache.get(cacheKey);
+
+    return !!cacheValue;
+  }
 }
 
 module.exports = AccessTokenService;

@@ -1,8 +1,8 @@
-const { Logging } = require('../../../../modules/logging');
-const OpenIdConnectClient = require('../../../../modules/oAuth2/OpenIdConnectClient');
-const { DataCache2 } = require('../../../../database2/DataCache/DataCache.js');
+const { Logging } = require('../../../../../modules/logging.js');
+const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
+const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
-const AccessTokenService = require('../../../../modules/oAuth2/AccessTokenService.js');
+const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
 
 const GOOGLE_ENDPOINT_WELLKNOWN = 'https://accounts.google.com/.well-known/openid-configuration';
 

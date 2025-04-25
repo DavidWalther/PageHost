@@ -1,5 +1,5 @@
-const { Logging } = require('../../../../modules/logging');
-const { DataCache2 } = require('../../../../database2/DataCache/DataCache.js');
+const { Logging } = require('../../../../../modules/logging');
+const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
 
 class RequestAuthStateEndpoint {

@@ -160,13 +160,9 @@ class OIDCComponent extends HTMLElement {
   handleClickLogout(event) {
     event.preventDefault();
     event.stopPropagation();
-    console.log('Logout clicked');
-    this.hideLogoutButton();
-    this.showLoginButton();
-    this.dispatchEvent(new CustomEvent('logout', { detail: {} }));
-
-    // Clear session storage
-    sessionStorage.removeItem(this.sessionStorageKey);
+    this.dispatchEvent(new CustomEvent('logout', { detail: {
+      callback: this.logoutCallback.bind(this)
+    } }));
   }
 
   handleKeyDown(event) {
@@ -178,6 +174,12 @@ class OIDCComponent extends HTMLElement {
   }
 
   // ----------- actions ----------------
+
+  logoutCallback() {
+    sessionStorage.removeItem(this.sessionStorageKey)
+    this.hideLogoutButton();
+    this.showLoginButton();
+  }
 
   createButton_Logout() {
     const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
@@ -276,9 +278,9 @@ class OIDCComponent extends HTMLElement {
     const data = encoder.encode(verifier);
     const digest = await crypto.subtle.digest('SHA-256', data);
     return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
   }
 
   async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
@@ -341,7 +343,7 @@ class OIDCComponent extends HTMLElement {
         },
         body: JSON.stringify(exchangePayload)
       });
-
+      
       // if status_code is 401 dispatch rejected event
       if (response.status === 401) {
         this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Unauthorized' } }));
@@ -352,7 +354,7 @@ class OIDCComponent extends HTMLElement {
         this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Bad Request' } }));
         return;
       }
-
+      
       // Hide the login button and show the logout button
       this.hideLoginButton();
       this.showLogoutButton();
@@ -372,7 +374,7 @@ class OIDCComponent extends HTMLElement {
       };
       let event = new CustomEvent('stored', {detail:eventPayload});
       this.dispatchEvent(event);
-
+      
     } catch (error) {
       console.error('Error exchanging authorization code:', error);
     }
