@@ -1,16 +1,16 @@
 const CodeExchangeEndpoint = require('../CodeExchangeEndpoint');
-const { Logging } = require('../../../../../modules/logging.js');
-const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
+const { Logging } = require('../../../../../../modules/logging.js');
+const OpenIdConnectClient = require('../../../../../../modules/oAuth2/OpenIdConnectClient.js');
 const { json } = require('stream/consumers');
-const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
-const {Environment}= require('../../../../../modules/environment.js');
-const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
+const { DataCache2 } = require('../../../../../../database2/DataCache/DataCache.js');
+const {Environment}= require('../../../../../../modules/environment.js');
+const AccessTokenService = require('../../../../../../modules/oAuth2/AccessTokenService.js');
 
-jest.mock('../../../../../modules/oAuth2/AccessTokenService');
-jest.mock('../../../../../modules/environment.js');
-jest.mock('../../../../../modules/logging');
-jest.mock('../../../../../modules/oAuth2/OpenIdConnectClient');
-jest.mock('../../../../../database2/DataCache/DataCache.js');
+jest.mock('../../../../../../modules/oAuth2/AccessTokenService');
+jest.mock('../../../../../../modules/environment.js');
+jest.mock('../../../../../../modules/logging');
+jest.mock('../../../../../../modules/oAuth2/OpenIdConnectClient');
+jest.mock('../../../../../../database2/DataCache/DataCache.js');
 
 const mockJwtHeader = { "test": "abc"};
 const mockJwtPayload = { "email": "legit.user@test.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890, "iss": "https://accounts.google.com", "sub": "test-subject" };

@@ -1,13 +1,13 @@
-const { Logging } = require('../../../../../modules/logging.js');
+const { Logging } = require('../../../../../../modules/logging.js');
 const RequestAuthStateEndpoint = require('../requestAuthStateEndpoint');
-const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const { DataCache2 } = require('../../../../../../database2/DataCache/DataCache.js');
 
 let mockSetKey = jest.fn().mockResolvedValue(true);
 let mockGetKey = jest.fn().mockResolvedValue(false);
 let mockDeleteKey = jest.fn().mockResolvedValue(true);
 
-jest.mock('../../../../../modules/logging');
-jest.mock('../../../../../database2/DataCache/DataCache.js', () => {
+jest.mock('../../../../../../modules/logging');
+jest.mock('../../../../../../database2/DataCache/DataCache.js', () => {
   return {
     DataCache2: jest.fn().mockImplementation(() => {
       return {

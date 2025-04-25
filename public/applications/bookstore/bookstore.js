@@ -67,46 +67,65 @@ class Bookstore extends HTMLElement {
     this.addEventListener('navigation', this.handleNavigationEvent);
     this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
     this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event)); 
+  
+    this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
   }
 
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
-// =========== Authentication =================
+  // =========== Authentication =================
 
-async getGoogleAuthConfig() {
-  return new Promise((resolve) => {
-    fetch('/api/1.0/env/variables')
-    .then(response => response.json())
-    .then(variables => {
-      resolve(variables.auth.google);
+  async getGoogleAuthConfig() {
+    return new Promise((resolve) => {
+      fetch('/api/1.0/env/variables')
+      .then(response => response.json())
+      .then(variables => {
+        resolve(variables.auth.google);
+      });
     });
-  });
-}
+  }
 
-async handleOIDCAuthenticated(event) {
-  /**
-   * Do something with the authentication result
-   * For example, you can store the token in local storage or session storage
-   */
-  window.history.replaceState({}, '', window.location.pathname);
-}
+  async handleOIDCAuthenticated(event) {
+    /**
+     * Do something with the authentication result
+     * For example, you can store the token in local storage or session storage
+     */
+    window.history.replaceState({}, '', window.location.pathname);
+  }
 
-async handleOIDCClick(event) {
-  const callback = event.detail.callback;
-  const googleAuthConfig = await this.getGoogleAuthConfig();
+  async handleOIDCClick(event) {
+    const callback = event.detail.callback;
+    const googleAuthConfig = await this.getGoogleAuthConfig();
 
-  callback({
-    client_id: googleAuthConfig.clientId,
-    redirect_uri: googleAuthConfig.redirect_uri,
-    scope: googleAuthConfig.scope,
-    response_type: googleAuthConfig.response_type,
-  });
-}
+    callback({
+      client_id: googleAuthConfig.clientId,
+      redirect_uri: googleAuthConfig.redirect_uri,
+      scope: googleAuthConfig.scope,
+      response_type: googleAuthConfig.response_type,
+    });
+  }
 
+  async handleLogout(event) {
+    let logoutCallback = event.detail.callback;
+    let accessToken = sessionStorage.getItem('code_exchange_response');
+    if(!accessToken) { return; }
 
-// ============ Handle RedirectId =================
+    accessToken = JSON.parse(accessToken);
+    const authHeader = 'Bearer ' + accessToken.authenticationResult.access.access_token;
+    await fetch('/api/1.0/auth/logout', {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json'
+      }
+    }).then(() => {
+      logoutCallback();
+    });
+  }
+
+  // ============ Handle RedirectId =================
 
   /**
    * Description: 

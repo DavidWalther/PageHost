@@ -1,5 +1,3 @@
-// server.js
-
 const { Environment } = require('./private/modules/environment.js');
 const express = require('express');
 
@@ -8,11 +6,12 @@ const { DataQueryLogicFactory } = require('./private/endpoints/DataQueryLogicFac
 const WildcardLogicFactory = require('./private/endpoints/WildcardLogicFactory.js');
 const MetadataEndpointLogicFactory = require('./private/endpoints/MetadataEndpointLogicFactory.js');
 const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/environmetVariables.js');
-const OpenIdConnectClient = require('./private/modules/oAuth2/OpenIdConnectClient.js');
 const crypto = require('crypto');
-const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/oAuth2/CodeExchangeEndpoint.js');
-const { DataCache2 } = require('./private/database2/DataCache/DataCache.js');
-const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/oAuth2/requestAuthStateEndpoint.js');
+const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js');
+const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint.js');
+const { access } = require('fs');
+const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
+
 const environment = new Environment().getEnvironment();
 
 const app = express();
@@ -93,6 +92,16 @@ app.post('/api/1.0/oAuth2/codeexchange', async (req, res) => {
   const endpoint = new CodeExchangeEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Code Exchange Endpoint executed`, location: LOCATION });
+  });
+});
+
+app.get('/api/1.0/auth/logout', async (req, res) => {
+  const LOCATION = 'Server.get(\'/api/1.0/auth/logout\')';
+  Logging.debugMessage({ severity: 'INFO', message: 'Logout request received', location: LOCATION });
+
+  const endpoint = new LogoutEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'FINER', message: `Logout Endpoint executed`, location: LOCATION });
   });
 });
 

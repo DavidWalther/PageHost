@@ -1,5 +1,15 @@
 const HTML_TEMPLATE = `
 <style>
+  div.button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  div.button-container-item {
+    text-align: center;
+    padding: 5px;
+  }
+
   div[name="botton"] {
     background-color: transparent;
     cursor: pointer;
@@ -38,10 +48,29 @@ const HTML_TEMPLATE = `
     align-items: center;
   }
 
+  button {
+    border: 0px;
+    background: lightgray;
+    padding: 5px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 3px 0;
+    cursor: pointer;
+  }
+
+  .hidden {
+    display: none;
+  }
 
 </style>
-<div name="botton" role="button" tabindex="0" >
-  <slot name="auth-button"></slot>
+<div >
+  <div class="button-container">
+    <div name="botton-login" class="button-container-item" role="button" tabindex="0" >
+      <slot name="auth-button-login"></slot>
+    </div>
+    <div name="button-logout" class="button-container-item">
+      <slot name="auth-button-logout"></slot>
+    </div>
+  </div>
 </div>
 <template id="tpl-default-button">
   <div class="center button-colors button-border default-button"></div>
@@ -80,6 +109,14 @@ class OIDCComponent extends HTMLElement {
     return this.getAttribute('session-storage-key') || 'code_exchange_response';
   }
 
+  get isSessionStored() {
+    let storedValue = sessionStorage.getItem(this.sessionStorageKey);
+    if (!storedValue) {
+      return false;
+    }
+    return true;
+  }
+
   // ----------- lifecycle hooks ----------------
 
   connectedCallback() {
@@ -88,23 +125,8 @@ class OIDCComponent extends HTMLElement {
 
     this.shadowRoot.innerHTML = HTML_TEMPLATE;
 
-    // add event listeners to authenticate button
-    const button = this.shadowRoot.querySelector('div[name="botton"]');
-    button.addEventListener('click', (event) => this.handleClickAuthenticate(event).bind(this));
-    button.addEventListener('keydown', (event) => this.handleKeyDown(event).bind(this));
-
-    // check if the proided slot is empty
-    const slot = this.shadowRoot.querySelector('slot[name="auth-button"]');
-    if (!slot.assignedNodes().length) {
-      // if the slot is empty, use the default button template
-      const template = this.shadowRoot.getElementById('tpl-default-button');
-      const clone = document.importNode(template.content, true);
-      if (this.buttonLabel) {
-        clone.querySelector('div').innerText = this.buttonLabel;
-      }
-      button.innerHTML = '';
-      button.appendChild(clone);
-    }
+    this.createButton_Login();
+    this.createButton_Logout();
 
     // Check for authorization code in URL
     let authParams = {
@@ -113,6 +135,16 @@ class OIDCComponent extends HTMLElement {
     }
     if (authParams.auth_code !== null && authParams.state !== null) {
       this.exchangeAuthCode(authParams, serverEndpoint);
+    }
+
+    if(this.isSessionStored) {
+      // if the session storage is not empty, show the logout button
+      this.hideLoginButton();
+      this.showLogoutButton();
+    } else {
+      // if the session storage is empty, show the login button
+      this.showLoginButton();
+      this.hideLogoutButton();
     }
   }
 
@@ -125,6 +157,14 @@ class OIDCComponent extends HTMLElement {
     this.actionStartAuthentication();
   }
 
+  handleClickLogout(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dispatchEvent(new CustomEvent('logout', { detail: {
+      callback: this.logoutCallback.bind(this)
+    } }));
+  }
+
   handleKeyDown(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -135,6 +175,83 @@ class OIDCComponent extends HTMLElement {
 
   // ----------- actions ----------------
 
+  logoutCallback() {
+    sessionStorage.removeItem(this.sessionStorageKey)
+    this.hideLogoutButton();
+    this.showLoginButton();
+  }
+
+  createButton_Logout() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
+    let slot = buttonContainer.querySelector('slot');
+
+    // === identify wheather the slot is empty or not ===
+    let button_logout;
+    if (!slot.assignedNodes().length) {
+      // there is nothing defined in the slot.
+      // a default button must be created
+      button_logout = document.createElement('button')
+      button_logout.innerText = 'Logout';
+      button_logout.tabIndex = 1;
+      buttonContainer.innerHTML = '';
+      buttonContainer.appendChild(button_logout);
+    }
+    else {
+      // there is something defined in the slot.
+      // the slot must be used
+      button_logout = slot.assignedNodes()[0];
+    }
+
+    // === add event listeners to the button ===
+    button_logout.addEventListener('click', (event) => this.handleClickLogout(event));
+  }
+
+  createButton_Login() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
+    let slot = buttonContainer.querySelector('slot');
+    // === identify wheather the slot is empty or not ===
+    let button_login;
+    if (!slot.assignedNodes().length) {
+      // there is nothing defined in the slot.
+      // a default button must be created
+      button_login = document.createElement('button')
+      button_login.innerText = this.buttonLabel;
+      button_login.tabIndex = 1;
+      buttonContainer.innerHTML = '';
+      buttonContainer.appendChild(button_login);
+    }
+    else {
+      // there is something defined in the slot.
+      // the slot must be used
+      button_login = slot.assignedNodes()[0];
+    }
+    // === add event listeners to the button ===
+    button_login.addEventListener('click', (event) => this.handleClickAuthenticate(event));
+    button_login.addEventListener('keydown', (event) => this.handleKeyDown(event));
+  }
+
+  showLoginButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
+    const buttonLogin = buttonContainer.querySelector('button');
+    buttonLogin.classList.remove('hidden');
+  }
+  hideLoginButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
+    const buttonLogin = buttonContainer.querySelector('button');
+    buttonLogin.classList.add('hidden');
+  }
+  showLogoutButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
+    const buttonLogout = buttonContainer.querySelector('button');
+    buttonLogout.classList.remove('hidden');
+  }
+  hideLogoutButton() {
+    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
+    const buttonLogout = buttonContainer.querySelector('button');
+    buttonLogout.classList.add('hidden');
+  }
+
+  // Action to start the authentication flow
   actionStartAuthentication() {
     this.dispatchEvent(
       new CustomEvent('click', {
@@ -161,9 +278,9 @@ class OIDCComponent extends HTMLElement {
     const data = encoder.encode(verifier);
     const digest = await crypto.subtle.digest('SHA-256', data);
     return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/=/g, '')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_');
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
   }
 
   async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
@@ -226,7 +343,7 @@ class OIDCComponent extends HTMLElement {
         },
         body: JSON.stringify(exchangePayload)
       });
-
+      
       // if status_code is 401 dispatch rejected event
       if (response.status === 401) {
         this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Unauthorized' } }));
@@ -237,11 +354,14 @@ class OIDCComponent extends HTMLElement {
         this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Bad Request' } }));
         return;
       }
+      
+      // Hide the login button and show the logout button
+      this.hideLoginButton();
+      this.showLogoutButton();
 
       // Dispatch event with the response
       const exchange_response = await response.json();
       this.dispatchEvent(new CustomEvent('authenticated', { detail: exchange_response }));
-
       // Save the response in session storage
       if(this.noSave) { return; }
 
@@ -254,7 +374,7 @@ class OIDCComponent extends HTMLElement {
       };
       let event = new CustomEvent('stored', {detail:eventPayload});
       this.dispatchEvent(event);
-
+      
     } catch (error) {
       console.error('Error exchanging authorization code:', error);
     }
