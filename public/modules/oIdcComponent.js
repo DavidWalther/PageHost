@@ -232,23 +232,19 @@ class OIDCComponent extends HTMLElement {
 
   showLoginButton() {
     const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
-    const buttonLogin = buttonContainer.querySelector('button');
-    buttonLogin.classList.remove('hidden');
+    buttonContainer.classList.remove('hidden');
   }
   hideLoginButton() {
     const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
-    const buttonLogin = buttonContainer.querySelector('button');
-    buttonLogin.classList.add('hidden');
+    buttonContainer.classList.add('hidden');
   }
   showLogoutButton() {
     const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
-    const buttonLogout = buttonContainer.querySelector('button');
-    buttonLogout.classList.remove('hidden');
+    buttonContainer.classList.remove('hidden');
   }
   hideLogoutButton() {
     const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
-    const buttonLogout = buttonContainer.querySelector('button');
-    buttonLogout.classList.add('hidden');
+    buttonContainer.classList.add('hidden');
   }
 
   // Action to start the authentication flow
