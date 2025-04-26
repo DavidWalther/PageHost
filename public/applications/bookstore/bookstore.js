@@ -121,6 +121,7 @@ class Bookstore extends HTMLElement {
         'Content-Type': 'application/json'
       }
     }).then(() => {
+      this.showToast('Logout successful', 'success');
       logoutCallback();
     });
   }
@@ -152,6 +153,27 @@ class Bookstore extends HTMLElement {
       }
     }
     return initParameter;
+  }
+
+  // ============ action methods ============
+
+  showToast(message, variant) {
+    const toastContainer = document.createElement('div');
+    toastContainer.style.width = '90%';
+    toastContainer.style.textAlign = 'center';
+    toastContainer.style.position = 'fixed';
+    toastContainer.style.top = '10%';
+    toastContainer.style.zIndex = '10';
+
+    const toastElement = document.createElement('slds-toast');
+    toastElement.setAttribute('state', variant);
+    toastElement.textContent = message;
+    toastContainer.appendChild(toastElement);
+    this.shadowRoot.appendChild(toastContainer);
+
+    setTimeout(() => {
+      toastContainer.parentNode.removeChild(toastContainer);
+    }, 900);
   }
 
   // ============ Storage methods ============
