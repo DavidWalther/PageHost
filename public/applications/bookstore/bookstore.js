@@ -69,6 +69,7 @@ class Bookstore extends HTMLElement {
     this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event)); 
   
     this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
+    this.shadowRoot.querySelector('oidc-component').addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
   }
 
   disconnectedCallback() {
@@ -124,6 +125,12 @@ class Bookstore extends HTMLElement {
       this.showToast('Logout successful', 'success');
       logoutCallback();
     });
+  }
+
+  handleAuthenticationRejection() {
+    this.showToast('Authentication failed', 'error');
+    // clear history
+    window.history.replaceState({}, '', window.location.pathname);
   }
 
   // ============ Handle RedirectId =================

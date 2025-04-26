@@ -339,18 +339,38 @@ class OIDCComponent extends HTMLElement {
         },
         body: JSON.stringify(exchangePayload)
       });
-      
-      // if status_code is 401 dispatch rejected event
-      if (response.status === 401) {
-        this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Unauthorized' } }));
-        return;
+
+      switch (response.status) {
+        case 200:
+          // Handle success
+          this.handleSuccess(response);
+          break;
+        case 400:
+          // Handle bad request
+          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Bad Request' } }));
+          break;
+        case 401:
+          // Handle unauthorized
+          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Unauthorized' } }));
+          break;
+        case 403:
+          // Handle forbidden
+          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Forbidden' } }));
+          break;
+        case 500:
+          // Handle server error
+          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Server Error' } }));
+          break;
+        default:
+          console.error('Unexpected response status:', response.status);
       }
-      // if status_code is 400 dispatch rejected event
-      if (response.status === 400) {
-        this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Bad Request' } }));
-        return;
-      }
-      
+    } catch (error) {
+      console.error('Error during authentication:', error);
+      this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Network Error' } }));
+    }
+  }
+
+  async handleSuccess(response) {
       // Hide the login button and show the logout button
       this.hideLoginButton();
       this.showLogoutButton();
@@ -370,10 +390,6 @@ class OIDCComponent extends HTMLElement {
       };
       let event = new CustomEvent('stored', {detail:eventPayload});
       this.dispatchEvent(event);
-      
-    } catch (error) {
-      console.error('Error exchanging authorization code:', error);
-    }
   }
 }
 
