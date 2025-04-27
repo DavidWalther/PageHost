@@ -4,7 +4,6 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 class CustomParagraph extends LitElement {
   static properties = {
     id: { type: String },
-    editable: { type: Boolean },
     paragraphData: { type: Object },
   };
 
@@ -15,7 +14,6 @@ class CustomParagraph extends LitElement {
   constructor() {
     super();
     this.id = '';
-    this.editable = false;
     this.paragraphData = null;
   }
 
