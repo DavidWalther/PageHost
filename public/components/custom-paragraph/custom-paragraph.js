@@ -46,6 +46,7 @@ class CustomParagraph extends LitElement {
   constructor() {
     super();
     this.id = '';
+    this._paragraphDataBackup = null;
     this._paragraphData = null;
     this.editMode = false; // Internal flag for edit mode
   }
@@ -140,6 +141,7 @@ class CustomParagraph extends LitElement {
   handleCancelEdit() {
     console.log('Edit canceled');
     this.editMode = false; // Exit edit mode
+    this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
     this.requestUpdate();
   }
 
@@ -166,6 +168,8 @@ class CustomParagraph extends LitElement {
     }
   }
 
+// ========== Query Event ==========
+
   fireQueryEvent_Paragraph(paragraphid, callback) {
     if (!paragraphid) return;
     const payload = { object: 'paragraph', id: paragraphid };
@@ -179,6 +183,15 @@ class CustomParagraph extends LitElement {
   }
 
   queryEventCallback_Paragraph(error, data) {
+    if (error) {
+      console.error(error);
+      return;
+    }
+    this._paragraphData = data;
+    this._paragraphDataBackup = { ...data }; // Backup the original data
+    this.requestUpdate();
+  }
+
     if (error) {
       console.error(error);
       return;
