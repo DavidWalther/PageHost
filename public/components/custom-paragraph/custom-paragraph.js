@@ -104,6 +104,10 @@ class CustomParagraph extends LitElement {
     }
     this.paragraphData = data;
   }
+
+  createRenderRoot() {
+    return this;
+  }
 }
 
 customElements.define('custom-paragraph', CustomParagraph);
