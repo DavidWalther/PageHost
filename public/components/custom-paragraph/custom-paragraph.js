@@ -20,12 +20,24 @@ class CustomParagraph extends LitElement {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
-      border-color:#abafb8;
+      border-color: #abafb8;
       padding: 3px;
     }
 
     #content.editable:hover button {
       display: block;
+    }
+
+    .editing {
+      border-radius: 5px;
+      bolder-width: 1px;
+      border-style: solid;
+      border-color:rgb(34, 81, 192);
+      padding: 3px;
+    }
+
+    .editing * {
+      width: 100%;
     }
   `;
 
@@ -33,6 +45,8 @@ class CustomParagraph extends LitElement {
     super();
     this.id = '';
     this._paragraphData = null;
+
+    this.editMode = false; // Internal flag for edit mode
   }
 
   connectedCallback() {
@@ -44,6 +58,11 @@ class CustomParagraph extends LitElement {
   render() {
     if (!this._paragraphData) {
       return html`<slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>`;
+    }
+
+    if (this.editMode) {
+      let markup = this.renderEditMode(); // Render edit mode if the flag is set
+      return markup;
     }
 
     const { name, htmlcontent, content } = this._paragraphData;
@@ -67,7 +86,7 @@ class CustomParagraph extends LitElement {
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
         </p>
-        ${canEdit ? html`<button @click=${this.handleClickSave}>Action</button>` : ''}
+        ${canEdit ? html`<button @click=${this.handleActionClick}>Action</button>` : ''}
       </div>
     `;
   }
@@ -77,9 +96,50 @@ class CustomParagraph extends LitElement {
     return html`
       <div id="content" class=${canEdit ? 'editable' : ''}>
         <div .innerHTML=${htmlcontent}></div>
-        ${canEdit ? html`<button @click=${this.handleClickSave}>Action</button>` : ''}
+        ${canEdit ? html`<button @click=${this.handleActionClick}>Action</button>` : ''}
       </div>
     `;
+  }
+
+  renderEditMode() {
+    const { name, content } = this._paragraphData;
+    return html`
+      <div class="slds-grid slds-wrap editing">
+        <div class="slds-col slds-size_1-of-1 "><label for="edit-name">Name</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium"><input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} /></div>
+        <div class="slds-col slds-size_1-of-1 "><label for="edit-content">Content</label></div>
+        <div class="slds-col slds-size_1-of-1 "><textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea></div>
+        <div class="slds-col slds-size_1-of-2 ">
+          <button @click=${this.handleSaveEdit}>Save</button>
+        </div>
+        <div class="slds-col slds-size_1-of-2 ">
+          <button @click=${this.handleCancelEdit}>Cancel</button>
+        </div>
+      </div>
+    `;
+  }
+
+  handleActionClick() {
+    this.editMode = true; // Enable edit mode
+    this.requestUpdate();
+  }
+
+  handleEditInputChange(event) {
+    const { id, value } = event.target;
+    const key = id === 'edit-name' ? 'name' : 'content';
+    this._paragraphData = { ...this._paragraphData, [key]: value };
+  }
+
+  handleSaveEdit() {
+    console.log('Saving edited data:', this._paragraphData);
+    this.editMode = false; // Exit edit mode
+    this.requestUpdate();
+  }
+
+  handleCancelEdit() {
+    console.log('Edit canceled');
+    this.editMode = false; // Exit edit mode
+    this.requestUpdate();
   }
 
   handleInputChange(event) {
