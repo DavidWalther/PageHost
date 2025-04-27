@@ -21,7 +21,7 @@ class CustomParagraph extends LitElement {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
-      border-color: #abafb8;
+      border-color:rgb(69, 111, 209);
       padding: 3px;
     }
 
@@ -34,7 +34,7 @@ class CustomParagraph extends LitElement {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
-      border-color: rgb(34, 81, 192);
+      border-color: rgb(136, 140, 150);
       padding: 3px;
     }
 
@@ -47,7 +47,7 @@ class CustomParagraph extends LitElement {
       #content.editing {
         border-width: 1px;
         border-style: solid;
-        border-color: #abafb8;
+        border-color:rgb(36, 201, 28);
         padding: 3px;
       }
 
