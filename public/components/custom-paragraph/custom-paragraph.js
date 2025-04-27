@@ -46,17 +46,14 @@ class CustomParagraph extends LitElement {
       return html`<slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>`;
     }
 
-    const { name, htmlcontent, content, editable } = this._paragraphData;
-    const displayOption = `${htmlcontent ? 'html' : 'text'}-${editable ? 'editable' : 'readonly'}`;
+    const { name, htmlcontent, content } = this._paragraphData;
+    const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
 
     switch (displayOption) {
       case 'text-readonly':
         return this.renderTextReadonly(name, content);
       case 'html-readonly':
         return this.renderHtmlReadonly(htmlcontent);
-      case 'text-editable':
-      case 'html-editable':
-        return this.renderEditable(name, htmlcontent, content);
       default:
         return html``;
     }
@@ -82,30 +79,6 @@ class CustomParagraph extends LitElement {
         <div .innerHTML=${htmlcontent}></div>
         ${canEdit ? html`<button @click=${this.handleClickSave}>Action</button>` : ''}
       </div>
-    `;
-  }
-
-  renderEditable(name, htmlcontent, content) {
-    return html`
-      <slds-card no-footer no-header>
-        <div class="slds-grid slds-wrap">
-          <div class="slds-col slds-size_1-of-3">
-            <label for="name">Name</label>
-            <input type="text" id="name" .value=${name || ''} @input=${this.handleInputChange} />
-          </div>
-          <div class="slds-col slds-size_1-of-3">
-            <label for="htmlContent">HTML Content</label>
-            <textarea id="htmlContent" .value=${htmlcontent || ''} @input=${this.handleInputChange}></textarea>
-          </div>
-          <div class="slds-col slds-size_1-of-3">
-            <label for="textContent">Content</label>
-            <textarea id="textContent" .value=${content || ''} @input=${this.handleInputChange}></textarea>
-          </div>
-          <div class="slds-col slds-size_1-of-12">
-            <button id="button-save" @click=${this.handleClickSave}>Save</button>
-          </div>
-        </div>
-      </slds-card>
     `;
   }
 
