@@ -1,4 +1,5 @@
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import OIDCComponent from "/modules/oIdcComponent.js";
 
 const templatePath = 'applications/bookstore/bookstore.html';
 let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
