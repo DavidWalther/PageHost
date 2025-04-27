@@ -41,13 +41,26 @@ class CustomParagraph extends LitElement {
     .editing * {
       width: 100%;
     }
+    
+    @media (hover: none) and (pointer: coarse) {
+      
+      #content.editing {
+        border-width: 1px;
+        border-style: solid;
+        border-color: #abafb8;
+        padding: 3px;
+      }
+
+      #content button {
+        display: block;
+      }
+    }
   `;
 
   constructor() {
     super();
     this.id = '';
     this._paragraphData = null;
-
     this.editMode = false; // Internal flag for edit mode
   }
 
