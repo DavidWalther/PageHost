@@ -8,6 +8,25 @@ class CustomParagraph extends LitElement {
 
   static styles = css`
     /* Add SLDS styling for your component here */
+    #content {
+      position: relative;
+    }
+
+    #content button {
+      display: none;
+    }
+
+    #content:hover {
+      border-radius: 5px;
+      bolder-width: 1px;
+      border-style: solid;
+      border-color:#abafb8;
+      padding: 3px;
+    }
+
+    #content:hover button {
+      display: block;
+    }
   `;
 
   constructor() {
@@ -50,6 +69,7 @@ class CustomParagraph extends LitElement {
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
         </p>
+        <button  @click=${this.handleClickSave}>Action</button>
       </div>
     `;
   }
@@ -58,6 +78,7 @@ class CustomParagraph extends LitElement {
     return html`
       <div id="content">
         <div .innerHTML=${htmlcontent}></div>
+        <button  @click=${this.handleClickSave}>Action</button>
       </div>
     `;
   }
