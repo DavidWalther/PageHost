@@ -4,7 +4,6 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 class CustomParagraph extends LitElement {
   static properties = {
     id: { type: String },
-    paragraphData: { type: Object },
   };
 
   static styles = css`
@@ -14,7 +13,7 @@ class CustomParagraph extends LitElement {
   constructor() {
     super();
     this.id = '';
-    this.paragraphData = null;
+    this._paragraphData = null;
   }
 
   connectedCallback() {
@@ -24,12 +23,12 @@ class CustomParagraph extends LitElement {
   }
 
   render() {
-    if (!this.paragraphData) {
+    if (!this._paragraphData) {
       return html`<slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>`;
     }
 
-    const { name, htmlcontent, content } = this.paragraphData;
-    const displayOption = `${htmlcontent ? 'html' : 'text'}-${this.editable ? 'editable' : 'readonly'}`;
+    const { name, htmlcontent, content, editable } = this._paragraphData;
+    const displayOption = `${htmlcontent ? 'html' : 'text'}-${editable ? 'editable' : 'readonly'}`;
 
     switch (displayOption) {
       case 'text-readonly':
@@ -89,12 +88,12 @@ class CustomParagraph extends LitElement {
 
   handleInputChange(event) {
     const { id, value } = event.target;
-    this.paragraphData = { ...this.paragraphData, [id]: value };
+    this._paragraphData = { ...this._paragraphData, [id]: value };
     this.requestUpdate();
   }
 
   handleClickSave() {
-    console.log('Saving data:', this.paragraphData);
+    console.log('Saving data:', this._paragraphData);
   }
 
   fireQueryEvent_Paragraph(paragraphid, callback) {
@@ -114,7 +113,8 @@ class CustomParagraph extends LitElement {
       console.error(error);
       return;
     }
-    this.paragraphData = data;
+    this._paragraphData = data;
+    this.requestUpdate();
   }
 }
 
