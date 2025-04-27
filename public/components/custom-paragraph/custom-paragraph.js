@@ -16,7 +16,8 @@ class CustomParagraph extends LitElement {
       display: none;
     }
 
-    #content.editable:hover {
+    #content.editable:hover,
+    #content.editable:focus-within {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
@@ -24,7 +25,8 @@ class CustomParagraph extends LitElement {
       padding: 3px;
     }
 
-    #content.editable:hover button {
+    #content.editable:hover button,
+    #content.editable:focus-within button {
       display: block;
     }
 
@@ -32,7 +34,7 @@ class CustomParagraph extends LitElement {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
-      border-color:rgb(34, 81, 192);
+      border-color: rgb(34, 81, 192);
       padding: 3px;
     }
 
