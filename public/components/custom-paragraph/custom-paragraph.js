@@ -1,3 +1,4 @@
+import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 class CustomParagraph extends LitElement {
@@ -20,6 +21,7 @@ class CustomParagraph extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
   }
 
@@ -115,10 +117,6 @@ class CustomParagraph extends LitElement {
       return;
     }
     this.paragraphData = data;
-  }
-
-  createRenderRoot() {
-    return this;
   }
 }
 
