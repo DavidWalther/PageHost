@@ -1,4 +1,5 @@
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 const templatePath = 'components/custom-paragraph/custom-paragraph.html';
 let templatePromise = null;
