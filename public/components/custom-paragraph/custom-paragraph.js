@@ -16,7 +16,7 @@ class CustomParagraph extends LitElement {
       display: none;
     }
 
-    #content:hover {
+    #content.editable:hover {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
@@ -24,7 +24,7 @@ class CustomParagraph extends LitElement {
       padding: 3px;
     }
 
-    #content:hover button {
+    #content.editable:hover button {
       display: block;
     }
   `;
@@ -63,22 +63,24 @@ class CustomParagraph extends LitElement {
   }
 
   renderTextReadonly(name, content) {
+    const canEdit = this.checkEditPermission();
     return html`
-      <div id="content">
+      <div id="content" class=${canEdit ? 'editable' : ''}>
         <p>
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
         </p>
-        <button  @click=${this.handleClickSave}>Action</button>
+        ${canEdit ? html`<button @click=${this.handleClickSave}>Action</button>` : ''}
       </div>
     `;
   }
 
   renderHtmlReadonly(htmlcontent) {
+    const canEdit = this.checkEditPermission();
     return html`
-      <div id="content">
+      <div id="content" class=${canEdit ? 'editable' : ''}>
         <div .innerHTML=${htmlcontent}></div>
-        <button  @click=${this.handleClickSave}>Action</button>
+        ${canEdit ? html`<button @click=${this.handleClickSave}>Action</button>` : ''}
       </div>
     `;
   }
@@ -115,6 +117,19 @@ class CustomParagraph extends LitElement {
 
   handleClickSave() {
     console.log('Saving data:', this._paragraphData);
+  }
+
+  checkEditPermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('edit') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
   }
 
   fireQueryEvent_Paragraph(paragraphid, callback) {
