@@ -135,6 +135,7 @@ class CustomParagraph extends LitElement {
   handleSaveEdit() {
     console.log('Saving edited data:', this._paragraphData);
     this.editMode = false; // Exit edit mode
+    this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
   }
 
@@ -192,6 +193,26 @@ class CustomParagraph extends LitElement {
     this.requestUpdate();
   }
 
+// ========== Save Event ==========
+
+  fireSaveEvent_Paragraph() {
+    if (!this._paragraphData) return;
+
+    let eventDetail = {};
+    eventDetail.object = 'paragraph';
+    eventDetail.payload = this._paragraphData;
+    eventDetail.callback = this.saveEventCallback_Paragraph.bind(this);
+
+    this.dispatchEvent(
+      new CustomEvent('save', {
+        detail: eventDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  saveEventCallback_Paragraph(error, data) {
     if (error) {
       console.error(error);
       return;
