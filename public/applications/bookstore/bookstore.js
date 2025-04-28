@@ -66,6 +66,9 @@ class Bookstore extends HTMLElement {
 
     // Listen for navigation events
     this.addEventListener('navigation', this.handleNavigationEvent);
+    // Listen for toast events
+    this.addEventListener('toast', this.handleToastEvent.bind(this));
+    // Listen for OIDC events
     this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
     this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event)); 
   
@@ -161,6 +164,14 @@ class Bookstore extends HTMLElement {
       }
     }
     return initParameter;
+  }
+
+  handleToastEvent(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    const { message, variant } = event.detail;
+    this.showToast(message, variant);
   }
 
   // ============ action methods ============

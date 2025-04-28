@@ -214,10 +214,25 @@ class CustomParagraph extends LitElement {
 
   saveEventCallback_Paragraph(error, data) {
     if (error) {
-      console.error(error);
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: error, variant: 'error' },  
+          bubbles: true,
+          composed: true,
+        })
+      );
       return;
     }
-    this._paragraphData = data;
+    if (data) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Saved', variant: 'success' },  
+          bubbles: true,
+          composed: true,
+        })
+      );
+      this._paragraphDataBackup = this._paragraphData; // Update the backup with the new 
+    }
     this.requestUpdate();
   }
 }
