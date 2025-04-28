@@ -5,8 +5,19 @@ function initializeApp() {
   const mainApp =  document.createElement('app-bookstore');
   attachQueryEventListener(mainApp);
   attachStorageEventListener(mainApp);
+  attachSaveEventListener(mainApp);
 
   bodyElem.appendChild(mainApp);
+}
+
+function attachSaveEventListener(element) {
+  element.addEventListener('save', (saveEvent) => {
+    let callback = saveEvent.detail.callback;
+    let eventpayload = saveEvent.detail.payload;
+
+    console.log('save event payload', eventpayload);
+    callback(null, eventpayload);
+  });
 }
 
 function attachQueryEventListener(element) {
@@ -24,7 +35,7 @@ function attachQueryEventListener(element) {
 }
 
 /**
- * Description: 
+ * Description:
  * This function listens for storage events. Depending on the action and storageType, it will read, write, or clear the storage.
  */
 function attachStorageEventListener(element) {
@@ -64,10 +75,10 @@ function fetchDatabase(eventpayload) {
               .then(storyResponse => {
                 return storyResponse.json()
           }));
-            
+
           Promise.all(fetchPromises).then(response => {
             let story = response[0];
-            
+
             if(story ) {
               resolve(story);
             } else {
@@ -105,7 +116,7 @@ function fetchDatabase(eventpayload) {
         .then(paragraphResponse => paragraphResponse.json())
         .then(paragraph => {
           if(!paragraph || paragraph.length === 0) { reject('No paragraph found');}
-          
+
           if (Array.isArray(paragraph) ) {
             resolve(paragraph[0]);
           } else if (typeof paragraph === 'object'){
