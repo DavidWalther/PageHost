@@ -13,10 +13,31 @@ function initializeApp() {
 function attachSaveEventListener(element) {
   element.addEventListener('save', (saveEvent) => {
     let callback = saveEvent.detail.callback;
-    let eventpayload = saveEvent.detail.payload;
+    let authData = accessSessionStorage('code_exchange_response', 'read');
+    authData = JSON.parse(authData);
+    let authBearer = authData.authenticationResult?.access?.access_token
 
-    console.log('save event payload', eventpayload);
-    callback(null, eventpayload);
+    fetch('/api/1.0/data/change/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authBearer}`
+      },
+      body: JSON.stringify(saveEvent.detail)
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Server responded with status ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      callback(null, data);
+    })
+    .catch(error => {
+      console.error('Error during save callout:', error);
+      callback(error, null);
+    });
   });
 }
 
@@ -42,13 +63,7 @@ function attachStorageEventListener(element) {
   element.addEventListener('storage', (event) => {
     const { storageType, key, value, action, callback } = event.detail;
     if (storageType === 'session') {
-      if (action === 'read') {
-        callback(sessionStorage.getItem(key));
-      } else if (action === 'write') {
-        sessionStorage.setItem(key, value);
-      } else if (action === 'clear') {
-        sessionStorage.removeItem(key);
-      }
+      accessSessionStorage(key, action, value, callback);
     } else if (storageType === 'local') {
       if (action === 'read') {
         callback(localStorage.getItem(key));
@@ -59,6 +74,23 @@ function attachStorageEventListener(element) {
       }
     }
   });
+}
+
+function accessSessionStorage(key, action, value, callback) {
+  if (action === 'read') {
+    let readValue = sessionStorage.getItem(key);
+    if (callback) {
+      callback(readValue);
+    } else {
+      return readValue;
+    }
+  }
+  if (action === 'write') {
+    sessionStorage.setItem(key, value);
+  }
+  if (action === 'clear') {
+    sessionStorage.removeItem(key);
+  }
 }
 
 function fetchDatabase(eventpayload) {
