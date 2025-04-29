@@ -9,8 +9,8 @@ const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/en
 const crypto = require('crypto');
 const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js');
 const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint.js');
-const { access } = require('fs');
 const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
+const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -103,6 +103,35 @@ app.get('/api/1.0/auth/logout', async (req, res) => {
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Logout Endpoint executed`, location: LOCATION });
   });
+});
+
+app.post('/api/1.0/data/change/*', async (req, res) => {
+  const LOCATION = '/api/1.0/data/change/*';
+  Logging.debugMessage({ severity: 'FINER', message: `Request received - params: ${JSON.stringify(req.params)}`, location: LOCATION });
+
+  console.log('Request received - headers:', req.headers);
+
+  let bearerToken = req.headers['authorization'];
+  if(!bearerToken) {
+    console.log('Bearer token not found in headers');
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  bearerToken = bearerToken.split(' ')[1];
+
+  const accessTokenService = new AccessTokenService().setEnvironment(environment);
+  const isValidBearer = await accessTokenService.isBearerValid(bearerToken);
+
+  if (!isValidBearer) {
+    console.log('Invalid bearer token');
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  Logging.debugMessage({ severity: 'FINER', message: `Bearer token is valid`, location: LOCATION });
+
+
+  res.status(200).json({ message: 'Data changed' });
 });
 
 app.get('/*', (req, res) => {
