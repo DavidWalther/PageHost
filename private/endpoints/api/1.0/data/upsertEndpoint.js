@@ -1,12 +1,13 @@
-const BaseEndpoint = require('../../baseEndpoint'); // Assuming a base class exists
-const Logging = require('../../../../utils/logging'); // Adjust path as needed
+const { EndpointLogic } = require('../../../EndpointLogic.js');
+const { Logging } = require('../../../../modules/logging.js');
 
-class UpsertEndpoint extends BaseEndpoint {
+class UpsertEndpoint extends EndpointLogic {
   async execute() {
     const LOCATION = 'UpsertEndpoint.execute';
-    Logging.debugMessage({ severity: 'INFO', message: `Request received - ${this.request.url}`, location: LOCATION });
+    Logging.debugMessage({ severity: 'INFO', message: `Request received - ${this.requestObject.url}`, location: LOCATION });
 
-    const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_DMLS;
+    const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_DMLS || '[]';
+    Logging.debugMessage({ severity: 'INFO', message: `Environment variable APPLICATION_ACTIVE_DMLS: ${environentAllowedDmls}`, location: LOCATION });
     let allowedDmls = JSON.parse(environentAllowedDmls).map(permission => permission.toLowerCase());
     allowedDmls = new Set(allowedDmls);
     Logging.debugMessage({ severity: 'INFO', message: `Allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
@@ -22,7 +23,7 @@ class UpsertEndpoint extends BaseEndpoint {
     try {
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation started', location: LOCATION });
 
-      const data = this.request.body; // Assuming data is sent in the request body
+      const data = this.requestObject.body; // Assuming data is sent in the request body
       const result = await this.performUpsert(data);
 
       this.response.status(200).json({ success: true, result });

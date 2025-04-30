@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js');
 const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint.js');
 const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
+const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
 const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
 
 const environment = new Environment().getEnvironment();
