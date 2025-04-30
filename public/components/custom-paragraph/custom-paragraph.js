@@ -162,7 +162,6 @@ class CustomParagraph extends LitElement {
     // Update the paragraph data with the new value
     
     this._paragraphData = { ...this._paragraphData, [key]: value };
-    debugger;
   }
 
   handleSaveEdit() {
