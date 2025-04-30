@@ -105,12 +105,16 @@ class CustomParagraph extends LitElement {
   }
 
   renderEditMode() {
-    const { name, content, htmlcontent } = this._paragraphData;
+    const { name, content, htmlcontent, sortnumber} = this._paragraphData;
     return html`
       <div class="slds-grid slds-wrap editing">
         <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
           <input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} />
+        </div>
+        <div class="slds-col slds-size_1-of-1"><label for="edit-sortnumber">Sort Number</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input type="text" id="edit-sortnumber" .value=${sortnumber || ''} @input=${this.handleEditInputChange} />
         </div>
         <div class="slds-col slds-size_1-of-1">
           <div class="slds-tabs_default">
@@ -147,8 +151,13 @@ class CustomParagraph extends LitElement {
 
   handleEditInputChange(event) {
     const { id, value } = event.target;
-    const key = id === 'edit-name' ? 'name' : 'content';
+    // Update the paragraph data with the new value
+    const key = id.replace('edit-', ''); // Remove 'edit-' prefix from id
+    this._paragraphData[key] = value; // Update other fields
+    // Update the paragraph data with the new value
+    
     this._paragraphData = { ...this._paragraphData, [key]: value };
+    debugger;
   }
 
   handleSaveEdit() {
