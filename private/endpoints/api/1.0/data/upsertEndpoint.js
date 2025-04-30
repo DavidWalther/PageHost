@@ -6,6 +6,19 @@ class UpsertEndpoint extends BaseEndpoint {
     const LOCATION = 'UpsertEndpoint.execute';
     Logging.debugMessage({ severity: 'INFO', message: `Request received - ${this.request.url}`, location: LOCATION });
 
+    const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_DMLS;
+    let allowedDmls = JSON.parse(environentAllowedDmls).map(permission => permission.toLowerCase());
+    allowedDmls = new Set(allowedDmls);
+    Logging.debugMessage({ severity: 'INFO', message: `Allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
+
+    let isAllowed_edit = allowedDmls.has('edit');
+
+    if (!isAllowed_edit) {
+      Logging.debugMessage({ severity: 'INFO', message: 'Permission denied for edit operation', location: LOCATION });
+      this.response.status(403).json({ success: false, error: 'Permission denied' });
+      return;
+    }
+
     try {
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation started', location: LOCATION });
 
