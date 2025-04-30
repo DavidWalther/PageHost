@@ -49,6 +49,7 @@ class CustomParagraph extends LitElement {
     this._paragraphDataBackup = null;
     this._paragraphData = null;
     this.editMode = false; // Internal flag for edit mode
+    this.activeTab = 'text'; // Default active tab
   }
 
   connectedCallback() {
@@ -114,17 +115,17 @@ class CustomParagraph extends LitElement {
         <div class="slds-col slds-size_1-of-1">
           <div class="slds-tabs_default">
             <ul class="slds-tabs_default__nav" role="tablist">
-              <li class="slds-tabs_default__item slds-is-active" title="Text Input" role="presentation">
-                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="0" aria-selected="true" aria-controls="text-tab" id="text-tab-link">Text</a>
+              <li class="slds-tabs_default__item ${this.activeTab === 'text' ? 'slds-active slds-has-focus' : ''}" title="Text Input" role="presentation">
+                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="0" aria-selected=${this.activeTab === 'text'} aria-controls="text-tab" id="text-tab-link" @click=${() => this.switchTab('text')}>Text</a>
               </li>
-              <li class="slds-tabs_default__item" title="HTML Input" role="presentation">
-                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="-1" aria-selected="false" aria-controls="html-tab" id="html-tab-link">HTML</a>
+              <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
+                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
               </li>
             </ul>
-            <div id="text-tab" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="text-tab-link">
+            <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
               <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
             </div>
-            <div id="html-tab" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="html-tab-link">
+            <div id="html-tab" class="slds-tabs_default__content ${this.activeTab === 'html' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="html-tab-link">
               <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
             </div>
           </div>
@@ -185,6 +186,11 @@ class CustomParagraph extends LitElement {
       console.error('Failed to parse authenticationResult from sessionStorage:', e);
       return false;
     }
+  }
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    this.requestUpdate();
   }
 
 // ========== Query Event ==========
