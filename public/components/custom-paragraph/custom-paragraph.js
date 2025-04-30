@@ -32,14 +32,19 @@ class CustomParagraph extends LitElement {
 
     .editing {
       border-radius: 5px;
-      bolder-width: 1px;
+      border-width: medium;
       border-style: solid;
       border-color: rgb(136, 140, 150);
-      padding: 3px;
+      padding: 5px;
     }
 
     .editing * {
       width: 100%;
+    }
+
+    .editing textarea {
+      height: 50vh;
+      max-height: 250px;
     }
   `;
 
