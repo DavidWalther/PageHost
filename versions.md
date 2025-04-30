@@ -3,6 +3,10 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### next
+
+Technical:
+- Refactor paragrap component. New Component is built with LIT Library
 
 ### 2.18.0 (2025-04-05)
 
