@@ -104,17 +104,35 @@ class CustomParagraph extends LitElement {
   }
 
   renderEditMode() {
-    const { name, content } = this._paragraphData;
+    const { name, content, htmlcontent } = this._paragraphData;
     return html`
       <div class="slds-grid slds-wrap editing">
-        <div class="slds-col slds-size_1-of-1 "><label for="edit-name">Name</label></div>
-        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium"><input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} /></div>
-        <div class="slds-col slds-size_1-of-1 "><label for="edit-content">Content</label></div>
-        <div class="slds-col slds-size_1-of-1 "><textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea></div>
-        <div class="slds-col slds-size_1-of-2 ">
+        <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} />
+        </div>
+        <div class="slds-col slds-size_1-of-1">
+          <div class="slds-tabs_default">
+            <ul class="slds-tabs_default__nav" role="tablist">
+              <li class="slds-tabs_default__item slds-is-active" title="Text Input" role="presentation">
+                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="0" aria-selected="true" aria-controls="text-tab" id="text-tab-link">Text</a>
+              </li>
+              <li class="slds-tabs_default__item" title="HTML Input" role="presentation">
+                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="-1" aria-selected="false" aria-controls="html-tab" id="html-tab-link">HTML</a>
+              </li>
+            </ul>
+            <div id="text-tab" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="text-tab-link">
+              <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
+            </div>
+            <div id="html-tab" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="html-tab-link">
+              <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="slds-col slds-size_1-of-2">
           <button @click=${this.handleSaveEdit}>Save</button>
         </div>
-        <div class="slds-col slds-size_1-of-2 ">
+        <div class="slds-col slds-size_1-of-2">
           <button @click=${this.handleCancelEdit}>Cancel</button>
         </div>
       </div>
