@@ -7,11 +7,9 @@ class UpsertEndpoint extends EndpointLogic {
     Logging.debugMessage({ severity: 'INFO', message: `Request received - ${this.requestObject.url}`, location: LOCATION });
 
     const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_DMLS || '[]';
-    Logging.debugMessage({ severity: 'INFO', message: `Environment variable APPLICATION_ACTIVE_DMLS: ${environentAllowedDmls}`, location: LOCATION });
     let allowedDmls = JSON.parse(environentAllowedDmls).map(permission => permission.toLowerCase());
     Logging.debugMessage({ severity: 'INFO', message: `Parsed allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
     allowedDmls = new Set(allowedDmls);
-    Logging.debugMessage({ severity: 'INFO', message: `Allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
 
     let isAllowed_edit = allowedDmls.has('edit');
     Logging.debugMessage({ severity: 'INFO', message: `isAllowed_edit: ${isAllowed_edit}`, location: LOCATION });
