@@ -106,32 +106,13 @@ app.get('/api/1.0/auth/logout', async (req, res) => {
 });
 
 app.post('/api/1.0/data/change/*', async (req, res) => {
-  const LOCATION = '/api/1.0/data/change/*';
-  Logging.debugMessage({ severity: 'FINER', message: `Request received - params: ${JSON.stringify(req.params)}`, location: LOCATION });
+  const LOCATION = 'Server.post(\'/api/1.0/data/change/*\')';
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
 
-  console.log('Request received - headers:', req.headers);
-
-  let bearerToken = req.headers['authorization'];
-  if(!bearerToken) {
-    console.log('Bearer token not found in headers');
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  bearerToken = bearerToken.split(' ')[1];
-
-  const accessTokenService = new AccessTokenService().setEnvironment(environment);
-  const isValidBearer = await accessTokenService.isBearerValid(bearerToken);
-
-  if (!isValidBearer) {
-    console.log('Invalid bearer token');
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
-  Logging.debugMessage({ severity: 'FINER', message: `Bearer token is valid`, location: LOCATION });
-
-
-  res.status(200).json({ message: 'Data changed' });
+  const endpoint = new UpsertEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'INFO', message: `Upsert Endpoint executed`, location: LOCATION });
+  });
 });
 
 app.get('/*', (req, res) => {
