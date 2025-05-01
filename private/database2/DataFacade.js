@@ -50,6 +50,32 @@ class DataFacadeSync {
     }
   }
 
+  async updateData(data) {
+    const LOCATION = 'DataFacadeSync.updateData';
+    const { object, payload } = data;
+
+    if (!object || !payload || !payload.id) {
+      throw new Error('Invalid data object: Missing object type or payload ID');
+    }
+
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Updating data for object: ${object}` });
+
+    const dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+
+    try {
+      await dataStorage.updateData(object, payload);
+
+      const cache = new DataCache2(this.environment);
+      await cache.set(payload.id, payload);
+
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Data updated successfully for object: ${object}` });
+    } catch (error) {
+      Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to update data for object: ${object}`, error });
+      throw error;
+    }
+  }
+
   async getConfigurations() {
     const LOCATION = 'DataFacadeSync.getConfigurations';
     if(DataFacade.isDataMockEnabled()) {
@@ -104,7 +130,7 @@ class DataFacadeSync {
       dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
       product = await dataStorage.queryAllStories();
 
-      
+
       cache.set('storiesAll', product);
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Stories found in cache` });
@@ -167,6 +193,10 @@ class DataFacade {
     } else {
       return new DataFacadeSync(this.environment).getData(parameterObject);
     }
+  }
+
+  updateData(data) {
+      return new DataFacadeSync(this.environment).updateData(data);
   }
 
   static isDataMockEnabled() {

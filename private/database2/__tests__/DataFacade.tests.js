@@ -281,4 +281,42 @@ describe('getData', () => {
 });
 
 describe('updateData', () => {
+  let dataFacade;
+  let mockEnvironment;
+  let mockDataStorage;
+  let mockDataCache;
+  let mockDataStorageUpdateData;
+
+  beforeEach(() => {
+    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+
+    mockDataStorage = {
+      setConditionApplicationKey: jest.fn(),
+      updateData: mockDataStorageUpdateData = jest.fn(),
+    };
+
+    mockDataCache = {
+      set: jest.fn(),
+    };
+
+    DataStorage.mockImplementation(() => mockDataStorage);
+    DataCache2.mockImplementation(() => mockDataCache);
+
+    dataFacade = new DataFacade(mockEnvironment);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should call DataStorage.updateData and DataCache.set on success', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    mockDataStorage.updateData.mockResolvedValue({ id: '1234' });
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+  });
 });
