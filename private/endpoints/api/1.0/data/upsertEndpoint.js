@@ -1,5 +1,6 @@
 const { EndpointLogic } = require('../../../EndpointLogic.js');
 const { Logging } = require('../../../../modules/logging.js');
+const { DataFacade } = require('../../../../database2/DataFacade.js');
 
 class UpsertEndpoint extends EndpointLogic {
   async execute() {
@@ -24,7 +25,9 @@ class UpsertEndpoint extends EndpointLogic {
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation started', location: LOCATION });
 
       const data = this.requestObject.body; // Assuming data is sent in the request body
-      const result = await this.performUpsert(data);
+
+      let dataFacade = new DataFacade(this.environment);
+      const result = await dataFacade.updateData(data);
 
       this.responseObject.status(200).json({ success: true, result });
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation completed successfully', location: LOCATION });
@@ -32,12 +35,6 @@ class UpsertEndpoint extends EndpointLogic {
       Logging.debugMessage({ severity: 'ERROR', message: `Upsert operation failed: ${error.message}`, location: LOCATION });
       this.responseObject.status(500).json({ success: false, error: error.message });
     }
-  }
-
-  async performUpsert(data) {
-    // Implement the actual upsert logic here
-    // Example: Interact with a database or other services
-    return { message: 'Upsert logic executed', data };
   }
 }
 
