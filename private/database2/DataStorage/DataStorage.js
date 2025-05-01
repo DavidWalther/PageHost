@@ -7,7 +7,7 @@ const { PostgresActions } = require('./pgConnector.js');
 const { Logging } = require('../../modules/logging.js');
 const { DataCleaner } = require('../../modules/DataCleaner.js');
 const { ActionCreate } = require('./actions/create.js');
-
+const ActionUpdate  = require('./actions/update.js'); // Import ActionUpdate
 
 class DataStorage {
   constructor(environment) {
@@ -263,6 +263,24 @@ class DataStorage {
     }
     if (!values || typeof values !== 'object') {
       throw new Error('Values object is required');
+    }
+
+    let table;
+    switch (tableName) {
+      case 'configuration':
+        table = new TableConfiguration();
+        break;
+      case 'paragraph':
+        table = new TableParagraph();
+        break;
+      case 'story':
+        table = new TableStory();
+        break;
+      case 'chapter':
+        table = new TableChapter();
+        break;
+      default:
+        throw new Error(`Invalid table name: ${tableName}`);
     }
   }
 }
