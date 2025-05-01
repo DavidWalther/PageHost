@@ -282,6 +282,17 @@ class DataStorage {
       default:
         throw new Error(`Invalid table name: ${tableName}`);
     }
+
+    return new Promise((resolve, reject) => {
+      const actionUpdate = new ActionUpdate().setPgConnector(this.pgConnector).setTable(table);
+      actionUpdate.setValues(values);
+
+      actionUpdate.execute()
+        .then((result) => {
+          Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record updated in table: ${table.getTableName()}` });
+          resolve(result[0]);
+        });
+    });
   }
 }
 

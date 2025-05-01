@@ -217,5 +217,19 @@ describe('DataStorage', () => {
         };
       });
     });
+
+    it('should successfully update a record', async () => {
+      mockActionUpdateExecute = jest.fn().mockResolvedValue([{ id: '1234' }]);
+
+      const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
+      const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
+
+      dataStorage.updateData('paragraph', mockPayload)
+      .then((result) => {
+        expect(ActionUpdate).toHaveBeenCalled();
+        expect(mockActionUpdateExecute).toHaveBeenCalled();
+        expect(result).toEqual({ id: '1234' });
+      });
+    });
   });
 });
