@@ -1,10 +1,12 @@
 const { PostgresActions } = require('../pgConnector.js');
 const { ActionGet } = require('../actions/get.js');
+const ActionUpdate  = require('../actions/update.js'); // Mock ActionUpdate
 const { DataStorage } = require('../DataStorage.js');
 const { DataCleaner } = require('../../../modules/DataCleaner.js');
 
 jest.mock('../pgConnector.js');
 jest.mock('../actions/get.js');
+jest.mock('../actions/update.js'); // Mock ActionUpdate
 
 const MOCK_ENVIRONMENT = {
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
@@ -198,6 +200,21 @@ describe('DataStorage', () => {
         expect(result.parent.child1).toBe('value1');
         expect(result.parent.child2).toBe('value2');
         expect(result.singleLevel).toBe('singleValue');
+      });
+    });
+  });
+
+  describe('Updates', () => {
+    let mockActionUpdateExecute;
+
+    beforeEach(() => {
+      ActionUpdate.mockImplementation(() => {
+        return {
+          setPgConnector: jest.fn().mockReturnThis(),
+          setTable: jest.fn().mockReturnThis(),
+          setValues: jest.fn().mockReturnThis(),
+          execute: mockActionUpdateExecute
+        };
       });
     });
   });
