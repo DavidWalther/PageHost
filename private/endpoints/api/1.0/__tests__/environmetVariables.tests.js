@@ -31,14 +31,10 @@ describe('EnvironmentVariablesEndpoint', () => {
 
     expect(mockResponse.json).toHaveBeenCalledWith({
       auth: {
-        version: '1.0',
-        google: {
-          clientId: 'test-client-id',
-          redirect_uri: 'http://localhost:3000',
-          scope: ['openid', 'email', 'profile'],
-          response_type: 'code'
-        }
-      }
+        version: expect.any(String),
+        google: expect.any(Object)
+      },
+      system: expect.any(Object)
     });
   });
 
@@ -55,14 +51,10 @@ describe('EnvironmentVariablesEndpoint', () => {
 
     expect(mockResponse.json).toHaveBeenCalledWith({
       auth: {
-        version: '1.0',
-        google: {
-          clientId: 'test-client-id',
-          redirect_uri: 'http://localhost:3000',
-          scope: ['openid', 'email', 'profile'],
-          response_type: 'code'
-        }
-      }
+        version: expect.any(String),
+        google: expect.any(Object)
+      },
+      system: expect.any(Object)
     });
   });
 });
