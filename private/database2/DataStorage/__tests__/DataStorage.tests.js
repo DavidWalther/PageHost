@@ -231,5 +231,19 @@ describe('DataStorage', () => {
         expect(result).toEqual({ id: '1234' });
       });
     });
+
+    it('should throw an error if the update fails', async () => {
+      mockActionUpdateExecute.mockRejectedValue(new Error('Update failed'));
+
+      const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
+      const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
+
+      dataStorage.updateData('paragraph', mockPayload)
+      .catch((error) => {
+        expect(ActionUpdate).toHaveBeenCalled();
+        expect(mockActionUpdateExecute).toHaveBeenCalled();
+        expect(error.message).toBe('Update failed');
+      });
+    });
   });
 });

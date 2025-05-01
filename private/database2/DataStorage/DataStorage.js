@@ -291,6 +291,10 @@ class DataStorage {
         .then((result) => {
           Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record updated in table: ${table.getTableName()}` });
           resolve(result[0]);
+        })
+        .catch((error) => {
+          Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error updating record in table: ${table.getTableName()}`, error });
+          reject(error);
         });
     });
   }
