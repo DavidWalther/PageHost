@@ -19,6 +19,13 @@ class DataFacadePromise {
       resolve(syncResult);
     });
   }
+
+  updateData(data) {
+    return new Promise((resolve, reject) => {
+      const syncFacade = new DataFacadeSync(this.environment);
+      syncFacade.updateData(data).then(resolve).catch(reject);
+    });
+  }
 }
 
 class DataFacadeSync {
@@ -196,7 +203,11 @@ class DataFacade {
   }
 
   updateData(data) {
+    if (data.returnPromise) {
+      return new DataFacadePromise(this.environment).updateData(data);
+    } else {
       return new DataFacadeSync(this.environment).updateData(data);
+    }
   }
 
   static isDataMockEnabled() {
