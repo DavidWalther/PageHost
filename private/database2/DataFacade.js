@@ -71,10 +71,12 @@ class DataFacadeSync {
     dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
 
     try {
+      // the id vanishes on saving to postgres, so we need to save it again
+      let copyOfPayload = JSON.parse(JSON.stringify(payload));
       await dataStorage.updateData(object, payload);
 
       const cache = new DataCache2(this.environment);
-      await cache.set(payload.id, payload);
+      await cache.set(copyOfPayload.id, copyOfPayload);
 
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Data updated successfully for object: ${object}` });
     } catch (error) {
