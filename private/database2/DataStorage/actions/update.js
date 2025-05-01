@@ -29,11 +29,17 @@ class ActionUpdate {
     return this;
   }
 
+  /**
+   * Executes the update operation.
+   * @returns {Promise} - A promise that resolves to the result of the SQL execution.
+   * @throws {Error} - Throws an error if the pgConnector, table, or values are not set.
+   */
   async execute() {
-    return new Promise((resolve, reject) => {
+      if (!this.pgConnector) { throw new Error("Postgres connector is not set"); }
+      if (!this.table) { throw new Error("Table is not set"); }
+      if (!this.values) { throw new Error("Data object is not set"); }
       if (!this.values.id) {
-        reject("Update operation requires an 'id' field in the data object.");
-        return;
+        throw new Error("Update operation requires an 'id' field in the data object.");
       }
 
       const tableName = this.table.getTableName()();
@@ -60,11 +66,7 @@ class ActionUpdate {
         message: `Executing SQL: ${sqlStatement}`,
       });
 
-      this.pgConnector
-        .executeSql(sqlStatement)
-        .then((result) => resolve(result[0]))
-        .catch((error) => reject(error));
-    });
+      return this.pgConnector.executeSql(sqlStatement,  {closeConnection: true});
   }
 }
 
