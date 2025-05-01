@@ -253,6 +253,18 @@ class DataStorage {
         });
     });
   }
+
+  updateData(tableName, values) {
+    const LOCATION = 'DataStorage.updateData';
+    Logging.debugMessage({ severity: 'FINE', location: LOCATION, message: `Updating record in table: ${tableName}` });
+
+    if(!tableName) {
+      throw new Error('Table name is required');
+    }
+    if (!values || typeof values !== 'object') {
+      throw new Error('Values object is required');
+    }
+  }
 }
 
 module.exports = { DataStorage };
