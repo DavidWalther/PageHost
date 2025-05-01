@@ -9,8 +9,9 @@ const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/en
 const crypto = require('crypto');
 const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js');
 const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint.js');
-const { access } = require('fs');
 const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
+const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
+const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -102,6 +103,16 @@ app.get('/api/1.0/auth/logout', async (req, res) => {
   const endpoint = new LogoutEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'FINER', message: `Logout Endpoint executed`, location: LOCATION });
+  });
+});
+
+app.post('/api/1.0/data/change/*', async (req, res) => {
+  const LOCATION = 'Server.post(\'/api/1.0/data/change/*\')';
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  const endpoint = new UpsertEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'INFO', message: `Upsert Endpoint executed`, location: LOCATION });
   });
 });
 

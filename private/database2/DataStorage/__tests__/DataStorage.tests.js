@@ -1,10 +1,12 @@
 const { PostgresActions } = require('../pgConnector.js');
 const { ActionGet } = require('../actions/get.js');
+const ActionUpdate  = require('../actions/update.js'); // Mock ActionUpdate
 const { DataStorage } = require('../DataStorage.js');
 const { DataCleaner } = require('../../../modules/DataCleaner.js');
 
 jest.mock('../pgConnector.js');
 jest.mock('../actions/get.js');
+jest.mock('../actions/update.js'); // Mock ActionUpdate
 
 const MOCK_ENVIRONMENT = {
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
@@ -198,6 +200,49 @@ describe('DataStorage', () => {
         expect(result.parent.child1).toBe('value1');
         expect(result.parent.child2).toBe('value2');
         expect(result.singleLevel).toBe('singleValue');
+      });
+    });
+  });
+
+  describe('Updates', () => {
+    let mockActionUpdateExecute;
+
+    beforeEach(() => {
+      ActionUpdate.mockImplementation(() => {
+        return {
+          setPgConnector: jest.fn().mockReturnThis(),
+          setTable: jest.fn().mockReturnThis(),
+          setValues: jest.fn().mockReturnThis(),
+          execute: mockActionUpdateExecute
+        };
+      });
+    });
+
+    it('should successfully update a record', async () => {
+      mockActionUpdateExecute = jest.fn().mockResolvedValue([{ id: '1234' }]);
+
+      const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
+      const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
+
+      dataStorage.updateData('paragraph', mockPayload)
+      .then((result) => {
+        expect(ActionUpdate).toHaveBeenCalled();
+        expect(mockActionUpdateExecute).toHaveBeenCalled();
+        expect(result).toEqual({ id: '1234' });
+      });
+    });
+
+    it('should throw an error if the update fails', async () => {
+      mockActionUpdateExecute.mockRejectedValue(new Error('Update failed'));
+
+      const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
+      const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
+
+      dataStorage.updateData('paragraph', mockPayload)
+      .catch((error) => {
+        expect(ActionUpdate).toHaveBeenCalled();
+        expect(mockActionUpdateExecute).toHaveBeenCalled();
+        expect(error.message).toBe('Update failed');
       });
     });
   });

@@ -7,7 +7,7 @@ const { PostgresActions } = require('./pgConnector.js');
 const { Logging } = require('../../modules/logging.js');
 const { DataCleaner } = require('../../modules/DataCleaner.js');
 const { ActionCreate } = require('./actions/create.js');
-
+const ActionUpdate  = require('./actions/update.js'); // Import ActionUpdate
 
 class DataStorage {
   constructor(environment) {
@@ -249,6 +249,51 @@ class DataStorage {
         })
         .catch((error) => {
           Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error creating record in table: ${table.getTableName()()}`, error });
+          reject(error);
+        });
+    });
+  }
+
+  updateData(tableName, values) {
+    const LOCATION = 'DataStorage.updateData';
+    Logging.debugMessage({ severity: 'FINE', location: LOCATION, message: `Updating record in table: ${tableName}` });
+
+    if(!tableName) {
+      throw new Error('Table name is required');
+    }
+    if (!values || typeof values !== 'object') {
+      throw new Error('Values object is required');
+    }
+
+    let table;
+    switch (tableName) {
+      case 'configuration':
+        table = new TableConfiguration();
+        break;
+      case 'paragraph':
+        table = new TableParagraph();
+        break;
+      case 'story':
+        table = new TableStory();
+        break;
+      case 'chapter':
+        table = new TableChapter();
+        break;
+      default:
+        throw new Error(`Invalid table name: ${tableName}`);
+    }
+
+    return new Promise((resolve, reject) => {
+      const actionUpdate = new ActionUpdate().setPgConnector(this.pgConnector).setTable(table);
+      actionUpdate.setValues(values);
+
+      actionUpdate.execute()
+        .then((result) => {
+          Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record updated in table: ${table.getTableName()}` });
+          resolve(result[0]);
+        })
+        .catch((error) => {
+          Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error updating record in table: ${table.getTableName()}`, error });
           reject(error);
         });
     });
