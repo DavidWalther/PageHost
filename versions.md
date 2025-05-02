@@ -3,10 +3,16 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
-### next
+### 3.0.0 (YYYY-MM-DD)
+
+Feature:
+- add 'Login with Google' using OpenId Connect.
+- add Permission Checks on Logged in User
+- if user has 'edit' scope: add Edit Option to paragraphs 
 
 Technical:
 - Refactor paragrap component. New Component is built with LIT Library
+- add an edit-Endpoint to modify existing paragraphs
 
 ### 2.18.0 (2025-04-05)
 
