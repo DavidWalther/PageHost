@@ -94,7 +94,7 @@ class CustomParagraph extends LitElement {
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
         </p>
-        ${canEdit ? html`<button @click=${this.handleActionClick}>Action</button>` : ''}
+        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
       </div>
     `;
   }
@@ -104,7 +104,7 @@ class CustomParagraph extends LitElement {
     return html`
       <div id="content" class=${canEdit ? 'editable' : ''}>
         <div .innerHTML=${htmlcontent}></div>
-        ${canEdit ? html`<button @click=${this.handleActionClick}>Action</button>` : ''}
+        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
       </div>
     `;
   }
@@ -125,10 +125,10 @@ class CustomParagraph extends LitElement {
           <div class="slds-tabs_default">
             <ul class="slds-tabs_default__nav" role="tablist">
               <li class="slds-tabs_default__item ${this.activeTab === 'text' ? 'slds-active slds-has-focus' : ''}" title="Text Input" role="presentation">
-                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="0" aria-selected=${this.activeTab === 'text'} aria-controls="text-tab" id="text-tab-link" @click=${() => this.switchTab('text')}>Text</a>
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'text'} aria-controls="text-tab" id="text-tab-link" @click=${() => this.switchTab('text')}>Text</a>
               </li>
               <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
-                <a class="slds-tabs_default__link" href="#" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
               </li>
             </ul>
             <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
@@ -149,7 +149,7 @@ class CustomParagraph extends LitElement {
     `;
   }
 
-  handleActionClick() {
+  handleEditClick() {
     this.editMode = true; // Enable edit mode
     this.requestUpdate();
   }
