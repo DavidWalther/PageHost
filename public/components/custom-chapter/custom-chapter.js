@@ -100,7 +100,11 @@ class CustomChapter extends LitElement {
   }
 
   renderParagraphs() {
-    return this.paragraphsData.map(
+    const paragraphs = this.chapterData?.reversed
+      ? [...this.paragraphsData].reverse()
+      : this.paragraphsData;
+
+    return paragraphs.map(
       (paragraph) => html`
         <div class="slds-col slds-p-bottom_small">
           <custom-paragraph
