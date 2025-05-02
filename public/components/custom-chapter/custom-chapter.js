@@ -4,6 +4,10 @@ import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 const templatePath = 'components/custom-chapter/custom-chapter.html';
 
 class CustomChapter extends LitElement {
+  labels = {
+    labelNotifcationLinkCopied: 'Link copied to clipboard',
+  };
+
   static properties = {
     id: { type: String },
     chapterData: { type: Object },
