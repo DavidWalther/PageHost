@@ -5,7 +5,7 @@ const templatePath = 'components/custom-chapter/custom-chapter.html';
 
 class CustomChapter extends LitElement {
   labels = {
-    labelNotifcationLinkCopied: 'Link copied to clipboard',
+    labelNotifcationLinkCopied: 'Link kopiert',
   };
 
   static properties = {
@@ -82,6 +82,9 @@ class CustomChapter extends LitElement {
     if (this.loading) {
       return html`<slds-spinner size="large"></slds-spinner>`;
     }
+    if (!this.chapterData) {
+      return html``;
+    }
 
     return html`
       <slds-card no-footer>
@@ -119,33 +122,20 @@ class CustomChapter extends LitElement {
   handleShareClick() {
     const shareUrl = `${location.origin}/${this.id}`;
     this.writeToClipboard(shareUrl);
-    this.showToast(this.label.labelNotifcationLinkCopied, 'info');
+    this.dispatchEvent(new CustomEvent('toast', {
+      detail: {
+        message: this.labels.labelNotifcationLinkCopied,
+        variant: 'info',
+      },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   writeToClipboard(value) {
     navigator.clipboard.writeText(value).catch((err) => {
       console.error('Error copying text to clipboard:', err);
     });
-  }
-
-  showToast(message, state) {
-    const toastElement = document.createElement('slds-toast');
-    toastElement.setAttribute('state', state);
-    toastElement.textContent = message;
-
-    const toastContainer = document.createElement('div');
-    toastContainer.style.width = '90%';
-    toastContainer.style.textAlign = 'center';
-    toastContainer.style.position = 'fixed';
-    toastContainer.style.top = '10%';
-    toastContainer.style.zIndex = '10';
-    toastContainer.appendChild(toastElement);
-
-    this.shadowRoot.appendChild(toastContainer);
-
-    setTimeout(() => {
-      toastContainer.remove();
-    }, 900);
   }
 
   fireQueryEvent_Chapter(chapterId, callback) {
