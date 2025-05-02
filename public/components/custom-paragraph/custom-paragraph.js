@@ -32,22 +32,29 @@ class CustomParagraph extends LitElement {
 
     .editing {
       border-radius: 5px;
-      bolder-width: 1px;
+      border-width: medium;
       border-style: solid;
       border-color: rgb(136, 140, 150);
-      padding: 3px;
+      padding: 5px;
     }
 
     .editing * {
       width: 100%;
+    }
+
+    .editing textarea {
+      height: 50vh;
+      max-height: 250px;
     }
   `;
 
   constructor() {
     super();
     this.id = '';
+    this._paragraphDataBackup = null;
     this._paragraphData = null;
     this.editMode = false; // Internal flag for edit mode
+    this.activeTab = 'text'; // Default active tab
   }
 
   connectedCallback() {
@@ -87,7 +94,7 @@ class CustomParagraph extends LitElement {
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
         </p>
-        ${canEdit ? html`<button @click=${this.handleActionClick}>Action</button>` : ''}
+        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
       </div>
     `;
   }
@@ -97,49 +104,77 @@ class CustomParagraph extends LitElement {
     return html`
       <div id="content" class=${canEdit ? 'editable' : ''}>
         <div .innerHTML=${htmlcontent}></div>
-        ${canEdit ? html`<button @click=${this.handleActionClick}>Action</button>` : ''}
+        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
       </div>
     `;
   }
 
   renderEditMode() {
-    const { name, content } = this._paragraphData;
+    const { name, content, htmlcontent, sortnumber} = this._paragraphData;
     return html`
       <div class="slds-grid slds-wrap editing">
-        <div class="slds-col slds-size_1-of-1 "><label for="edit-name">Name</label></div>
-        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium"><input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} /></div>
-        <div class="slds-col slds-size_1-of-1 "><label for="edit-content">Content</label></div>
-        <div class="slds-col slds-size_1-of-1 "><textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea></div>
-        <div class="slds-col slds-size_1-of-2 ">
+        <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} />
+        </div>
+        <div class="slds-col slds-size_1-of-1"><label for="edit-sortnumber">Sort Number</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input type="text" id="edit-sortnumber" .value=${sortnumber || ''} @input=${this.handleEditInputChange} />
+        </div>
+        <div class="slds-col slds-size_1-of-1">
+          <div class="slds-tabs_default">
+            <ul class="slds-tabs_default__nav" role="tablist">
+              <li class="slds-tabs_default__item ${this.activeTab === 'text' ? 'slds-active slds-has-focus' : ''}" title="Text Input" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'text'} aria-controls="text-tab" id="text-tab-link" @click=${() => this.switchTab('text')}>Text</a>
+              </li>
+              <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
+              </li>
+            </ul>
+            <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
+              <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
+            </div>
+            <div id="html-tab" class="slds-tabs_default__content ${this.activeTab === 'html' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="html-tab-link">
+              <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="slds-col slds-size_1-of-2">
           <button @click=${this.handleSaveEdit}>Save</button>
         </div>
-        <div class="slds-col slds-size_1-of-2 ">
+        <div class="slds-col slds-size_1-of-2">
           <button @click=${this.handleCancelEdit}>Cancel</button>
         </div>
       </div>
     `;
   }
 
-  handleActionClick() {
+  handleEditClick() {
     this.editMode = true; // Enable edit mode
     this.requestUpdate();
   }
 
   handleEditInputChange(event) {
     const { id, value } = event.target;
-    const key = id === 'edit-name' ? 'name' : 'content';
+    // Update the paragraph data with the new value
+    const key = id.replace('edit-', ''); // Remove 'edit-' prefix from id
+    this._paragraphData[key] = value; // Update other fields
+    // Update the paragraph data with the new value
+    
     this._paragraphData = { ...this._paragraphData, [key]: value };
   }
 
   handleSaveEdit() {
     console.log('Saving edited data:', this._paragraphData);
     this.editMode = false; // Exit edit mode
+    this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
   }
 
   handleCancelEdit() {
     console.log('Edit canceled');
     this.editMode = false; // Exit edit mode
+    this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
     this.requestUpdate();
   }
 
@@ -154,7 +189,6 @@ class CustomParagraph extends LitElement {
   }
 
   checkEditPermission() {
-    return true; // Always return true for edit permission // this must be removed after testing
     const authData = sessionStorage.getItem('code_exchange_response');
     if (!authData) return false;
 
@@ -166,6 +200,13 @@ class CustomParagraph extends LitElement {
       return false;
     }
   }
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    this.requestUpdate();
+  }
+
+// ========== Query Event ==========
 
   fireQueryEvent_Paragraph(paragraphid, callback) {
     if (!paragraphid) return;
@@ -185,6 +226,50 @@ class CustomParagraph extends LitElement {
       return;
     }
     this._paragraphData = data;
+    this._paragraphDataBackup = { ...data }; // Backup the original data
+    this.requestUpdate();
+  }
+
+// ========== Save Event ==========
+
+  fireSaveEvent_Paragraph() {
+    if (!this._paragraphData) return;
+
+    let eventDetail = {};
+    eventDetail.object = 'paragraph';
+    eventDetail.payload = this._paragraphData;
+    eventDetail.callback = this.saveEventCallback_Paragraph.bind(this);
+
+    this.dispatchEvent(
+      new CustomEvent('save', {
+        detail: eventDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  saveEventCallback_Paragraph(error, data) {
+    if (error) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: error, variant: 'error' },  
+          bubbles: true,
+          composed: true,
+        })
+      );
+      return;
+    }
+    if (data) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Saved', variant: 'success' },  
+          bubbles: true,
+          composed: true,
+        })
+      );
+      this._paragraphDataBackup = this._paragraphData; // Update the backup with the new 
+    }
     this.requestUpdate();
   }
 }
