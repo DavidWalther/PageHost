@@ -83,10 +83,6 @@ class CustomChapter extends LitElement {
       return html`<slds-spinner size="large"></slds-spinner>`;
     }
 
-    if (!this.chapterData) {
-      return html`<div>No chapter data available.</div>`;
-    }
-
     return html`
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
