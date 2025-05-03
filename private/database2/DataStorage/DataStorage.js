@@ -206,10 +206,10 @@ class DataStorage {
       actionGet
         .setConditionId(chapterId)
         .setConditionApplicationKey(this.applicationKey)
-      if(this.publishDate) {
-        actionGet.setConditionPublishDate(this.publishDate);
-      } else {
+      if(this.publishDate === undefined) {
         actionGet.setConditionPublishDate();
+      } else {
+        actionGet.setConditionPublishDate(this.publishDate);
       }
 
       actionGet.execute().then((result) => {

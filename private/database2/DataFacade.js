@@ -75,7 +75,7 @@ class DataFacadeSync {
         return this.getChapter(recordId);
       }
       if(hasEditScope) {
-        return this.getChapter(recordId);
+        return this.getChapterWithoutCache(parameterObject);
       }
     }
   }
@@ -128,6 +128,26 @@ class DataFacadeSync {
     return product;
   }
 
+  async getParagraphs(recordId) {
+    const LOCATION = 'DataFacadeSync.getParagraphs';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getParagraphById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let cache = new DataCache2(this.environment);
+    let product = await cache.get(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No paragraphs in cache, querying database` });
+      let dataStorage = new DataStorage(this.environment);
+      dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+      product = await dataStorage.queryParagraphs(recordId);
+      cache.set(recordId, product);
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Paragraphs found in cache` });
+    }
+    return product;
+  }
+
   async getParagraphWithoutCache(parameterObject) {
     let recordId = parameterObject?.request?.id;
     let publishDate = parameterObject?.request?.publishDate;
@@ -146,26 +166,6 @@ class DataFacadeSync {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No paragraphs in database` });
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Paragraphs found in database` });
-    }
-    return product;
-  }
-
-  async getParagraphs(recordId) {
-    const LOCATION = 'DataFacadeSync.getParagraphs';
-    if(DataFacade.isDataMockEnabled()) {
-      return new DataMock().getParagraphById(recordId);
-    }
-    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No paragraphs in cache, querying database` });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
-      product = await dataStorage.queryParagraphs(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Paragraphs found in cache` });
     }
     return product;
   }
@@ -228,6 +228,28 @@ class DataFacadeSync {
       cache.set(recordId, product);
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Chapter found in cache` });
+    }
+    return product;
+  }
+
+  async getChapterWithoutCache(parameterObject) {
+    let recordId = parameterObject?.request?.id;
+    const LOCATION = 'DataFacadeSync.getChapterWithoutCache';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getChapterById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    let publishDate = parameterObject?.request?.publishDate;
+    if (publishDate !== undefined) {
+      dataStorage.setConditionPublishDate(publishDate);
+    }
+    let product = await dataStorage.queryChapter(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No chapter in database` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Chapter found in database` });
     }
     return product;
   }

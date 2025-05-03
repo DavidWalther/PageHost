@@ -18,9 +18,12 @@ class ChapterEndpoint extends EndpointLogic {
       table: 'chapter',
       id: this.requestObject.query.id
     };
+    if(this.scopes?.has('edit')) {
+      parameterObject.request.publishDate = null;
+    }
 
     let dataFacade = new DataFacade(this.environment);
-    return dataFacade.getData(parameterObject).then(chapter => {
+    return dataFacade.setScopes(this.scopes).getData(parameterObject).then(chapter => {
       Logging.debugMessage({severity:'FINER', message: `Chapter returned`, location: LOCATION});
       this.responseObject.json(chapter);
     });
