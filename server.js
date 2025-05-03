@@ -139,5 +139,6 @@ app.listen(PORT, () => {
   Logging.debugMessage({severity:'INFO', message: `Application Key: ${Application_Key}`, location: 'Server.listen'});
   const env = environment.getEnvironment();
   const LOCATION = 'Server.listen';
+  Logging.debugMessage({severity:'INFO', message: `Host: ${env.HOST}`, location: LOCATION});
   Logging.debugMessage({severity:'INFO', message: `Server running on port ${PORT}`, location: LOCATION});
 });
