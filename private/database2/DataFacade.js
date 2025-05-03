@@ -13,9 +13,14 @@ class DataFacadePromise {
 
   }
 
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
+  }
+
   getData(parameterObject) {
     return new Promise((resolve) => {
-      let syncResult = new DataFacadeSync(this.environment).getData(parameterObject);
+      let syncResult = new DataFacadeSync(this.environment).setScopes(this.scopes).getData(parameterObject);
       resolve(syncResult);
     });
   }
@@ -34,6 +39,11 @@ class DataFacadeSync {
       throw new Error('Environment object is required');
     }
     this.environment = environmentObject;
+  }
+
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
   }
 
   async getData(parameterObject) {
@@ -195,12 +205,16 @@ class DataFacade {
     }
     this.environment = environmentObject;
   }
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
+  }
 
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
-      return new DataFacadePromise(this.environment).getData(parameterObject);
+      return new DataFacadePromise(this.environment).setScopes(this.scopes).getData(parameterObject);
     } else {
-      return new DataFacadeSync(this.environment).getData(parameterObject);
+      return new DataFacadeSync(this.environment).setScopes(this.scopes).getData(parameterObject);
     }
   }
 

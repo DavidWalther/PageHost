@@ -20,7 +20,7 @@ class ParagraphEndpoint extends EndpointLogic {
     };
 
     let dataFacade = new DataFacade(this.environment);
-    return dataFacade.getData(parameterObject).then(paragraph => {
+    return dataFacade.setScopes(this.scopes).getData(parameterObject).then(paragraph => {
       Logging.debugMessage({severity:'FINER', message: `Paragraph returned`, location: LOCATION});
       this.responseObject.json(paragraph);
     });
