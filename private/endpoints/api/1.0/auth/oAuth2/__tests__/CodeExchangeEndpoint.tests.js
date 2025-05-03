@@ -56,7 +56,7 @@ Environment.mockImplementation(() => {
     GOOGLE_CLIENT_SECRET: 'test-client-secret',
     GOOGLE_ENDPOINT_WELLKNOWN: 'https://accounts.google.com/.well-known/openid-configuration',
     HOST: 'http://localhost',
-    AUTH_REGISTERED_USER_EMAL: 'legit.user@test.com',
+    AUTH_REGISTERED_USER_EMAIL: 'legit.user@test.com',
     AUTH_SERVER_SECRET: 'secret'
   };
 });

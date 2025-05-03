@@ -44,7 +44,7 @@ class AccessTokenService {
   getUserScopes(userInfo) {
     // Guard clauses
     if(!userInfo) { return []; }
-    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAL) {
+    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAIL) {
       return [];
     }
     // buisiness logic
@@ -56,7 +56,7 @@ class AccessTokenService {
     // Guard clauses
     if(!userInfo) { return false; }
 
-    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAL) {
+    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAIL) {
       return false;
     }
 
