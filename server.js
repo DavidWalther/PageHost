@@ -44,13 +44,28 @@ app.get('/metadata', (req, res) => {
   });
 });
 
-app.get('/data/query/*', (req, res) => {
+app.get('/data/query/*', async (req, res) => {
   const LOCATION = 'Server.get(\'/data/query/*\')';
 
   Logging.debugMessage({severity:'FINER', message: `Request received - params: ${JSON.stringify(req.params)}`, location: LOCATION});
   Logging.debugMessage({severity:'FINER', message: `Request received - query: ${JSON.stringify(req.query)}`, location: LOCATION});
 
   const selectedEndpoint = DataQueryLogicFactory.getProduct(req);
+  // check for bearer token
+  const bearerToken = req.headers['authorization']?.split(' ')[1];
+  if (bearerToken) {
+    // if a bearer token is provided, check if it is valid
+    let accessTokenService = new AccessTokenService();
+    let userScopes = await accessTokenService.setEnvironment(environment).getScopesForBearer(bearerToken);
+
+    if (!userScopes) {
+      Logging.debugMessage({severity:'FINER', message: `Bearer token is invalid`, location: LOCATION});
+      res.status(401).send('Unauthorized');
+      return;
+    }
+
+    selectedEndpoint.setScopes(new Set(userScopes));
+  }
 
   Logging.debugMessage({severity:'FINER', message: `Selected Endpoint: ${selectedEndpoint.getClassName()}`, location: LOCATION});
 

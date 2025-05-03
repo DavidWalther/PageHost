@@ -94,16 +94,17 @@ function accessSessionStorage(key, action, value, callback) {
 }
 
 function fetchDatabase(eventpayload) {
+  let preparedHeaders = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  };
+  
   let authData = accessSessionStorage('code_exchange_response', 'read');
   authData = JSON.parse(authData);
-  let authBearer = authData.authenticationResult?.access?.access_token
-  let preparedHeaders = {
-              method: 'GET',
-              headers: {
-               'Content-Type': 'application/json',
-              }
-            };
-  if (authBearer) {
+  if (authData && authData.authenticationResult) {
+    let authBearer = authData.authenticationResult?.access?.access_token
     preparedHeaders.headers.Authorization = `Bearer ${authBearer}`
   }
 

@@ -80,6 +80,25 @@ class AccessTokenService {
     return `mid-term-bearer-token-${bearerToken}`;
   }
 
+  async getScopesForBearer(bearer) {
+    // Guard clauses
+    if (!bearer) {
+      return [];
+    }
+
+    const cache = new DataCache2(this.environment);
+    const cacheKey = this.getBearerCacheKey(bearer);
+    const cacheValue = await cache.get(cacheKey);
+
+    if (!cacheValue) {
+      return [];
+    }
+
+    const { scopes } = cacheValue;
+
+    return scopes;
+  }
+
   async isBearerValidFromScope(bearer, requestedScopes) {
     // Guard clauses
     if (!bearer || !requestedScopes) {
