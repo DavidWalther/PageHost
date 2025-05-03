@@ -26,7 +26,7 @@ describe('ActionUpdate', () => {
 
     updateAction.execute().then((result) => {
       expect(mockPgConnector.executeSql).toHaveBeenCalledWith(
-        `UPDATE ${mockTable.getTableName()()} SET name = 'Updated Name', age = 30 WHERE id = '123' RETURNING id;`, {"closeConnection": true}
+        `UPDATE ${mockTable.getTableName()()} SET name = 'Updated Name', age = 30 WHERE id = '123';`, {"closeConnection": true}
       );
       expect(result).toEqual([{ id: '123' }]);
     });
@@ -61,7 +61,7 @@ describe('ActionUpdate', () => {
 
     updateAction.execute().catch((err) => {
       expect(mockPgConnector.executeSql).toHaveBeenCalledWith(
-        `UPDATE ${mockTable.getTableName()()} SET name = 'Updated Name', age = 30 WHERE id = '123' RETURNING id;`, {"closeConnection": true}
+        `UPDATE ${mockTable.getTableName()()} SET name = 'Updated Name', age = 30 WHERE id = '123';`, {"closeConnection": true}
       );
       expect(err).toEqual('SQL execution failed');
     });
