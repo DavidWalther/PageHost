@@ -1,8 +1,6 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
-const templatePath = 'components/custom-chapter/custom-chapter.html';
-
 class CustomChapter extends LitElement {
   labels = {
     labelNotifcationLinkCopied: 'Link kopiert',
