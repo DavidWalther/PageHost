@@ -279,3 +279,79 @@ describe('getData', () => {
     });
   });
 });
+
+describe('updateData', () => {
+  let dataFacade;
+  let mockEnvironment;
+  let mockDataStorage;
+  let mockDataCache;
+  let mockDataStorageUpdateData;
+
+  beforeEach(() => {
+    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+
+    mockDataStorage = {
+      setConditionApplicationKey: jest.fn(),
+      updateData: mockDataStorageUpdateData = jest.fn(),
+    };
+
+    mockDataCache = {
+      set: jest.fn(),
+    };
+
+    DataStorage.mockImplementation(() => mockDataStorage);
+    DataCache2.mockImplementation(() => mockDataCache);
+
+    dataFacade = new DataFacade(mockEnvironment);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should throw an error if the object type is invalid', async () => {
+    mockDataStorageUpdateData = jest.fn().mockImplementation(() => {
+      throw new Error('Invalid object type');
+    });
+    const invalidData = { object: 'InvalidObject', payload: { id: '1234' } };
+
+    try {
+     let result =  await dataFacade.updateData(invalidData);
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Invalid object type');
+      expect(mockDataCache.set).not.toHaveBeenCalled();
+      expect(mockDataStorage.updateData).not.toHaveBeenCalled();
+    }
+  });
+
+  it('should throw an error if the payload does not have an ID', async () => {
+    const invalidData = { object: 'configuration', payload: {} };
+
+    await expect(dataFacade.updateData(invalidData)).rejects.toThrow('Invalid data object: Missing object type or payload ID');
+    expect(mockDataStorage.updateData).not.toHaveBeenCalled();
+    expect(mockDataCache.set).not.toHaveBeenCalled();
+  });
+
+  it('should call DataStorage.updateData and DataCache.set on success', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    mockDataStorage.updateData.mockResolvedValue({ id: '1234' });
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+  });
+
+  it('should throw an error if DataStorage.updateData fails', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    mockDataStorage.updateData.mockRejectedValue(new Error('Update failed'));
+
+    await expect(dataFacade.updateData(validData)).rejects.toThrow('Update failed');
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).not.toHaveBeenCalled();
+  });
+});

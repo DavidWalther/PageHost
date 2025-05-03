@@ -1,264 +1,276 @@
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
-const templatePath = 'components/custom-paragraph/custom-paragraph.html';
-let templatePromise = null;
-let loadedMarkup = null;
+class CustomParagraph extends LitElement {
+  static properties = {
+    id: { type: String },
+  };
 
-class CustomParagraph extends HTMLElement {
-  
-  static get observedAttributes() {
-    return [
-      'id',
-      'editable'
-    ];
-  }
-  
-  attributeChangedCallback(attr, oldValue, newValue) {
-    if (oldValue === newValue) { return;}
-    let modifiedInput = null;
+  static styles = css`
+    /* Add SLDS styling for your component here */
+    #content {
+      position: relative;
+    }
 
-    switch (attr) {
-      case 'id':
-        this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
-        break;
-      case 'editable':
+    #content button {
+      display: none;
+    }
 
-        break;
-      default:
-        break;
-      }
-      if (modifiedInput) {
-        modifiedInput.value = newValue;
-      }
-  }
+    #content.editable:hover,
+    #content.editable:focus-within {
+      border-radius: 5px;
+      bolder-width: 1px;
+      border-style: solid;
+      border-color:rgb(69, 111, 209);
+      padding: 3px;
+    }
 
-  // ----------------------------------------------
-  // Lifecycle methods
-  // ----------------------------------------------
+    #content.editable:hover button,
+    #content.editable:focus-within button {
+      display: block;
+    }
+
+    .editing {
+      border-radius: 5px;
+      border-width: medium;
+      border-style: solid;
+      border-color: rgb(136, 140, 150);
+      padding: 5px;
+    }
+
+    .editing * {
+      width: 100%;
+    }
+
+    .editing textarea {
+      height: 50vh;
+      max-height: 250px;
+    }
+  `;
 
   constructor() {
     super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });
-
-    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    this.id = '';
+    this._paragraphDataBackup = null;
+    this._paragraphData = null;
+    this.editMode = false; // Internal flag for edit mode
+    this.activeTab = 'text'; // Default active tab
   }
 
-  async connectedCallback() {
-    if (!loadedMarkup) {
-      loadedMarkup = await this.loadHtmlMarkup();
-    }
-
-    // Append the main template
-    const mainTemplateContent = loadedMarkup.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-
+  connectedCallback() {
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
   }
 
-  // ----------------------------------------------
-  // Component methods
-  // ----------------------------------------------
-
-  addEditableElements(nameValue, htmlContentValue, textContentValue) {
-          // Initialize input fields with attribute values
-      this.shadowRoot.getElementById('chapterId').value = this.getAttribute('chapterId') || '';
-      this.shadowRoot.getElementById('htmlContent').value = htmlContentValue;
-      this.shadowRoot.getElementById('id').value = this.getAttribute('id') || '';
-      this.shadowRoot.getElementById('lastupdate').value = this.getAttribute('lastupdate') || '';
-      this.shadowRoot.getElementById('name').value = nameValue;
-      this.shadowRoot.getElementById('publishdate').value = this.getAttribute('publishdate') || '';
-      this.shadowRoot.getElementById('sortnumber').value = this.getAttribute('sortnumber') || '';
-      this.shadowRoot.getElementById('storyId').value = this.getAttribute('storyId') || '';
-
-      this.shadowRoot.getElementById('datePublish').setAttribute('value', this.getAttribute('publishdate')?.split('T')[0] || '');
-      this.shadowRoot.getElementById('textContent').setAttribute('value', textContentValue);
-
-      this.connectEventListeners();// Add your code here to add editable elements
-  }
-
-  createNonEditableHtmlContentElement(name, htmlContent) {
-    const contentElem = document.createElement('div');
-    contentElem.innerHTML = htmlContent;
-    return contentElem;
-  }
-
-  createNonEditableTextContentElement(name, textContent) {
-    const textContentElem = document.createElement('p');
-
-    let textContentLines = [];
-    if(name) {
-      textContentLines.push(`<b>${name}</b>`);
-    }
-    textContent.split('\n').forEach((line) => {;
-      textContentLines.push(line);
-    });
-    textContentElem.innerHTML = textContentLines.join('<br>');
-    return textContentElem;
-  }
-
-  connectEventListeners() {
-    this.shadowRoot.querySelector('#button-save').addEventListener('click', this.handleClickSave.bind(this));
-
-    const inputElements = this.shadowRoot.querySelectorAll('slds-input');
-    inputElements.forEach((inputElement) => {
-      inputElement.addEventListener('change', this.handleInputChange.bind(this));
-    });
-  }
-
-  createOutput(paragraphData) {
-    let htmlContentValue = paragraphData.htmlcontent || '';
-    if (!htmlContentValue || ['false', '0', 'null', 'undefined', 'NaN'].includes(htmlContentValue.toLowerCase())) {
-      htmlContentValue = null;
+  render() {
+    if (!this._paragraphData) {
+      return html`<slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>`;
     }
 
-    const textContentValue = paragraphData.content || '';
-    const nameValue = paragraphData.name || '';
+    if (this.editMode) {
+      let markup = this.renderEditMode(); // Render edit mode if the flag is set
+      return markup;
+    }
 
-    let displayOption = '';
-    displayOption += htmlContentValue == null ? 'text' : 'html';
-    displayOption += '-';
-    displayOption += this.getIsEditable() ? 'editable' : 'readonly';
+    const { name, htmlcontent, content } = this._paragraphData;
+    const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
 
     switch (displayOption) {
-      case 'text-readonly': {
-        this.replaceSlotWithTemplate('placeholder-content', '#template-non-editable');
-        const nonEditContentDiv = this.shadowRoot.getElementById('content');
-        nonEditContentDiv.appendChild(this.createNonEditableTextContentElement(nameValue, textContentValue));
-        
-        this.hideSpinner();
-        break;
-      }
-      case 'html-readonly': {
-        this.replaceSlotWithTemplate('placeholder-content', '#template-non-editable');
-        const nonEditContentDiv = this.shadowRoot.getElementById('content');
-        let  htmlContentElem = this.createNonEditableHtmlContentElement(nameValue, htmlContentValue);
-        nonEditContentDiv.appendChild(htmlContentElem);
-        
-        this.hideSpinner();
-        break;
-      }
-      default: {
-        break;
-      }
+      case 'text-readonly':
+        return this.renderTextReadonly(name, content);
+      case 'html-readonly':
+        return this.renderHtmlReadonly(htmlcontent);
+      default:
+        return html``;
     }
   }
 
-  //--------------------
-  // markup modifiers
-  //--------------------
-
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-        .then((response) => response.text())
-        .then((html) => {
-          return new DOMParser().parseFromString(html, 'text/html');
-        });
-    }
-    return templatePromise;
+  renderTextReadonly(name, content) {
+    const canEdit = this.checkEditPermission();
+    return html`
+      <div id="content" class=${canEdit ? 'editable' : ''}>
+        <p>
+          ${name ? html`<b>${name}</b><br>` : ''}
+          ${content.split('\n').map((line) => html`${line}<br>`)}
+        </p>
+        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
+      </div>
+    `;
   }
 
-  handleClickSave() {
-    console.log('click save');
-    this.buttonSave_disable();
+  renderHtmlReadonly(htmlcontent) {
+    const canEdit = this.checkEditPermission();
+    return html`
+      <div id="content" class=${canEdit ? 'editable' : ''}>
+        <div .innerHTML=${htmlcontent}></div>
+        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
+      </div>
+    `;
+  }
+
+  renderEditMode() {
+    const { name, content, htmlcontent, sortnumber} = this._paragraphData;
+    return html`
+      <div class="slds-grid slds-wrap editing">
+        <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} />
+        </div>
+        <div class="slds-col slds-size_1-of-1"><label for="edit-sortnumber">Sort Number</label></div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input type="text" id="edit-sortnumber" .value=${sortnumber || ''} @input=${this.handleEditInputChange} />
+        </div>
+        <div class="slds-col slds-size_1-of-1">
+          <div class="slds-tabs_default">
+            <ul class="slds-tabs_default__nav" role="tablist">
+              <li class="slds-tabs_default__item ${this.activeTab === 'text' ? 'slds-active slds-has-focus' : ''}" title="Text Input" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'text'} aria-controls="text-tab" id="text-tab-link" @click=${() => this.switchTab('text')}>Text</a>
+              </li>
+              <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
+              </li>
+            </ul>
+            <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
+              <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
+            </div>
+            <div id="html-tab" class="slds-tabs_default__content ${this.activeTab === 'html' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="html-tab-link">
+              <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="slds-col slds-size_1-of-2">
+          <button @click=${this.handleSaveEdit}>Save</button>
+        </div>
+        <div class="slds-col slds-size_1-of-2">
+          <button @click=${this.handleCancelEdit}>Cancel</button>
+        </div>
+      </div>
+    `;
+  }
+
+  handleEditClick() {
+    this.editMode = true; // Enable edit mode
+    this.requestUpdate();
+  }
+
+  handleEditInputChange(event) {
+    const { id, value } = event.target;
+    // Update the paragraph data with the new value
+    const key = id.replace('edit-', ''); // Remove 'edit-' prefix from id
+    this._paragraphData[key] = value; // Update other fields
+    // Update the paragraph data with the new value
+    
+    this._paragraphData = { ...this._paragraphData, [key]: value };
+  }
+
+  handleSaveEdit() {
+    console.log('Saving edited data:', this._paragraphData);
+    this.editMode = false; // Exit edit mode
+    this.fireSaveEvent_Paragraph(); // Trigger save event
+    this.requestUpdate();
+  }
+
+  handleCancelEdit() {
+    console.log('Edit canceled');
+    this.editMode = false; // Exit edit mode
+    this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
+    this.requestUpdate();
   }
 
   handleInputChange(event) {
-    const eventDetail = {
-      id: event.target.id,
-      type: event.target.getAttribute('type'),
-      value: event.detail.value,
-    };
-    console.log(eventDetail);
-
-    const eventChange = new CustomEvent('change', {
-      bubbles: true,
-      detail: eventDetail
-    });
+    const { id, value } = event.target;
+    this._paragraphData = { ...this._paragraphData, [id]: value };
+    this.requestUpdate();
   }
 
-  buttonSave_enable() {
-    this.shadowRoot.querySelector('#button-save').setAttribute('disabled', false);
-  };
+  handleClickSave() {
+    console.log('Saving data:', this._paragraphData);
+  }
 
-  buttonSave_disable() {
-    this.shadowRoot.querySelector('#button-save').setAttribute('disabled', true);
-  };
+  checkEditPermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
 
-  replaceSlotWithTemplate(slotId, templateId) {
-    const slot = this.shadowRoot.querySelector(`slot[name=${slotId}]`);
-    if (loadedMarkup && slot) {
-      const templateContent = loadedMarkup.querySelector(templateId).content;
-      const parentNode = slot.parentNode;
-      parentNode.replaceChild(templateContent.cloneNode(true), slot);
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('edit') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
     }
   }
 
-  getIsEditable() {
-    return this.getAttribute('editable') != null;
+  switchTab(tab) {
+    this.activeTab = tab;
+    this.requestUpdate();
   }
 
-  showSpinner() {
-    if (!this.spinner) { return; }
-    this.spinner.removeAttribute('hidden');
-  }
+// ========== Query Event ==========
 
-  hideSpinner() {
-    if (!this.spinner) { return; }
-    this.spinner.setAttribute('hidden', '');
-  }
-
-  // ----------------------------------------------
-  // properties for attributes
-  // ----------------------------------------------
-
-  get id() {
-    return this.getAttribute('id');
-  }
-
-  get name() {
-    return this.getAttribute('name');
-  }
-
-  // ----------------------------------------------
-  // Element getter
-  // ----------------------------------------------
-
-  get spinner () {
-    return this.shadowRoot.querySelector('slds-spinner');
-  }
-
-  // ------------------------------------------
-  // Query Event methods
-  // ------------------------------------------
-
-  // --------- Fire Query Event methods ---------
-
- fireQueryEvent_Paragraph(paragraphid, callback) {
-    if(!paragraphid) {return;}
-    let payload = {
-        object: 'paragraph',
-        id: paragraphid
-    }
-
-    this.showSpinner();
-    this.dispatchEvent(new CustomEvent('query', {
+  fireQueryEvent_Paragraph(paragraphid, callback) {
+    if (!paragraphid) return;
+    const payload = { object: 'paragraph', id: paragraphid };
+    this.dispatchEvent(
+      new CustomEvent('query', {
         detail: { payload, callback },
         bubbles: true,
-        composed: true
-    }));
-  } 
-
-  // --------- Query Event Callback methods ---------
+        composed: true,
+      })
+    );
+  }
 
   queryEventCallback_Paragraph(error, data) {
-    if(error) {
+    if (error) {
       console.error(error);
       return;
     }
-    if(data) {
-      this.createOutput(data);
+    this._paragraphData = data;
+    this._paragraphDataBackup = { ...data }; // Backup the original data
+    this.requestUpdate();
+  }
+
+// ========== Save Event ==========
+
+  fireSaveEvent_Paragraph() {
+    if (!this._paragraphData) return;
+
+    let eventDetail = {};
+    eventDetail.object = 'paragraph';
+    eventDetail.payload = this._paragraphData;
+    eventDetail.callback = this.saveEventCallback_Paragraph.bind(this);
+
+    this.dispatchEvent(
+      new CustomEvent('save', {
+        detail: eventDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  saveEventCallback_Paragraph(error, data) {
+    if (error) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: error, variant: 'error' },  
+          bubbles: true,
+          composed: true,
+        })
+      );
+      return;
     }
+    if (data) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Saved', variant: 'success' },  
+          bubbles: true,
+          composed: true,
+        })
+      );
+      this._paragraphDataBackup = this._paragraphData; // Update the backup with the new 
+    }
+    this.requestUpdate();
   }
 }
 
