@@ -47,12 +47,20 @@ class DataFacadeSync {
   }
 
   async getData(parameterObject) {
+    let hasEditScope = this.scopes?.has('edit'); 
+    
     if(parameterObject.request.table =='configuration') {
       return this.getConfigurations();
     }
     if(parameterObject.request.table =='paragraph') {
       let recordId = parameterObject?.request?.id;
-      return this.getParagraphs(recordId);
+
+      if(!hasEditScope) {
+        return this.getParagraphs(recordId);
+      } 
+      if(hasEditScope) {
+        return this.getParagraphWithoutCache(parameterObject);
+      }
     }
     if(parameterObject.request.table =='story' && !parameterObject.request.id) {
       return this.getAllStories();
@@ -63,7 +71,12 @@ class DataFacadeSync {
     }
     if(parameterObject.request.table == 'chapter') {
       let recordId = parameterObject?.request?.id;
-      return this.getChapter(recordId);
+      if(!hasEditScope) {
+        return this.getChapter(recordId);
+      }
+      if(hasEditScope) {
+        return this.getChapter(recordId);
+      }
     }
   }
 
@@ -111,6 +124,28 @@ class DataFacadeSync {
       cache.set('metadata', product);
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Metadata found in cache` });
+    }
+    return product;
+  }
+
+  async getParagraphWithoutCache(parameterObject) {
+    let recordId = parameterObject?.request?.id;
+    let publishDate = parameterObject?.request?.publishDate;
+    const LOCATION = 'DataFacadeSync.getParagraphWithoutCache';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getParagraphById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    if (publishDate !== undefined) {
+      dataStorage.setConditionPublishDate(publishDate);
+    }
+    let product = await dataStorage.queryParagraphs(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No paragraphs in database` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Paragraphs found in database` });
     }
     return product;
   }

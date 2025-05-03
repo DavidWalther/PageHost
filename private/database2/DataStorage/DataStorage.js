@@ -23,6 +23,12 @@ class DataStorage {
     return this;
   }
 
+  setConditionPublishDate(publishDate) {
+    if(publishDate === undefined) { return this; }
+    this.publishDate = publishDate;
+    return this;
+  }
+
   queryParagraphs(paragraphId) {
     const LOCATION = 'DataStorage.queryParagraphs';
     if (!this.applicationKey) {
@@ -31,13 +37,16 @@ class DataStorage {
     return new Promise((resolve) => {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying paragraphs for application key: ${this.applicationKey}` });
       let tableParagraph = new TableParagraph();
-      new ActionGet()
+      let actionGet = new ActionGet()
       .setPgConnector(this.pgConnector)
       .setTableName(tableParagraph.tableName)
       .setTableFields(tableParagraph.tableFields)
       .setConditionId(paragraphId)
-      .setConditionApplicationKey(this.applicationKey)
-      .execute().then((result) => {
+      .setConditionApplicationKey(this.applicationKey);
+      if(this.publishDate) {
+        actionGet.setConditionPublishDate(this.publishDate);
+      };
+      actionGet.execute().then((result) => {
         if(result.length === 0) {
           Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No paragraphs found for application key: ${this.applicationKey}` });
           resolve({});
@@ -197,7 +206,11 @@ class DataStorage {
       actionGet
         .setConditionId(chapterId)
         .setConditionApplicationKey(this.applicationKey)
-        .setConditionPublishDate();
+      if(this.publishDate) {
+        actionGet.setConditionPublishDate(this.publishDate);
+      } else {
+        actionGet.setConditionPublishDate();
+      }
 
       actionGet.execute().then((result) => {
         if(result.length === 0) {

@@ -18,6 +18,9 @@ class ParagraphEndpoint extends EndpointLogic {
       table: 'paragraph',
       id: this.requestObject.query.id
     };
+    if(this.scopes?.has('edit')) {
+      parameterObject.request.publishDate = null;
+    }
 
     let dataFacade = new DataFacade(this.environment);
     return dataFacade.setScopes(this.scopes).getData(parameterObject).then(paragraph => {
