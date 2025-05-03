@@ -12,7 +12,7 @@ class EnvironmentVariablesEndpoint extends EndpointLogic {
         version: '1.0',
         google: {
           clientId: this.environment.GOOGLE_CLIENT_ID,
-          redirect_uri: AUTH_OIDC_REDIRECT_URI,
+          redirect_uri: HOST,
           scope: ['openid', 'email', 'profile'],
           response_type: 'code'
         }
