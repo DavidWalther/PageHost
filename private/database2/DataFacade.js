@@ -18,9 +18,14 @@ class DataFacadePromise {
     return this;
   }
 
+  setSkipCache(skipCache) {
+    this.skipCache = skipCache;
+    return this;
+  }
+
   getData(parameterObject) {
     return new Promise((resolve) => {
-      let syncResult = new DataFacadeSync(this.environment).setScopes(this.scopes).getData(parameterObject);
+      let syncResult = new DataFacadeSync(this.environment).setSkipCache(this.skipCache).setScopes(this.scopes).getData(parameterObject);
       resolve(syncResult);
     });
   }
@@ -46,19 +51,25 @@ class DataFacadeSync {
     return this;
   }
 
+  setSkipCache(skipCache) {
+    this._skipCache = skipCache;
+    return this;
+  }
+  getSkipCache() {
+    return this._skipCache === true ? true : false; // this enforces a boolean value
+  }
+
   async getData(parameterObject) {
-    let hasEditScope = this.scopes?.has('edit'); 
-    
     if(parameterObject.request.table =='configuration') {
       return this.getConfigurations();
     }
     if(parameterObject.request.table =='paragraph') {
       let recordId = parameterObject?.request?.id;
 
-      if(!hasEditScope) {
+      if(!this.getSkipCache()) {
         return this.getParagraphs(recordId);
-      } 
-      if(hasEditScope) {
+      }
+      if(this.getSkipCache()) {
         return this.getParagraphWithoutCache(parameterObject);
       }
     }
@@ -71,10 +82,10 @@ class DataFacadeSync {
     }
     if(parameterObject.request.table == 'chapter') {
       let recordId = parameterObject?.request?.id;
-      if(!hasEditScope) {
+      if(!this.getSkipCache()) {
         return this.getChapter(recordId);
       }
-      if(hasEditScope) {
+      if(this.getSkipCache()) {
         return this.getChapterWithoutCache(parameterObject);
       }
     }
@@ -262,16 +273,21 @@ class DataFacade {
     }
     this.environment = environmentObject;
   }
+
   setScopes(scopes) {
     this.scopes = scopes;
     return this;
   }
 
+  setSkipCache(skipCache) {
+    this._skipCache = skipCache;
+    return this;
+  }
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
-      return new DataFacadePromise(this.environment).setScopes(this.scopes).getData(parameterObject);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
     } else {
-      return new DataFacadeSync(this.environment).setScopes(this.scopes).getData(parameterObject);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
     }
   }
 

@@ -291,21 +291,21 @@ describe('getData with specific scopes', () => {
     mockQueryParagraphs = jest.fn();
   });
 
-  describe('Scope: edit', () => {
+  describe('skipping cache', () => {
 
     describe('Chapter', () => {
       it('should not call DataCache if scope is "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(new Set(['edit']));
+        dataFacade.setSkipCache(true);
 
         await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' }});
 
         expect(mockCacheGet).not.toHaveBeenCalled();
       });
 
-      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
+      it('should set publishDate to requested date if cache is skipped', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(new Set(['edit']));
+        dataFacade.setSkipCache(true);
         mockQueryChapter.mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter', publishDate: '2023-01-01' });
 
         const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023', publishDate: null} });
@@ -322,7 +322,7 @@ describe('getData with specific scopes', () => {
     describe('Paragraph', () => {
       it('should not call DataCache if scope is "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(new Set(['edit']));
+        dataFacade.setSkipCache(true);
 
         await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045' } });
 
@@ -331,7 +331,7 @@ describe('getData with specific scopes', () => {
 
       it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(new Set(['edit']));
+        dataFacade.setSkipCache(true);
         mockQueryParagraphs.mockReturnValue({ id: '000p00000000000045', Name: 'Test Paragraph', publishDate: '2023-01-01' });
 
         const result = await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045', publishDate: null } });
