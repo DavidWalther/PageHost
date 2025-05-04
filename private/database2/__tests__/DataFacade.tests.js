@@ -53,8 +53,10 @@ let mockQueryAllStories = jest.fn().mockReturnValue();
 let mockQueryChapter = jest.fn().mockReturnValue();
 let mockQueryParagraph = jest.fn().mockReturnValue();
 let setConditionApplicationKey = jest.fn();
+let setConditionPublishDate = jest.fn();
 DataStorage.mockImplementation(() => {
   return {
+    setConditionPublishDate: setConditionPublishDate,
     setConditionApplicationKey: setConditionApplicationKey,
     queryConfiguration: mockQueryConfiguration,
     queryAllStories: mockQueryAllStories,
@@ -276,6 +278,48 @@ describe('getData', () => {
         expect(mockCacheSet).toHaveBeenCalled();
         expect(result).toStrictEqual(MOCK_DATABASE);
       });
+    });
+  });
+});
+
+describe('getData with specific scopes', () => {
+  beforeEach(() => {
+    DataStorage.mockClear();
+    DataCache2.mockClear();
+    mockCacheGet = jest.fn();
+    mockQueryChapter = jest.fn();
+  });
+
+  describe('Scope: edit', () => {
+
+    describe('Chapter', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(new Set(['edit']));
+
+        await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' }});
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
+      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(new Set(['edit']));
+        mockQueryChapter.mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter', publishDate: '2023-01-01' });
+
+        const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023', publishDate: null} });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000c00000000000023');
+        expect(result.publishDate).toBe('2023-01-01');
+      });
+    });
+
+
+
     });
   });
 });
