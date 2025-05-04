@@ -94,6 +94,20 @@ function accessSessionStorage(key, action, value, callback) {
 }
 
 function fetchDatabase(eventpayload) {
+  let preparedHeaders = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  };
+  
+  let authData = accessSessionStorage('code_exchange_response', 'read');
+  authData = JSON.parse(authData);
+  if (authData && authData.authenticationResult) {
+    let authBearer = authData.authenticationResult?.access?.access_token
+    preparedHeaders.headers.Authorization = `Bearer ${authBearer}`
+  }
+
   return new Promise((resolve, reject) => {
     switch (eventpayload.object) {
       case 'story': {
@@ -131,9 +145,9 @@ function fetchDatabase(eventpayload) {
         let chapterId = eventpayload.id;
         let fetchPromises = [];
         fetchPromises.push(
-          fetch(`/data/query/chapter?id=${chapterId}`)
-            .then(chapterResponse => {
-              return chapterResponse.json()
+          fetch(`/data/query/chapter?id=${chapterId}`, preparedHeaders)
+          .then(chapterResponse => {
+            return chapterResponse.json()
         }));
 
         Promise.all(fetchPromises).then(response => {
@@ -144,7 +158,7 @@ function fetchDatabase(eventpayload) {
       }
       case 'paragraph': {
         let paragraphId = eventpayload.id;
-        fetch(`/data/query/paragraph?id=${paragraphId}`)
+        fetch(`/data/query/paragraph?id=${paragraphId}`, preparedHeaders)
         .then(paragraphResponse => paragraphResponse.json())
         .then(paragraph => {
           if(!paragraph || paragraph.length === 0) { reject('No paragraph found');}

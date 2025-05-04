@@ -13,9 +13,19 @@ class DataFacadePromise {
 
   }
 
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
+  }
+
+  setSkipCache(skipCache) {
+    this.skipCache = skipCache;
+    return this;
+  }
+
   getData(parameterObject) {
     return new Promise((resolve) => {
-      let syncResult = new DataFacadeSync(this.environment).getData(parameterObject);
+      let syncResult = new DataFacadeSync(this.environment).setSkipCache(this.skipCache).setScopes(this.scopes).getData(parameterObject);
       resolve(syncResult);
     });
   }
@@ -36,13 +46,32 @@ class DataFacadeSync {
     this.environment = environmentObject;
   }
 
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
+  }
+
+  setSkipCache(skipCache) {
+    this._skipCache = skipCache;
+    return this;
+  }
+  getSkipCache() {
+    return this._skipCache === true ? true : false; // this enforces a boolean value
+  }
+
   async getData(parameterObject) {
     if(parameterObject.request.table =='configuration') {
       return this.getConfigurations();
     }
     if(parameterObject.request.table =='paragraph') {
       let recordId = parameterObject?.request?.id;
-      return this.getParagraphs(recordId);
+
+      if(!this.getSkipCache()) {
+        return this.getParagraphs(recordId);
+      }
+      if(this.getSkipCache()) {
+        return this.getParagraphWithoutCache(parameterObject);
+      }
     }
     if(parameterObject.request.table =='story' && !parameterObject.request.id) {
       return this.getAllStories();
@@ -53,7 +82,12 @@ class DataFacadeSync {
     }
     if(parameterObject.request.table == 'chapter') {
       let recordId = parameterObject?.request?.id;
-      return this.getChapter(recordId);
+      if(!this.getSkipCache()) {
+        return this.getChapter(recordId);
+      }
+      if(this.getSkipCache()) {
+        return this.getChapterWithoutCache(parameterObject);
+      }
     }
   }
 
@@ -125,6 +159,28 @@ class DataFacadeSync {
     return product;
   }
 
+  async getParagraphWithoutCache(parameterObject) {
+    let recordId = parameterObject?.request?.id;
+    let publishDate = parameterObject?.request?.publishDate;
+    const LOCATION = 'DataFacadeSync.getParagraphWithoutCache';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getParagraphById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    if (publishDate !== undefined) {
+      dataStorage.setConditionPublishDate(publishDate);
+    }
+    let product = await dataStorage.queryParagraphs(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No paragraphs in database` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Paragraphs found in database` });
+    }
+    return product;
+  }
+
   async getAllStories() {
     const LOCATION = 'DataFacadeSync.getAllStories';
     if(DataFacade.isDataMockEnabled()) {
@@ -186,6 +242,28 @@ class DataFacadeSync {
     }
     return product;
   }
+
+  async getChapterWithoutCache(parameterObject) {
+    let recordId = parameterObject?.request?.id;
+    const LOCATION = 'DataFacadeSync.getChapterWithoutCache';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getChapterById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    let publishDate = parameterObject?.request?.publishDate;
+    if (publishDate !== undefined) {
+      dataStorage.setConditionPublishDate(publishDate);
+    }
+    let product = await dataStorage.queryChapter(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No chapter in database` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Chapter found in database` });
+    }
+    return product;
+  }
 }
 
 class DataFacade {
@@ -196,11 +274,20 @@ class DataFacade {
     this.environment = environmentObject;
   }
 
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
+  }
+
+  setSkipCache(skipCache) {
+    this._skipCache = skipCache;
+    return this;
+  }
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
-      return new DataFacadePromise(this.environment).getData(parameterObject);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
     } else {
-      return new DataFacadeSync(this.environment).getData(parameterObject);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
     }
   }
 

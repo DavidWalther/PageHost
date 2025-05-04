@@ -3,7 +3,7 @@ require('dotenv').config();
 class Environment {
   constructor(environmentInput) {
     this._originalEnv = environmentInput || process.env;
-    this._originalEnv.HOST = 'https://glacial-plains-08201-4314ef80e9a0.herokuapp.com';
+    this._originalEnv.HOST = process.env.AUTH_OIDC_REDIRECT_URI;
   }
 
   getEnvironment() {

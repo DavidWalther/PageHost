@@ -51,16 +51,18 @@ let mockQueryConfiguration = jest.fn().mockReturnValue(MOCK_DATABASE);
 let mockQueryStory = jest.fn().mockReturnValue();
 let mockQueryAllStories = jest.fn().mockReturnValue();
 let mockQueryChapter = jest.fn().mockReturnValue();
-let mockQueryParagraph = jest.fn().mockReturnValue();
+let mockQueryParagraphs = jest.fn().mockReturnValue();
 let setConditionApplicationKey = jest.fn();
+let setConditionPublishDate = jest.fn();
 DataStorage.mockImplementation(() => {
   return {
+    setConditionPublishDate: setConditionPublishDate,
     setConditionApplicationKey: setConditionApplicationKey,
     queryConfiguration: mockQueryConfiguration,
     queryAllStories: mockQueryAllStories,
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
-    queryParagraph: mockQueryParagraph
+    queryParagraphs: mockQueryParagraphs
   };
 });
 
@@ -275,6 +277,71 @@ describe('getData', () => {
         expect(mockQueryConfiguration).toHaveBeenCalled();
         expect(mockCacheSet).toHaveBeenCalled();
         expect(result).toStrictEqual(MOCK_DATABASE);
+      });
+    });
+  });
+});
+
+describe('getData with specific scopes', () => {
+  beforeEach(() => {
+    DataStorage.mockClear();
+    DataCache2.mockClear();
+    mockCacheGet = jest.fn();
+    mockQueryChapter = jest.fn();
+    mockQueryParagraphs = jest.fn();
+  });
+
+  describe('skipping cache', () => {
+
+    describe('Chapter', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+
+        await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' }});
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
+      it('should set publishDate to requested date if cache is skipped', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+        mockQueryChapter.mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter', publishDate: '2023-01-01' });
+
+        const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023', publishDate: null} });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000c00000000000023');
+        expect(result.publishDate).toBe('2023-01-01');
+      });
+    });
+
+    describe('Paragraph', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+
+        await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
+      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+        mockQueryParagraphs.mockReturnValue({ id: '000p00000000000045', Name: 'Test Paragraph', publishDate: '2023-01-01' });
+
+        const result = await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045', publishDate: null } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryParagraphs).toHaveBeenCalledWith('000p00000000000045');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000p00000000000045');
+        expect(result.publishDate).toBe('2023-01-01');
       });
     });
   });
