@@ -26,7 +26,7 @@ class UpsertEndpoint extends EndpointLogic {
 
       const data = this.requestObject.body; // Assuming data is sent in the request body
 
-      let dataFacade = new DataFacade(this.environment);
+      let dataFacade = new DataFacade(this.environment).setSkipCache(true);
       const result = await dataFacade.updateData(data);
 
       this.responseObject.status(200).json({ success: true, result });
