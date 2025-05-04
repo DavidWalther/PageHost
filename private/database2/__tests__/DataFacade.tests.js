@@ -421,4 +421,28 @@ describe('updateData', () => {
     expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
     expect(mockDataCache.set).not.toHaveBeenCalled();
   });
+
+  it('should skip writing to cache when skipCache is true', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+    dataFacade.setSkipCache(true);
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).not.toHaveBeenCalled();
+  });
+
+  it('should write to cache when skipCache is false', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+    dataFacade.setSkipCache(false);
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+  });
 });
