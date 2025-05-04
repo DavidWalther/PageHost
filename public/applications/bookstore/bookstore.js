@@ -46,8 +46,7 @@ class Bookstore extends HTMLElement {
     // Save ID to session storage if present
     if (isFirstUrlParameterSet) {
       this.writeToStorage('session', 'redirectId', firstUrlParameter);
-      window.location.href = window.location.origin; // Redirect to host URL
-      return;
+      window.history.replaceState({}, '', window.location.origin);
     }
 
     const initParameter = await this.handleRedirectId();
