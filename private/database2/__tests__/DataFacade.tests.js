@@ -51,7 +51,7 @@ let mockQueryConfiguration = jest.fn().mockReturnValue(MOCK_DATABASE);
 let mockQueryStory = jest.fn().mockReturnValue();
 let mockQueryAllStories = jest.fn().mockReturnValue();
 let mockQueryChapter = jest.fn().mockReturnValue();
-let mockQueryParagraph = jest.fn().mockReturnValue();
+let mockQueryParagraphs = jest.fn().mockReturnValue();
 let setConditionApplicationKey = jest.fn();
 let setConditionPublishDate = jest.fn();
 DataStorage.mockImplementation(() => {
@@ -62,7 +62,7 @@ DataStorage.mockImplementation(() => {
     queryAllStories: mockQueryAllStories,
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
-    queryParagraph: mockQueryParagraph
+    queryParagraphs: mockQueryParagraphs
   };
 });
 
@@ -288,6 +288,7 @@ describe('getData with specific scopes', () => {
     DataCache2.mockClear();
     mockCacheGet = jest.fn();
     mockQueryChapter = jest.fn();
+    mockQueryParagraphs = jest.fn();
   });
 
   describe('Scope: edit', () => {
@@ -318,8 +319,30 @@ describe('getData with specific scopes', () => {
       });
     });
 
+    describe('Paragraph', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(new Set(['edit']));
 
+        await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045' } });
 
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
+      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(new Set(['edit']));
+        mockQueryParagraphs.mockReturnValue({ id: '000p00000000000045', Name: 'Test Paragraph', publishDate: '2023-01-01' });
+
+        const result = await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045', publishDate: null } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryParagraphs).toHaveBeenCalledWith('000p00000000000045');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000p00000000000045');
+        expect(result.publishDate).toBe('2023-01-01');
+      });
     });
   });
 });
