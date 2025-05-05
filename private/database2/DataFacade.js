@@ -109,10 +109,13 @@ class DataFacadeSync {
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
       await dataStorage.updateData(object, payload);
 
-      const cache = new DataCache2(this.environment);
-      await cache.set(copyOfPayload.id, copyOfPayload);
-
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Data updated successfully for object: ${object}` });
+      if (!this.getSkipCache()) {
+        const cache = new DataCache2(this.environment);
+        await cache.set(copyOfPayload.id, copyOfPayload);
+        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Data updated successfully for object: ${object}` });
+      } else {
+        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Skipping cache update for object: ${object}` });
+      }
     } catch (error) {
       Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to update data for object: ${object}`, error });
       throw error;
@@ -293,9 +296,9 @@ class DataFacade {
 
   updateData(data) {
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).updateData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).updateData(data);
     } else {
-      return new DataFacadeSync(this.environment).updateData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).updateData(data);
     }
   }
 
