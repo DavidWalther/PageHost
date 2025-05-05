@@ -125,6 +125,16 @@ app.post('/api/1.0/data/change/*', async (req, res) => {
   const LOCATION = 'Server.post(\'/api/1.0/data/change/*\')';
   Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
 
+  let headers = req.headers;
+  let bearerToken = headers['authorization']?.split(' ')[1];
+
+  let accessTokenService = new AccessTokenService().setEnvironment(environment);
+  if(!accessTokenService.isBearerValidFromScope(bearerToken, 'edit')) {
+    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid`, location: LOCATION });
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
   const endpoint = new UpsertEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'INFO', message: `Upsert Endpoint executed`, location: LOCATION });
