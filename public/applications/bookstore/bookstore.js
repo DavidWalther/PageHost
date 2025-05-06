@@ -18,7 +18,7 @@ class Bookstore extends HTMLElement {
     const shadowRoot = this.attachShadow({ mode: 'open' });  // Attach a shadow root
 
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this.handleNavigationEvent = this.handleNavigationEvent.bind(this);
+//    this.handleNavigationEvent = this.handleNavigationEvent.bind(this);
   }
 
   /**
@@ -59,18 +59,21 @@ class Bookstore extends HTMLElement {
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
+    // Listen for navigation events
+    this.shadowRoot.querySelector('custom-chapter').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+
     this.initializeStoryContainer(initParameter);
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
-    // Listen for navigation events
-    this.addEventListener('navigation', this.handleNavigationEvent);
     // Listen for toast events
     this.addEventListener('toast', this.handleToastEvent.bind(this));
     // Listen for OIDC events
     this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
-    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event)); 
-  
+    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
+
     this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
     this.shadowRoot.querySelector('oidc-component').addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
   }
@@ -136,10 +139,18 @@ class Bookstore extends HTMLElement {
     window.history.replaceState({}, '', window.location.pathname);
   }
 
+
+  handleNavigationEvent(event) {
+    const { type, value } = event.detail;
+    if (type === 'chapter') {
+      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
+    }
+  }
+
   // ============ Handle RedirectId =================
 
   /**
-   * Description: 
+   * Description:
    * If a redirectId is present in the session storage, the method will read the redirectId from the session storage and
    * determine the initmode and initId based on the redirectId. The initmode and initId will be returned as an object.
    */
@@ -168,7 +179,7 @@ class Bookstore extends HTMLElement {
   handleToastEvent(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     const { message, variant } = event.detail;
     this.showToast(message, variant);
   }
@@ -527,15 +538,6 @@ class Bookstore extends HTMLElement {
     }
     if(error) {
       console.error(error);
-    }
-  }
-
-  // --------- Handle Navigation Event ---------
-
-  handleNavigationEvent(event) {
-    const { type, value } = event.detail;
-    if (type === 'chapter') {
-      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
     }
   }
 }
