@@ -36,14 +36,6 @@ class SldsToast extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
       // do something with the attribute value
 
-      if(this.isDebug) {
-        console.table({
-          name: name,
-          oldValue: oldValue,
-          newValue: newValue,
-        });
-      }
-
       if (oldValue === newValue) {
         return;
       }
@@ -86,12 +78,6 @@ class SldsToast extends HTMLElement {
       this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
       this.setToastContainerThemeStyle(this.state);
-      if(this.isDebug) {
-        console.table({
-          isContainer: this.getAttribute('container'),
-          isDebug: this.getAttribute('debug'),
-        });
-      }
     }
 
     // ------------------ load html markup ------------------

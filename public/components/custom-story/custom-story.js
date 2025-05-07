@@ -34,8 +34,6 @@ class CustomBook extends HTMLElement {
     }
 
     attributeChangedCallback(name, oldValue, newValue) {
-        console.log('attributeChangedCallback');
-        console.log('isLoaded: ', this.isLoaded);
 
         if (!this.isLoaded) {
             this.changesBeforeInit.push({ name, oldValue, newValue });
@@ -263,7 +261,6 @@ class CustomBook extends HTMLElement {
     writeToClipboard(value) {
         navigator.clipboard.writeText(value)
         .then(() => {
-          console.log('Text copied to clipboard');
         })
         .catch(err => {
           console.error('Error copying text to clipboard:', err);
@@ -281,8 +278,6 @@ class CustomBook extends HTMLElement {
     }
 
     handleAttributeChange(name, oldValue, newValue) {
-        console.log('CustomStory.handleAttributeChange --- START');
-        console.table({ name, oldValue, newValue });
 
         if (oldValue === newValue) {
             return;
@@ -300,7 +295,6 @@ class CustomBook extends HTMLElement {
             default:
                 break;
         }
-        console.log('CustomStory.handleAttributeChange --- END');
     }
 
     //------------------- query event ----------------------

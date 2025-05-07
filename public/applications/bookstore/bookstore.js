@@ -388,7 +388,6 @@ class Bookstore extends HTMLElement {
    * This method will pass the storyId to the custom-story element
    */
   loadStory(storyId) {
-    console.log('load story: ' + storyId);
 
     const storyElement = this.storyElement;
     if(!storyElement) {
@@ -400,7 +399,6 @@ class Bookstore extends HTMLElement {
   }
 
   loadStoryAndChapter(storyId, chapterId) {
-    console.log('load story: ' + storyId + ' and chapter: ' + chapterId);
 
     this.loadStory(storyId);
 
