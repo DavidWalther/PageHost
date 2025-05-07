@@ -264,6 +264,14 @@ class Bookstore extends HTMLElement {
         this.clearStoryContainer();
         this.loadStory(story.id);
         this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
+        this.dispatchEvent(new CustomEvent('navigation', {
+          detail: {
+            type: 'story',
+            value: story.id
+          },
+          bubbles: true,
+          //composed: true
+        }));
         this.closePanel();
       }));
     });
