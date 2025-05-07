@@ -419,7 +419,7 @@ class Bookstore extends HTMLElement {
     storyElements.forEach(storyElement => {
       if(storyElement.tagName === 'SLDS-SPINNER') { return; }
 
-      storyElement.remove();
+      storyElement.removeAttribute('story-id');
     });
   }
 

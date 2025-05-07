@@ -340,6 +340,7 @@ class CustomBook extends HTMLElement {
         spanChapterTitle.textContent = '';
         const chapterListDiv = this.shadowRoot.querySelector('#chapter-list');
         while (chapterListDiv.firstChild) {
+            chapterListDiv.firstChild.removeEventListener('click', this.changeChapter);
             chapterListDiv.removeChild(chapterListDiv.firstChild);
         }
     }
