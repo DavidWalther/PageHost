@@ -139,15 +139,7 @@ class Bookstore extends HTMLElement {
     window.history.replaceState({}, '', window.location.pathname);
   }
 
-
-  handleNavigationEvent(event) {
-    const { type, value } = event.detail;
-    if (type === 'chapter') {
-      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
-    }
-  }
-
-  // ============ Handle RedirectId =================
+  // ------------- Handle RedirectId -------------
 
   /**
    * Description:
@@ -176,12 +168,21 @@ class Bookstore extends HTMLElement {
     return initParameter;
   }
 
+// ============ event handler  ============
+
   handleToastEvent(event) {
     event.stopPropagation();
     event.preventDefault();
 
     const { message, variant } = event.detail;
     this.showToast(message, variant);
+  }
+
+  handleNavigationEvent(event) {
+    const { type, value } = event.detail;
+    if (type === 'chapter') {
+      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
+    }
   }
 
   // ============ action methods ============
