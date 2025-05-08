@@ -21,6 +21,12 @@ class Bookstore extends HTMLElement {
 //    this.handleNavigationEvent = this.handleNavigationEvent.bind(this);
   }
 
+  get isURrlCleared() {
+    let firstUrlParameter = window.location.pathname.split('/').pop(); 
+    let isFirstUrlParameterSet = firstUrlParameter.length > 0;
+    return isFirstUrlParameterSet === false; // this enforces a boolean value
+  }
+
   /**
    * methods that loads the HTML markup file
    *
