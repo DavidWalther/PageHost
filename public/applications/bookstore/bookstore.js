@@ -52,7 +52,7 @@ class Bookstore extends HTMLElement {
     // Save ID to session storage if present
     if (isFirstUrlParameterSet) {
       this.writeToStorage('session', 'redirectId', firstUrlParameter);
-      window.history.replaceState({}, '', window.location.origin);
+      // window.history.replaceState({}, '', window.location.origin);
     }
 
     const initParameter = await this.handleRedirectId();
@@ -189,6 +189,8 @@ class Bookstore extends HTMLElement {
     if (type === 'chapter') {
       this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
     }
+
+    window.history.replaceState({}, '', window.location.origin);
   }
 
   // ============ action methods ============
