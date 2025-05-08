@@ -186,6 +186,15 @@ class Bookstore extends HTMLElement {
 
   handleNavigationEvent(event) {
     const { type, value } = event.detail;
+    let isInitializing = !this.isURrlCleared;
+    let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
+
+    let shouldIgnoreStoriesNavEnt = isInitializing && isEventSourceStory;
+    if (shouldIgnoreStoriesNavEnt) {
+      window.history.replaceState({}, '', window.location.origin);
+      return;
+    }
+
     if (type === 'chapter') {
       this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
     }
