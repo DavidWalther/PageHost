@@ -82,6 +82,8 @@ class Bookstore extends HTMLElement {
     });
     this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
 
+    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+
     this.initializeStoryContainer(initParameter);
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
