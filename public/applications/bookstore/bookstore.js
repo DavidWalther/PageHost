@@ -27,6 +27,11 @@ class Bookstore extends HTMLElement {
     return isFirstUrlParameterSet === false; // this enforces a boolean value
   }
 
+  get firstUrlParameter() {
+    let firstUrlParameter = window.location.pathname.split('/').pop();
+    return firstUrlParameter;
+  }
+
   /**
    * methods that loads the HTML markup file
    *
