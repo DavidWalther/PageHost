@@ -93,12 +93,9 @@ class Bookstore extends HTMLElement {
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
-    // Listen for OIDC events
-    this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
-    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
 
     this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
-    this.shadowRoot.querySelector('oidc-component').addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
+    this.hydrateAuthentication();
   }
 
   disconnectedCallback() {
@@ -106,6 +103,15 @@ class Bookstore extends HTMLElement {
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
   // =========== Authentication - Start =================
+
+  hydrateAuthentication() {
+    // Listen for OIDC events
+    this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
+    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
+
+    this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
+    this.shadowRoot.querySelector('oidc-component').addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
+  }
 
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
