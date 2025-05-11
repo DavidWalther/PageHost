@@ -65,6 +65,14 @@ class CustomChapter extends LitElement {
         return;
       }
 
+      this.dispatchEvent(
+        new CustomEvent('loaded', {
+          detail: { chapterData: data },
+          bubbles: true,
+          composed: true,
+        })
+      );
+
       this.chapterData = data;
       this.paragraphsData = data.paragraphs || [];
       this.loading = false;

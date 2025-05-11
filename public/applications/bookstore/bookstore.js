@@ -73,7 +73,7 @@ class Bookstore extends HTMLElement {
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     // Listen for navigation events
-    this.shadowRoot.querySelector('custom-chapter').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    
     this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('loaded', (event) => {
       if(Array.isArray(event.detail.bookData)) { return; }
       console.log('Custom story loaded event:', event.detail);
@@ -85,16 +85,13 @@ class Bookstore extends HTMLElement {
       }
       this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     });
-    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-
-    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-
-    this.initializeStoryContainer(initParameter);
+    
+//    this.initializeStoryContainer(initParameter);
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
 
-    this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
+    this.hydrate();
     this.hydrateAuthentication();
   }
 
@@ -102,6 +99,24 @@ class Bookstore extends HTMLElement {
     // Remove event listener when the component is disconnected
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
+
+  // =========== Hydration - Start ============
+
+  async hydrate() {
+    // Check if the component is already hydrated
+    if (this.isHydrated) {
+      return;
+    }
+    // Hydrate the component
+    this.isHydrated = true;
+
+    // navigation event listeners
+    this.shadowRoot.querySelector('custom-chapter').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+  }
+  // =========== Hydration - End ============
+
   // =========== Authentication - Start =================
 
   hydrateAuthentication() {
