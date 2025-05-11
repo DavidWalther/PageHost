@@ -202,18 +202,18 @@ class Bookstore extends HTMLElement {
     const { type, value } = event.detail;
     let isInitializing = !this.isURrlCleared;
     let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
+    let isEventSourceChapter = event.srcElement.tagName === 'CUSTOM-CHAPTER';
+    let isEventSourcePanel = event.srcElement.tagName === 'APP-BOOKSTORE';
 
-    let shouldIgnoreStoriesNavEnt = isInitializing && isEventSourceStory;
-    if (shouldIgnoreStoriesNavEnt) {
-      window.history.replaceState({}, '', window.location.origin);
+    if(isEventSourcePanel && type === 'story') {
+      this.storyElement.setAttribute('id', value);
+      this.chapterElement.removeAttribute('id');
       return;
     }
-
-    if (type === 'chapter') {
-      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
+    if(isEventSourceStory && type === 'chapter') {
+      this.chapterElement.setAttribute('id', value);
+      return;
     }
-
-    window.history.replaceState({}, '', window.location.origin);
   }
 
   // ============ action methods ============
