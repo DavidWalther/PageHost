@@ -93,8 +93,6 @@ class Bookstore extends HTMLElement {
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
-    // Listen for toast events
-    this.addEventListener('toast', this.handleToastEvent.bind(this));
     // Listen for OIDC events
     this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
     this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
@@ -245,13 +243,6 @@ class Bookstore extends HTMLElement {
 
 // ============ event handler  ============
 
-  handleToastEvent(event) {
-    event.stopPropagation();
-    event.preventDefault();
-
-    const { message, variant } = event.detail;
-    this.showToast(message, variant);
-  }
 
   handleNavigationEvent(event) {
     const { type, value } = event.detail;
@@ -273,24 +264,7 @@ class Bookstore extends HTMLElement {
 
   // ============ action methods ============
 
-  showToast(message, variant) {
-    const toastContainer = document.createElement('div');
-    toastContainer.style.width = '90%';
-    toastContainer.style.textAlign = 'center';
-    toastContainer.style.position = 'fixed';
-    toastContainer.style.top = '10%';
-    toastContainer.style.zIndex = '10';
 
-    const toastElement = document.createElement('slds-toast');
-    toastElement.setAttribute('state', variant);
-    toastElement.textContent = message;
-    toastContainer.appendChild(toastElement);
-    this.shadowRoot.appendChild(toastContainer);
-
-    setTimeout(() => {
-      toastContainer.parentNode.removeChild(toastContainer);
-    }, 900);
-  }
 
   createInitializationParameterObject() {
     const typeMape = new Map();

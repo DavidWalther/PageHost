@@ -6,8 +6,53 @@ function initializeApp() {
   attachQueryEventListener(mainApp);
   attachStorageEventListener(mainApp);
   attachSaveEventListener(mainApp);
+  attachToastEventListener(mainApp);
 
   bodyElem.appendChild(mainApp);
+}
+
+
+function attachToastEventListener(element) {
+  element.addEventListener('toast', (toastEvent) => {
+    let callback = toastEvent.detail.callback;
+    let message = toastEvent.detail.message;
+    let variant = toastEvent.detail.variant;
+
+    if (callback) {
+      callback(null, { message, variant });
+    } else {
+      handleToastEvent(toastEvent);
+    }
+  });
+}
+
+function handleToastEvent(event) {
+  event.stopPropagation();
+  event.preventDefault();
+
+  const { message, variant } = event.detail;
+  this.showToast(message, variant);
+}
+
+function showToast(message, variant) {
+  const toastContainer = document.createElement('div');
+  toastContainer.style.width = '90%';
+  toastContainer.style.textAlign = 'center';
+  toastContainer.style.position = 'fixed';
+  toastContainer.style.top = '10%';
+  toastContainer.style.zIndex = '10';
+
+  const toastElement = document.createElement('slds-toast');
+  toastElement.setAttribute('state', variant);
+  toastElement.textContent = message;
+  toastContainer.appendChild(toastElement);
+
+  const bodyElem = document.querySelector('body');
+  bodyElem.appendChild(toastContainer);
+
+  setTimeout(() => {
+    toastContainer.parentNode.removeChild(toastContainer);
+  }, 900);
 }
 
 function attachSaveEventListener(element) {
@@ -100,7 +145,7 @@ function fetchDatabase(eventpayload) {
       'Content-Type': 'application/json',
     }
   };
-  
+
   let authData = accessSessionStorage('code_exchange_response', 'read');
   authData = JSON.parse(authData);
   if (authData && authData.authenticationResult) {
