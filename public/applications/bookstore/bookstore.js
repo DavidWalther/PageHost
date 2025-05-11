@@ -172,13 +172,13 @@ class Bookstore extends HTMLElement {
         'Content-Type': 'application/json'
       }
     }).then(() => {
-      this.showToast('Logout successful', 'success');
+      this.fireToast('Logout successful', 'success');
       logoutCallback();
     });
   }
 
   handleAuthenticationRejection() {
-    this.showToast('Authentication failed', 'error');
+    this.fireToast('Authentication failed', 'error');
     // clear history
     window.history.replaceState({}, '', window.location.pathname);
   }
