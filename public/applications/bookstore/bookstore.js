@@ -73,9 +73,12 @@ class Bookstore extends HTMLElement {
     // Listen for navigation events
     this.shadowRoot.querySelector('custom-chapter').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('loaded', (event) => {
+      if(Array.isArray(event.detail.bookData)) { return; }
       console.log('Custom story loaded event:', event.detail);
+
       let coverChapterId = event.detail.bookData.coverid;
       if(coverChapterId) {
+        this.storyElement.setAttribute('selectedChapter', coverChapterId);
         this.chapterElement.setAttribute('id', coverChapterId);
       }
       this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
