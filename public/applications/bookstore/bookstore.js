@@ -105,7 +105,7 @@ class Bookstore extends HTMLElement {
     // Remove event listener when the component is disconnected
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
-  // =========== Authentication =================
+  // =========== Authentication - Start =================
 
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
@@ -161,6 +161,56 @@ class Bookstore extends HTMLElement {
     // clear history
     window.history.replaceState({}, '', window.location.pathname);
   }
+  // ============  Authentication -End ============
+
+  // ============ Storage methods - Start ============
+
+  readFromStorage(storageType, key) {
+    return new Promise((resolve) => {
+      const event = new CustomEvent('storage', {
+        detail: {
+          storageType,
+          key,
+          action: 'read',
+          callback: resolve
+        },
+        bubbles: true,
+        composed: true
+      });
+      this.dispatchEvent(event);
+    });
+  }
+
+  writeToStorage(storageType, key, value) {
+    const event = new CustomEvent('storage', {
+      detail: {
+        storageType,
+        key,
+        value,
+        action: 'write'
+      },
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(event);
+  }
+
+  clearStorage(storageType, key) {
+    const event = new CustomEvent('storage', {
+      detail: {
+        storageType,
+        key,
+        action: 'clear'
+      },
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(event);
+  }
+
+  // ============ Storage methods ============
+
+
 
   // ------------- Handle RedirectId -------------
 
@@ -238,51 +288,6 @@ class Bookstore extends HTMLElement {
     setTimeout(() => {
       toastContainer.parentNode.removeChild(toastContainer);
     }, 900);
-  }
-
-  // ============ Storage methods ============
-
-  readFromStorage(storageType, key) {
-    return new Promise((resolve) => {
-      const event = new CustomEvent('storage', {
-        detail: {
-          storageType,
-          key,
-          action: 'read',
-          callback: resolve
-        },
-        bubbles: true,
-        composed: true
-      });
-      this.dispatchEvent(event);
-    });
-  }
-
-  writeToStorage(storageType, key, value) {
-    const event = new CustomEvent('storage', {
-      detail: {
-        storageType,
-        key,
-        value,
-        action: 'write'
-      },
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(event);
-  }
-
-  clearStorage(storageType, key) {
-    const event = new CustomEvent('storage', {
-      detail: {
-        storageType,
-        key,
-        action: 'clear'
-      },
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(event);
   }
 
   // ============ Panel methods ============
