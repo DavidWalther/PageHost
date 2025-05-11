@@ -60,6 +60,8 @@ class Bookstore extends HTMLElement {
       // window.history.replaceState({}, '', window.location.origin);
     }
 
+    this._initPara = this.createInitializationParameterObject();
+    console.table('initPara', this._initPara);
     const initParameter = await this.handleRedirectId();
 
     if (!loadedMarkUp) {
@@ -290,7 +292,23 @@ class Bookstore extends HTMLElement {
     }, 900);
   }
 
+  createInitializationParameterObject() {
+    const typeMape = new Map();
+    typeMape.set('000s', 'story');
+    typeMape.set('000c', 'chapter');
+    typeMape.set('000p', 'paragraph');
+
+    const initParameter = {};
+    initParameter.firstUrlParameter = window.location.pathname.split('/').pop();
+    initParameter.isFirstUrlParameterSet = initParameter.firstUrlParameter.length > 0;
+    initParameter.initmode = typeMape.get(initParameter.firstUrlParameter.substring(0, 4));
+    initParameter.initId = initParameter.firstUrlParameter;
+
+    return initParameter;
+  }
+
   // ============ Panel methods ============
+
   async initializePanel(allStories) {
     const buttonPanelOpen = this.shadowRoot.querySelector('#button-panel_open');
     buttonPanelOpen.addEventListener('click', this.openPanel.bind(this)); // Bind this to the openPanel method
