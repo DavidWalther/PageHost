@@ -129,7 +129,7 @@ app.post('/api/1.0/data/change/*', async (req, res) => {
   let bearerToken = headers['authorization']?.split(' ')[1];
 
   let accessTokenService = new AccessTokenService().setEnvironment(environment);
-  if(!accessTokenService.isBearerValidFromScope(bearerToken, 'edit')) {
+  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['edit'])) {
     Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid`, location: LOCATION });
     res.status(401).send('Unauthorized');
     return;
