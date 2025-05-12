@@ -16,20 +16,7 @@ class Bookstore extends HTMLElement {
   constructor() {
     super();
     const shadowRoot = this.attachShadow({ mode: 'open' });  // Attach a shadow root
-
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-//    this.handleNavigationEvent = this.handleNavigationEvent.bind(this);
-  }
-
-  get isURrlCleared() {
-    let firstUrlParameter = window.location.pathname.split('/').pop(); 
-    let isFirstUrlParameterSet = firstUrlParameter.length > 0;
-    return isFirstUrlParameterSet === false; // this enforces a boolean value
-  }
-
-  get firstUrlParameter() {
-    let firstUrlParameter = window.location.pathname.split('/').pop();
-    return firstUrlParameter;
   }
 
   /**
@@ -48,21 +35,11 @@ class Bookstore extends HTMLElement {
     return templatePromise;
   }
 
+  // =========== Lifecycle methods ============
+
   async connectedCallback() {
-    // check location for story id
-    const firstUrlParameter = window.location.pathname.split('/').pop();
-    // take first four characters of the url parameter
-    const isFirstUrlParameterSet = firstUrlParameter.length > 0;
 
-    // Save ID to session storage if present
-    if (isFirstUrlParameterSet) {
-      this.writeToStorage('session', 'redirectId', firstUrlParameter);
-      // window.history.replaceState({}, '', window.location.origin);
-    }
-
-    this._initPara = this.createInitializationParameterObject();
-    console.table('initPara', this._initPara);
-    const initParameter = await this.handleRedirectId();
+    console.log('Bookstore connected');
 
     if (!loadedMarkUp) {
       loadedMarkUp = await this.loadHtmlMarkup();
@@ -73,23 +50,6 @@ class Bookstore extends HTMLElement {
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     // Listen for navigation events
-    
-    this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('loaded', (event) => {
-      if(Array.isArray(event.detail.bookData)) { return; }
-      console.log('Custom story loaded event:', event.detail);
-
-      let coverChapterId = event.detail.bookData.coverid;
-      if(coverChapterId) {
-        this.storyElement.setAttribute('selectedChapter', coverChapterId);
-        this.chapterElement.setAttribute('id', coverChapterId);
-      }
-      this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-    });
-    
-//    this.initializeStoryContainer(initParameter);
-    this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
-    this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
-
 
     this.hydrate();
     this.hydrateAuthentication();
@@ -108,12 +68,77 @@ class Bookstore extends HTMLElement {
       return;
     }
     // Hydrate the component
-    this.isHydrated = true;
+
+    this._initPara = this.createInitializationParameterObject();
+    this.clearUrlParameter();
+
+    this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
+    this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
+
+    // Initialize the story container
+    switch(this._initPara.initmode) {
+      case 'story':
+        this.initWithStoryId(this._initPara.initId);
+        break;
+      case 'chapter':
+        this.initWithChapterId(this._initPara.initId);
+        break;
+      case 'none':
+        this.initWithoutParameter();
+        break;
+      default:
+        this.initWithoutParameter();
+        break;
+    }
 
     // navigation event listeners
-    this.shadowRoot.querySelector('custom-chapter').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    //    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this._initPara = null;
+    this.isHydrated = true;
+    this.storyElement.setAttribute('chapter-buttons_number-max', 2);
     this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+  }
+
+  initWithoutParameter() {
+    this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.storyElement.addEventListener('loaded', (event) => {
+      if(Array.isArray(event.detail.bookData)) { return; }
+      console.log('Custom story loaded event:', event.detail);
+      let coverChapterId = event.detail.bookData.coverid;
+      if(coverChapterId) {
+        this.storyElement.setAttribute('selectedChapter', coverChapterId);
+        this.chapterElement.setAttribute('id', coverChapterId);
+      }
+    });
+    this.storyElement.setAttribute('id', '000s00000000000011');
+  }
+
+  initWithStoryId(storyId) {
+    this.storyElement.setAttribute('id', storyId);
+
+    this.storyElement.parentElement.addEventListener('loaded', (event) => {
+      if(Array.isArray(event.detail.bookData)) { return; }
+      console.log('Custom story loaded event:', event.detail);
+
+      let coverChapterId = event.detail.bookData.coverid;
+      if(coverChapterId) {
+        this.storyElement.setAttribute('selectedChapter', coverChapterId);
+        this.chapterElement.setAttribute('id', coverChapterId);
+      }
+      this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    });
+  }
+
+  initWithChapterId(chapterId) {
+    this.chapterElement.setAttribute('id', chapterId);
+    this.chapterElement.parentElement.addEventListener('loaded', (event) => {
+      if(Array.isArray(event.detail.chapterData)) { return; }
+      console.log('Custom chapter loaded event:', event.detail);
+      let storyId = event.detail.chapterData.storyid;
+      this.storyElement.setAttribute('id', storyId);
+      this.storyElement.setAttribute('selectedChapter', chapterId);
+      this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    });
   }
   // =========== Hydration - End ============
 
@@ -182,6 +207,7 @@ class Bookstore extends HTMLElement {
     // clear history
     window.history.replaceState({}, '', window.location.pathname);
   }
+
   // ============  Authentication -End ============
 
   // ============ Storage methods - Start ============
@@ -231,41 +257,14 @@ class Bookstore extends HTMLElement {
 
   // ============ Storage methods ============
 
-
-
-  // ------------- Handle RedirectId -------------
-
-  /**
-   * Description:
-   * If a redirectId is present in the session storage, the method will read the redirectId from the session storage and
-   * determine the initmode and initId based on the redirectId. The initmode and initId will be returned as an object.
-   */
-  async handleRedirectId() {
-    const redirectIdFromSessionStorage = await this.readFromStorage('session', 'redirectId');
-    const initParameter = {};
-    initParameter.initmode = null;
-    if (redirectIdFromSessionStorage !== null) {
-      this.clearStorage('session', 'redirectId');
-
-      const parameterPrefix = redirectIdFromSessionStorage.substring(0, 4);
-      const tableName = recordIdPrefixToPostgresTableName[parameterPrefix];
-
-      initParameter.initId = redirectIdFromSessionStorage;
-
-      // initmode is set to 'none' if the parameter is not a defined key in the recordIdPrefixToPostgresTableName object
-      initParameter.initmode = 'none';
-
-      if (tableName) {
-        initParameter.initmode = tableName.toLowerCase();
-      }
-    }
-    return initParameter;
-  }
-
 // ============ event handler  ============
 
-
   handleNavigationEvent(event) {
+    event.stopPropagation();
+
+    this.storyElement.removeAttribute('id');
+    //this.storyElement.removeAttribute('selectedChapter');
+    this.chapterElement.removeAttribute('id');
     const { type, value } = event.detail;
     let isInitializing = !this.isURrlCleared;
     let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
@@ -274,18 +273,30 @@ class Bookstore extends HTMLElement {
 
     if(isEventSourcePanel && type === 'story') {
       this.storyElement.setAttribute('id', value);
+      this.removeAttribute('selectedChapter');
       this.chapterElement.removeAttribute('id');
       return;
     }
     if(isEventSourceStory && type === 'chapter') {
       this.chapterElement.setAttribute('id', value);
+      this.setAttribute('selectedChapter', value);
       return;
     }
   }
 
   // ============ action methods ============
 
-
+  fireToast(message, variant) {
+    this.dispatchEvent(
+      new CustomEvent('toast', {
+      detail: {
+        message: message,
+        variant: variant
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
 
   createInitializationParameterObject() {
     const typeMape = new Map();
@@ -296,12 +307,18 @@ class Bookstore extends HTMLElement {
     const initParameter = {};
     initParameter.firstUrlParameter = window.location.pathname.split('/').pop();
     initParameter.isFirstUrlParameterSet = initParameter.firstUrlParameter.length > 0;
-    initParameter.initmode = typeMape.get(initParameter.firstUrlParameter.substring(0, 4));
     initParameter.initId = initParameter.firstUrlParameter;
 
+    let initmode = typeMape.get(initParameter.firstUrlParameter.substring(0, 4));
+    initParameter.initmode = initmode || 'none';
+
+    console.table('initParameter', initParameter);
     return initParameter;
   }
 
+  clearUrlParameter() {
+    window.history.replaceState({}, '', window.location.origin);
+  }
   // ============ Panel methods ============
 
   async initializePanel(allStories) {
@@ -313,8 +330,6 @@ class Bookstore extends HTMLElement {
 
     storyData.forEach((story) => {
       dummyPills.push(this.createButtonElement(story.name, story.id, () => {
-        this.clearStoryContainer();
-        this.loadStory(story.id);
         this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
         this.dispatchEvent(new CustomEvent('navigation', {
           detail: {
@@ -375,8 +390,6 @@ class Bookstore extends HTMLElement {
     return pillElem;
   }
 
-  // ========== Story Container methods ===========
-
   evaluateMetadata(metadata) {
     let pageHeaderHeadline = !metadata.pageHeaderHeadline ? '#config:pageHeaderHeadline#' : metadata.pageHeaderHeadline;
     this.spanHeaderHeadline.textContent = pageHeaderHeadline;
@@ -397,89 +410,12 @@ class Bookstore extends HTMLElement {
     }
   }
 
-  /**
-   * asynch method to initialize the story container by url parameter
-   */
-  async initializeStoryContainer(parameterObject) {
-    const initmode = parameterObject.initmode;
-    const initParameter = parameterObject.initId;
-
-    this.clearStoryContainer();
-    switch(initmode) {
-      case 'story':
-        const storyId = initParameter;
-        this.fireQueryEvent_Story(storyId, this.queryEventCallback_Story.bind(this));
-        break;
-      case 'chapter':
-        const chapterId = initParameter;
-        this.fetchChapters(chapterId).then(chapter => {
-          this.clearStoryContainer();
-
-          if(!chapter.id && !chapter.length > 0) {
-            this.showStoryNotFound();
-          }
-          if(chapter.length > 0) {
-            this.loadStoryAndChapter(chapter[0].storyid, chapter[0].id);
-          }
-          if(chapter.id) {
-            this.loadStoryAndChapter(chapter.storyid, chapter.id);
-          }
-        })
-        .catch(error => {
-          this.clearStoryContainer();
-          this.showStoryNotFound();
-        })
-        .finally(() => {
-        });
-        break;
-      case 'none':
-        this.clearStoryContainer();
-        this.showStoryNotFound();
-      break;
-      default:
-        this.loadStory('000s00000000000011');
-        break;
-    }
-  }
-
+  // ========== Story Container methods ===========
   /**
    * If a custom storyElement exists, update the 'story-id' attribute and remove the 'chapter-id' attribute
    * If not, create a new custom story element, set the 'story-id' attribute and append it to the storyContainer,
    * This method will pass the storyId to the custom-story element
    */
-  loadStory(storyId) {
-
-    const storyElement = this.storyElement;
-    if(!storyElement) {
-      const customStory = document.createElement('custom-story');
-      this.storyContainer.appendChild(customStory);
-    }
-    this.storyElement.setAttribute('story-id', storyId);
-    this.storyElement.setAttribute('chapter-buttons_number-max', 2);
-  }
-
-  loadStoryAndChapter(storyId, chapterId) {
-
-    this.loadStory(storyId);
-
-    const chapterElement = this.chapterElement;
-    if(!chapterElement) {
-      const customChapter = document.createElement('custom-chapter');
-      this.storyContainer.appendChild(customChapter);
-    }
-    this.chapterElement.setAttribute('id', chapterId);
-  }
-
-  // method to clear everything inside the story container
-  clearStoryContainer() {
-    const storyElements = this.storyContainer.querySelectorAll('*');
-    // remove all custom-story elements
-    storyElements.forEach(storyElement => {
-      if(storyElement.tagName === 'SLDS-SPINNER') { return; }
-
-      storyElement.removeAttribute('story-id');
-    });
-  }
 
   // add content of 'template-story_not_found' into container
   showStoryNotFound() {
@@ -519,13 +455,6 @@ class Bookstore extends HTMLElement {
     return this.shadowRoot.querySelector('custom-chapter');
   }
 
-  // ----- Fetching data from the server -----
-
-  async fetchChapters(chapterId) {
-    return fetch(`/data/query/chapter?id=${chapterId}`)
-    .then(response => response.json());
-  }
-
   // ------------------------------------------
   // Query Event methods
   // ------------------------------------------
@@ -535,19 +464,6 @@ class Bookstore extends HTMLElement {
   fireQueryEvent_AllStories(callback) {
     let payload = {
         object: 'story',
-    }
-
-    this.dispatchEvent(new CustomEvent('query', {
-        detail: { payload, callback },
-        bubbles: true,
-        composed: true
-    }));
-  }
-
-  fireQueryEvent_Story(storyId, callback) {
-    let payload = {
-        object: 'story',
-        id: storyId
     }
 
     this.dispatchEvent(new CustomEvent('query', {
@@ -577,17 +493,6 @@ class Bookstore extends HTMLElement {
     }
     if(error) {
       console.error(error);
-    }
-  }
-
-  queryEventCallback_Story(error, data) {
-    this.clearStoryContainer();
-    if(data) {
-      this.loadStory(data.id);
-    }
-    if(error) {
-      console.error(error);
-      this.showStoryNotFound();
     }
   }
 
