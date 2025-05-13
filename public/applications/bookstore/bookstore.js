@@ -134,7 +134,7 @@ class Bookstore extends HTMLElement {
       console.log('Custom chapter loaded event:', event.detail);
       let storyId = event.detail.chapterData.storyid;
       this.storyElement.setAttribute('id', storyId);
-      this.storyElement.setAttribute('selectedChapter', chapterId);
+      this.storyElement.setAttribute('selectedChapter', event.detail.chapterData.id);
       this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     });
   }
@@ -267,13 +267,13 @@ class Bookstore extends HTMLElement {
 
     if(isEventSourcePanel && type === 'story') {
       this.storyElement.setAttribute('id', value);
-      this.removeAttribute('selectedChapter');
       this.chapterElement.removeAttribute('id');
+      this.storyElement.removeAttribute('selectedChapter');
       return;
     }
     if(isEventSourceStory && type === 'chapter') {
       this.chapterElement.setAttribute('id', value);
-      this.setAttribute('selectedChapter', value);
+      this.storyElement.setAttribute('selectedChapter', value);
       return;
     }
   }
