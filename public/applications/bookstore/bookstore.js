@@ -91,8 +91,6 @@ class Bookstore extends HTMLElement {
         break;
     }
 
-    // navigation event listeners
-    //    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     this._initPara = null;
     this.isHydrated = true;
     this.storyElement.setAttribute('chapter-buttons_number-max', 2);
@@ -263,13 +261,8 @@ class Bookstore extends HTMLElement {
     event.stopPropagation();
     if(!this.isHydrated) { return; }
 
-    this.storyElement.removeAttribute('id');
-    //this.storyElement.removeAttribute('selectedChapter');
-    this.chapterElement.removeAttribute('id');
     const { type, value } = event.detail;
-    let isInitializing = !this.isURrlCleared;
     let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
-    let isEventSourceChapter = event.srcElement.tagName === 'CUSTOM-CHAPTER';
     let isEventSourcePanel = event.srcElement.tagName === 'APP-BOOKSTORE';
 
     if(isEventSourcePanel && type === 'story') {
