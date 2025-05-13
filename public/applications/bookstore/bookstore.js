@@ -98,6 +98,7 @@ class Bookstore extends HTMLElement {
   }
 
   initWithoutParameter() {
+    // navigation-/loaded eventlisteners are attacherd right away
     this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     this.storyElement.addEventListener('loaded', (event) => {
       if(Array.isArray(event.detail.bookData)) { return; }
@@ -112,6 +113,8 @@ class Bookstore extends HTMLElement {
   }
 
   initWithStoryId(storyId) {
+    // loaded eventlistener is attached right away
+    // navigation eventlistener is attached after the loaded event was received
     this.storyElement.setAttribute('id', storyId);
 
     this.storyElement.parentElement.addEventListener('loaded', (event) => {
@@ -128,6 +131,8 @@ class Bookstore extends HTMLElement {
   }
 
   initWithChapterId(chapterId) {
+    // chapter does not fire navigation events
+    // loaded eventlistener is attached right away
     this.chapterElement.setAttribute('id', chapterId);
     this.chapterElement.parentElement.addEventListener('loaded', (event) => {
       if(Array.isArray(event.detail.chapterData)) { return; }
