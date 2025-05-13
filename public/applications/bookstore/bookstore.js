@@ -261,6 +261,7 @@ class Bookstore extends HTMLElement {
 
   handleNavigationEvent(event) {
     event.stopPropagation();
+    if(!this.isHydrated) { return; }
 
     this.storyElement.removeAttribute('id');
     //this.storyElement.removeAttribute('selectedChapter');
