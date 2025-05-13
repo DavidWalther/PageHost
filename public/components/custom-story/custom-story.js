@@ -130,6 +130,8 @@ class CustomStory extends LitElement {
   }
   
   storyChangeCallback(error, data) {
+    if(Array.isArray(data)) { return; }
+    
     if (error) {
       console.error(error);
       return;
