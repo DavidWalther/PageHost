@@ -111,18 +111,11 @@ class Bookstore extends HTMLElement {
     // loaded eventlistener is attached right away
     // navigation eventlistener is attached after the loaded event was received
     this.storyElement.setAttribute('id', storyId);
-
-    this.storyElement.parentElement.addEventListener('loaded', (event) => {
-      if(Array.isArray(event.detail.bookData)) { return; }
-      console.log('Custom story loaded event:', event.detail);
-
-      let coverChapterId = event.detail.bookData.coverid;
-      if(coverChapterId) {
-        this.storyElement.setAttribute('selectedChapter', coverChapterId);
-        this.chapterElement.setAttribute('id', coverChapterId);
-      }
-      this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.storyElement.addEventListener('loaded', (event) => {
+      this.handleLoadStory(event);
+      this._initPara = null;
     });
+    this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
   }
 
   initWithChapterId(chapterId) {
