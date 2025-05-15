@@ -143,16 +143,19 @@ class Bookstore extends HTMLElement {
       this.storyElement.setAttribute('selectedChapter', event.detail.chapterData.id);
       this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
       this.storyElement.addEventListener('loaded', (event) => {
+        this.handleLoadStory(event);
+
+  handleLoadStory(event) {
         if(Array.isArray(event.detail.bookData)) { return; }
         console.log('Custom story loaded event:', event.detail);
+  
         let coverChapterId = event.detail.bookData.coverid;
-        if(coverChapterId) {
+    if(coverChapterId && this._initPara?.initmode !== 'chapter') {
           this.storyElement.setAttribute('selectedChapter', coverChapterId);
           this.chapterElement.setAttribute('id', coverChapterId);
         }
-      });
-    });
   }
+
   // =========== Hydration - End ============
 
   // =========== Authentication - Start =================
