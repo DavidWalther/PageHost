@@ -92,7 +92,6 @@ class Bookstore extends HTMLElement {
         break;
     }
 
-    this._initPara = null;
     this.isHydrated = true;
     this.storyElement.setAttribute('chapter-buttons_number-max', 2);
     this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
@@ -144,6 +143,7 @@ class Bookstore extends HTMLElement {
       this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
       this.storyElement.addEventListener('loaded', (event) => {
         this.handleLoadStory(event);
+        this._initPara = null;
 
   handleLoadStory(event) {
         if(Array.isArray(event.detail.bookData)) { return; }
