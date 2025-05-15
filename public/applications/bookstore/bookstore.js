@@ -45,6 +45,10 @@ class Bookstore extends HTMLElement {
       loadedMarkUp = await this.loadHtmlMarkup();
     }
 
+    // read url and identify init-flow
+    this._initPara = this.createInitializationParameterObject();
+    this.clearUrlParameter();
+
     // Append the main template
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
@@ -68,9 +72,6 @@ class Bookstore extends HTMLElement {
       return;
     }
     // Hydrate the component
-
-    this._initPara = this.createInitializationParameterObject();
-    this.clearUrlParameter();
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
