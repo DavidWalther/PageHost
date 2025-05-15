@@ -101,13 +101,8 @@ class Bookstore extends HTMLElement {
     // navigation-/loaded eventlisteners are attacherd right away
     this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     this.storyElement.addEventListener('loaded', (event) => {
-      if(Array.isArray(event.detail.bookData)) { return; }
-      console.log('Custom story loaded event:', event.detail);
-      let coverChapterId = event.detail.bookData.coverid;
-      if(coverChapterId) {
-        this.storyElement.setAttribute('selectedChapter', coverChapterId);
-        this.chapterElement.setAttribute('id', coverChapterId);
-      }
+      this.handleLoadStory(event);
+      this._initPara = null;
     });
     this.storyElement.setAttribute('id', '000s00000000000011');
   }
@@ -150,14 +145,14 @@ class Bookstore extends HTMLElement {
   }
 
   handleLoadStory(event) {
-        if(Array.isArray(event.detail.bookData)) { return; }
-        console.log('Custom story loaded event:', event.detail);
-  
-        let coverChapterId = event.detail.bookData.coverid;
+    if(Array.isArray(event.detail.bookData)) { return; }
+    console.log('Custom story loaded event:', event.detail);
+
+    let coverChapterId = event.detail.bookData.coverid;
     if(coverChapterId && this._initPara?.initmode !== 'chapter') {
-          this.storyElement.setAttribute('selectedChapter', coverChapterId);
-          this.chapterElement.setAttribute('id', coverChapterId);
-        }
+      this.storyElement.setAttribute('selectedChapter', coverChapterId);
+      this.chapterElement.setAttribute('id', coverChapterId);
+    }
   }
 
   // =========== Hydration - End ============
