@@ -144,6 +144,10 @@ class Bookstore extends HTMLElement {
       this.storyElement.addEventListener('loaded', (event) => {
         this.handleLoadStory(event);
         this._initPara = null;
+      });
+    },
+    {once:true});
+  }
 
   handleLoadStory(event) {
         if(Array.isArray(event.detail.bookData)) { return; }
