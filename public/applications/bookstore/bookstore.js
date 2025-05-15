@@ -45,6 +45,10 @@ class Bookstore extends HTMLElement {
       loadedMarkUp = await this.loadHtmlMarkup();
     }
 
+    // read url and identify init-flow
+    this._initPara = this.createInitializationParameterObject();
+    this.clearUrlParameter();
+
     // Append the main template
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
@@ -69,9 +73,6 @@ class Bookstore extends HTMLElement {
     }
     // Hydrate the component
 
-    this._initPara = this.createInitializationParameterObject();
-    this.clearUrlParameter();
-
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
@@ -91,7 +92,6 @@ class Bookstore extends HTMLElement {
         break;
     }
 
-    this._initPara = null;
     this.isHydrated = true;
     this.storyElement.setAttribute('chapter-buttons_number-max', 2);
     this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
@@ -142,16 +142,24 @@ class Bookstore extends HTMLElement {
       this.storyElement.setAttribute('selectedChapter', event.detail.chapterData.id);
       this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
       this.storyElement.addEventListener('loaded', (event) => {
+        this.handleLoadStory(event);
+        this._initPara = null;
+      });
+    },
+    {once:true});
+  }
+
+  handleLoadStory(event) {
         if(Array.isArray(event.detail.bookData)) { return; }
         console.log('Custom story loaded event:', event.detail);
+  
         let coverChapterId = event.detail.bookData.coverid;
-        if(coverChapterId) {
+    if(coverChapterId && this._initPara?.initmode !== 'chapter') {
           this.storyElement.setAttribute('selectedChapter', coverChapterId);
           this.chapterElement.setAttribute('id', coverChapterId);
         }
-      });
-    });
   }
+
   // =========== Hydration - End ============
 
   // =========== Authentication - Start =================
