@@ -47,6 +47,7 @@ class Bookstore extends HTMLElement {
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
+    this.saveAuthParameterToStorage();
     //this.clearUrlParameter();
 
     // Append the main template
@@ -151,6 +152,21 @@ class Bookstore extends HTMLElement {
   // =========== Hydration - End ============
 
   // =========== Authentication - Start =================
+
+  saveAuthParameterToStorage() {
+    let queryParameters = window.location.search.substring(1).split('&').reduce((aggregate, current) => {
+      let temp = current.split('=');
+      aggregate[temp[0]] = temp[1];
+      return aggregate;
+    },{});
+
+
+    if(!queryParameters.code) { return; }
+    let authParameters = {
+      code: queryParameters.code,
+    };
+    sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
+  }
 
   hydrateAuthentication() {
     // Listen for OIDC events
