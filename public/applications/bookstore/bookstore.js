@@ -60,6 +60,7 @@ class Bookstore extends HTMLElement {
       let authCode = authParams.code;
       let oidcComponent = document.createElement('oidc-component');
       oidcComponent.setAttribute('auth-code', authCode);
+      oidcComponent.startAuthCodeExchange();
     }
 
     // Listen for navigation events
