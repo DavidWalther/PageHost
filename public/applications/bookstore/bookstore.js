@@ -47,7 +47,7 @@ class Bookstore extends HTMLElement {
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
-    this.clearUrlParameter();
+    //this.clearUrlParameter();
 
     // Append the main template
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
