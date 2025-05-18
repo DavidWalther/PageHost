@@ -68,6 +68,8 @@ class Bookstore extends HTMLElement {
 
     // Listen for navigation events
 
+    this.clearUrlParameter();
+
     this.hydrate();
     this.hydrateAuthentication();
   }
