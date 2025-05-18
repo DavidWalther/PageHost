@@ -109,6 +109,10 @@ class OIDCComponent extends HTMLElement {
     return this.getAttribute('session-storage-key') || 'code_exchange_response';
   }
 
+  get authCode() {
+    return this.getAttribute('auth-code');
+  }
+
   get isSessionStored() {
     let storedValue = sessionStorage.getItem(this.sessionStorageKey);
     if (!storedValue) {
