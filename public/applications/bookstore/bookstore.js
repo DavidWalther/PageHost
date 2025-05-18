@@ -47,11 +47,24 @@ class Bookstore extends HTMLElement {
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
-    this.clearUrlParameter();
+    this.saveAuthParameterToStorage();
 
     // Append the main template
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
+
+    let authParams = sessionStorage.getItem('authParameters');
+    sessionStorage.removeItem('authParameters');
+
+    if(authParams) {
+      authParams = JSON.parse(authParams);
+      let authCode = authParams.code;
+      let authState = authParams.state;
+      let oidcComponent = this.shadowRoot.querySelector('oidc-component');
+      oidcComponent.setAttribute('auth-code', authCode);
+      oidcComponent.setAttribute('auth-state', authState);
+      oidcComponent.startAuthCodeExchange();
+    }
 
     // Listen for navigation events
 
@@ -152,6 +165,21 @@ class Bookstore extends HTMLElement {
 
   // =========== Authentication - Start =================
 
+  saveAuthParameterToStorage() {
+    let queryParameters = window.location.search.substring(1).split('&').reduce((aggregate, current) => {
+      let temp = current.split('=');
+      aggregate[temp[0]] = temp[1];
+      return aggregate;
+    },{});
+
+    if(!queryParameters.code && !queryParameters.state) { return; }
+    let authParameters = {
+      code: queryParameters.code,
+      state: queryParameters.state
+    };
+    sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
+  }
+
   hydrateAuthentication() {
     // Listen for OIDC events
     this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
@@ -176,7 +204,7 @@ class Bookstore extends HTMLElement {
      * Do something with the authentication result
      * For example, you can store the token in local storage or session storage
      */
-    window.history.replaceState({}, '', window.location.pathname);
+    this.clearUrlParameter();
   }
 
   async handleOIDCClick(event) {
