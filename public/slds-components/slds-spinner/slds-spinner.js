@@ -42,14 +42,6 @@ class SldsSpinner extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     // do something with the attribute value
 
-    if(this.isDebug) {
-      console.table({
-        name: name,
-        oldValue: oldValue,
-        newValue: newValue,
-      });
-    }
-
     if (oldValue === newValue) {
       return;
     }
@@ -97,13 +89,6 @@ class SldsSpinner extends HTMLElement {
 
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-
-    if(this.isDebug) {
-      console.table({
-        isContainer: this.getAttribute('container'),
-        isDebug: this.getAttribute('debug'),
-      });
-    }
 
     this.setContainerTemplate();
     this.setSpinnerSize();

@@ -18,7 +18,13 @@ class Bookstore extends HTMLElement {
     const shadowRoot = this.attachShadow({ mode: 'open' });  // Attach a shadow root
 
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this.handleNavigationEvent = this.handleNavigationEvent.bind(this);
+//    this.handleNavigationEvent = this.handleNavigationEvent.bind(this);
+  }
+
+  get isURrlCleared() {
+    let firstUrlParameter = window.location.pathname.split('/').pop(); 
+    let isFirstUrlParameterSet = firstUrlParameter.length > 0;
+    return isFirstUrlParameterSet === false; // this enforces a boolean value
   }
 
   /**
@@ -46,7 +52,7 @@ class Bookstore extends HTMLElement {
     // Save ID to session storage if present
     if (isFirstUrlParameterSet) {
       this.writeToStorage('session', 'redirectId', firstUrlParameter);
-      window.history.replaceState({}, '', window.location.origin);
+      // window.history.replaceState({}, '', window.location.origin);
     }
 
     const initParameter = await this.handleRedirectId();
@@ -59,18 +65,21 @@ class Bookstore extends HTMLElement {
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
+    // Listen for navigation events
+    this.shadowRoot.querySelector('custom-chapter').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.shadowRoot.querySelector('custom-story').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.shadowRoot.querySelector('slds-panel').parentElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+
     this.initializeStoryContainer(initParameter);
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
-    // Listen for navigation events
-    this.addEventListener('navigation', this.handleNavigationEvent);
     // Listen for toast events
     this.addEventListener('toast', this.handleToastEvent.bind(this));
     // Listen for OIDC events
     this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
-    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event)); 
-  
+    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
+
     this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
     this.shadowRoot.querySelector('oidc-component').addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
   }
@@ -136,10 +145,10 @@ class Bookstore extends HTMLElement {
     window.history.replaceState({}, '', window.location.pathname);
   }
 
-  // ============ Handle RedirectId =================
+  // ------------- Handle RedirectId -------------
 
   /**
-   * Description: 
+   * Description:
    * If a redirectId is present in the session storage, the method will read the redirectId from the session storage and
    * determine the initmode and initId based on the redirectId. The initmode and initId will be returned as an object.
    */
@@ -165,12 +174,32 @@ class Bookstore extends HTMLElement {
     return initParameter;
   }
 
+// ============ event handler  ============
+
   handleToastEvent(event) {
     event.stopPropagation();
     event.preventDefault();
-    
+
     const { message, variant } = event.detail;
     this.showToast(message, variant);
+  }
+
+  handleNavigationEvent(event) {
+    const { type, value } = event.detail;
+    let isInitializing = !this.isURrlCleared;
+    let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
+
+    let shouldIgnoreStoriesNavEnt = isInitializing && isEventSourceStory;
+    if (shouldIgnoreStoriesNavEnt) {
+      window.history.replaceState({}, '', window.location.origin);
+      return;
+    }
+
+    if (type === 'chapter') {
+      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
+    }
+
+    window.history.replaceState({}, '', window.location.origin);
   }
 
   // ============ action methods ============
@@ -252,6 +281,14 @@ class Bookstore extends HTMLElement {
         this.clearStoryContainer();
         this.loadStory(story.id);
         this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
+        this.dispatchEvent(new CustomEvent('navigation', {
+          detail: {
+            type: 'story',
+            value: story.id
+          },
+          bubbles: true,
+          //composed: true
+        }));
         this.closePanel();
       }));
     });
@@ -376,7 +413,6 @@ class Bookstore extends HTMLElement {
    * This method will pass the storyId to the custom-story element
    */
   loadStory(storyId) {
-    console.log('load story: ' + storyId);
 
     const storyElement = this.storyElement;
     if(!storyElement) {
@@ -388,7 +424,6 @@ class Bookstore extends HTMLElement {
   }
 
   loadStoryAndChapter(storyId, chapterId) {
-    console.log('load story: ' + storyId + ' and chapter: ' + chapterId);
 
     this.loadStory(storyId);
 
@@ -407,7 +442,7 @@ class Bookstore extends HTMLElement {
     storyElements.forEach(storyElement => {
       if(storyElement.tagName === 'SLDS-SPINNER') { return; }
 
-      storyElement.remove();
+      storyElement.removeAttribute('story-id');
     });
   }
 
@@ -527,15 +562,6 @@ class Bookstore extends HTMLElement {
     }
     if(error) {
       console.error(error);
-    }
-  }
-
-  // --------- Handle Navigation Event ---------
-
-  handleNavigationEvent(event) {
-    const { type, value } = event.detail;
-    if (type === 'chapter') {
-      this.loadStoryAndChapter(this.storyElement.getAttribute('story-id'), value);
     }
   }
 }

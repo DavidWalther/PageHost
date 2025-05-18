@@ -165,14 +165,12 @@ class CustomParagraph extends LitElement {
   }
 
   handleSaveEdit() {
-    console.log('Saving edited data:', this._paragraphData);
     this.editMode = false; // Exit edit mode
     this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
   }
 
   handleCancelEdit() {
-    console.log('Edit canceled');
     this.editMode = false; // Exit edit mode
     this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
     this.requestUpdate();
@@ -185,7 +183,6 @@ class CustomParagraph extends LitElement {
   }
 
   handleClickSave() {
-    console.log('Saving data:', this._paragraphData);
   }
 
   checkEditPermission() {

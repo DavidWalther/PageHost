@@ -96,7 +96,6 @@ class SldsInput extends HTMLElement {
   //-------------------
 
   handleChangeInput(event) {
-    console.log('value changed');
     const eventChange = new CustomEvent('change', {
       bubbles: true,
       detail: {
