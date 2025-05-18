@@ -11,6 +11,11 @@ Feature:
 - if user has 'edit' scope: add Edit Option to paragraphs 
 
 Technical:
+- rebuild paragraph component with LIT library
+- rebuild chapter component with LIT library
+- rebuild story component with LIT library
+
+Technical:
 - Refactor paragrap component. New Component is built with LIT Library
 - add an edit-Endpoint to modify existing paragraphs
 

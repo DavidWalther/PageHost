@@ -32,7 +32,9 @@ class CustomStory extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('id')) {
       this._bookData = null;
-      this.fireQueryEvent(this.id, this.storyChangeCallback.bind(this));
+      if (this.id) {
+        this.fireQueryEvent(this.id, this.storyChangeCallback.bind(this));
+      }
     }
   }
   
@@ -128,6 +130,8 @@ class CustomStory extends LitElement {
   }
   
   storyChangeCallback(error, data) {
+    if(Array.isArray(data)) { return; }
+    
     if (error) {
       console.error(error);
       return;

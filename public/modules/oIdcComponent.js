@@ -109,12 +109,38 @@ class OIDCComponent extends HTMLElement {
     return this.getAttribute('session-storage-key') || 'code_exchange_response';
   }
 
+  get authCode() {
+    return this.getAttribute('auth-code');
+  }
+
+  get authState() {
+    return this.getAttribute('auth-state');
+  }
+
   get isSessionStored() {
     let storedValue = sessionStorage.getItem(this.sessionStorageKey);
     if (!storedValue) {
       return false;
     }
     return true;
+  }
+
+  // -----------
+
+  /**
+   * This method is to start the authentication flow from outside the component.
+   */
+  startAuthCodeExchange() {
+    const serverEndpoint = this.serverEndpointAuthCodeExchange
+
+    let authParams = {
+      auth_code: this.authCode || new URLSearchParams(window.location.search).get('code'),
+      state: this.authState || new URLSearchParams(window.location.search).get('state')
+    }
+
+    if (authParams.auth_code !== null && authParams.state !== null) {
+      this.exchangeAuthCode(authParams, serverEndpoint);
+    }
   }
 
   // ----------- lifecycle hooks ----------------
@@ -146,6 +172,7 @@ class OIDCComponent extends HTMLElement {
       this.showLoginButton();
       this.hideLogoutButton();
     }
+    this.dispatchEvent(new CustomEvent('ready', {}));
   }
 
   // ----------- event handlers ----------------
