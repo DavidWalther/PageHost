@@ -139,11 +139,14 @@ class CustomParagraph extends LitElement {
             </div>
           </div>
         </div>
-        <div class="slds-col slds-size_1-of-2">
+        <div class="slds-col slds-size_1-of-3">
           <button @click=${this.handleSaveEdit}>Save</button>
         </div>
-        <div class="slds-col slds-size_1-of-2">
+        <div class="slds-col slds-size_1-of-3">
           <button @click=${this.handleCancelEdit}>Cancel</button>
+        </div>
+        <div class="slds-col slds-size_1-of-3">
+          <slds-input-toggle ></slds-input-toggle>
         </div>
       </div>
     `;
