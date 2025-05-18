@@ -172,6 +172,7 @@ class OIDCComponent extends HTMLElement {
       this.showLoginButton();
       this.hideLogoutButton();
     }
+    this.dispatchEvent(new CustomEvent('ready', {}));
   }
 
   // ----------- event handlers ----------------
