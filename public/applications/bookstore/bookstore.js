@@ -55,11 +55,15 @@ class Bookstore extends HTMLElement {
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     let authParams = sessionStorage.getItem('authParameters');
+    sessionStorage.removeItem('authParameters');
+
     if(authParams) {
       authParams = JSON.parse(authParams);
       let authCode = authParams.code;
+      let authState = authParams.state;
       let oidcComponent = this.shadowRoot.querySelector('oidc-component');
       oidcComponent.setAttribute('auth-code', authCode);
+      oidcComponent.setAttribute('auth-state', authState);
       oidcComponent.startAuthCodeExchange();
     }
 
@@ -169,10 +173,10 @@ class Bookstore extends HTMLElement {
       return aggregate;
     },{});
 
-
-    if(!queryParameters.code) { return; }
+    if(!queryParameters.code && !queryParameters.state) { return; }
     let authParameters = {
       code: queryParameters.code,
+      state: queryParameters.state
     };
     sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
   }
