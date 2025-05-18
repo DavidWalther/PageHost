@@ -48,7 +48,6 @@ class Bookstore extends HTMLElement {
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
     this.saveAuthParameterToStorage();
-    //this.clearUrlParameter();
 
     // Append the main template
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
@@ -205,7 +204,7 @@ class Bookstore extends HTMLElement {
      * Do something with the authentication result
      * For example, you can store the token in local storage or session storage
      */
-    window.history.replaceState({}, '', window.location.pathname);
+    this.clearUrlParameter();
   }
 
   async handleOIDCClick(event) {
