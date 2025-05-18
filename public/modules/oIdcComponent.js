@@ -121,6 +121,24 @@ class OIDCComponent extends HTMLElement {
     return true;
   }
 
+  // -----------
+
+  /**
+   * This method is to start the authentication flow from outside the component.
+   */
+  startAuthCodeExchange() {
+    const serverEndpoint = this.serverEndpointAuthCodeExchange
+
+    let authParams = {
+      auth_code: this.authCode || new URLSearchParams(window.location.search).get('code'),
+      state: this.authState || new URLSearchParams(window.location.search).get('state')
+    }
+
+    if (authParams.auth_code !== null && authParams.state !== null) {
+      this.exchangeAuthCode(authParams, serverEndpoint);
+    }
+  }
+
   // ----------- lifecycle hooks ----------------
 
   connectedCallback() {
