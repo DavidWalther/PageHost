@@ -54,6 +54,14 @@ class Bookstore extends HTMLElement {
     const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
+    let authParams = sessionStorage.getItem('authParameters');
+    if(authCode) {
+      authParams = JSON.parse(authParams);
+      let authCode = authParams.code;
+      let oidcComponent = document.createElement('oidc-component');
+      oidcComponent.setAttribute('auth-code', authCode);
+    }
+
     // Listen for navigation events
 
     this.hydrate();
