@@ -58,7 +58,7 @@ class Bookstore extends HTMLElement {
     if(authParams) {
       authParams = JSON.parse(authParams);
       let authCode = authParams.code;
-      let oidcComponent = document.createElement('oidc-component');
+      let oidcComponent = this.shadowRoot.querySelector('oidc-component');
       oidcComponent.setAttribute('auth-code', authCode);
       oidcComponent.startAuthCodeExchange();
     }
