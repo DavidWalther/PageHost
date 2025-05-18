@@ -55,7 +55,7 @@ class Bookstore extends HTMLElement {
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     let authParams = sessionStorage.getItem('authParameters');
-    if(authCode) {
+    if(authParams) {
       authParams = JSON.parse(authParams);
       let authCode = authParams.code;
       let oidcComponent = document.createElement('oidc-component');
