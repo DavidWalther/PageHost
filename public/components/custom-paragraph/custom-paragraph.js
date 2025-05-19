@@ -58,6 +58,16 @@ class CustomParagraph extends LitElement {
     this.draftChecked = false; // Track draft checkbox state
   }
 
+  get hasDraft() {
+    if (!this.id) return false;
+    try {
+      const draft = localStorage.getItem(this.id);
+      return !!draft;
+    } catch {
+      return false;
+    }
+  }
+
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
