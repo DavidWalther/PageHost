@@ -225,6 +225,12 @@ class CustomParagraph extends LitElement {
       this.requestUpdate();
       return;
     }
+
+    delete this._paragraphData.draft; // Remove draft property if it exists
+    // If draft option is not enabled, remove any existing draft before saving
+    if (this._paragraphData && this._paragraphData.id) {
+      localStorage.removeItem(this._paragraphData.id);
+    }
     this.editMode = false; // Exit edit mode
     this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
