@@ -172,8 +172,25 @@ class CustomParagraph extends LitElement {
 
   handleEditClick() {
     this.editMode = true; // Enable edit mode
-    // Reset draft checkbox to false on entering edit mode
-    this.draftChecked = false;
+    // If a draft exists, load it; otherwise, use backup
+    if (this.hasDraft) {
+      try {
+        const draft = JSON.parse(localStorage.getItem(this.id));
+        if (draft) {
+          this._paragraphData = { ...draft };
+          this.draftChecked = true;
+        } else {
+          this._paragraphData = { ...this._paragraphDataBackup };
+          this.draftChecked = false;
+        }
+      } catch {
+        this._paragraphData = { ...this._paragraphDataBackup };
+        this.draftChecked = false;
+      }
+    } else {
+      this._paragraphData = { ...this._paragraphDataBackup };
+      this.draftChecked = false;
+    }
     this.requestUpdate();
   }
 
