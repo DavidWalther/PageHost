@@ -55,6 +55,7 @@ class CustomParagraph extends LitElement {
     this._paragraphData = null;
     this.editMode = false; // Internal flag for edit mode
     this.activeTab = 'text'; // Default active tab
+    this.draftChecked = false; // Track draft checkbox state
   }
 
   connectedCallback() {
@@ -151,7 +152,7 @@ class CustomParagraph extends LitElement {
               <label for="draft-checked">Draft</label><br>
             </div>
             <div class="slds-col slds-size_1-of-1 slds-align_absolute-center">
-              <input id="draft-checked" type="checkbox" />
+              <input id="draft-checked" type="checkbox" .checked=${this.draftChecked} @change=${this.handleDraftCheckboxChange} />
             </div>
           </div>
         </div>
@@ -161,6 +162,8 @@ class CustomParagraph extends LitElement {
 
   handleEditClick() {
     this.editMode = true; // Enable edit mode
+    // Reset draft checkbox to false on entering edit mode
+    this.draftChecked = false;
     this.requestUpdate();
   }
 
@@ -169,12 +172,32 @@ class CustomParagraph extends LitElement {
     // Update the paragraph data with the new value
     const key = id.replace('edit-', ''); // Remove 'edit-' prefix from id
     this._paragraphData[key] = value; // Update other fields
-    // Update the paragraph data with the new value
-    
     this._paragraphData = { ...this._paragraphData, [key]: value };
   }
 
+  handleDraftCheckboxChange(event) {
+    this.draftChecked = event.target.checked;
+    this.requestUpdate();
+  }
+
   handleSaveEdit() {
+    if (this.draftChecked) {
+      // Save as draft in localStorage
+      if (this._paragraphData && this._paragraphData.id) {
+        const draftObj = { ...this._paragraphData, draft: true };
+        localStorage.setItem(this._paragraphData.id, JSON.stringify(draftObj));
+        this.dispatchEvent(
+          new CustomEvent('toast', {
+            detail: { message: 'Draft saved locally', variant: 'info' },
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
+      this.editMode = false;
+      this.requestUpdate();
+      return;
+    }
     this.editMode = false; // Exit edit mode
     this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
