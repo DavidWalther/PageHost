@@ -146,7 +146,14 @@ class CustomParagraph extends LitElement {
           <button @click=${this.handleCancelEdit}>Cancel</button>
         </div>
         <div class="slds-col slds-size_1-of-3">
-          <slds-input-toggle ></slds-input-toggle>
+          <div slds-grid slds-wrap>
+            <div class="slds-col slds-size_1-of-1" style="text-align: center;">
+              <label for="draft-checked">Draft</label><br>
+            </div>
+            <div class="slds-col slds-size_1-of-1 slds-align_absolute-center">
+              <input id="draft-checked" type="checkbox" />
+            </div>
+          </div>
         </div>
       </div>
     `;
