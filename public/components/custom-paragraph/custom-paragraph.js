@@ -221,6 +221,10 @@ class CustomParagraph extends LitElement {
 
   handleDraftCheckboxChange(event) {
     this.draftChecked = event.target.checked;
+    // If draft is unchecked in edit mode, remove draft from localStorage immediately
+    if (!this.draftChecked && this._paragraphData && this._paragraphData.id) {
+      localStorage.removeItem(this._paragraphData.id);
+    }
     this.requestUpdate();
   }
 
