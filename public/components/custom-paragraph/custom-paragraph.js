@@ -16,6 +16,13 @@ class CustomParagraph extends LitElement {
       display: none;
     }
 
+    .editable.hasDraft {
+      border-color:rgb(255, 78, 78);
+      border-width: 1px;
+      border-style: solid;
+      border-radius: 5px;
+    }
+
     #content.editable:hover,
     #content.editable:focus-within {
       border-radius: 5px;
