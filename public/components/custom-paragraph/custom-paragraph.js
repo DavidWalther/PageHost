@@ -255,10 +255,7 @@ class CustomParagraph extends LitElement {
 
   saveParagraph() {
     delete this._paragraphData.draft; // Remove draft property if it exists
-    // If draft option is not enabled, remove any existing draft before saving
-    if (this._paragraphData && this._paragraphData.id) {
-      localStorage.removeItem(this._paragraphData.id);
-    }
+    // Do not remove draft here; remove after successful save
     this.editMode = false; // Exit edit mode
     this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
@@ -341,7 +338,7 @@ class CustomParagraph extends LitElement {
     if (error) {
       this.dispatchEvent(
         new CustomEvent('toast', {
-          detail: { message: error, variant: 'error' },  
+          detail: { message: error, variant: 'error' },
           bubbles: true,
           composed: true,
         })
@@ -349,14 +346,18 @@ class CustomParagraph extends LitElement {
       return;
     }
     if (data) {
+      // Remove draft after successful save
+      if (this._paragraphData && this._paragraphData.id) {
+        localStorage.removeItem(this._paragraphData.id);
+      }
       this.dispatchEvent(
         new CustomEvent('toast', {
-          detail: { message: 'Saved', variant: 'success' },  
+          detail: { message: 'Saved', variant: 'success' },
           bubbles: true,
           composed: true,
         })
       );
-      this._paragraphDataBackup = this._paragraphData; // Update the backup with the new 
+      this._paragraphDataBackup = this._paragraphData; // Update the backup with the new
     }
     this.requestUpdate();
   }
