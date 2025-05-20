@@ -106,8 +106,14 @@ class CustomParagraph extends LitElement {
 
   renderTextReadonly(name, content) {
     const canEdit = this.checkEditPermission();
+    let classesStringList = [];
+    classesStringList.push('slds-grid');
+    classesStringList.push('slds-wrap');
+    classesStringList.push(canEdit ? 'editable' : '');
+    classesStringList.push(this.hasDraft ? 'hasDraft' : '');
+    const classesString = classesStringList.join(' ');
     return html`
-      <div id="content" class=${canEdit ? 'editable' : ''}>
+      <div id="content" class=${classesString}>
         <p>
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
@@ -119,8 +125,12 @@ class CustomParagraph extends LitElement {
 
   renderHtmlReadonly(htmlcontent) {
     const canEdit = this.checkEditPermission();
+    let classesStringList = [];
+    classesStringList.push(canEdit ? 'editable' : '');
+    classesStringList.push(this.hasDraft ? 'hasDraft' : '');
+    const classesString = classesStringList.join(' ');
     return html`
-      <div id="content" class=${canEdit ? 'editable' : ''}>
+      <div id="content" class=${classesString}>
         <div .innerHTML=${htmlcontent}></div>
         ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
       </div>
