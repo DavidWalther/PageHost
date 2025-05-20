@@ -230,23 +230,30 @@ class CustomParagraph extends LitElement {
 
   handleSaveEdit() {
     if (this.draftChecked) {
-      // Save as draft in localStorage
-      if (this._paragraphData && this._paragraphData.id) {
-        const draftObj = { ...this._paragraphData, draft: true };
-        localStorage.setItem(this._paragraphData.id, JSON.stringify(draftObj));
-        this.dispatchEvent(
-          new CustomEvent('toast', {
-            detail: { message: 'Draft saved locally', variant: 'info' },
-            bubbles: true,
-            composed: true,
-          })
-        );
-      }
-      this.editMode = false;
-      this.requestUpdate();
-      return;
+      this.saveAsDraft();
+    } else {
+      this.saveParagraph();
     }
+  }
 
+  saveAsDraft() {
+    // Save as draft in localStorage
+    if (this._paragraphData && this._paragraphData.id) {
+      const draftObj = { ...this._paragraphData, draft: true };
+      localStorage.setItem(this._paragraphData.id, JSON.stringify(draftObj));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Draft saved locally', variant: 'info' },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
+    this.editMode = false;
+    this.requestUpdate();
+  }
+
+  saveParagraph() {
     delete this._paragraphData.draft; // Remove draft property if it exists
     // If draft option is not enabled, remove any existing draft before saving
     if (this._paragraphData && this._paragraphData.id) {
@@ -267,9 +274,6 @@ class CustomParagraph extends LitElement {
     const { id, value } = event.target;
     this._paragraphData = { ...this._paragraphData, [id]: value };
     this.requestUpdate();
-  }
-
-  handleClickSave() {
   }
 
   checkEditPermission() {
