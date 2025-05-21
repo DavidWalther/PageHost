@@ -224,6 +224,8 @@ class CustomParagraph extends LitElement {
     // If draft is unchecked in edit mode, remove draft from localStorage immediately
     if (!this.draftChecked && this._paragraphData && this._paragraphData.id) {
       localStorage.removeItem(this._paragraphData.id);
+      this.editMode = false; // Exit edit mode
+      this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
     }
     this.requestUpdate();
   }
