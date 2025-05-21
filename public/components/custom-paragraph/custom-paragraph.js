@@ -63,6 +63,7 @@ class CustomParagraph extends LitElement {
     this.editMode = false; // Internal flag for edit mode
     this.activeTab = 'text'; // Default active tab
     this.draftChecked = false; // Track draft checkbox state
+    this.spinner = true; // Spinner visible by default
   }
 
   get hasDraft() {
@@ -78,30 +79,31 @@ class CustomParagraph extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    this.spinner = true; // Show spinner when loading starts
     this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
   }
 
   render() {
-    if (!this._paragraphData) {
-      return html`<slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>`;
-    }
-
-    if (this.editMode) {
-      let markup = this.renderEditMode(); // Render edit mode if the flag is set
-      return markup;
-    }
-
-    const { name, htmlcontent, content } = this._paragraphData;
-    const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
-
-    switch (displayOption) {
-      case 'text-readonly':
-        return this.renderTextReadonly(name, content);
-      case 'html-readonly':
-        return this.renderHtmlReadonly(htmlcontent);
-      default:
-        return html``;
-    }
+    // Always render spinner, but toggle its visibility
+    return html`
+      <slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>
+      ${this._paragraphData
+        ? (this.editMode
+            ? this.renderEditMode()
+            : (() => {
+                const { name, htmlcontent, content } = this._paragraphData;
+                const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
+                switch (displayOption) {
+                  case 'text-readonly':
+                    return this.renderTextReadonly(name, content);
+                  case 'html-readonly':
+                    return this.renderHtmlReadonly(htmlcontent);
+                  default:
+                    return html``;
+                }
+              })())
+        : html``}
+    `;
   }
 
   renderTextReadonly(name, content) {
@@ -310,10 +312,12 @@ class CustomParagraph extends LitElement {
   queryEventCallback_Paragraph(error, data) {
     if (error) {
       console.error(error);
+      this.spinner = false;
       return;
     }
     this._paragraphData = data;
     this._paragraphDataBackup = { ...data }; // Backup the original data
+    this.spinner = false; // Hide spinner when data is loaded
     this.requestUpdate();
   }
 
