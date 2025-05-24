@@ -86,28 +86,25 @@ class CustomParagraph extends LitElement {
 
   render() {
     // Always render spinner, but toggle its visibility
+    let content = html``;
+    if (this._paragraphData) {
+      if (this.editMode) {
+        content = this.renderEditMode();
+      } else {
+        let localdraft = localStorage.getItem(this.id);
+        let paragraphData = localdraft ? JSON.parse(localdraft) : this._paragraphData;
+        const { name, content: textContent, htmlcontent } = paragraphData;
+        const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
+        if (displayOption === 'text-readonly') {
+          content = this.renderTextReadonly(name, textContent);
+        } else if (displayOption === 'html-readonly') {
+          content = this.renderHtmlReadonly(htmlcontent);
+        }
+      }
+    }
     return html`
       <slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>
-      ${this._paragraphData
-        ? (this.editMode
-            ? this.renderEditMode()
-            : (() => {
-                let localdraft = localStorage.getItem(this.id);
-                localdraft = localdraft ? JSON.parse(localdraft) : null;
-                let paragraphData = localdraft || this._paragraphData;
-
-                const { name, content, htmlcontent, sortnumber } = paragraphData;
-                const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
-                switch (displayOption) {
-                  case 'text-readonly':
-                    return this.renderTextReadonly(name, content);
-                  case 'html-readonly':
-                    return this.renderHtmlReadonly(htmlcontent);
-                  default:
-                    return html``;
-                }
-              })())
-        : html``}
+      ${content}
     `;
   }
 
@@ -150,6 +147,35 @@ class CustomParagraph extends LitElement {
     let paragraphData = localdraft || this._paragraphData;
 
     const { name, content, htmlcontent, sortnumber } = paragraphData;
+    let buttons;
+    if (this.draftMode) {
+      buttons = html`
+        <div class="slds-col slds-size_1-of-4">
+          <button @click=${this.handleDraftSaveClick}>Save</button>
+        </div>
+        <div class="slds-col slds-size_1-of-4">
+          <button @click=${this.handleDraftCancelClick}>Cancel</button>
+        </div>
+        <div class="slds-col slds-size_1-of-4">
+          <button @click=${this.handleDraftApplyClick}>Apply</button>
+        </div>
+        <div class="slds-col slds-size_1-of-4">
+          <button @click=${this.handleDraftDropClick}>Drop</button>
+        </div>
+      `;
+    } else {
+      buttons = html`
+        <div class="slds-col slds-size_1-of-3">
+          <button @click=${this.handleEditSaveClick}>Save</button>
+        </div>
+        <div class="slds-col slds-size_1-of-3">
+          <button @click=${this.handleEditCancelClick}>Cancel</button>
+        </div>
+        <div class="slds-col slds-size_1-of-3">
+          <button @click=${this.handleDraftEnableClick}>Enable Draft</button>
+        </div>
+      `;
+    }
     return html`
       <div class="slds-grid slds-wrap editing">
         <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
@@ -178,33 +204,7 @@ class CustomParagraph extends LitElement {
             </div>
           </div>
         </div>
-        ${this.draftMode
-          ? html`
-            <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleDraftSaveClick}>Save</button>
-            </div>
-            <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleDraftCancelClick}>Cancel</button>
-            </div>
-            <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleDraftApplyClick}>Apply</button>
-            </div>
-            <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleDraftDropClick}>Drop</button>
-            </div>
-          `
-          : html`
-            <div class="slds-col slds-size_1-of-3">
-              <button @click=${this.handleEditSaveClick}>Save</button>
-            </div>
-            <div class="slds-col slds-size_1-of-3">
-              <button @click=${this.handleEditCancelClick}>Cancel</button>
-            </div>
-            <div class="slds-col slds-size_1-of-3">
-              <button @click=${this.handleDraftEnableClick}>Enable Draft</button>
-            </div>
-          `
-        }
+        ${buttons}
       </div>
     `;
   }
