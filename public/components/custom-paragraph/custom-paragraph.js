@@ -378,12 +378,14 @@ class CustomParagraph extends LitElement {
 
 // ========== Save Event ==========
 
-  fireSaveEvent_Paragraph() {
-    if (!this._paragraphData) return;
+  fireSaveEvent_Paragraph(paragraphData) {
+    if (!paragraphData && !this._paragraphData) return;
+
+    let paragraphdataToSave = paragraphData || this._paragraphData;
 
     let eventDetail = {};
     eventDetail.object = 'paragraph';
-    eventDetail.payload = this._paragraphData;
+    eventDetail.payload = paragraphdataToSave;
     eventDetail.callback = this.saveEventCallback_Paragraph.bind(this);
 
     this.dispatchEvent(
