@@ -14,9 +14,6 @@ Technical:
 - rebuild paragraph component with LIT library
 - rebuild chapter component with LIT library
 - rebuild story component with LIT library
-
-Technical:
-- Refactor paragrap component. New Component is built with LIT Library
 - add an edit-Endpoint to modify existing paragraphs
 
 ### 2.18.0 (2025-04-05)
