@@ -58,12 +58,13 @@ class CustomParagraph extends LitElement {
   constructor() {
     super();
     this.id = '';
-    this._paragraphDataBackup = null;
-    this._paragraphData = null;
+    this._paragraphDataBackup = null; // Backup of the original data from the server
+    this._paragraphData = null; // Data to be displayed in the component
     this.editMode = false; // Internal flag for edit mode
     this.activeTab = 'text'; // Default active tab
     this.draftChecked = false; // Track draft checkbox state
     this.spinner = true; // Spinner visible by default
+    this.draftMode = false; // Track if user is in draft mode
   }
 
   get hasDraft() {
@@ -140,7 +141,7 @@ class CustomParagraph extends LitElement {
   }
 
   renderEditMode() {
-    const { name, content, htmlcontent, sortnumber} = this._paragraphData;
+    const { name, content, htmlcontent, sortnumber } = this._paragraphData;
     return html`
       <div class="slds-grid slds-wrap editing">
         <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
@@ -169,46 +170,64 @@ class CustomParagraph extends LitElement {
             </div>
           </div>
         </div>
-        <div class="slds-col slds-size_1-of-3">
-          <button @click=${this.handleSaveEdit}>Save</button>
-        </div>
-        <div class="slds-col slds-size_1-of-3">
-          <button @click=${this.handleCancelEdit}>Cancel</button>
-        </div>
-        <div class="slds-col slds-size_1-of-3">
-          <div slds-grid slds-wrap>
-            <div class="slds-col slds-size_1-of-1" style="text-align: center;">
-              <label for="draft-checked">Draft</label><br>
+        ${this.draftMode
+          ? html`
+            <div class="slds-col slds-size_1-of-4">
+              <button @click=${this.handleSaveDraftClick}>Save</button>
             </div>
-            <div class="slds-col slds-size_1-of-1 slds-align_absolute-center">
-              <input id="draft-checked" type="checkbox" .checked=${this.draftChecked} @change=${this.handleDraftCheckboxChange} />
+            <div class="slds-col slds-size_1-of-4">
+              <button @click=${this.handleCancelEditClick}>Cancel</button>
             </div>
-          </div>
-        </div>
+            <div class="slds-col slds-size_1-of-4">
+              <button @click=${this.handleApplyDraftClick}>Apply</button>
+            </div>
+            <div class="slds-col slds-size_1-of-4">
+              <button @click=${this.handleDropDraftClick}>Drop</button>
+            </div>
+          `
+          : html`
+            <div class="slds-col slds-size_1-of-3">
+              <button @click=${this.handleSaveParagraphClick}>Save</button>
+            </div>
+            <div class="slds-col slds-size_1-of-3">
+              <button @click=${this.handleCancelEditClick}>Cancel</button>
+            </div>
+            <div class="slds-col slds-size_1-of-3">
+              <button @click=${this.handleEnableDraftClick}>Enable Draft</button>
+            </div>
+          `
+        }
       </div>
     `;
   }
 
   handleEditClick() {
-    this.editMode = true; // Enable edit mode
-    // If a draft exists, load it; otherwise, use backup
+    this.enterEditMode();
+  }
+
+  enterEditMode() {
+    this.editMode = true;
     if (this.hasDraft) {
       try {
         const draft = JSON.parse(localStorage.getItem(this.id));
         if (draft) {
           this._paragraphData = { ...draft };
           this.draftChecked = true;
+          this.draftMode = true;
         } else {
           this._paragraphData = { ...this._paragraphDataBackup };
           this.draftChecked = false;
+          this.draftMode = false;
         }
       } catch {
         this._paragraphData = { ...this._paragraphDataBackup };
         this.draftChecked = false;
+        this.draftMode = false;
       }
     } else {
       this._paragraphData = { ...this._paragraphDataBackup };
       this.draftChecked = false;
+      this.draftMode = false;
     }
     this.requestUpdate();
   }
@@ -221,23 +240,48 @@ class CustomParagraph extends LitElement {
     this._paragraphData = { ...this._paragraphData, [key]: value };
   }
 
-  handleDraftCheckboxChange(event) {
-    this.draftChecked = event.target.checked;
-    // If draft is unchecked in edit mode, remove draft from localStorage immediately
-    if (!this.draftChecked && this._paragraphData && this._paragraphData.id) {
-      localStorage.removeItem(this._paragraphData.id);
-      this.editMode = false; // Exit edit mode
-      this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
-    }
+  handleEnableDraftClick() {
+    this.enableDraft();
+  }
+
+  enableDraft() {
+    this.draftMode = true;
+    this.draftChecked = true;
     this.requestUpdate();
   }
 
-  handleSaveEdit() {
-    if (this.draftChecked) {
-      this.saveAsDraft();
-    } else {
-      this.saveParagraph();
+  handleApplyDraftClick() {
+    this.applyDraft();
+  }
+
+  applyDraft() {
+    // Apply draft to main data, remove draft, exit draft mode
+    if (this._paragraphData && this._paragraphData.id) {
+      localStorage.removeItem(this._paragraphData.id);
     }
+    this.draftMode = false;
+    this.draftChecked = false;
+    // Save as normal (fire save event)
+    this.saveParagraph();
+  }
+
+  handleDropDraftClick() {
+    this.dropDraft();
+  }
+
+  dropDraft() {
+    // Remove draft and exit draft mode, restore original data
+    if (this._paragraphData && this._paragraphData.id) {
+      localStorage.removeItem(this._paragraphData.id);
+    }
+    this.draftMode = false;
+    this.draftChecked = false;
+    this._paragraphData = { ...this._paragraphDataBackup };
+    this.requestUpdate();
+  }
+
+  handleSaveDraftClick() {
+    this.saveAsDraft();
   }
 
   saveAsDraft() {
@@ -254,19 +298,30 @@ class CustomParagraph extends LitElement {
       );
     }
     this.editMode = false;
+    this.draftMode = false;
     this.requestUpdate();
+  }
+
+  handleSaveParagraphClick() {
+    this.saveParagraph();
   }
 
   saveParagraph() {
     delete this._paragraphData.draft; // Remove draft property if it exists
     // Do not remove draft here; remove after successful save
     this.editMode = false; // Exit edit mode
+    this.draftMode = false;
     this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
   }
 
-  handleCancelEdit() {
+  handleCancelEditClick() {
+    this.cancelEdit();
+  }
+
+  cancelEdit() {
     this.editMode = false; // Exit edit mode
+    this.draftMode = false;
     this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
     this.requestUpdate();
   }
