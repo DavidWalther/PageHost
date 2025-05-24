@@ -92,7 +92,11 @@ class CustomParagraph extends LitElement {
         ? (this.editMode
             ? this.renderEditMode()
             : (() => {
-                const { name, htmlcontent, content } = this._paragraphData;
+                let localdraft = localStorage.getItem(this.id);
+                localdraft = localdraft ? JSON.parse(localdraft) : null;
+                let paragraphData = localdraft || this._paragraphData;
+
+                const { name, content, htmlcontent, sortnumber } = paragraphData;
                 const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
                 switch (displayOption) {
                   case 'text-readonly':
@@ -141,7 +145,11 @@ class CustomParagraph extends LitElement {
   }
 
   renderEditMode() {
-    const { name, content, htmlcontent, sortnumber } = this._paragraphData;
+    let localdraft = localStorage.getItem(this.id);
+    localdraft = localdraft ? JSON.parse(localdraft) : null;
+    let paragraphData = localdraft || this._paragraphData;
+
+    const { name, content, htmlcontent, sortnumber } = paragraphData;
     return html`
       <div class="slds-grid slds-wrap editing">
         <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
@@ -173,27 +181,27 @@ class CustomParagraph extends LitElement {
         ${this.draftMode
           ? html`
             <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleSaveDraftClick}>Save</button>
+              <button @click=${this.handleDraftSaveClick}>Save</button>
             </div>
             <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleCancelEditClick}>Cancel</button>
+              <button @click=${this.handleDraftCancelClick}>Cancel</button>
             </div>
             <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleApplyDraftClick}>Apply</button>
+              <button @click=${this.handleDraftApplyClick}>Apply</button>
             </div>
             <div class="slds-col slds-size_1-of-4">
-              <button @click=${this.handleDropDraftClick}>Drop</button>
+              <button @click=${this.handleDraftDropClick}>Drop</button>
             </div>
           `
           : html`
             <div class="slds-col slds-size_1-of-3">
-              <button @click=${this.handleSaveParagraphClick}>Save</button>
+              <button @click=${this.handleEditSaveClick}>Save</button>
             </div>
             <div class="slds-col slds-size_1-of-3">
-              <button @click=${this.handleCancelEditClick}>Cancel</button>
+              <button @click=${this.handleEditCancelClick}>Cancel</button>
             </div>
             <div class="slds-col slds-size_1-of-3">
-              <button @click=${this.handleEnableDraftClick}>Enable Draft</button>
+              <button @click=${this.handleDraftEnableClick}>Enable Draft</button>
             </div>
           `
         }
@@ -240,52 +248,59 @@ class CustomParagraph extends LitElement {
     this._paragraphData = { ...this._paragraphData, [key]: value };
   }
 
-  handleEnableDraftClick() {
-    this.enableDraft();
+  handleEditSaveClick() {
+    this.editSaveAction();
+  }
+  editSaveAction() {
+    this.editMode = false;
+    this.draftMode = false;
+    this.fireSaveEvent_Paragraph();
+    this.requestUpdate();
   }
 
-  enableDraft() {
+  handleEditCancelClick() {
+    this.editCancelAction();
+  }
+  editCancelAction() {
+    this._paragraphData = { ...this._paragraphDataBackup };
+    this.editMode = false;
+    this.draftMode = false;
+    this.requestUpdate();
+  }
+
+  handleDraftEnableClick() {
+    this.draftEnableAction();
+  }
+  draftEnableAction() {
+    // Save paragraphData to localStorage
+    if (this._paragraphData && this._paragraphData.id) {
+      const draftObj = { ...this._paragraphData, draft: true };
+      localStorage.setItem(this._paragraphData.id, JSON.stringify(draftObj));
+    }
     this.draftMode = true;
     this.draftChecked = true;
     this.requestUpdate();
   }
 
-  handleApplyDraftClick() {
-    this.applyDraft();
+  handleDraftDropClick() {
+    this.draftDropAction();
   }
-
-  applyDraft() {
-    // Apply draft to main data, remove draft, exit draft mode
+  draftDropAction() {
+    // Remove data from localStorage and restore backup
     if (this._paragraphData && this._paragraphData.id) {
       localStorage.removeItem(this._paragraphData.id);
     }
-    this.draftMode = false;
-    this.draftChecked = false;
-    // Save as normal (fire save event)
-    this.saveParagraph();
-  }
-
-  handleDropDraftClick() {
-    this.dropDraft();
-  }
-
-  dropDraft() {
-    // Remove draft and exit draft mode, restore original data
-    if (this._paragraphData && this._paragraphData.id) {
-      localStorage.removeItem(this._paragraphData.id);
-    }
-    this.draftMode = false;
-    this.draftChecked = false;
     this._paragraphData = { ...this._paragraphDataBackup };
+    this.editMode = false;
+    this.draftMode = false;
     this.requestUpdate();
   }
 
-  handleSaveDraftClick() {
-    this.saveAsDraft();
+  handleDraftSaveClick() {
+    this.draftSaveAction();
   }
-
-  saveAsDraft() {
-    // Save as draft in localStorage
+  draftSaveAction() {
+    // Write paragraphData to localStorage
     if (this._paragraphData && this._paragraphData.id) {
       const draftObj = { ...this._paragraphData, draft: true };
       localStorage.setItem(this._paragraphData.id, JSON.stringify(draftObj));
@@ -302,27 +317,43 @@ class CustomParagraph extends LitElement {
     this.requestUpdate();
   }
 
-  handleSaveParagraphClick() {
-    this.saveParagraph();
+  handleDraftCancelClick() {
+    this.draftCancelAction();
   }
-
-  saveParagraph() {
-    delete this._paragraphData.draft; // Remove draft property if it exists
-    // Do not remove draft here; remove after successful save
-    this.editMode = false; // Exit edit mode
+  draftCancelAction() {
+    this._paragraphData = { ...this._paragraphDataBackup };
+    const draftStr = localStorage.getItem(this._paragraphData.id);
+    if (draftStr) {
+      this._paragraphData = JSON.parse(draftStr);
+    }
+    this.editMode = false;
     this.draftMode = false;
-    this.fireSaveEvent_Paragraph(); // Trigger save event
     this.requestUpdate();
   }
 
-  handleCancelEditClick() {
-    this.cancelEdit();
+  handleDraftApplyClick() {
+    this.draftApplyAction();
   }
-
-  cancelEdit() {
-    this.editMode = false; // Exit edit mode
-    this.draftMode = false;
-    this._paragraphData = { ...this._paragraphDataBackup }; // Restore original data
+  draftApplyAction() {
+    // Fire save-event with localStorage, then remove localStorage
+    let draft = null;
+    if (this._paragraphData && this._paragraphData.id) {
+      const draftStr = localStorage.getItem(this._paragraphData.id);
+      if (draftStr) {
+        draft = JSON.parse(draftStr);
+      }
+    }
+    if (draft) {
+      this.editMode = false;
+      this.draftMode = false;
+      this.fireSaveEvent_Paragraph(draft);
+      localStorage.removeItem(this._paragraphData.id);
+    } else {
+      // fallback: just save current data
+      this.editMode = false;
+      this.draftMode = false;
+      this.fireSaveEvent_Paragraph();
+    }
     this.requestUpdate();
   }
 
@@ -382,6 +413,7 @@ class CustomParagraph extends LitElement {
     if (!paragraphData && !this._paragraphData) return;
 
     let paragraphdataToSave = paragraphData || this._paragraphData;
+    delete paragraphdataToSave.draft; // Remove draft flag if present
 
     let eventDetail = {};
     eventDetail.object = 'paragraph';
