@@ -62,7 +62,6 @@ class CustomParagraph extends LitElement {
     this._paragraphData = null; // Data to be displayed in the component
     this.editMode = false; // Internal flag for edit mode
     this.activeTab = 'text'; // Default active tab
-    this.draftChecked = false; // Track draft checkbox state
     this.spinner = true; // Spinner visible by default
     this.draftMode = false; // Track if user is in draft mode
   }
@@ -220,21 +219,17 @@ class CustomParagraph extends LitElement {
         const draft = JSON.parse(localStorage.getItem(this.id));
         if (draft) {
           this._paragraphData = { ...draft };
-          this.draftChecked = true;
           this.draftMode = true;
         } else {
           this._paragraphData = { ...this._paragraphDataBackup };
-          this.draftChecked = false;
           this.draftMode = false;
         }
       } catch {
         this._paragraphData = { ...this._paragraphDataBackup };
-        this.draftChecked = false;
         this.draftMode = false;
       }
     } else {
       this._paragraphData = { ...this._paragraphDataBackup };
-      this.draftChecked = false;
       this.draftMode = false;
     }
     this.requestUpdate();
@@ -278,7 +273,6 @@ class CustomParagraph extends LitElement {
       localStorage.setItem(this._paragraphData.id, JSON.stringify(draftObj));
     }
     this.draftMode = true;
-    this.draftChecked = true;
     this.requestUpdate();
   }
 
