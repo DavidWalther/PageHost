@@ -91,6 +91,7 @@ class UpsertEndpoint extends EndpointLogic {
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation started', location: LOCATION });
 
       const data = this.requestObject.body; // Assuming data is sent in the request body
+      data.payload.applicationIncluded = this.environment.APPLICATION_APPLICATION_KEY;
 
       let dataFacade = new DataFacade(this.environment).setSkipCache(true);
       let result = await dataFacade.createData(data);

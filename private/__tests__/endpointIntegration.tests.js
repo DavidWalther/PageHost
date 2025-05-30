@@ -7,6 +7,8 @@ jest.mock('../database2/DataStorage/DataStorage');
 jest.mock('../database2/DataCache/DataCache');
 jest.mock('../modules/logging');
 
+
+const MOCK_APPLICATION_KEY = 'test-key';
 describe('UpsertEndpoint Integration', () => {
   let req, res, environment, endpoint;
   let mockUpdateData;
@@ -17,7 +19,7 @@ describe('UpsertEndpoint Integration', () => {
   beforeEach(() => {
     environment = {
       APPLICATION_ACTIVE_DMLS: JSON.stringify(['edit', 'create']),
-      APPLICATION_APPLICATION_KEY: 'test-key',
+      APPLICATION_APPLICATION_KEY: MOCK_APPLICATION_KEY,
     };
     req = { url: '/api/1.0/data/change/test', body: { object: 'story', payload: { id: 'existingid', key: 'value' } } };
     res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -50,6 +52,21 @@ describe('UpsertEndpoint Integration', () => {
       expect(mockCreateData).toHaveBeenCalledTimes(1);
       // Redis connector (DataCache2) should not be called
       expect(mockGetData).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should set the correct application key in DataStorage', async () => {
+    mockCreateData = jest.fn().mockResolvedValue({ id: 'newid' });
+    mockGetData = jest.fn().mockResolvedValue(null);
+    req.body = { object: 'paragraph', payload: { key: 'value' } };
+    
+    endpoint = new UpsertEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
+    await endpoint.execute().then(() => {
+      
+            //applicationIncluded: MOCK_APPLICATION_KEY
+      const callArgs = mockCreateData.mock.calls[0][1];
+      expect(callArgs).toHaveProperty('key');
+      expect(callArgs).toHaveProperty('applicationIncluded');
     });
   });
 });
