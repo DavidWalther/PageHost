@@ -446,3 +446,63 @@ describe('updateData', () => {
     expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
   });
 });
+
+describe('createData', () => {
+  let dataFacade;
+  let mockEnvironment;
+  let mockDataStorage;
+  let mockCreateRecord;
+
+  beforeEach(() => {
+    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+    mockCreateRecord = jest.fn();
+    mockDataStorage = {
+      setConditionApplicationKey: jest.fn(),
+      createRecord: mockCreateRecord,
+    };
+    DataStorage.mockImplementation(() => mockDataStorage);
+    dataFacade = new DataFacade(mockEnvironment);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should throw an error if the object type is invalid', async () => {
+    const invalidData = { object: 'InvalidObject', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockImplementation(() => { throw new Error('Invalid table name: InvalidObject'); });
+    await expect(dataFacade.createData(invalidData)).rejects.toThrow('Invalid table name: InvalidObject');
+    expect(mockDataStorage.createRecord).not.toHaveBeenCalledWith(undefined, invalidData.payload);
+  });
+
+  it('should throw an error if the payload is missing', async () => {
+    const invalidData = { object: 'configuration' };
+    await expect(dataFacade.createData(invalidData)).rejects.toThrow('Invalid data object: Missing object type or payload');
+    expect(mockDataStorage.createRecord).not.toHaveBeenCalled();
+  });
+
+  it('should call DataStorage.createRecord on success', async () => {
+    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockResolvedValue({ id: '1234', key: 'testKey', value: 'testValue' });
+    await expect(dataFacade.createData(validData)).resolves.toEqual({ id: '1234', key: 'testKey', value: 'testValue' });
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.createRecord).toHaveBeenCalled();
+  });
+
+  it('should throw an error if DataStorage.createRecord fails', async () => {
+    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockRejectedValue(new Error('Create failed'));
+    await expect(dataFacade.createData(validData)).rejects.toThrow('Create failed');
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.createRecord).toHaveBeenCalled();
+  });
+
+  it('should always skip cache when creating a record', async () => {
+    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockResolvedValue({ id: '1234', key: 'testKey', value: 'testValue' });
+    dataFacade.setSkipCache(false); // Should be ignored for create
+    await expect(dataFacade.createData(validData)).resolves.toEqual({ id: '1234', key: 'testKey', value: 'testValue' });
+    // No cache set or get should be called
+    expect(mockDataStorage.createRecord).toHaveBeenCalled();
+  });
+});
