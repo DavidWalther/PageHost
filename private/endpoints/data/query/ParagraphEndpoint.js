@@ -12,18 +12,20 @@ class ParagraphEndpoint extends EndpointLogic {
 
     Logging.debugMessage({severity:'INFO', message: 'Executing paragraph query', location: LOCATION});
 
+    let dataFacade = new DataFacade(this.environment);
     let parameterObject = {};
     parameterObject.returnPromise = true;
     parameterObject.request = {
       table: 'paragraph',
       id: this.requestObject.query.id
     };
+
     if(this.scopes?.has('edit')) {
       parameterObject.request.publishDate = null;
+      dataFacade.setSkipCache(true);
     }
 
-    let dataFacade = new DataFacade(this.environment);
-    return dataFacade.setScopes(this.scopes).getData(parameterObject).then(paragraph => {
+    return dataFacade.getData(parameterObject).then(paragraph => {
       Logging.debugMessage({severity:'FINER', message: `Paragraph returned`, location: LOCATION});
       this.responseObject.json(paragraph);
     });
