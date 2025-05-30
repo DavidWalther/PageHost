@@ -49,7 +49,7 @@ class AccessTokenService {
     }
     // buisiness logic
 
-    return ['edit']; // these are hardcoded (for as long as there is no user management and only one user)
+    return ['edit','create']; // these are hardcoded (for as long as there is no user management and only one user)
   }
 
   isUserValid(userInfo) {
