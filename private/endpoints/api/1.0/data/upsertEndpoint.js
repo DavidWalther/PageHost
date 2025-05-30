@@ -51,7 +51,6 @@ class UpsertEndpoint extends EndpointLogic {
         }
         // Proceed with update operation
         await this.executeUpdate();
-        this.responseObject.status(200).json({ success: true, message: 'Update operation completed successfully' });
         Logging.debugMessage({ severity: 'INFO', message: 'Update operation completed successfully', location: LOCATION });
         break;
       }
