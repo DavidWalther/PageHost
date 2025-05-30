@@ -176,7 +176,7 @@ class CustomChapter extends LitElement {
     if (!this.chapterData) return;
   
     const chapterId = this.chapterData.id;
-    const storyId = this.chapterData.storyId || null; // Assuming storyId is part of chapterData
+    const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
     this.fireCreateEvent_Paragraph(chapterId, storyId);
   };
 
