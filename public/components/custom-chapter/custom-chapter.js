@@ -92,6 +92,9 @@ class CustomChapter extends LitElement {
       return html``;
     }
 
+    // Check if user is logged in and has 'create' scope
+    const canCreate = this.checkCreatePermission();
+
     return html`
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
@@ -102,6 +105,7 @@ class CustomChapter extends LitElement {
           @click=${this.handleShareClick}
         ></slds-button-icon>
         <div id="chapter-content">
+          ${canCreate ? html`<button @click=${this.handleCreateParagraphClick}>Create Paragraph</button>` : ''}
           ${this.renderParagraphs()}
         </div>
       </slds-card>
@@ -153,6 +157,67 @@ class CustomChapter extends LitElement {
         composed: true,
       })
     );
+  }
+
+  checkCreatePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
+  }
+
+  handleCreateParagraphClick = async () => {
+    // Fire a 'create' event with chapterId and storyId, and a callback
+    if (!this.chapterData) return;
+  
+    const chapterId = this.chapterData.id;
+    const storyId = this.chapterData.storyId || null; // Assuming storyId is part of chapterData
+    this.fireCreateEvent_Paragraph(chapterId, storyId);
+  };
+
+  // ======= Create Event ========
+
+  fireCreateEvent_Paragraph(chapterId, storyId) {
+    let eventDatail = {}
+    eventDatail.object = 'paragraph';
+    eventDatail.payload = {
+      chapterId,
+      storyId,
+      name: '',
+      content: ''
+    };
+    eventDatail.callback = this.createEventCallback_Paragraph.bind(this);
+
+    this.dispatchEvent(
+      new CustomEvent('create', {
+        detail: eventDatail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  createEventCallback_Paragraph(error, data) {
+    if (error) {
+      this.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: 'Error creating paragraph', variant: 'error' },
+        bubbles: true,
+        composed: true,
+      }));
+      return;
+    }
+    if(data) {
+      // Add the new paragraph to the list and re-render
+      if (data && data.id) {
+        this.paragraphsData = [...this.paragraphsData, data];
+        this.requestUpdate();
+      }
+    }
   }
 }
 
