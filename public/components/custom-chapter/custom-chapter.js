@@ -92,6 +92,9 @@ class CustomChapter extends LitElement {
       return html``;
     }
 
+    // Check if user is logged in and has 'create' scope
+    const canCreate = this.checkCreatePermission();
+
     return html`
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
@@ -102,6 +105,7 @@ class CustomChapter extends LitElement {
           @click=${this.handleShareClick}
         ></slds-button-icon>
         <div id="chapter-content">
+          ${canCreate ? html`<button @click=${this.handleCreateParagraphClick}>Create Paragraph</button>` : ''}
           ${this.renderParagraphs()}
         </div>
       </slds-card>
@@ -154,6 +158,22 @@ class CustomChapter extends LitElement {
       })
     );
   }
+
+  checkCreatePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
+  }
+
+  handleCreateParagraphClick = async () => {
+    // Placeholder for create logic, will be implemented in next step
+  };
 }
 
 customElements.define('custom-chapter', CustomChapter);
