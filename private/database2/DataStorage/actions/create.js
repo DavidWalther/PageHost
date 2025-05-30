@@ -33,7 +33,7 @@ class ActionCreate {
     const tableName = this.table.getTableName()();
     const tableFields = Object.keys(this.values);
     const fieldValues = tableFields.map(field => `${this.values[field]}`);
-    const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${fieldValues.join(', ')});`;
+    const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${fieldValues.join(', ')}) RETURNING Id;`;
 
     Logging.debugMessage({ severity: 'FINEST', location: 'ActionCreate.execute', message: `Executing SQL: ${sqlStatement}` });
     return this.pgConnector.executeSql(sqlStatement);
