@@ -40,7 +40,6 @@ class UpsertEndpoint extends EndpointLogic {
         // Proceed with create operation
         let result = await this.excuteCreate();
 
-        this.responseObject.status(200).json({ success: true, result });
         Logging.debugMessage({ severity: 'INFO', message: 'Create operation completed successfully', location: LOCATION });
         break;
       }
