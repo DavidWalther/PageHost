@@ -178,7 +178,7 @@ class CustomChapter extends LitElement {
   handleCreateParagraphClick = async () => {
     // Fire a 'create' event with chapterId and storyId, and a callback
     if (!this.chapterData) return;
-  
+
     const chapterId = this.chapterData.id;
     const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
     this.fireCreateEvent_Paragraph(chapterId, storyId);
@@ -219,6 +219,15 @@ class CustomChapter extends LitElement {
       let newParagraph = data.result;
       // Add the new paragraph to the list and re-render
       if (newParagraph.id) {
+
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: this.labels.labelParagraphCreated, variant: 'success' },
+          bubbles: true,
+          composed: true,
+        })
+      );
+
         this.paragraphsData = [...this.paragraphsData, newParagraph];
         this.requestUpdate();
       }
