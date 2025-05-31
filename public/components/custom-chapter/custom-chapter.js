@@ -216,9 +216,10 @@ class CustomChapter extends LitElement {
       return;
     }
     if(data) {
+      let newParagraph = data.result;
       // Add the new paragraph to the list and re-render
-      if (data && data.id) {
-        this.paragraphsData = [...this.paragraphsData, data];
+      if (newParagraph.id) {
+        this.paragraphsData = [...this.paragraphsData, newParagraph];
         this.requestUpdate();
       }
     }
