@@ -102,14 +102,22 @@ class CustomChapter extends LitElement {
     return html`
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
+        <div slot="actions">
+        ${canCreate ? html`
+          <slds-button-icon
+            icon="utility:add"
+            variant="container-filled"
+            @click=${this.handleCreateParagraphClick}
+          ></slds-button-icon>`
+          : ''
+        }
         <slds-button-icon
-          slot="actions"
           icon="utility:link"
           variant="container-filled"
           @click=${this.handleShareClick}
         ></slds-button-icon>
+        </div>
         <div id="chapter-content">
-          ${canCreate ? html`<button @click=${this.handleCreateParagraphClick}>${this.labels.labelCreateParagraph}</button>` : ''}
           ${this.renderParagraphs()}
         </div>
       </slds-card>
