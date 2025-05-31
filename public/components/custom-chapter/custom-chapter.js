@@ -3,7 +3,11 @@ import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
 class CustomChapter extends LitElement {
   labels = {
+    labelCreateParagraph: 'Absatz erstellen',
+    labelShareChapter: 'Kapitel teilen',
     labelNotifcationLinkCopied: 'Link kopiert',
+    labelParagraphCreated: 'Absatzt erstellt',
+    labelParagraphCreateError: 'Fehler beim Erstellen des Absatzes',
   };
 
   static properties = {
