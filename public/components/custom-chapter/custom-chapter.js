@@ -193,7 +193,8 @@ class CustomChapter extends LitElement {
       chapterId,
       storyId,
       name: '',
-      content: ''
+      content: '',
+      htmlcontent: '<slds-card no-footer><span slot="header">Neuer Absatz</span></slds-card>',
     };
     eventDatail.callback = this.createEventCallback_Paragraph.bind(this);
 
