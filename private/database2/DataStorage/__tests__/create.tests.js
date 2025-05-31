@@ -42,7 +42,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionCreate.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual("INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', 'TestContent');");
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual("INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', 'TestContent') RETURNING Id;");
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -59,7 +59,7 @@ describe('SQL-Actions', () => {
       let resultPromise = actionCreate.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual("INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', null);");
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual("INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', null) RETURNING Id;");
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });

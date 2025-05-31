@@ -36,6 +36,13 @@ class DataFacadePromise {
       syncFacade.updateData(data).then(resolve).catch(reject);
     });
   }
+
+  createData(data) {
+    return new Promise((resolve, reject) => {
+      const syncFacade = new DataFacadeSync(this.environment);
+      syncFacade.createData(data).then(resolve).catch(reject);
+    });
+  }
 }
 
 class DataFacadeSync {
@@ -118,6 +125,50 @@ class DataFacadeSync {
       }
     } catch (error) {
       Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to update data for object: ${object}`, error });
+      throw error;
+    }
+  }
+
+  async createData(data) {
+    const LOCATION = 'DataFacadeSync.createData';
+    const { object, payload } = data;
+    if (!object || !payload) {
+      throw new Error('Invalid data object: Missing object type or payload');
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Creating data for object: ${object}` });
+    const dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    try {
+      // Always skip cache for creation
+      let createdRecord;
+      if (DataFacade.isDataMockEnabled()) {
+        // Optionally implement mock create logic here
+        createdRecord = payload; // Just echo back for now
+      } else {
+        let tableName = object;
+        let table;
+        switch (tableName) {
+          case 'configuration':
+            table = new (require('./tables/configuration').TableConfiguration)();
+            break;
+          case 'paragraph':
+            table = new (require('./tables/paragraph').TableParagraph)();
+            break;
+          case 'story':
+            table = new (require('./tables/story').TableStory)();
+            break;
+          case 'chapter':
+            table = new (require('./tables/chapter').TableChapter)();
+            break;
+          default:
+            throw new Error(`Invalid table name: ${tableName}`);
+        }
+        createdRecord = await dataStorage.createRecord(table, payload);
+      }
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Data created successfully for object: ${object}` });
+      return createdRecord;
+    } catch (error) {
+      Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to create data for object: ${object}`, error });
       throw error;
     }
   }
@@ -299,6 +350,15 @@ class DataFacade {
       return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).updateData(data);
     } else {
       return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).updateData(data);
+    }
+  }
+
+  createData(data) {
+    // Always skip cache for creation
+    if (data.returnPromise) {
+      return new DataFacadePromise(this.environment).setSkipCache(true).createData(data);
+    } else {
+      return new DataFacadeSync(this.environment).setSkipCache(true).createData(data);
     }
   }
 

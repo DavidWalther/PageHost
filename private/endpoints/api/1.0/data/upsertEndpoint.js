@@ -10,16 +10,61 @@ class UpsertEndpoint extends EndpointLogic {
     const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_DMLS || '[]';
     let allowedDmls = JSON.parse(environentAllowedDmls).map(permission => permission.toLowerCase());
     Logging.debugMessage({ severity: 'INFO', message: `Parsed allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
-    allowedDmls = new Set(allowedDmls);
+    this._allowedDmls = new Set(allowedDmls);
 
-    let isAllowed_edit = allowedDmls.has('edit');
-    Logging.debugMessage({ severity: 'INFO', message: `isAllowed_edit: ${isAllowed_edit}`, location: LOCATION });
+    let data = this.requestObject.body;
 
-    if (!isAllowed_edit) {
-      Logging.debugMessage({ severity: 'INFO', message: 'Permission denied for edit operation', location: LOCATION });
-      this.responseObject.status(403).json({ success: false, error: 'Permission denied' });
+    if(!data || !data.payload) {
+      Logging.debugMessage({ severity: 'INFO', message: 'Invalid request data', location: LOCATION });
+      this.responseObject.status(400).json({ success: false, error: 'Invalid request data' });
       return;
     }
+
+
+    let dmlUseCase;
+    if(!data.payload.id) {
+      dmlUseCase = 'create';
+    } else {
+      dmlUseCase = 'update';
+    }
+
+    Logging.debugMessage({ severity: 'INFO', message: `DML Use Case: ${dmlUseCase}`, location: LOCATION });
+
+    switch (dmlUseCase) {
+      case 'create': {
+        if (!this.isAllowedCreate) {
+          Logging.debugMessage({ severity: 'INFO', message: 'Permission denied for create operation', location: LOCATION });
+          this.responseObject.status(403).json({ success: false, error: 'Permission denied' });
+          return;
+        }
+        // Proceed with create operation
+        let result = await this.excuteCreate();
+
+        Logging.debugMessage({ severity: 'INFO', message: 'Create operation completed successfully', location: LOCATION });
+        break;
+      }
+      case 'update': {
+        if (!this.isAllowedEdit) {
+          Logging.debugMessage({ severity: 'INFO', message: 'Permission denied for update operation', location: LOCATION });
+          this.responseObject.status(403).json({ success: false, error: 'Permission denied' });
+          return;
+        }
+        // Proceed with update operation
+        await this.executeUpdate();
+        Logging.debugMessage({ severity: 'INFO', message: 'Update operation completed successfully', location: LOCATION });
+        break;
+      }
+      default: {
+        Logging.debugMessage({ severity: 'INFO', message: 'Invalid DML use case', location: LOCATION });
+        this.responseObject.status(400).json({ success: false, error: 'Invalid DML use case' });
+        return;
+      }
+    }
+  }
+
+  async executeUpdate() {
+    const LOCATION = 'UpsertEndpoint.executeUpdate';
+    Logging.debugMessage({ severity: 'INFO', message: `Executing update operation`, location: LOCATION });
 
     try {
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation started', location: LOCATION });
@@ -27,7 +72,7 @@ class UpsertEndpoint extends EndpointLogic {
       const data = this.requestObject.body; // Assuming data is sent in the request body
 
       let dataFacade = new DataFacade(this.environment).setSkipCache(true);
-      const result = await dataFacade.updateData(data);
+      let result = await dataFacade.updateData(data);
 
       this.responseObject.status(200).json({ success: true, result });
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation completed successfully', location: LOCATION });
@@ -35,6 +80,38 @@ class UpsertEndpoint extends EndpointLogic {
       Logging.debugMessage({ severity: 'ERROR', message: `Upsert operation failed: ${error.message}`, location: LOCATION });
       this.responseObject.status(500).json({ success: false, error: error.message });
     }
+  }
+
+  async excuteCreate() {
+    const LOCATION = 'UpsertEndpoint.executeCreate';
+    Logging.debugMessage({ severity: 'INFO', message: `Executing create operation`, location: LOCATION });
+
+    try {
+      Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation started', location: LOCATION });
+
+      const data = this.requestObject.body; // Assuming data is sent in the request body
+      data.payload.applicationIncluded = this.environment.APPLICATION_APPLICATION_KEY;
+
+      let dataFacade = new DataFacade(this.environment).setSkipCache(true);
+      let result = await dataFacade.createData(data);
+
+      this.responseObject.status(200).json({ success: true, result });
+      Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation completed successfully', location: LOCATION });
+    } catch (error) {
+      Logging.debugMessage({ severity: 'ERROR', message: `Upsert operation failed: ${error.message}`, location: LOCATION });
+      this.responseObject.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  get isAllowedEdit() {
+    const LOCATION = 'UpsertEndpoint.isAllowedEdit';
+    Logging.debugMessage({ severity: 'FINEST', message: `Checking if edit is allowed`, location: LOCATION });
+    return this._allowedDmls.has('edit');
+  }
+  get isAllowedCreate() {
+    const LOCATION = 'UpsertEndpoint.isAllowedCreate';
+    Logging.debugMessage({ severity: 'FINEST', message: `Checking if create is allowed`, location: LOCATION });
+    return this._allowedDmls.has('create');
   }
 }
 
