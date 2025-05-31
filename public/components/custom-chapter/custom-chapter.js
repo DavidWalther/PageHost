@@ -109,7 +109,7 @@ class CustomChapter extends LitElement {
           @click=${this.handleShareClick}
         ></slds-button-icon>
         <div id="chapter-content">
-          ${canCreate ? html`<button @click=${this.handleCreateParagraphClick}>Create Paragraph</button>` : ''}
+          ${canCreate ? html`<button @click=${this.handleCreateParagraphClick}>${this.labels.labelCreateParagraph}</button>` : ''}
           ${this.renderParagraphs()}
         </div>
       </slds-card>
@@ -209,7 +209,7 @@ class CustomChapter extends LitElement {
   createEventCallback_Paragraph(error, data) {
     if (error) {
       this.dispatchEvent(new CustomEvent('toast', {
-        detail: { message: 'Error creating paragraph', variant: 'error' },
+        detail: { message: this.labels.labelParagraphCreateError, variant: 'error' },
         bubbles: true,
         composed: true,
       }));
