@@ -398,6 +398,14 @@ class CustomParagraph extends LitElement {
     this._paragraphData = data;
     this._paragraphDataBackup = { ...data }; // Backup the original data
     this.spinner = false; // Hide spinner when data is loaded
+    // Dispatch loaded event
+    this.dispatchEvent(
+      new CustomEvent('loaded', {
+        detail: { paragraphData: data },
+        bubbles: true,
+        composed: true,
+      })
+    );
     this.requestUpdate();
   }
 
