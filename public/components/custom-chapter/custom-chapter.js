@@ -242,6 +242,13 @@ class CustomChapter extends LitElement {
           })
         );
         this.paragraphsData = [...this.paragraphsData, newParagraph];
+        // Also update chapterData.paragraphs if it exists
+        if (this.chapterData && Array.isArray(this.chapterData.paragraphs)) {
+          this.chapterData = {
+            ...this.chapterData,
+            paragraphs: [...this.chapterData.paragraphs, newParagraph]
+          };
+        }
         this.requestUpdate(); // Update UI immediately
       }
     }
