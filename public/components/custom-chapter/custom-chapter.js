@@ -157,6 +157,7 @@ class CustomChapter extends LitElement {
       `
     );
 
+    debugger;
     return renderedParagraphs;
   }
 
