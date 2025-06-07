@@ -146,7 +146,7 @@ class CustomChapter extends LitElement {
       ? [...this.paragraphsData].reverse()
       : this.paragraphsData;
 
-    return paragraphs.map(
+    let renderedParagraphs = paragraphs.map(
       (paragraph) => html`
         <div class="slds-col slds-p-bottom_small">
           <custom-paragraph
@@ -156,6 +156,8 @@ class CustomChapter extends LitElement {
         </div>
       `
     );
+
+    return renderedParagraphs;
   }
 
   handleShareClick() {
