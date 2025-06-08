@@ -129,15 +129,22 @@ class CustomChapter extends LitElement {
   }
 
   renderParagraphs() {
-    // Debug: show a simple list of paragraph IDs and names
-    console.log('paragraphsData:', this.paragraphsData);
-    return this.paragraphsData.map(
+    const paragraphs = this.chapterData?.reversed
+      ? [...this.paragraphsData].reverse()
+      : this.paragraphsData;
+
+    let renderedParagraphs = paragraphs.map(
       (paragraph) => html`
-        <div>
-          <b>${paragraph.id}</b> - ${paragraph.name}
+        <div class="slds-col slds-p-bottom_small">
+          <custom-paragraph
+            id=${paragraph.id}
+            data-name=${paragraph.name || ''}
+          ></custom-paragraph>
         </div>
       `
     );
+
+    return renderedParagraphs;
   }
 
   handleShareClick() {
