@@ -9,6 +9,7 @@ Feature:
 - add 'Login with Google' using OpenId Connect.
 - add Permission Checks on Logged in User
 - if user has 'edit' scope: add Edit Option to paragraphs 
+- if user hase 'create'scope: add create Paragraph option to chapter
 
 Technical:
 - rebuild paragraph component with LIT library

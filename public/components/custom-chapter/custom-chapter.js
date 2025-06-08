@@ -3,7 +3,11 @@ import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
 class CustomChapter extends LitElement {
   labels = {
+    labelCreateParagraph: 'Absatz erstellen',
+    labelShareChapter: 'Kapitel teilen',
     labelNotifcationLinkCopied: 'Link kopiert',
+    labelParagraphCreated: 'Absatzt erstellt',
+    labelParagraphCreateError: 'Fehler beim Erstellen des Absatzes',
   };
 
   static properties = {
@@ -31,11 +35,28 @@ class CustomChapter extends LitElement {
     this.loading = false;
     this.templatePromise = null;
     this.loadedMarkUp = null;
+    this.pendingNewParagraphId = null; // Track the id of a paragraph being created
   }
 
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
+    // Listen for loaded events from paragraphs
+    this.addEventListener('loaded', this._onParagraphLoaded, true);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('loaded', this._onParagraphLoaded, true);
+  }
+
+  _onParagraphLoaded = (event) => {
+    // - Only handle if we are waiting for a new paragraph
+    // - This also ensures the component will new proccess the event it has fired itself
+    if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
+      this.requestUpdate();
+      this.pendingNewParagraphId = null;
+    }
   }
 
   updated(changedProperties) {
@@ -92,15 +113,27 @@ class CustomChapter extends LitElement {
       return html``;
     }
 
+    // Check if user is logged in and has 'create' scope
+    const canCreate = this.checkCreatePermission();
+
     return html`
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
+        <div slot="actions">
+        ${canCreate ? html`
+          <slds-button-icon
+            icon="utility:add"
+            variant="container-filled"
+            @click=${this.handleCreateParagraphClick}
+          ></slds-button-icon>`
+          : ''
+        }
         <slds-button-icon
-          slot="actions"
           icon="utility:link"
           variant="container-filled"
           @click=${this.handleShareClick}
         ></slds-button-icon>
+        </div>
         <div id="chapter-content">
           ${this.renderParagraphs()}
         </div>
@@ -153,6 +186,77 @@ class CustomChapter extends LitElement {
         composed: true,
       })
     );
+  }
+
+  checkCreatePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
+  }
+
+  handleCreateParagraphClick = async () => {
+    // Fire a 'create' event with chapterId and storyId, and a callback
+    if (!this.chapterData) return;
+
+    const chapterId = this.chapterData.id;
+    const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
+    this.fireCreateEvent_Paragraph(chapterId, storyId);
+  };
+
+  // ======= Create Event ========
+
+  fireCreateEvent_Paragraph(chapterId, storyId) {
+    let eventDatail = {}
+    eventDatail.object = 'paragraph';
+    eventDatail.payload = {
+      chapterId,
+      storyId,
+      name: '',
+      content: '',
+      htmlcontent: '<slds-card no-footer><span slot="header">Neuer Absatz</span></slds-card>',
+    };
+    eventDatail.callback = this.createEventCallback_Paragraph.bind(this);
+
+    this.dispatchEvent(
+      new CustomEvent('create', {
+        detail: eventDatail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  createEventCallback_Paragraph(error, data) {
+    if (error) {
+      this.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: this.labels.labelParagraphCreateError, variant: 'error' },
+        bubbles: true,
+        composed: true,
+      }));
+      return;
+    }
+    if(data) {
+      let newParagraph = data.result;
+      // Add the new paragraph to the list
+      if (newParagraph.id) {
+        this.dispatchEvent(
+          new CustomEvent('toast', {
+            detail: { message: this.labels.labelParagraphCreated, variant: 'success' },
+            bubbles: true,
+            composed: true,
+          })
+        );
+        this.paragraphsData = [...this.paragraphsData, newParagraph];
+        this.pendingNewParagraphId = newParagraph.id;
+        // Do not call requestUpdate here; wait for loaded event
+      }
+    }
   }
 }
 
