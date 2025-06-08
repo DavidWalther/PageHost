@@ -35,11 +35,28 @@ class CustomChapter extends LitElement {
     this.loading = false;
     this.templatePromise = null;
     this.loadedMarkUp = null;
+    this.pendingNewParagraphId = null; // Track the id of a paragraph being created
   }
 
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
+    // Listen for loaded events from paragraphs
+    this.addEventListener('loaded', this._onParagraphLoaded, true);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('loaded', this._onParagraphLoaded, true);
+  }
+
+  _onParagraphLoaded = (event) => {
+    // - Only handle if we are waiting for a new paragraph
+    // - This also ensures the component will new proccess the event it has fired itself
+    if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
+      this.requestUpdate();
+      this.pendingNewParagraphId = null;
+    }
   }
 
   updated(changedProperties) {
@@ -226,19 +243,18 @@ class CustomChapter extends LitElement {
     }
     if(data) {
       let newParagraph = data.result;
-      // Add the new paragraph to the list and re-render
+      // Add the new paragraph to the list
       if (newParagraph.id) {
-
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: this.labels.labelParagraphCreated, variant: 'success' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-
+        this.dispatchEvent(
+          new CustomEvent('toast', {
+            detail: { message: this.labels.labelParagraphCreated, variant: 'success' },
+            bubbles: true,
+            composed: true,
+          })
+        );
         this.paragraphsData = [...this.paragraphsData, newParagraph];
-        this.requestUpdate();
+        this.pendingNewParagraphId = newParagraph.id;
+        // Do not call requestUpdate here; wait for loaded event
       }
     }
   }
