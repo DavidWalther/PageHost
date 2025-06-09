@@ -43,6 +43,13 @@ class DataFacadePromise {
       syncFacade.createData(data).then(resolve).catch(reject);
     });
   }
+
+  deleteData(data) {
+    return new Promise((resolve, reject) => {
+      const syncFacade = new DataFacadeSync(this.environment);
+      syncFacade.deleteData(data).then(resolve).catch(reject);
+    });
+  }
 }
 
 class DataFacadeSync {
@@ -169,6 +176,31 @@ class DataFacadeSync {
       return createdRecord;
     } catch (error) {
       Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to create data for object: ${object}`, error });
+      throw error;
+    }
+  }
+
+  async deleteData(data) {
+    const LOCATION = 'DataFacadeSync.deleteData';
+    const { object, id } = data;
+    if (!object || !id) {
+      throw new Error('Invalid data object: Missing object type or id');
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Deleting data for object: ${object}, id: ${id}` });
+    const dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    try {
+      await dataStorage.deleteData(object, id);
+      // Optionally, remove from cache
+      if (!this.getSkipCache()) {
+        const cache = new DataCache2(this.environment);
+        await cache.del(id);
+        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Data deleted and cache cleared for id: ${id}` });
+      } else {
+        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Skipping cache delete for id: ${id}` });
+      }
+    } catch (error) {
+      Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to delete data for object: ${object}`, error });
       throw error;
     }
   }
@@ -359,6 +391,14 @@ class DataFacade {
       return new DataFacadePromise(this.environment).setSkipCache(true).createData(data);
     } else {
       return new DataFacadeSync(this.environment).setSkipCache(true).createData(data);
+    }
+  }
+
+  deleteData(data) {
+    if (data.returnPromise) {
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).deleteData(data);
+    } else {
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).deleteData(data);
     }
   }
 
