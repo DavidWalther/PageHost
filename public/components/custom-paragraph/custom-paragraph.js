@@ -1,5 +1,6 @@
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { deleteParagraph } from './delete-paragraph.api.js';
 
 class CustomParagraph extends LitElement {
   static properties = {
