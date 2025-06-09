@@ -28,9 +28,12 @@ class CodeExchangeEndpoint {
     return this;
   }
 
+  get envVarAuthUrl() {
+    return this.environment.AUTH_OIDC_AUTH_URL;
+  }
+
   get redirectUri() {
     const LOCATION = 'CodeExchangeEndpoint.get redirectUri';
-    let redirectUri = this.requestObject.protocol + '://' + this.requestObject.hostname;
     let requestObjectAdressParameters = {
       protocol: this.requestObject.protocol,
       secure: this.requestObject.secure,
@@ -42,16 +45,27 @@ class CodeExchangeEndpoint {
     }
 
     Logging.debugMessage({
-      severity: 'DEBUG',
+      severity: 'FINE',
       message: `Request Object Address Parameters: ${JSON.stringify(requestObjectAdressParameters)}`,
       location: LOCATION
     });
+
+    if (this.envVarAuthUrl) {
+      Logging.debugMessage({
+        severity: 'DEBUG',
+        message: `AUTH_OIDC_REDIRECT_URI is set: ${this.envVarAuthUrl}`,
+        location: LOCATION
+      });
+      return this.envVarAuthUrl;
+    }
+    let redirectUri = `${$this.requestObject.protocol}://${this.requestObject.hostname}`;
+
     Logging.debugMessage({
       severity: 'DEBUG',
       message: `Redirect URI: ${redirectUri}`,
       location: LOCATION
     });
-    return `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
+    return redirectUri;
   }
 
   async execute() {
@@ -124,7 +138,7 @@ class CodeExchangeEndpoint {
     .then(tokenResponse => {
       const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
       let tokenPayload = JSON.parse(tokenPayloadStr);
-      /** 
+      /**
        * The user checks and create on of the bearer token will eventually be moved to a separate module.
        */
 
@@ -139,7 +153,7 @@ class CodeExchangeEndpoint {
 
       // extract the relevant information from the token response
       // relevant: first_name, last_name, picture, display_name, email
-      
+
       let scopes = accessTokenService.getUserScopes(tokenPayload);
       accessTokenService.createBearer(tokenPayload)
       .then( bearerToken => {
@@ -162,7 +176,7 @@ class CodeExchangeEndpoint {
               }
             }
           };
-          
+
           // send the response to the client
           this.responseObject.json(auth_response);
         });
