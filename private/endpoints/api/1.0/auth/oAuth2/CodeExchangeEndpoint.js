@@ -31,6 +31,21 @@ class CodeExchangeEndpoint {
   get redirectUri() {
     const LOCATION = 'CodeExchangeEndpoint.get redirectUri';
     let redirectUri = this.requestObject.protocol + '://' + this.requestObject.hostname;
+    let requestObjectAdressParameters = {
+      protocol: this.requestObject.protocol,
+      secure: this.requestObject.secure,
+      hostname: this.requestObject.hostname,
+      host: this.requestObject.get('host'),
+      port: this.requestObject.port,
+      pathname: this.requestObject.path,
+      query: this.requestObject.query,
+    }
+
+    Logging.debugMessage({
+      severity: 'DEBUG',
+      message: `Request Object Address Parameters: ${JSON.stringify(requestObjectAdressParameters)}`,
+      location: LOCATION
+    });
     Logging.debugMessage({
       severity: 'DEBUG',
       message: `Redirect URI: ${redirectUri}`,
