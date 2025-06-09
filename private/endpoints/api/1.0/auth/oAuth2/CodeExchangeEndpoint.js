@@ -58,8 +58,9 @@ class CodeExchangeEndpoint {
       });
       return this.envVarAuthUrl;
     }
-    let redirectUri = `${this.requestObject.protocol}://${this.requestObject.hostname}`;
 
+    //let redirectUri = `${this.requestObject.protocol}://${this.requestObject.hostname}`+ (this.environment.PORT ? `:${this.environment.PORT}` : '');
+    let redirectUri = `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     Logging.debugMessage({
       severity: 'DEBUG',
       message: `Redirect URI: ${redirectUri}`,
