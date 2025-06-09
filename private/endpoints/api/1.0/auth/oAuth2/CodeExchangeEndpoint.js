@@ -28,11 +28,22 @@ class CodeExchangeEndpoint {
     return this;
   }
 
+  get redirectUri() {
+    const LOCATION = 'CodeExchangeEndpoint.get redirectUri';
+    let redirectUri = this.requestObject.protocol + '://' + this.requestObject.hostname;
+    Logging.debugMessage({
+      severity: 'DEBUG',
+      message: `Redirect URI: ${redirectUri}`,
+      location: LOCATION
+    });
+    return `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
+  }
+
   async execute() {
     const LOCATION = 'CodeExchangeEndpoint.execute';
     Logging.debugMessage({ severity: 'INFO', message: `Executing code exchange`, location: LOCATION });
 
-    const HOST = this.environment.HOST || `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
+    const REDIRECT_URI = `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     const { state, auth_code, code_verifier } = this.requestObject.body;
 
     if (!auth_code) {
@@ -86,7 +97,8 @@ class CodeExchangeEndpoint {
     // ====== Check if the auth_code is already used - End =======
 
 
-    const oidcClient = new OpenIdConnectClient().setRedirectUri(HOST)
+    const oidcClient = new OpenIdConnectClient()
+      .setRedirectUri(this.redirectUri)
       .setClientId(this.environment.GOOGLE_CLIENT_ID)
       .setClientSecret(this.environment.GOOGLE_CLIENT_SECRET)
       .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
