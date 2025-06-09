@@ -74,7 +74,7 @@ class UpsertEndpoint extends EndpointLogic {
       let dataFacade = new DataFacade(this.environment).setSkipCache(true);
       let result = await dataFacade.updateData(data);
 
-      this.responseObject.status(200).json({ success: true, result });
+      this.responseObject.status(200).json({ success: true });
       Logging.debugMessage({ severity: 'INFO', message: 'Upsert operation completed successfully', location: LOCATION });
     } catch (error) {
       Logging.debugMessage({ severity: 'ERROR', message: `Upsert operation failed: ${error.message}`, location: LOCATION });

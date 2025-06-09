@@ -49,7 +49,7 @@ describe('AccessTokenService', () => {
         iss: 'https://accounts.google.com',
         aud: 'test-client-id'
       };
-      let testScopes = ['edit']; // these are hardcoded (for the time being)
+      let testScopes = ['edit', 'create']; // these are hardcoded (for the time being)
 
       const bearerToken = await accessTokenService.createBearer(testUserInfo);
       const expectedHashKey = 'mid-term-bearer-token-' + bearerToken;
