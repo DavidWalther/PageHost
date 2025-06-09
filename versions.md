@@ -16,6 +16,9 @@ Technical:
 - rebuild chapter component with LIT library
 - rebuild story component with LIT library
 - add an edit-Endpoint to modify existing paragraphs
+- allow drafts for paragraphs in UI
+- allow creation of new paragraphs via UI
+- allow deletion of paragraphs via UI
 
 ### 2.18.0 (2025-04-05)
 
