@@ -5,6 +5,7 @@ import { deleteParagraph } from './delete-paragraph.api.js';
 class CustomParagraph extends LitElement {
   static properties = {
     id: { type: String },
+    _showDelete: { type: Boolean },
   };
 
   static styles = css`
@@ -65,6 +66,7 @@ class CustomParagraph extends LitElement {
     this.activeTab = 'text'; // Default active tab
     this.spinner = true; // Spinner visible by default
     this.draftMode = false; // Track if user is in draft mode
+    this._showDelete = false;
   }
 
   get hasDraft() {
@@ -110,6 +112,7 @@ class CustomParagraph extends LitElement {
 
   renderTextReadonly(name, content) {
     const canEdit = this.checkEditPermission();
+    const canDelete = this.checkDeletePermission();
     let classesStringList = [];
     classesStringList.push('slds-grid');
     classesStringList.push('slds-wrap');
@@ -117,26 +120,37 @@ class CustomParagraph extends LitElement {
     classesStringList.push(this.hasDraft ? 'hasDraft' : '');
     const classesString = classesStringList.join(' ');
     return html`
-      <div id="content" class=${classesString}>
+      <div id="content" class=${classesString}
+        @mouseenter=${() => this._showDelete = true}
+        @mouseleave=${() => this._showDelete = false}>
         <p>
           ${name ? html`<b>${name}</b><br>` : ''}
           ${content.split('\n').map((line) => html`${line}<br>`)}
         </p>
-        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
+        <div style="display: flex; gap: 0.5em;">
+          ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
+          ${canDelete ? html`<button @click=${this.handleDeleteClick} style="color:red;">Löschen</button>` : ''}
+        </div>
       </div>
     `;
   }
 
   renderHtmlReadonly(htmlcontent) {
     const canEdit = this.checkEditPermission();
+    const canDelete = this.checkDeletePermission();
     let classesStringList = [];
     classesStringList.push(canEdit ? 'editable' : '');
     classesStringList.push(this.hasDraft ? 'hasDraft' : '');
     const classesString = classesStringList.join(' ');
     return html`
-      <div id="content" class=${classesString}>
+      <div id="content" class=${classesString}
+        @mouseenter=${() => this._showDelete = true}
+        @mouseleave=${() => this._showDelete = false}>
         <div .innerHTML=${htmlcontent}></div>
-        ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
+        <div style="display: flex; gap: 0.5em;">
+          ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
+          ${canDelete ? html`<button @click=${this.handleDeleteClick} style="color:red;">Löschen</button>` : ''}
+        </div>
       </div>
     `;
   }
@@ -368,6 +382,40 @@ class CustomParagraph extends LitElement {
     } catch (e) {
       console.error('Failed to parse authenticationResult from sessionStorage:', e);
       return false;
+    }
+  }
+
+  checkDeletePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('delete') || false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async handleDeleteClick() {
+    if (!confirm('Diesen Absatz wirklich löschen?')) return;
+    const authData = sessionStorage.getItem('code_exchange_response');
+    let token = '';
+    if (authData) {
+      try {
+        const parsedData = JSON.parse(authData);
+        token = parsedData?.authenticationResult?.access?.access_token;
+      } catch {}
+    }
+    if (!token) {
+      this.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Nicht eingeloggt', variant: 'error' }, bubbles: true, composed: true }));
+      return;
+    }
+    try {
+      await deleteParagraph({ id: this.id, token });
+      this.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Absatz gelöscht', variant: 'success' }, bubbles: true, composed: true }));
+      this.remove();
+    } catch (e) {
+      this.dispatchEvent(new CustomEvent('toast', { detail: { message: e.message, variant: 'error' }, bubbles: true, composed: true }));
     }
   }
 
