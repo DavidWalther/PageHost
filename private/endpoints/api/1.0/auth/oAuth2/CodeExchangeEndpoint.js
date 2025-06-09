@@ -28,11 +28,51 @@ class CodeExchangeEndpoint {
     return this;
   }
 
+  get envVarAuthUrl() {
+    return this.environment.AUTH_OIDC_AUTH_URL;
+  }
+
+  get redirectUri() {
+    const LOCATION = 'CodeExchangeEndpoint.get redirectUri';
+    let requestObjectAdressParameters = {
+      protocol: this.requestObject.protocol,
+      secure: this.requestObject.secure,
+      hostname: this.requestObject.hostname,
+      host: this.requestObject.get('host'),
+      port: this.requestObject.port,
+      pathname: this.requestObject.path,
+      query: this.requestObject.query,
+    }
+
+    Logging.debugMessage({
+      severity: 'FINE',
+      message: `Request Object Address Parameters: ${JSON.stringify(requestObjectAdressParameters)}`,
+      location: LOCATION
+    });
+
+    if (this.envVarAuthUrl) {
+      Logging.debugMessage({
+        severity: 'DEBUG',
+        message: `AUTH_OIDC_REDIRECT_URI is set: ${this.envVarAuthUrl}`,
+        location: LOCATION
+      });
+      return this.envVarAuthUrl;
+    }
+    let redirectUri = `${this.requestObject.protocol}://${this.requestObject.hostname}`;
+
+    Logging.debugMessage({
+      severity: 'DEBUG',
+      message: `Redirect URI: ${redirectUri}`,
+      location: LOCATION
+    });
+    return redirectUri;
+  }
+
   async execute() {
     const LOCATION = 'CodeExchangeEndpoint.execute';
     Logging.debugMessage({ severity: 'INFO', message: `Executing code exchange`, location: LOCATION });
 
-    const HOST = this.environment.HOST || `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
+    const REDIRECT_URI = `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     const { state, auth_code, code_verifier } = this.requestObject.body;
 
     if (!auth_code) {
@@ -86,7 +126,8 @@ class CodeExchangeEndpoint {
     // ====== Check if the auth_code is already used - End =======
 
 
-    const oidcClient = new OpenIdConnectClient().setRedirectUri(HOST)
+    const oidcClient = new OpenIdConnectClient()
+      .setRedirectUri(this.redirectUri)
       .setClientId(this.environment.GOOGLE_CLIENT_ID)
       .setClientSecret(this.environment.GOOGLE_CLIENT_SECRET)
       .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
@@ -97,7 +138,7 @@ class CodeExchangeEndpoint {
     .then(tokenResponse => {
       const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
       let tokenPayload = JSON.parse(tokenPayloadStr);
-      /** 
+      /**
        * The user checks and create on of the bearer token will eventually be moved to a separate module.
        */
 
@@ -112,7 +153,7 @@ class CodeExchangeEndpoint {
 
       // extract the relevant information from the token response
       // relevant: first_name, last_name, picture, display_name, email
-      
+
       let scopes = accessTokenService.getUserScopes(tokenPayload);
       accessTokenService.createBearer(tokenPayload)
       .then( bearerToken => {
@@ -135,7 +176,7 @@ class CodeExchangeEndpoint {
               }
             }
           };
-          
+
           // send the response to the client
           this.responseObject.json(auth_response);
         });

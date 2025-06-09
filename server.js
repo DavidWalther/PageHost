@@ -17,6 +17,7 @@ const environment = new Environment().getEnvironment();
 
 const app = express();
 app.use(express.json());
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
