@@ -7,7 +7,7 @@ describe('EnvironmentVariablesEndpoint', () => {
   beforeEach(() => {
     mockEnvironment = {
       GOOGLE_CLIENT_ID: 'test-client-id',
-      HOST: 'http://localhost:3000'
+      AUTH_OIDC_REDIRECT_URI: 'http://localhost:3000'
     };
 
     mockRequest = {

@@ -2,7 +2,7 @@ const { EndpointLogic } = require('../../EndpointLogic');
 
 class EnvironmentVariablesEndpoint extends EndpointLogic {
   async execute() {
-    const HOST = AUTH_OIDC_REDIRECT_URI  || `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
+    const HOST =this.environment.AUTH_OIDC_REDIRECT_URI  || `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     const publicVars = {
       system: {
         isMock: this.environment.MOCK_DATA_ENABLE === 'true',
