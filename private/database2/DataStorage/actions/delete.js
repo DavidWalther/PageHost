@@ -23,11 +23,19 @@ class ActionDelete {
     if (!this.id) {
       throw new Error('ID is required for delete');
     }
-    const tableName = this.table.getTableName();
+    const tableName = this.table.getTableName()();
     const LOCATION = 'ActionDelete.execute';
-    const query = `DELETE FROM ${tableName} WHERE id = $1 RETURNING *`;
-    Logging.debugMessage({ severity: 'FINE', location: LOCATION, message: `Executing: ${query} with id: ${this.id}` });
-    const result = await this.pgConnector.query(query, [this.id]);
+    const sqlStatementTpl = 'DELETE FROM {tablename} WHERE id = \'{recordId}\';';
+    const sqlStatement = sqlStatementTpl
+      .replace('{tablename}', tableName)
+      .replace('{recordId}', this.id);
+    Logging.debugMessage({
+      severity: "FINEST",
+      location: LOCATION,
+      message: `Executing SQL: ${sqlStatement}`
+    });
+
+    const result = await this.pgConnector.executeSql(sqlStatement);
     return result.rows;
   }
 }
