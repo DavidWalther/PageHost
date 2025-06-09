@@ -142,6 +142,26 @@ app.post('/api/1.0/data/change/*', async (req, res) => {
   });
 });
 
+app.get('/api/1.0/data/delete', async (req, res) => {
+  const LOCATION = "Server.get('/api/1.0/data/delete')";
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  let headers = req.headers;
+  let bearerToken = headers['authorization']?.split(' ')[1];
+  let accessTokenService = new AccessTokenService().setEnvironment(environment);
+  if (!accessTokenService.isBearerValidFromScope(bearerToken, ['delete'])) {
+    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing delete scope`, location: LOCATION });
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
+  const DeleteEndpoint = require('./private/endpoints/api/1.0/data/deleteEndpoint.js');
+  const endpoint = new DeleteEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'INFO', message: `Delete Endpoint executed`, location: LOCATION });
+  });
+});
+
 app.get('/*', (req, res) => {
   const LOCATION = 'Server.get(\'/*\')';
 
