@@ -39,7 +39,7 @@ describe('UpsertEndpoint', () => {
     endpoint = new UpsertEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
     await endpoint.execute();
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Update operation completed successfully' });
+    expect(res.json).toHaveBeenCalledWith({ success: true });
     expect(mockUpdateData).toHaveBeenCalledWith(req.body);
   });
 
