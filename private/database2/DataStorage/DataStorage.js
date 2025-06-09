@@ -8,6 +8,7 @@ const { Logging } = require('../../modules/logging.js');
 const { DataCleaner } = require('../../modules/DataCleaner.js');
 const { ActionCreate } = require('./actions/create.js');
 const ActionUpdate  = require('./actions/update.js'); // Import ActionUpdate
+const { ActionDelete } = require('./actions/delete.js');
 
 class DataStorage {
   constructor(environment) {
@@ -307,6 +308,49 @@ class DataStorage {
         })
         .catch((error) => {
           Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error updating record in table: ${table.getTableName()}`, error });
+          reject(error);
+        });
+    });
+  }
+
+  deleteData(tableName, id) {
+    const LOCATION = 'DataStorage.deleteData';
+    Logging.debugMessage({ severity: 'FINE', location: LOCATION, message: `Deleting record in table: ${tableName}` });
+
+    if (!tableName) {
+      throw new Error('Table name is required');
+    }
+    if (!id) {
+      throw new Error('ID is required');
+    }
+
+    let table;
+    switch (tableName) {
+      case 'configuration':
+        table = new TableConfiguration();
+        break;
+      case 'paragraph':
+        table = new TableParagraph();
+        break;
+      case 'story':
+        table = new TableStory();
+        break;
+      case 'chapter':
+        table = new TableChapter();
+        break;
+      default:
+        throw new Error(`Invalid table name: ${tableName}`);
+    }
+
+    return new Promise((resolve, reject) => {
+      const actionDelete = new ActionDelete().setPgConnector(this.pgConnector).setTable(table).setId(id);
+      actionDelete.execute()
+        .then(() => {
+          Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record deleted in table: ${table.getTableName()}` });
+          resolve(); // Only resolve, do not return data
+        })
+        .catch((error) => {
+          Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error deleting record in table: ${table.getTableName()}`, error });
           reject(error);
         });
     });
