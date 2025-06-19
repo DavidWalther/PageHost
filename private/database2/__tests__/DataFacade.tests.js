@@ -51,16 +51,18 @@ let mockQueryConfiguration = jest.fn().mockReturnValue(MOCK_DATABASE);
 let mockQueryStory = jest.fn().mockReturnValue();
 let mockQueryAllStories = jest.fn().mockReturnValue();
 let mockQueryChapter = jest.fn().mockReturnValue();
-let mockQueryParagraph = jest.fn().mockReturnValue();
+let mockQueryParagraphs = jest.fn().mockReturnValue();
 let setConditionApplicationKey = jest.fn();
+let setConditionPublishDate = jest.fn();
 DataStorage.mockImplementation(() => {
   return {
+    setConditionPublishDate: setConditionPublishDate,
     setConditionApplicationKey: setConditionApplicationKey,
     queryConfiguration: mockQueryConfiguration,
     queryAllStories: mockQueryAllStories,
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
-    queryParagraph: mockQueryParagraph
+    queryParagraphs: mockQueryParagraphs
   };
 });
 
@@ -277,5 +279,230 @@ describe('getData', () => {
         expect(result).toStrictEqual(MOCK_DATABASE);
       });
     });
+  });
+});
+
+describe('getData with specific scopes', () => {
+  beforeEach(() => {
+    DataStorage.mockClear();
+    DataCache2.mockClear();
+    mockCacheGet = jest.fn();
+    mockQueryChapter = jest.fn();
+    mockQueryParagraphs = jest.fn();
+  });
+
+  describe('skipping cache', () => {
+
+    describe('Chapter', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+
+        await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' }});
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
+      it('should set publishDate to requested date if cache is skipped', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+        mockQueryChapter.mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter', publishDate: '2023-01-01' });
+
+        const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023', publishDate: null} });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000c00000000000023');
+        expect(result.publishDate).toBe('2023-01-01');
+      });
+    });
+
+    describe('Paragraph', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+
+        await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
+      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setSkipCache(true);
+        mockQueryParagraphs.mockReturnValue({ id: '000p00000000000045', Name: 'Test Paragraph', publishDate: '2023-01-01' });
+
+        const result = await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045', publishDate: null } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryParagraphs).toHaveBeenCalledWith('000p00000000000045');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000p00000000000045');
+        expect(result.publishDate).toBe('2023-01-01');
+      });
+    });
+  });
+});
+
+describe('updateData', () => {
+  let dataFacade;
+  let mockEnvironment;
+  let mockDataStorage;
+  let mockDataCache;
+  let mockDataStorageUpdateData;
+
+  beforeEach(() => {
+    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+
+    mockDataStorage = {
+      setConditionApplicationKey: jest.fn(),
+      updateData: mockDataStorageUpdateData = jest.fn(),
+    };
+
+    mockDataCache = {
+      set: jest.fn(),
+    };
+
+    DataStorage.mockImplementation(() => mockDataStorage);
+    DataCache2.mockImplementation(() => mockDataCache);
+
+    dataFacade = new DataFacade(mockEnvironment);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should throw an error if the object type is invalid', async () => {
+    mockDataStorageUpdateData = jest.fn().mockImplementation(() => {
+      throw new Error('Invalid object type');
+    });
+    const invalidData = { object: 'InvalidObject', payload: { id: '1234' } };
+
+    try {
+     let result =  await dataFacade.updateData(invalidData);
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Invalid object type');
+      expect(mockDataCache.set).not.toHaveBeenCalled();
+      expect(mockDataStorage.updateData).not.toHaveBeenCalled();
+    }
+  });
+
+  it('should throw an error if the payload does not have an ID', async () => {
+    const invalidData = { object: 'configuration', payload: {} };
+
+    await expect(dataFacade.updateData(invalidData)).rejects.toThrow('Invalid data object: Missing object type or payload ID');
+    expect(mockDataStorage.updateData).not.toHaveBeenCalled();
+    expect(mockDataCache.set).not.toHaveBeenCalled();
+  });
+
+  it('should call DataStorage.updateData and DataCache.set on success', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    mockDataStorage.updateData.mockResolvedValue({ id: '1234' });
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+  });
+
+  it('should throw an error if DataStorage.updateData fails', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    mockDataStorage.updateData.mockRejectedValue(new Error('Update failed'));
+
+    await expect(dataFacade.updateData(validData)).rejects.toThrow('Update failed');
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).not.toHaveBeenCalled();
+  });
+
+  it('should skip writing to cache when skipCache is true', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+    dataFacade.setSkipCache(true);
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).not.toHaveBeenCalled();
+  });
+
+  it('should write to cache when skipCache is false', async () => {
+    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+    dataFacade.setSkipCache(false);
+
+    await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
+
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+  });
+});
+
+describe('createData', () => {
+  let dataFacade;
+  let mockEnvironment;
+  let mockDataStorage;
+  let mockCreateRecord;
+
+  beforeEach(() => {
+    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+    mockCreateRecord = jest.fn();
+    mockDataStorage = {
+      setConditionApplicationKey: jest.fn(),
+      createRecord: mockCreateRecord,
+    };
+    DataStorage.mockImplementation(() => mockDataStorage);
+    dataFacade = new DataFacade(mockEnvironment);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should throw an error if the object type is invalid', async () => {
+    const invalidData = { object: 'InvalidObject', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockImplementation(() => { throw new Error('Invalid table name: InvalidObject'); });
+    await expect(dataFacade.createData(invalidData)).rejects.toThrow('Invalid table name: InvalidObject');
+    expect(mockDataStorage.createRecord).not.toHaveBeenCalledWith(undefined, invalidData.payload);
+  });
+
+  it('should throw an error if the payload is missing', async () => {
+    const invalidData = { object: 'configuration' };
+    await expect(dataFacade.createData(invalidData)).rejects.toThrow('Invalid data object: Missing object type or payload');
+    expect(mockDataStorage.createRecord).not.toHaveBeenCalled();
+  });
+
+  it('should call DataStorage.createRecord on success', async () => {
+    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockResolvedValue({ id: '1234', key: 'testKey', value: 'testValue' });
+    await expect(dataFacade.createData(validData)).resolves.toEqual({ id: '1234', key: 'testKey', value: 'testValue' });
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.createRecord).toHaveBeenCalled();
+  });
+
+  it('should throw an error if DataStorage.createRecord fails', async () => {
+    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockRejectedValue(new Error('Create failed'));
+    await expect(dataFacade.createData(validData)).rejects.toThrow('Create failed');
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    expect(mockDataStorage.createRecord).toHaveBeenCalled();
+  });
+
+  it('should always skip cache when creating a record', async () => {
+    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    mockCreateRecord.mockResolvedValue({ id: '1234', key: 'testKey', value: 'testValue' });
+    dataFacade.setSkipCache(false); // Should be ignored for create
+    await expect(dataFacade.createData(validData)).resolves.toEqual({ id: '1234', key: 'testKey', value: 'testValue' });
+    // No cache set or get should be called
+    expect(mockDataStorage.createRecord).toHaveBeenCalled();
   });
 });

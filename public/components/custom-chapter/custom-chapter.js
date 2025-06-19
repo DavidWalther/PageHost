@@ -1,304 +1,262 @@
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
-const templatePath = 'components/custom-chapter/custom-chapter.html';
-let templatePromise = null;
-let loadedMarkUp = null;
+class CustomChapter extends LitElement {
+  labels = {
+    labelCreateParagraph: 'Absatz erstellen',
+    labelShareChapter: 'Kapitel teilen',
+    labelNotifcationLinkCopied: 'Link kopiert',
+    labelParagraphCreated: 'Absatzt erstellt',
+    labelParagraphCreateError: 'Fehler beim Erstellen des Absatzes',
+  };
 
-class CustomChapter extends HTMLElement {
-  label = {
-    labelNotifcationLinkCopied: 'Link kopiert'
-  }
+  static properties = {
+    id: { type: String },
+    chapterData: { type: Object },
+    paragraphsData: { type: Array },
+    loading: { type: Boolean },
+  };
 
-  contentDivElem = null;
-
-  /**
-   * @returns {Array} Array of attribute names to observe
-   * standard ist defined by Native HTML
-   */
-  static get observedAttributes() {
-    return ['id'];
-  }
-
-  /**
-   * @param {String} name Name of the attribute that changed
-   * @param {String} oldValue Old value of the attribute
-   * @param {String} newValue New value of the attribute
-   * standard ist defined by Native HTML
-   */
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue !== newValue) {
-      switch (name) {
-        case 'id':
-          if ( !newValue || newValue === 'null' ) {
-            this.clearContent();
-          } else {
-            this.fetchAndDisplayChapter(newValue);
-          }
-          break;
-        default:
-          break;
-      }
+  static styles = css`
+    /* Add SLDS styling for your component here */
+    :host {
+      display: block;
     }
-  }
+    #chapter-content {
+      margin-top: 1rem;
+    }
+  `;
 
-  /**
-   * includes the shared stylesheet
-   */
   constructor() {
     super();
-    const shadowRoot =  this.attachShadow({ mode: 'open' });
-    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this.fetchAndDisplayChapter = this.fetchAndDisplayChapter.bind(this);
+    this.id = null;
+    this.chapterData = null;
+    this.paragraphsData = [];
+    this.loading = false;
+    this.templatePromise = null;
+    this.loadedMarkUp = null;
+    this.pendingNewParagraphId = null; // Track the id of a paragraph being created
   }
 
-  /**
-   * methods that loads the HTML markup file
-   *
-   * @returns {Promise} Promise that resolves to the parsed HTML markup
-   */
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-      .then(response => response.text())
-      .then(html => {
-        return new DOMParser().parseFromString(html, 'text/html');
-      });
+  connectedCallback() {
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
+    // Listen for loaded events from paragraphs
+    this.addEventListener('loaded', this._onParagraphLoaded, true);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('loaded', this._onParagraphLoaded, true);
+  }
+
+  _onParagraphLoaded = (event) => {
+    // - Only handle if we are waiting for a new paragraph
+    // - This also ensures the component will new proccess the event it has fired itself
+    if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
+      this.requestUpdate();
+      this.pendingNewParagraphId = null;
     }
-    return templatePromise;
   }
 
-  /**
-   * lifecyle hook called when the component is added to the DOM
-   */
-  async connectedCallback() {
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
+  updated(changedProperties) {
+    if (changedProperties.has('id')) {
+      this.handleIdChange(this.id);
     }
-
-    // Append the main template
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-
-    this.contentDivElem = this.shadowRoot.querySelector('#chapter-content');
-    const chapterId = this.id;
-    //this.fetchAndDisplayChapter(chapterId);
   }
 
-  /**
-   * @returns {Promise} Promise that resolves to the chapter and it's paragraphs
-   */
+  async handleIdChange(newId) {
+    if (!newId || newId === 'null') {
+      this.clearContent();
+    } else {
+      this.loading = true;
+      this.chapterData = null;
+      this.paragraphsData = [];
+      this.fetchAndDisplayChapter(newId);
+    }
+  }
+
   async fetchAndDisplayChapter(chapterId) {
-    if (!chapterId) {return;}
+    if (!chapterId) return;
 
-    this.fireQueryEvent_Chapter(chapterId, this.queryEventCallback_Chapter.bind(this));
-  }
+    this.fireQueryEvent_Chapter(chapterId, (error, data) => {
+      if (error) {
+        console.error('Error fetching chapter data:', error);
+        this.loading = false;
+        return;
+      }
 
-  // ----------------------------------------------
-  // helpers
-  // ----------------------------------------------
+      this.dispatchEvent(
+        new CustomEvent('loaded', {
+          detail: { chapterData: data },
+          bubbles: true,
+          composed: true,
+        })
+      );
 
-  createChapterCard(chapterData) {
-    // create card element without buttons
-    // it must
-    // - be a slds-card element with a span element for the header
-    // - have a share button
-    // return the card element
-
-    const cardElem = document.createElement('slds-card');
-    cardElem.setAttribute('no-footer', '');
-
-    const headerSpanElem = document.createElement('span');
-    headerSpanElem.setAttribute('slot', 'header');
-    headerSpanElem.textContent = chapterData.name;
-    cardElem.appendChild(headerSpanElem);
-
-    const shareButtonElem = this.createShareButton(chapterData.id);
-    shareButtonElem.setAttribute('slot', 'actions');
-    cardElem.appendChild(shareButtonElem);
-
-    return cardElem;
-  }
-
-  createShareButton(uri) {
-    const shareButtonElem = document.createElement('slds-button-icon');
-    shareButtonElem.setAttribute('icon', 'utility:link');
-    shareButtonElem.setAttribute('variant', 'container-filled');
-    shareButtonElem.addEventListener('click', () => {
-      this.writeToClipboard(location.origin + '/' + uri);
+      this.chapterData = data;
+      this.paragraphsData = data.paragraphs || [];
+      this.loading = false;
     });
-    shareButtonElem.addEventListener('click', () => {
-      shareButtonElem.setAttribute('disabled', '');
-
-      const toastContainer = document.createElement('div');
-      toastContainer.style.width = '90%';
-      toastContainer.style.textAlign = 'center';
-      toastContainer.style.position = 'fixed';
-      toastContainer.style.top = '10%';
-      toastContainer.style.zIndex = '10';
-
-      const toastElement = document.createElement('slds-toast');
-      toastElement.setAttribute('state', 'info');
-      toastElement.textContent = this.label.labelNotifcationLinkCopied;
-      toastContainer.appendChild(toastElement);
-      this.shadowRoot.appendChild(toastContainer);
-
-      setTimeout(() => {
-          toastContainer.parentNode.removeChild(toastContainer)
-      }, 900);
-      setTimeout(() => {
-          shareButtonElem.removeAttribute('disabled');
-      }, 2500);
-    });
-    return shareButtonElem;
   }
 
   clearContent() {
-    const contentDivElement = this.contentDivElement;
-    if (!contentDivElement) {
-      return;
-    }
-    while (contentDivElement.firstChild) {
-      contentDivElement.removeChild(contentDivElement.firstChild);
-    }
+    this.chapterData = null;
+    this.paragraphsData = [];
   }
 
-  createContent(paragraphsData, reversed) {
-    // create a div element with the class 'slds-grid' and add a div element with the class 'slds-col' for each paragraph
-    // return the div element
-
-    let gridElem = document.createElement('div');
-    gridElem.classList.add('slds-grid');
-    this.setContentReversed(gridElem, reversed);
-    paragraphsData.forEach(paragraph => {
-      let contentElem;
-      contentElem = document.createElement('div');
-      contentElem.classList.add('slds-col');
-      contentElem.classList.add('slds-p-bottom_small');
-
-      const paragraphElem = document.createElement('custom-paragraph');
-      if (paragraph.name) {
-        paragraphElem.setAttribute('data-name', paragraph.name);
-      }
-      paragraphElem.setAttribute('id', paragraph.id);
-
-      contentElem.appendChild(paragraphElem);
-
-      gridElem.appendChild(contentElem);
-    });
-    return gridElem;
-  }
-
-  setContentReversed(gridElement, reversed) {
-    // if gridElement is not set, use the default gridElement
-    let workingGridElement = gridElement;
-    if(!workingGridElement) {
-      workingGridElement = this.contentGridElement;
+  render() {
+    if (this.loading) {
+      return html`<slds-spinner size="large"></slds-spinner>`;
+    }
+    if (!this.chapterData) {
+      return html``;
     }
 
-    let styleVertical = 'slds-grid_vertical';
-    let styleVerticalReverse = 'slds-grid_vertical-reverse';
+    // Check if user is logged in and has 'create' scope
+    const canCreate = this.checkCreatePermission();
 
-    if (reversed) {
-      workingGridElement.classList.add(styleVerticalReverse);
-      workingGridElement.classList.remove(styleVertical);
-    } else {
-      workingGridElement.classList.add(styleVertical);
-      workingGridElement.classList.remove(styleVerticalReverse);
-    }
+    return html`
+      <slds-card no-footer>
+        <span slot="header">${this.chapterData.name}</span>
+        <div slot="actions">
+        ${canCreate ? html`
+          <slds-button-icon
+            icon="utility:add"
+            variant="container-filled"
+            @click=${this.handleCreateParagraphClick}
+          ></slds-button-icon>`
+          : ''
+        }
+        <slds-button-icon
+          icon="utility:link"
+          variant="container-filled"
+          @click=${this.handleShareClick}
+        ></slds-button-icon>
+        </div>
+        <div id="chapter-content">
+          ${this.renderParagraphs()}
+        </div>
+      </slds-card>
+    `;
   }
 
-  // ----------------------------------------------
-  // actions
-  // ----------------------------------------------
+  renderParagraphs() {
+    const paragraphs = this.chapterData?.reversed
+      ? [...this.paragraphsData].reverse()
+      : this.paragraphsData;
+
+    return paragraphs.map(
+      (paragraph) => html`
+        <div class="slds-col slds-p-bottom_small">
+          <custom-paragraph
+            id=${paragraph.id}
+            data-name=${paragraph.name || ''}
+          ></custom-paragraph>
+        </div>
+      `
+    );
+  }
+
+  handleShareClick() {
+    const shareUrl = `${location.origin}/${this.id}`;
+    this.writeToClipboard(shareUrl);
+    this.dispatchEvent(new CustomEvent('toast', {
+      detail: {
+        message: this.labels.labelNotifcationLinkCopied,
+        variant: 'info',
+      },
+      bubbles: true,
+      composed: true,
+    }));
+  }
 
   writeToClipboard(value) {
-    navigator.clipboard.writeText(value)
-    .then(() => {
-      console.log('Text copied to clipboard');
-    })
-    .catch(err => {
+    navigator.clipboard.writeText(value).catch((err) => {
       console.error('Error copying text to clipboard:', err);
     });
   }
 
-  showChapterSpinner() {
-    if (!this.spinner) { return; }
-    this.spinner.removeAttribute('hidden');
-  }
-
-  hideChapterSpinner() {
-    if (!this.spinner) { return; }
-    this.spinner.setAttribute('hidden', '');
-  }
-
-  // ----------------------------------------------
-  // getters for elements
-  // ----------------------------------------------
-
-  get contentDivElement() {
-    return this.shadowRoot.querySelector('#chapter-content');
-  }
-
-  get spinner() {
-    return this.shadowRoot.querySelector('slds-spinner');
-  }
-
-  // getter for grid with paragraphs
-  get contentGridElement() {
-    return this.shadowRoot.querySelector('.slds-grid');
-  }
-
-  // ----------------------------------------------
-  // properties for attributes
-  // ----------------------------------------------
-
-  /**
-   * @returns {String} The chapter id
-   */
-  get id() {
-    return this.getAttribute('id');
-  }
-
-  // ------------------------------------------
-  // Query Event methods
-  // ------------------------------------------
-
-  // --------- Fire Query Event methods ---------
-
-  fireQueryEvent_Chapter(chapterid, callback) {
-    let payload = {
-        object: 'chapter',
-        id: chapterid
-    }
-    this.clearContent();
-    this.showChapterSpinner();
-    this.dispatchEvent(new CustomEvent('query', {
+  fireQueryEvent_Chapter(chapterId, callback) {
+    const payload = { object: 'chapter', id: chapterId };
+    this.dispatchEvent(
+      new CustomEvent('query', {
         detail: { payload, callback },
         bubbles: true,
-        composed: true
-    }));
+        composed: true,
+      })
+    );
   }
 
-  // --------- Query Event Callback methods ---------
+  checkCreatePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
+  }
 
-  queryEventCallback_Chapter(error, data) {
+  handleCreateParagraphClick = async () => {
+    // Fire a 'create' event with chapterId and storyId, and a callback
+    if (!this.chapterData) return;
+
+    const chapterId = this.chapterData.id;
+    const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
+    this.fireCreateEvent_Paragraph(chapterId, storyId);
+  };
+
+  // ======= Create Event ========
+
+  fireCreateEvent_Paragraph(chapterId, storyId) {
+    let eventDatail = {}
+    eventDatail.object = 'paragraph';
+    eventDatail.payload = {
+      chapterId,
+      storyId,
+      name: '',
+      content: '',
+      htmlcontent: '<slds-card no-footer><span slot="header">Neuer Absatz</span></slds-card>',
+    };
+    eventDatail.callback = this.createEventCallback_Paragraph.bind(this);
+
+    this.dispatchEvent(
+      new CustomEvent('create', {
+        detail: eventDatail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  createEventCallback_Paragraph(error, data) {
     if (error) {
-        console.error('Error fetching chapter data:', error);
+      this.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: this.labels.labelParagraphCreateError, variant: 'error' },
+        bubbles: true,
+        composed: true,
+      }));
+      return;
     }
     if(data) {
-      let chapterData = data;
-      let reversed = chapterData.reversed;
-      
-      let paragraphsData = data.paragraphs;
-
-      // create card with new chapter's content
-      let cardElem = this.createChapterCard(chapterData);
-      let paragraphElem = this.createContent(paragraphsData, reversed);
-      cardElem.appendChild(paragraphElem);
-
-      this.contentDivElement.appendChild(cardElem);
+      let newParagraph = data.result;
+      // Add the new paragraph to the list
+      if (newParagraph.id) {
+        this.dispatchEvent(
+          new CustomEvent('toast', {
+            detail: { message: this.labels.labelParagraphCreated, variant: 'success' },
+            bubbles: true,
+            composed: true,
+          })
+        );
+        this.paragraphsData = [...this.paragraphsData, newParagraph];
+        this.pendingNewParagraphId = newParagraph.id;
+        // Do not call requestUpdate here; wait for loaded event
+      }
     }
-    this.hideChapterSpinner();
   }
 }
 

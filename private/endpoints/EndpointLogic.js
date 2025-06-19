@@ -16,6 +16,11 @@ class EndpointLogic {
     return this;
   }
 
+  setScopes(scopes) {
+    this.scopes = scopes;
+    return this;
+  }
+
   execute() {
     return new Promise((resolve, reject) => {
       reject(new Error('Method \'execute\' must be implemented'));

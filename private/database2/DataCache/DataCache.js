@@ -28,6 +28,11 @@ class GlobalCacheKeyGenerator {
 
     return keyElements.join('-');
   }
+
+  getKeyLifetimeInSeconds() {
+    // cache expiration time in seconds
+    return this.environmentVars.CACHE_CONTAINER_EXPIRATION_SECONDS;
+  }
 }
 
 class MetaDataCacheKeyGenerator extends GlobalCacheKeyGenerator {
@@ -100,6 +105,39 @@ class StoriesAllCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
+class ShortTermCacheKeyGenerator extends GlobalCacheKeyGenerator {
+  constructor(environmentVars) {
+    super(environmentVars);
+  }
+  generateCacheKey(key) {
+    return this.generateGlobalKeyPrefix() + '-' + key;
+  }
+
+  generateCacheKeyDeprecated() {
+    return null;
+  }
+
+  getKeyLifetimeInSeconds() {
+    return 60 * 20; // 20 minutes
+  }
+}
+
+class MidTermCacheKeyGenerator extends GlobalCacheKeyGenerator {
+  constructor(environmentVars) {
+    super(environmentVars);
+  }
+  generateCacheKey(key) {
+    return this.generateGlobalKeyPrefix() + '-' + key;
+  }
+
+  generateCacheKeyDeprecated() {
+    return null;
+  }
+
+  getKeyLifetimeInSeconds() {
+    return 60 * 60 * 2; // 2 hours
+  }
+}
 
 class CacheKeyGeneratorFactory {
   constructor(environmentVars) {
@@ -112,6 +150,14 @@ class CacheKeyGeneratorFactory {
     Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key: ${key}` });
 
     // first check for special keys
+    if (key.startsWith('short-term')) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ShortTermCacheKeyGenerator' });
+      return new ShortTermCacheKeyGenerator(this.environmentVars);
+    }
+    if (key.startsWith('mid-term')) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MidTermCacheKeyGenerator' });
+      return new MidTermCacheKeyGenerator(this.environmentVars);
+    }
     if(key === 'metadata') {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MetaDataCacheKeyGenerator' });
       return new MetaDataCacheKeyGenerator(this.environmentVars);
@@ -145,7 +191,7 @@ class CacheKeyGeneratorFactory {
 }
 
 class DataCache2 {
-  constructor(environmentObject) {22
+  constructor(environmentObject) {
     if (!environmentObject) {
       throw new Error('Environment object is required');
     }
@@ -162,10 +208,10 @@ class DataCache2 {
     let cacheKeyDeprecated = cacheKeyGenerator.generateCacheKeyDeprecated(key);
 
     await this.redis.connect();
-    let getPromises = [
-      this.redis.get(cacheKeyCurrent),
-      this.redis.get(cacheKeyDeprecated)
-    ];
+    let getPromises = [];
+    getPromises.push(this.redis.get(cacheKeyCurrent));
+    if(cacheKeyDeprecated) { this.redis.get(cacheKeyDeprecated)};
+
     let promiseResults = await Promise.all(getPromises);
     await this.redis.disconnect();
 
@@ -184,12 +230,22 @@ class DataCache2 {
     const LOCATION = 'DataCache2.set';
     const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
     let cacheKey = cacheKeyGenerator.generateCacheKey(key);
-
-    const cacheExpirationSeconds = this.environment.CACHE_CONTAINER_EXPIRATION_SECONDS;
+    const cacheExpirationSeconds = cacheKeyGenerator.getKeyLifetimeInSeconds();
 
     Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
     await this.redis.connect();
     await this.redis.setEx(cacheKey, cacheExpirationSeconds, JSON.stringify(value));
+    return await this.redis.disconnect();
+  }
+
+  async del(key) {
+    const LOCATION = 'DataCache2.del';
+    const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
+    let cacheKey = cacheKeyGenerator.generateCacheKey(key);
+
+    Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
+    await this.redis.connect();
+    await this.redis.del(cacheKey);
     return await this.redis.disconnect();
   }
 

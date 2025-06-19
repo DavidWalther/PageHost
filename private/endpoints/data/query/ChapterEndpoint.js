@@ -12,6 +12,7 @@ class ChapterEndpoint extends EndpointLogic {
 
     Logging.debugMessage({severity:'INFO', message: 'Executing chapter query', location: LOCATION});
 
+    let dataFacade = new DataFacade(this.environment);
     let parameterObject = {};
     parameterObject.returnPromise = true;
     parameterObject.request = {
@@ -19,7 +20,11 @@ class ChapterEndpoint extends EndpointLogic {
       id: this.requestObject.query.id
     };
 
-    let dataFacade = new DataFacade(this.environment);
+    if(this.scopes?.has('edit')) {
+      parameterObject.request.publishDate = null;
+      dataFacade.setSkipCache(true);
+    }
+
     return dataFacade.getData(parameterObject).then(chapter => {
       Logging.debugMessage({severity:'FINER', message: `Chapter returned`, location: LOCATION});
       this.responseObject.json(chapter);
