@@ -7,7 +7,7 @@ class DeleteEndpoint extends EndpointLogic {
     const LOCATION = 'DeleteEndpoint.execute';
     Logging.debugMessage({ severity: 'INFO', message: `Request received - ${this.requestObject.url}`, location: LOCATION });
 
-    const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_DMLS || '[]';
+    const environentAllowedDmls = this.environment.APPLICATION_ACTIVE_ACTIONS || '[]';
     let allowedDmls = JSON.parse(environentAllowedDmls).map(permission => permission.toLowerCase());
     Logging.debugMessage({ severity: 'INFO', message: `Parsed allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
     this._allowedDmls = new Set(allowedDmls);
