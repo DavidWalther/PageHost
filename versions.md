@@ -7,18 +7,18 @@
 
 Feature:
 - add 'Login with Google' using OpenId Connect.
-- add Permission Checks on Logged in User
-- if user has 'edit' scope: add Edit Option to paragraphs 
-- if user hase 'create'scope: add create Paragraph option to chapter
+- allow creation of new paragraphs via UI if logged in
+- allow edit of existing paragraphs via UI if logged in
+- allow drafts for paragraphs in UI if logged in
+- allow deletion of paragraphs via UI if logged in
 
 Technical:
 - rebuild paragraph component with LIT library
 - rebuild chapter component with LIT library
 - rebuild story component with LIT library
-- add an edit-Endpoint to modify existing paragraphs
-- allow drafts for paragraphs in UI
-- allow creation of new paragraphs via UI
-- allow deletion of paragraphs via UI
+- create 'create' scope for logged in user
+- create 'edit' scope for logged in user
+- create 'delete' scope for logged in user
 
 ### 2.18.0 (2025-04-05)
 
