@@ -30,6 +30,7 @@ describe('RequestAuthStateEndpoint', () => {
     mockRequestObject = {};
     mockResponseObject = {
       json: jest.fn(),
+      status: jest.fn().mockReturnThis(),
     };
 
     // clear the mock calls before each test
@@ -45,7 +46,8 @@ describe('RequestAuthStateEndpoint', () => {
   });
 
   it('should generate a new state value and save it to cache', async () => {
-    await endpoint.execute();
+    mockEnvironment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['login']); // Ensure login is allowed
+    await endpoint.setEnvironment(mockEnvironment).execute();
 
     // Assert that a state value was generated and returned
     expect(mockResponseObject.json).toHaveBeenCalledTimes(1);
@@ -68,5 +70,12 @@ describe('RequestAuthStateEndpoint', () => {
     expect(mockResponseObject.json).toHaveBeenCalledTimes(1);
     const generatedState = mockResponseObject.json.mock.calls[0][0];
     expect(generatedState).toBeDefined();
+  });
+
+  it('should return 403 if login is not allowed', async () => {
+    mockEnvironment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['something_else']); // 'login' missing
+    await endpoint.setEnvironment(mockEnvironment).execute();
+    expect(mockResponseObject.status).toHaveBeenCalledWith(403);
+    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Login not allowed' });
   });
 });

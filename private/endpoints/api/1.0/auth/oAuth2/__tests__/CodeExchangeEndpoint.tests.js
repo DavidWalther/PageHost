@@ -54,6 +54,7 @@ Environment.mockImplementation(() => {
   return {
     GOOGLE_CLIENT_ID: 'test-client-id',
     GOOGLE_CLIENT_SECRET: 'test-client-secret',
+    APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create']),
     GOOGLE_ENDPOINT_WELLKNOWN: 'https://accounts.google.com/.well-known/openid-configuration',
     HOST: 'http://localhost',
     AUTH_REGISTERED_USER_EMAIL: 'legit.user@test.com',
@@ -77,9 +78,12 @@ describe('CodeExchangeEndpoint', () => {
   let mockEnvironment;
 
   beforeEach(() => {
-    mockEnvironment = { HOST: 'http://localhost', GOOGLE_CLIENT_ID: 'test-client-id', GOOGLE_CLIENT_SECRET: 'test-client-secret', GOOGLE_ENDPOINT_WELLKNOWN: 'test-wellknown' };
+    mockEnvironment = { HOST: 'http://localhost', GOOGLE_CLIENT_ID: 'test-client-id', GOOGLE_CLIENT_SECRET: 'test-client-secret', GOOGLE_ENDPOINT_WELLKNOWN: 'test-wellknown', APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create']) };
     mockRequestObject = { protocol: 'http', get: jest.fn().mockReturnValue('localhost'), body: { auth_code: 'test-auth-code', state : 'test-state', code_verifier: 'test-code-verifier'} };
-    mockResponseObject = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    mockResponseObject = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
 
     endpoint = new CodeExchangeEndpoint();
     endpoint.setEnvironment(mockEnvironment).setRequestObject(mockRequestObject).setResponseObject(mockResponseObject);
@@ -162,5 +166,13 @@ describe('CodeExchangeEndpoint', () => {
         user: expect.any(Object)
       }
     });
+  });
+
+  it('should return 403 if login or code_exchange is not allowed', async () => {
+    mockEnvironment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['create']); // missing 'code_exchange'
+    await endpoint.setEnvironment(mockEnvironment).execute();
+
+    expect(mockResponseObject.status).toHaveBeenCalledWith(403);
+    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Login not allowed' });
   });
 });

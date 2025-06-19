@@ -10,7 +10,7 @@ describe('UpsertEndpoint', () => {
 
   beforeEach(() => {
     environment = {
-      APPLICATION_ACTIVE_DMLS: JSON.stringify(['edit', 'create'])
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create'])
     };
     req = { url: '/api/1.0/data/change/test', body: { object: 'test', payload: { key: 'value' } } };
     res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
@@ -44,7 +44,7 @@ describe('UpsertEndpoint', () => {
   });
 
   it('should deny create if not allowed', async () => {
-    environment.APPLICATION_ACTIVE_DMLS = JSON.stringify(['edit']);
+    environment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['edit']);
     req.body = { object: 'test', payload: { key: 'value' } };
     endpoint = new UpsertEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
     await endpoint.execute();
@@ -53,7 +53,7 @@ describe('UpsertEndpoint', () => {
   });
 
   it('should deny update if not allowed', async () => {
-    environment.APPLICATION_ACTIVE_DMLS = JSON.stringify(['create']);
+    environment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['create']);
     req.body = { object: 'test', payload: { id: 'existingid', key: 'value' } };
     endpoint = new UpsertEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
     await endpoint.execute();
