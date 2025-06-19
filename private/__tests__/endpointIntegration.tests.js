@@ -19,7 +19,7 @@ describe('UpsertEndpoint Integration', () => {
 
   beforeEach(() => {
     environment = {
-      APPLICATION_ACTIVE_DMLS: JSON.stringify(['edit', 'create']),
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create']),
       APPLICATION_APPLICATION_KEY: MOCK_APPLICATION_KEY,
     };
     req = { url: '/api/1.0/data/change/test', body: { object: 'story', payload: { id: 'existingid', key: 'value' } } };
@@ -80,7 +80,7 @@ describe('DeleteEndpoint Integration', () => {
 
   beforeEach(() => {
     environment = {
-      APPLICATION_ACTIVE_DMLS: JSON.stringify(['delete']),
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['delete']),
       APPLICATION_APPLICATION_KEY: MOCK_APPLICATION_KEY,
     };
     req = { url: '/api/1.0/data/delete', query: { object: 'paragraph', id: 'deleteid' } };
@@ -118,7 +118,7 @@ describe('DeleteEndpoint Integration', () => {
   });
 
   it('should return 403 if delete is not allowed', async () => {
-    environment.APPLICATION_ACTIVE_DMLS = JSON.stringify(['edit']);
+    environment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['edit']);
     endpoint = new DeleteEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
     await endpoint.execute();
     expect(res.status).toHaveBeenCalledWith(403);
