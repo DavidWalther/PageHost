@@ -30,6 +30,16 @@ class RequestAuthStateEndpoint {
 
   async execute() {
     const LOCATION = 'RequestAuthStateEndpoint.execute';
+    // Restrict access to login if not allowed
+    const allowedActions = this.environment.APPLICATION_ACTIVE_ACTIONS || '[]';
+    let allowed = [];
+    try { allowed = JSON.parse(allowedActions).map(a => a.toLowerCase()); } catch (e) {}
+    if (!allowed.includes('login')) {
+      Logging.debugMessage({ severity: 'WARNING', message: 'Login not allowed by environment', location: LOCATION });
+      this.responseObject.status(403).json({ error: 'Login not allowed' });
+      return;
+    }
+
     Logging.debugMessage({ severity: 'INFO', message: `Executing requestAuthState`, location: LOCATION });
 
     const state = this.generateRandomState();
