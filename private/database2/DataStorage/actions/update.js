@@ -1,4 +1,5 @@
 const { Logging } = require("../../../modules/logging");
+const { Sanitizer } = require("./sanitizer");
 
 class ActionUpdate {
   constructor() {
@@ -25,9 +26,15 @@ class ActionUpdate {
     if (!data || typeof data !== "object") {
       throw new Error("Data object is required");
     }
-    this.values = data;
+    // Sanitize all values
+    const sanitized = {};
+    for (const [key, value] of Object.entries(data)) {
+      sanitized[key] = Sanitizer.sanitize(value);
+    }
+    this.values = sanitized;
     return this;
   }
+
 
   /**
    * Executes the update operation.
