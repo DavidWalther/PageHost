@@ -1,4 +1,5 @@
 const { Logging } = require("../../../modules/logging");
+const { Sanitizer } = require("./sanitizer");
 
 class ActionCreate {
   constructor() {
@@ -19,10 +20,11 @@ class ActionCreate {
 
   setValue(key, value) {
     if (!key || value === undefined) { return this; }
+    const sanitizedValue = Sanitizer.sanitize(value);
     if (typeof value === 'string') {
-      this.values[key] = `'${value}'`;
+      this.values[key] = `'${sanitizedValue}'`;
     } else if (typeof value === 'number' || value === null) {
-      this.values[key] = value;
+      this.values[key] = sanitizedValue;
     } else {
       throw new Error('Unsupported value type');
     }
