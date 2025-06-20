@@ -1,4 +1,5 @@
 const { Logging } = require("../../../modules/logging");
+const { Sanitizer } = require("./sanitizer");
 
 // Strategy interfaces
 class OrderStrategy {
@@ -365,17 +366,25 @@ class ActionGet {
 
   async execute() {
     let sqlStatement = `SELECT ${this.getFieldString()} FROM ${this.getTableName()}`;
-
     let conditionArray = this.createCombinedCriteria();
     if(conditionArray.length >0) {
       let criteria = '(' + conditionArray.join(' AND ') + ')';
       sqlStatement += ` WHERE ${criteria}`;
     }
-
     sqlStatement += this.getOrderString();
-
     Logging.debugMessage({severity: 'FINEST', location: 'ActionGet.execute', message: `Executing SQL: ${sqlStatement}`});
-    return this.pgConnector.executeSql(sqlStatement, {closeConnection: true});
+    const result = await this.pgConnector.executeSql(sqlStatement, {closeConnection: true});
+    // Desanitize all string fields in the result rows
+    if (result && result.rows) {
+      result.rows = result.rows.map(row => {
+        const desanitized = {};
+        for (const [key, value] of Object.entries(row)) {
+          desanitized[key] = Sanitizer.desanitize(value);
+        }
+        return desanitized;
+      });
+    }
+    return result;
   }
 
   getFieldString() {
