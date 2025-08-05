@@ -1,178 +1,209 @@
-const HTML_TEMPLATE = `
-<style>
-  div.button-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  div.button-container-item {
-    text-align: center;
-    padding: 5px;
-  }
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
-  div[name="botton"] {
-    background-color: transparent;
-    cursor: pointer;
-  }
+class OIDCComponent extends LitElement {
+  static properties = {
+    'provider-endpoint-openid-configuration': { type: String },
+    'server-endpoint-auth-code-exchange': { type: String },
+    'server-endpoint-auth-state-request': { type: String },
+    'no-save': { type: Boolean },
+    'button-label': { type: String },
+    'session-storage-key': { type: String },
+    'auth-code': { type: String },
+    'auth-state': { type: String },
+    _isSessionStored: { type: Boolean, state: true },
+    _showLoginButton: { type: Boolean, state: true },
+    _showLogoutButton: { type: Boolean, state: true },
+  };
 
-  div.button-colors {
-    background-color:hsl(0, 0.00%, 80.60%);
-    color: hsl(0, 0.00%, 30.0%);
-  }
+  static styles = css`
+    div.button-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    div.button-container-item {
+      text-align: center;
+      padding: 5px;
+    }
 
-  div.button-colors:hover {
-    background-color: hsl(0, 0.00%, 30.0%);
-    color: hsl(0, 0.00%, 80.0%);
-  }
+    div[name="botton"] {
+      background-color: transparent;
+      cursor: pointer;
+    }
 
-  div.button-border {
-    border-color: hsl(0, 0.00%, 30.0%);
-    border-style: solid;
-    border-width: 2px;
-    border-radius: 2px;
-  }
+    div.button-colors {
+      background-color:hsl(0, 0.00%, 80.60%);
+      color: hsl(0, 0.00%, 30.0%);
+    }
 
-  div.button-border:hover {
-    border-color: hsl(0, 0.00%, 50.0%);
-  }
+    div.button-colors:hover {
+      background-color: hsl(0, 0.00%, 30.0%);
+      color: hsl(0, 0.00%, 80.0%);
+    }
 
-  div.default-button {
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    padding: 5px;
-  }
+    div.button-border {
+      border-color: hsl(0, 0.00%, 30.0%);
+      border-style: solid;
+      border-width: 2px;
+      border-radius: 2px;
+    }
 
-  .center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+    div.button-border:hover {
+      border-color: hsl(0, 0.00%, 50.0%);
+    }
 
-  button {
-    border: 0px;
-    background: lightgray;
-    padding: 5px;
-    border-radius: 5px;
-    box-shadow: 0px 0px 3px 0;
-    cursor: pointer;
-  }
+    div.default-button {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      padding: 5px;
+    }
 
-  .hidden {
-    display: none;
-  }
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-</style>
-<div >
-  <div class="button-container">
-    <div name="botton-login" class="button-container-item" role="button" tabindex="0" >
-      <slot name="auth-button-login"></slot>
-    </div>
-    <div name="button-logout" class="button-container-item">
-      <slot name="auth-button-logout"></slot>
-    </div>
-  </div>
-</div>
-<template id="tpl-default-button">
-  <div class="center button-colors button-border default-button"></div>
-</template>
-`;
+    button {
+      border: 0px;
+      background: lightgray;
+      padding: 5px;
+      border-radius: 5px;
+      box-shadow: 0px 0px 3px 0;
+      cursor: pointer;
+    }
 
-class OIDCComponent extends HTMLElement {
+    .hidden {
+      display: none;
+    }
+  `;
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
+    this._isSessionStored = false;
+    this._showLoginButton = true;
+    this._showLogoutButton = false;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot);
+    
+    this._updateSessionState();
+    this._checkAuthParams();
+    this.dispatchEvent(new CustomEvent('ready', {}));
+  }
+
+  render() {
+    return html`
+      <div>
+        <div class="button-container">
+          <div name="botton-login" class="button-container-item ${this._showLoginButton ? '' : 'hidden'}" role="button" tabindex="0">
+            ${this._renderLoginButton()}
+          </div>
+          <div name="button-logout" class="button-container-item ${this._showLogoutButton ? '' : 'hidden'}">
+            ${this._renderLogoutButton()}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  _renderLoginButton() {
+    return html`
+      <slot name="auth-button-login" @click=${this.handleClickAuthenticate} @keydown=${this.handleKeyDown}>
+        <button @click=${this.handleClickAuthenticate} @keydown=${this.handleKeyDown} tabindex="1">
+          ${this.buttonLabel}
+        </button>
+      </slot>
+    `;
+  }
+
+  _renderLogoutButton() {
+    return html`
+      <slot name="auth-button-logout" @click=${this.handleClickLogout}>
+        <button @click=${this.handleClickLogout} tabindex="1">
+          Logout
+        </button>
+      </slot>
+    `;
+  }
+
+  _updateSessionState() {
+    this._isSessionStored = this.isSessionStored;
+    if (this._isSessionStored) {
+      this._showLoginButton = false;
+      this._showLogoutButton = true;
+    } else {
+      this._showLoginButton = true;
+      this._showLogoutButton = false;
+    }
+  }
+
+  _checkAuthParams() {
+    const serverEndpoint = this.serverEndpointAuthCodeExchange;
+    const authParams = {
+      auth_code: new URLSearchParams(window.location.search).get('code'),
+      state: new URLSearchParams(window.location.search).get('state')
+    };
+    
+    if (authParams.auth_code !== null && authParams.state !== null) {
+      this.exchangeAuthCode(authParams, serverEndpoint);
+    }
   }
 
   // ----------- getters for the attributes ----------------
 
   get providerEndpointOpenIdConfiguration() {
-    return this.getAttribute('provider-endpoint-openid-configuration');
+    return this['provider-endpoint-openid-configuration'];
   }
 
   get serverEndpointAuthCodeExchange() {
-    return this.getAttribute('server-endpoint-auth-code-exchange');
+    return this['server-endpoint-auth-code-exchange'];
   }
 
   get serverEndpointAuthStateRequest() {
-    return this.getAttribute('server-endpoint-auth-state-request');
+    return this['server-endpoint-auth-state-request'];
   }
 
   get noSave() {
-    return this.hasAttribute('no-save');
+    return this['no-save'];
   }
 
   get buttonLabel() {
-    return this.getAttribute('button-label') || 'Authenticate';
+    return this['button-label'] || 'Authenticate';
   }
 
   get sessionStorageKey() {
-    return this.getAttribute('session-storage-key') || 'code_exchange_response';
+    return this['session-storage-key'] || 'code_exchange_response';
   }
 
   get authCode() {
-    return this.getAttribute('auth-code');
+    return this['auth-code'];
   }
 
   get authState() {
-    return this.getAttribute('auth-state');
+    return this['auth-state'];
   }
 
   get isSessionStored() {
     let storedValue = sessionStorage.getItem(this.sessionStorageKey);
-    if (!storedValue) {
-      return false;
-    }
-    return true;
+    return !!storedValue;
   }
-
-  // -----------
 
   /**
    * This method is to start the authentication flow from outside the component.
    */
   startAuthCodeExchange() {
-    const serverEndpoint = this.serverEndpointAuthCodeExchange
-
-    let authParams = {
+    const serverEndpoint = this.serverEndpointAuthCodeExchange;
+    const authParams = {
       auth_code: this.authCode || new URLSearchParams(window.location.search).get('code'),
       state: this.authState || new URLSearchParams(window.location.search).get('state')
-    }
+    };
 
     if (authParams.auth_code !== null && authParams.state !== null) {
       this.exchangeAuthCode(authParams, serverEndpoint);
     }
-  }
-
-  // ----------- lifecycle hooks ----------------
-
-  connectedCallback() {
-    const providerEndpoint = this.providerEndpointOpenIdConfiguration
-    const serverEndpoint = this.serverEndpointAuthCodeExchange
-
-    this.shadowRoot.innerHTML = HTML_TEMPLATE;
-
-    this.createButton_Login();
-    this.createButton_Logout();
-
-    // Check for authorization code in URL
-    let authParams = {
-      auth_code: new URLSearchParams(window.location.search).get('code'),
-      state: new URLSearchParams(window.location.search).get('state')
-    }
-    if (authParams.auth_code !== null && authParams.state !== null) {
-      this.exchangeAuthCode(authParams, serverEndpoint);
-    }
-
-    if(this.isSessionStored) {
-      // if the session storage is not empty, show the logout button
-      this.hideLoginButton();
-      this.showLogoutButton();
-    } else {
-      // if the session storage is empty, show the login button
-      this.showLoginButton();
-      this.hideLogoutButton();
-    }
-    this.dispatchEvent(new CustomEvent('ready', {}));
   }
 
   // ----------- event handlers ----------------
@@ -203,75 +234,10 @@ class OIDCComponent extends HTMLElement {
   // ----------- actions ----------------
 
   logoutCallback() {
-    sessionStorage.removeItem(this.sessionStorageKey)
-    this.hideLogoutButton();
-    this.showLoginButton();
-  }
-
-  createButton_Logout() {
-    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
-    let slot = buttonContainer.querySelector('slot');
-
-    // === identify wheather the slot is empty or not ===
-    let button_logout;
-    if (!slot.assignedNodes().length) {
-      // there is nothing defined in the slot.
-      // a default button must be created
-      button_logout = document.createElement('button')
-      button_logout.innerText = 'Logout';
-      button_logout.tabIndex = 1;
-      buttonContainer.innerHTML = '';
-      buttonContainer.appendChild(button_logout);
-    }
-    else {
-      // there is something defined in the slot.
-      // the slot must be used
-      button_logout = slot.assignedNodes()[0];
-    }
-
-    // === add event listeners to the button ===
-    button_logout.addEventListener('click', (event) => this.handleClickLogout(event));
-  }
-
-  createButton_Login() {
-    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
-    let slot = buttonContainer.querySelector('slot');
-    // === identify wheather the slot is empty or not ===
-    let button_login;
-    if (!slot.assignedNodes().length) {
-      // there is nothing defined in the slot.
-      // a default button must be created
-      button_login = document.createElement('button')
-      button_login.innerText = this.buttonLabel;
-      button_login.tabIndex = 1;
-      buttonContainer.innerHTML = '';
-      buttonContainer.appendChild(button_login);
-    }
-    else {
-      // there is something defined in the slot.
-      // the slot must be used
-      button_login = slot.assignedNodes()[0];
-    }
-    // === add event listeners to the button ===
-    button_login.addEventListener('click', (event) => this.handleClickAuthenticate(event));
-    button_login.addEventListener('keydown', (event) => this.handleKeyDown(event));
-  }
-
-  showLoginButton() {
-    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
-    buttonContainer.classList.remove('hidden');
-  }
-  hideLoginButton() {
-    const buttonContainer = this.shadowRoot.querySelector('div[name="botton-login"]');
-    buttonContainer.classList.add('hidden');
-  }
-  showLogoutButton() {
-    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
-    buttonContainer.classList.remove('hidden');
-  }
-  hideLogoutButton() {
-    const buttonContainer = this.shadowRoot.querySelector('div[name="button-logout"]');
-    buttonContainer.classList.add('hidden');
+    sessionStorage.removeItem(this.sessionStorageKey);
+    this._showLogoutButton = false;
+    this._showLoginButton = true;
+    this.requestUpdate();
   }
 
   // Action to start the authentication flow
@@ -398,25 +364,31 @@ class OIDCComponent extends HTMLElement {
   }
 
   async handleSuccess(response) {
-      // Hide the login button and show the logout button
-      this.hideLoginButton();
-      this.showLogoutButton();
+    // Hide the login button and show the logout button
+    this._showLoginButton = false;
+    this._showLogoutButton = true;
 
-      // Dispatch event with the response
-      const exchange_response = await response.json();
-      this.dispatchEvent(new CustomEvent('authenticated', { detail: exchange_response }));
-      // Save the response in session storage
-      if(this.noSave) { return; }
+    // Dispatch event with the response
+    const exchange_response = await response.json();
+    this.dispatchEvent(new CustomEvent('authenticated', { detail: exchange_response }));
+    
+    // Save the response in session storage
+    if (this.noSave) { 
+      this.requestUpdate();
+      return; 
+    }
 
-      let storageKey = this.sessionStorageKey;
-      sessionStorage.setItem(storageKey, JSON.stringify(exchange_response));
+    let storageKey = this.sessionStorageKey;
+    sessionStorage.setItem(storageKey, JSON.stringify(exchange_response));
 
-      // Dispatch event with the storage key
-      let eventPayload = {
-        storage_key: storageKey,
-      };
-      let event = new CustomEvent('stored', {detail:eventPayload});
-      this.dispatchEvent(event);
+    // Dispatch event with the storage key
+    let eventPayload = {
+      storage_key: storageKey,
+    };
+    let event = new CustomEvent('stored', { detail: eventPayload });
+    this.dispatchEvent(event);
+    
+    this.requestUpdate();
   }
 }
 
