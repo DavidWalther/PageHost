@@ -19,11 +19,11 @@ class OIDCComponent extends LitElement {
   static styles = css`
     div.button-container {
       display: flex;
-      justify-content: center;
+      flex-direction: row-reverse;
+      justify-content: space-between;
       align-items: center;
     }
     div.button-container-item {
-      text-align: center;
       padding: 5px;
     }
 

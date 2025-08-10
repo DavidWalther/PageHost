@@ -15,18 +15,18 @@ class GlobalHeader extends LitElement {
     return html`
       <div class="slds-grid">
         <!-- Left column slot -->
-        <div class="slds-col slds-size_1-of-12 slds-align_absolute-center">
-            <slot name="right"></slot>
+        <div class="slds-col slds-size_1-of-12">
+            <slot name="left"></slot>
         </div>
         
         <!-- Middle column slot -->
-        <div class="slds-col slds-size_8-of-12 slds-align_absolute-center">
+        <div class="slds-col slds-size_8-of-12">
             <slot name="mid"></slot>
         </div>
-        
+
         <!-- Right column slot -->
-        <div class="slds-col slds-size_3-of-12 slds-align_absolute-center">
-            <slot name="left"></slot>
+        <div class="slds-col slds-size_3-of-12">
+            <slot name="right"></slot>
         </div>
       </div>
     `;
