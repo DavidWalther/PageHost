@@ -3,6 +3,10 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.1.0 
+
+- migrate remaining core-components to LIT
+
 ### 3.0.0 (YYYY-MM-DD)
 
 Feature:
