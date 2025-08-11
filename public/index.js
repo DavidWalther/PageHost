@@ -1,7 +1,9 @@
-function initializeApp() {
+async function initializeApp() {
   const bodyElem = document.querySelector('body');
 
-  //const mainApp =  document.createElement('custom-main-app');
+  // Wait for the custom element to be defined before creating it
+  await customElements.whenDefined('app-bookstore');
+
   const mainApp =  document.createElement('app-bookstore');
   attachQueryEventListener(mainApp);
   attachStorageEventListener(mainApp);
