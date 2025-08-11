@@ -64,11 +64,11 @@ class Bookstore extends HTMLElement {
       oidcComponent.setAttribute('auth-code', authCode);
       oidcComponent.setAttribute('auth-state', authState);
       oidcComponent.startAuthCodeExchange();
+      // Don't clear URL parameters yet - wait for authentication to complete
+    } else {
+      // Only clear URL parameters if there are no auth parameters to process
+      this.clearUrlParameter();
     }
-
-    // Listen for navigation events
-
-    this.clearUrlParameter();
 
     this.hydrate();
     this.hydrateAuthentication();
