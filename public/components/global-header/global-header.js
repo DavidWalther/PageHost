@@ -1,31 +1,35 @@
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
-const templatePath = 'components/global-header/global-header.html';
-let templatePromise = null;
-let loadedMarkUp = null;
-
-class GlobalHeader extends HTMLElement {
+class GlobalHeader extends LitElement {
   constructor() {
     super();
-    const shadowRoot = this.attachShadow({ mode: 'open' }); 
-    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-  }
-
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-        .then(response => response.text())
-        .then(html => new DOMParser().parseFromString(html, 'text/html'));
-    }
-    return templatePromise;
   }
 
   async connectedCallback() {
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
-    }
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
+  }
+
+  render() {
+    return html`
+      <div class="slds-grid">
+        <!-- Left column slot -->
+        <div class="slds-col slds-size_1-of-12">
+            <slot name="left"></slot>
+        </div>
+        
+        <!-- Middle column slot -->
+        <div class="slds-col slds-size_8-of-12">
+            <slot name="mid"></slot>
+        </div>
+
+        <!-- Right column slot -->
+        <div class="slds-col slds-size_3-of-12">
+            <slot name="right"></slot>
+        </div>
+      </div>
+    `;
   }
 }
 
