@@ -1,9 +1,8 @@
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 import OIDCComponent from "/modules/oIdcComponent.js";
 
-const templatePath = 'applications/bookstore/bookstore.html';
-let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
-let loadedMarkUp = null;
+console.log('Bookstore.js file loaded');
 
 const recordIdPrefixToPostgresTableName = {
   '000s' : 'Story',
@@ -11,59 +10,50 @@ const recordIdPrefixToPostgresTableName = {
   '000p' : 'Paragraph'
 };
 
-class Bookstore extends HTMLElement {
+class Bookstore extends LitElement {
+  static properties = {
+    isHydrated: { type: Boolean, state: true },
+    _initPara: { type: Object, state: true }
+  };
 
   constructor() {
     super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });  // Attach a shadow root
-    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-  }
-
-  /**
-   * methods that loads the HTML markup file
-   *
-   * @returns {Promise} Promise that resolves to the parsed HTML markup
-   */
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-      .then(response => response.text())
-      .then(html => {
-        return new DOMParser().parseFromString(html, 'text/html');
-      });
-    }
-    return templatePromise;
+    console.log('Bookstore constructor called');
+    // LitElement automatically creates shadow DOM
+    // Initialize component state
+    this.isHydrated = false;
+    this._initPara = null;
   }
 
   // =========== Lifecycle methods ============
 
-  async connectedCallback() {
-
+  connectedCallback() {
+    console.log('Bookstore connectedCallback called');
+    super.connectedCallback();
+    console.log('After super.connectedCallback()');
+    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    console.log('After addGlobalStylesToShadowRoot');
+    
     console.log('Bookstore connected');
-
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
-    }
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
     this.saveAuthParameterToStorage();
 
-    // Append the main template
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-
+    // Handle auth parameters
     let authParams = sessionStorage.getItem('authParameters');
     sessionStorage.removeItem('authParameters');
 
     if(authParams) {
       authParams = JSON.parse(authParams);
-      let authCode = authParams.code;
-      let authState = authParams.state;
-      let oidcComponent = this.shadowRoot.querySelector('oidc-component');
-      oidcComponent.setAttribute('auth-code', authCode);
-      oidcComponent.setAttribute('auth-state', authState);
-      oidcComponent.startAuthCodeExchange();
+      setTimeout(() => {
+        let oidcComponent = this.shadowRoot.querySelector('oidc-component');
+        if (oidcComponent) {
+          oidcComponent.setAttribute('auth-code', authParams.code);
+          oidcComponent.setAttribute('auth-state', authParams.state);
+          oidcComponent.startAuthCodeExchange();
+        }
+      }, 0);
       // Don't clear URL parameters yet - wait for authentication to complete
     } else {
       // Only clear URL parameters if there are no auth parameters to process
@@ -72,6 +62,54 @@ class Bookstore extends HTMLElement {
 
     this.hydrate();
     this.hydrateAuthentication();
+  }
+
+  render() {
+    return html`
+      <slds-card no-footer no-header>
+        <custom-global-header>
+          <div slot="left" class="slds-text-align_center">
+            <slds-button-icon
+              id="button-panel_open"
+              icon="utility:rows"
+              size="small"
+              variant="container-transparent"
+            ></slds-button-icon>
+          </div>
+          <div slot="mid" class="slds-text-align_center slds-text-heading_large">
+            <span id="page-header-headline"></span>
+          </div>
+          <div slot="right" class="slds-text-align_right">
+            <oidc-component
+              provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
+              server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
+              server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
+              button-label="Login with Google"
+            >
+              <button slot="auth-button-login">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
+              </button>
+            </oidc-component>
+          </div>
+        </custom-global-header>
+      </slds-card>
+
+      <span>
+        <slds-panel id="sidebar">
+          <span id="sidebar-title" slot="header"></span>
+          <div id="pill-container"></div>
+        </slds-panel>
+      </span>
+
+      <div id="bookshelf" class="slds-grid slds-grid_vertical slds-m-top--small">
+        <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
+          <custom-story></custom-story>
+        </div>
+        <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
+          <custom-chapter></custom-chapter>
+        </div>
+      </div>
+    `;
   }
 
   disconnectedCallback() {
@@ -91,25 +129,30 @@ class Bookstore extends HTMLElement {
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
     this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
 
-    // Initialize the story container
-    switch(this._initPara.initmode) {
-      case 'story':
-        this.initWithStoryId(this._initPara.initId);
-        break;
-      case 'chapter':
-        this.initWithChapterId(this._initPara.initId);
-        break;
-      case 'none':
-        this.initWithoutParameter();
-        break;
-      default:
-        this.initWithoutParameter();
-        break;
-    }
+    // Use setTimeout to ensure elements are rendered before accessing them
+    setTimeout(() => {
+      // Initialize the story container
+      switch(this._initPara.initmode) {
+        case 'story':
+          this.initWithStoryId(this._initPara.initId);
+          break;
+        case 'chapter':
+          this.initWithChapterId(this._initPara.initId);
+          break;
+        case 'none':
+          this.initWithoutParameter();
+          break;
+        default:
+          this.initWithoutParameter();
+          break;
+      }
 
-    this.isHydrated = true;
-    this.storyElement.setAttribute('chapter-buttons_number-max', 2);
-    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+      this.isHydrated = true;
+      if (this.storyElement) {
+        this.storyElement.setAttribute('chapter-buttons_number-max', 2);
+      }
+      this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    }, 0);
   }
 
   initWithoutParameter() {
@@ -183,12 +226,17 @@ class Bookstore extends HTMLElement {
   }
 
   hydrateAuthentication() {
-    // Listen for OIDC events
-    this.shadowRoot.querySelector('oidc-component').addEventListener('click', (event) => this.handleOIDCClick(event));
-    this.shadowRoot.querySelector('oidc-component').addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
-
-    this.shadowRoot.querySelector('oidc-component').addEventListener('logout', (event) => this.handleLogout(event));
-    this.shadowRoot.querySelector('oidc-component').addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
+    // Use setTimeout to ensure elements are rendered
+    setTimeout(() => {
+      const oidcComponent = this.shadowRoot.querySelector('oidc-component');
+      if (oidcComponent) {
+        // Listen for OIDC events
+        oidcComponent.addEventListener('click', (event) => this.handleOIDCClick(event));
+        oidcComponent.addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
+        oidcComponent.addEventListener('logout', (event) => this.handleLogout(event));
+        oidcComponent.addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
+      }
+    }, 0);
   }
 
   async getGoogleAuthConfig() {
@@ -356,31 +404,38 @@ class Bookstore extends HTMLElement {
   // ============ Panel methods ============
 
   async initializePanel(allStories) {
-    const buttonPanelOpen = this.shadowRoot.querySelector('#button-panel_open');
-    buttonPanelOpen.addEventListener('click', this.openPanel.bind(this)); // Bind this to the openPanel method
+    // Use setTimeout to ensure elements are rendered
+    setTimeout(() => {
+      const buttonPanelOpen = this.shadowRoot.querySelector('#button-panel_open');
+      if (buttonPanelOpen) {
+        buttonPanelOpen.addEventListener('click', this.openPanel.bind(this));
+      }
 
-    const dummyPills = [];
-    const storyData = allStories;
+      const dummyPills = [];
+      const storyData = allStories;
 
-    storyData.forEach((story) => {
-      dummyPills.push(this.createButtonElement(story.name, story.id, () => {
-        this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
-        this.dispatchEvent(new CustomEvent('navigation', {
-          detail: {
-            type: 'story',
-            value: story.id
-          },
-          bubbles: true,
-          //composed: true
+      storyData.forEach((story) => {
+        dummyPills.push(this.createButtonElement(story.name, story.id, () => {
+          this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
+          this.dispatchEvent(new CustomEvent('navigation', {
+            detail: {
+              type: 'story',
+              value: story.id
+            },
+            bubbles: true,
+            //composed: true
+          }));
+          this.closePanel();
         }));
-        this.closePanel();
-      }));
-    });
+      });
 
-    const pillContainer = this.shadowRoot.querySelector('#pill-container');
-    dummyPills.forEach(pill => {
-      pillContainer.appendChild(pill);
-    });
+      const pillContainer = this.shadowRoot.querySelector('#pill-container');
+      if (pillContainer) {
+        dummyPills.forEach(pill => {
+          pillContainer.appendChild(pill);
+        });
+      }
+    }, 0);
   }
 
   openPanel() {
@@ -413,15 +468,22 @@ class Bookstore extends HTMLElement {
   }
 
   createPillElement(label, value, onclickCallback) {
-    // Append the main template
-    const templateId_pill = 'template-pill';
-    const templatePillContent = loadedMarkUp.querySelector('#' + templateId_pill).content;
-
-    const pillElem = templatePillContent.cloneNode(true);
-    pillElem.querySelector('.slds-pill__label').textContent = label;
-    pillElem.querySelector('.slds-pill__label').onclick = onclickCallback;
-    pillElem.querySelector('.slds-pill__label').setAttribute('data-value', value);
-    return pillElem;
+    // Create pill element using DOM API instead of template
+    const pillContainer = document.createElement('div');
+    const pill = document.createElement('span');
+    pill.className = 'slds-pill';
+    pill.setAttribute('role', 'option');
+    pill.setAttribute('aria-selected', 'true');
+    
+    const pillLabel = document.createElement('span');
+    pillLabel.className = 'slds-pill__label';
+    pillLabel.textContent = label;
+    pillLabel.onclick = onclickCallback;
+    pillLabel.setAttribute('data-value', value);
+    
+    pill.appendChild(pillLabel);
+    pillContainer.appendChild(pill);
+    return pillContainer;
   }
 
   evaluateMetadata(metadata) {
@@ -454,9 +516,16 @@ class Bookstore extends HTMLElement {
   // add content of 'template-story_not_found' into container
   showStoryNotFound() {
     const storyContainer = this.storyContainer;
-    const templateId_story_not_found = 'template-story_not_found';
-    const templateStoryNotFoundContent = loadedMarkUp.querySelector('#' + templateId_story_not_found).content;
-    storyContainer.appendChild(templateStoryNotFoundContent.cloneNode(true));
+    
+    // Create the story not found content using DOM API
+    const notFoundDiv = document.createElement('div');
+    notFoundDiv.className = 'slds-text-align_center slds-text-heading_large';
+    
+    const notFoundSpan = document.createElement('span');
+    notFoundSpan.textContent = 'Entschuldigung. Da war leider nichts zu finden.';
+    
+    notFoundDiv.appendChild(notFoundSpan);
+    storyContainer.appendChild(notFoundDiv);
   }
 
   // ----- Element getter -----
@@ -483,10 +552,6 @@ class Bookstore extends HTMLElement {
 
   get spinner() {
     return this.shadowRoot.querySelector('#spinner-story');
-  }
-
-  get chapterElement() {
-    return this.shadowRoot.querySelector('custom-chapter');
   }
 
   // ------------------------------------------
