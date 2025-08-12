@@ -467,25 +467,6 @@ class Bookstore extends LitElement {
     return buttonContainer;
   }
 
-  createPillElement(label, value, onclickCallback) {
-    // Create pill element using DOM API instead of template
-    const pillContainer = document.createElement('div');
-    const pill = document.createElement('span');
-    pill.className = 'slds-pill';
-    pill.setAttribute('role', 'option');
-    pill.setAttribute('aria-selected', 'true');
-    
-    const pillLabel = document.createElement('span');
-    pillLabel.className = 'slds-pill__label';
-    pillLabel.textContent = label;
-    pillLabel.onclick = onclickCallback;
-    pillLabel.setAttribute('data-value', value);
-    
-    pill.appendChild(pillLabel);
-    pillContainer.appendChild(pill);
-    return pillContainer;
-  }
-
   evaluateMetadata(metadata) {
     let pageHeaderHeadline = !metadata.pageHeaderHeadline ? '#config:pageHeaderHeadline#' : metadata.pageHeaderHeadline;
     this.spanHeaderHeadline.textContent = pageHeaderHeadline;
