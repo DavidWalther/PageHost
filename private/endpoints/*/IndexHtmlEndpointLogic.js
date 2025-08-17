@@ -55,7 +55,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       
       const indexContent = `
       <!DOCTYPE html>
-      <html>
+      <html class="dark-mode">
         <head>${headPlaceholder}</head>
         <body onload="initializeApp()"></body>  
       </html>
