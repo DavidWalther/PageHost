@@ -30,6 +30,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push('<meta name="viewport" content="width=device-width, initial-scale=1">');
       headerEntries.push('<link rel="manifest" href="manifest.json" />');
       headerEntries.push('<link rel="stylesheet" type="text/css" href="/assets/styles/salesforce-lightning-design-system.min.css" />');
+      headerEntries.push('<link rel="stylesheet" type="text/css" href="/styles/darkmode.css"/>');
 
       headerEntries.push('<script src="index.js"></script>');
 
