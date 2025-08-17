@@ -1,0 +1,25 @@
+
+
+html.dark-mode {
+
+  --color-dark-mode-background: #272727;
+  --color-dark-mode-text: #ffffff;
+
+  --color-dark-mode-1: #3f3f3f;
+  --color-dark-mode-2: #575757;
+  --color-dark-mode-3: #6b6b6b;
+  --color-dark-mode-4: #949494;
+
+
+  background: var(--color-dark-mode-background);
+  color: var(--color-dark-mode-text) !important;
+}
+
+.dark-mode * {
+  --slds-c-card-text-color: var(--color-dark-mode-4) !important;  
+}
+
+.dark-mode *.slds-card {
+  background-color: var(--color-dark-mode-2) !important;
+}
+
