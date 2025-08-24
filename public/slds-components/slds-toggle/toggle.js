@@ -27,10 +27,11 @@ class SLDSToggle extends LitElement {
     const toggleId = `toggle-${Math.random().toString(36).substring(2, 11)}`;
     const gridClasses = `slds-checkbox_toggle slds-grid${this.directionReversed ? ' slds-grid_reverse' : ''}`;
 
-    return html`
-      <div class="slds-form-element">
-        <label class="${gridClasses}" for="${toggleId}">
-          <span class="slds-form-element__label slds-m-bottom_none">${this.label}</span>
+
+    const htmlLabel = html`
+      <span class="slds-form-element__label slds-m-bottom_none">${this.label}</span>
+    `;
+    const htmlToggle = html`
           <input
               type="checkbox"
               name="${this.name}"
@@ -44,6 +45,13 @@ class SLDSToggle extends LitElement {
             <span class="slds-checkbox_on">${this.enabledLabel}</span>
             <span class="slds-checkbox_off">${this.disabledLabel}</span>
           </span>
+    `;
+
+    return html`
+      <div class="slds-form-element">
+        <label class="${gridClasses}" for="${toggleId}">
+          ${htmlToggle}
+          ${htmlLabel}
         </label>
       </div>
     `;
