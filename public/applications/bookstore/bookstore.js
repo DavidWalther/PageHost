@@ -79,17 +79,8 @@ class Bookstore extends LitElement {
           <div slot="mid" class="slds-text-align_center slds-text-heading_large">
             <span id="page-header-headline"></span>
           </div>
-          <div slot="right" class="slds-grid" slds>
-            <div class="slds-col">
-              <slds-toggle
-                label="Licht"
-                enabled-label="An"
-                disabledLabel="Aus"
-                name="options"
-                @toggle="${this.handleToggleLightswitch}"
-              ></slds-toggle>
-            </div>
-            <div class="slds-col slds-text-align_right">
+          <div slot="right" class="slds-grid slds-wrap">
+            <div class="slds-col slds-text-align_right slds-size_1-of-1">
               <oidc-component
                 provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
                 server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
@@ -100,6 +91,13 @@ class Bookstore extends LitElement {
                   <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
                 </button>
               </oidc-component>
+            </div>
+            <div class="slds-col slds-text-align_right slds-size_1-of-1">
+              <slds-toggle
+                label="Licht"
+                name="options"
+                @toggle="${this.handleToggleLightswitch}"
+              ></slds-toggle>
             </div>
           </div>
         </custom-global-header>
