@@ -81,7 +81,12 @@ class Bookstore extends LitElement {
           </div>
           <div slot="right" class="slds-grid" slds>
             <div class="slds-col">
-              <slds-toggle></slds-toggle>
+              <slds-toggle
+                label="Licht"
+                enabled-label="An"
+                disabledLabel="Aus"
+                name="options"
+              ></slds-toggle>
             </div>
             <div class="slds-col slds-text-align_right">
               <oidc-component
