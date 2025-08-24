@@ -97,6 +97,7 @@ class Bookstore extends LitElement {
                 label="Licht"
                 name="options"
                 @toggle="${this.handleToggleLightswitch}"
+                direction-reversed
               ></slds-toggle>
             </div>
           </div>
