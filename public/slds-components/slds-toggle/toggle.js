@@ -15,7 +15,6 @@ class SLDSToggle extends LitElement {
 
   constructor() {
     super();
-    this.checked = true;
   }
 
   connectedCallback() {
