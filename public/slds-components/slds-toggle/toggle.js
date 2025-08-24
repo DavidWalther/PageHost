@@ -15,8 +15,6 @@ class SLDSToggle extends LitElement {
 
   constructor() {
     super();
-    this.label = 'Toggle Label';
-    this.name = 'options';
     this.checked = true;
   }
 
