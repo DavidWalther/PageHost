@@ -34,4 +34,4 @@ class SLDSToggle extends LitElement {
 }
 
 // Define the custom element
-customElements.define('slds-input-toggle', SLDSToggle);
+customElements.define('slds-toggle', SLDSToggle);
