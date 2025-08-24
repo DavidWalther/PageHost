@@ -1,43 +1,35 @@
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
 let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
 const templatePath = 'slds-components/slds-toggle/toggle.html';
 
-class SLDSToggle extends HTMLElement {
+class SLDSToggle extends LitElement {
   constructor() {
     super();
-    // Attach a shadow DOM tree to the instance
-    const shadowRoot = this.attachShadow({ mode: 'open' });
-    this.applyGlobalStyles();
   }
 
-  applyGlobalStyles() {
+  connectedCallback() {
+    super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
   }
 
-  //--------------------------
-  // Handlers
-  //--------------------------
-
-  async connectedCallback() {
-    const templateContent = await this.loadHtmlTemplate();
-    this.shadowRoot.appendChild(templateContent.cloneNode(true));
-  }
-
-  //--------------------------
-  // HTML Caching
-  //--------------------------
-
-  async loadHtmlTemplate() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-      .then(response => response.text())
-      .then(html => {
-        const htmlTemplate = new DOMParser().parseFromString(html, 'text/html').querySelector('template');
-        return htmlTemplate.content.cloneNode(true);
-      });
-    }
-    return templatePromise;
+  render() {
+    return html`
+      <div class="slds-form-element">
+        <label class="slds-form-element__label" for="toggle-1">Toggle Label</label>
+        <div class="slds-form-element__control">
+          <span class="slds-checkbox_toggle slds-grid">
+            <span class="slds-checkbox_faux_container" id="toggle-1">
+              <span class="slds-checkbox_faux"></span>
+              <span class="slds-checkbox_on">Enabled</span>
+              <span class="slds-checkbox_off">Disabled</span>
+            </span>
+            <input type="checkbox" name="options" id="toggle-1" aria-describedby="toggle-1" />
+          </span>
+        </div>
+      </div>
+    `;
   }
 }
 
