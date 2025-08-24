@@ -3,6 +3,10 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.2.0
+
+- create a dark-mode with 'light-switch'
+
 ### 3.1.0 
 
 - migrate remaining core-components to LIT
