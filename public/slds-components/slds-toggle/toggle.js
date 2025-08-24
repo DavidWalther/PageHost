@@ -7,8 +7,8 @@ const templatePath = 'slds-components/slds-toggle/toggle.html';
 class SLDSToggle extends LitElement {
   static properties = {
     label: { type: String },
-    enabledLabel: { type: String },
-    disabledLabel: { type: String },
+    enabledLabel: { type: String, attribute: 'enabled-label' },
+    disabledLabel: { type: String, attribute: 'disabled-label' },
     name: { type: String },
     checked: { type: Boolean, reflect: true }
   };
@@ -16,8 +16,6 @@ class SLDSToggle extends LitElement {
   constructor() {
     super();
     this.label = 'Toggle Label';
-    this.enabledLabel = 'Enabled';
-    this.disabledLabel = 'Disabled';
     this.name = 'options';
     this.checked = true;
   }
