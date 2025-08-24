@@ -2,35 +2,18 @@ html {
   --slds-c-card-color-background: white;
   --panel-background-color: white;
   --panel-text-color: black;
-}
 
-html.dark-mode {
-  --color-dark-mode-background: #272727;
-  --color-dark-mode-text: #ffffff;
-  --color-dark-mode-1: #3f3f3f;
-  --color-dark-mode-2: #575757;
-  --color-dark-mode-3: #6b6b6b;
-  --color-dark-mode-4: #949494;
-  --color-dark-mode-5: #c4c4c4;
-
-
-
-  background: var(--color-dark-mode-background);
-
-  --slds-c-card-color-background: var(--color-dark-mode-2);
-  --slds-c-card-text-color: var(--color-dark-mode-5);
-
-  --slds-c-button-neutral-color-background: var(--color-dark-mode-3);
-  --slds-c-button-text-color: var(--color-dark-mode-5);
-
-  --panel-background-color: var(--color-dark-mode-1);
-  --panel-text-color: var(--color-dark-mode-5);
-
-  /*color: var(--color-dark-mode-text) !important;*/
-}
-
-.dark-mode * {
-  
+  --dark-mode-color-base_0: hsl(0, 0%, 0%);
+  --dark-mode-color-base_10: hsl(0, 0%, 10%);
+  --dark-mode-color-base_20: hsl(0, 0%, 15%);
+  --dark-mode-color-base_30: hsl(0, 0%, 20%);
+  --dark-mode-color-base_40: hsl(0, 0%, 25%);
+  --dark-mode-color-base_50: hsl(0, 0%, 30%);
+  --dark-mode-color-base_60: hsl(0, 0%, 35%);
+  --dark-mode-color-base_70: hsl(0, 0%, 40%);
+  --dark-mode-color-base_80: hsl(0, 0%, 45%);
+  --dark-mode-color-base_90: hsl(0, 0%, 50%); 
+  --dark-mode-color-base_100: hsl(0, 0%, 55%);
 }
 
 .slds-panel {
@@ -38,9 +21,46 @@ html.dark-mode {
   color: var(--panel-text-color);
 }
 
-/*
-html.dark-mode html.dark-mode .slds-card article.slds-card.slds-card {
+html.dark-mode {  
+  background: var(--dark-mode-color-base_10);
+  
+  --slds-g-color-neutral-base-100: var(--dark-mode-color-base_20);
+  --slds-g-color-neutral-base-50: var(--dark-mode-color-base_100);
+  --slds-g-color-neutral-base-30: var(--dark-mode-color-base_80);
 
-  background-color: #55ff22;
+
+  /**
+   * Card styles
+   */
+  --slds-c-card-color-background: var(--dark-mode-color-base_30);
+  --slds-c-card-text-color: var(--dark-mode-color-base_100);
+
+  /**
+   * Button styles
+   */
+  --slds-c-button-neutral-color-background: var(--dark-mode-color-base_40);
+  --slds-c-button-text-color: var(--dark-mode-color-base_100);
+  --slds-c-button-neutral-color-background-hover: var(--dark-mode-color-base_50);
+
+  /**
+    * Icon-Button styles
+    */
+   --slds-c-icon-button-color-background: var(--dark-mode-color-base_40);
+   --slds-c-icon-button-color-background-hover: var(--dark-mode-color-base_50);
+   --slds-c-icon-button-color-text: var(--dark-mode-color-base_100);
+
+
+  /**
+   * Panel styles
+   */
+  --panel-background-color: var(--dark-mode-color-base_30);
+  --panel-text-color: var(--dark-mode-color-base_100); 
+
+  /**
+   * Listbox styles
+   */
+  --slds-c-listbox-option-color-background: var(--dark-mode-color-base_30);
+  --slds-c-listbox-option-color-background-hover: var(--dark-mode-color-base_40);
+  --slds-c-listbox-option-color-text: var(--dark-mode-color-base_100);
+  --slds-c-listbox-option-color: var(--dark-mode-color-base_100);
 }
-*/
