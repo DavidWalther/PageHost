@@ -56,7 +56,6 @@ class SLDSToggle extends LitElement {
         checked: this.checked,
         name: this.name
       },
-      composed: true,
       bubbles: true
     }));
     this.requestUpdate();
