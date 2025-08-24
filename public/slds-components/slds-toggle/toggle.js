@@ -19,7 +19,7 @@ class SLDSToggle extends LitElement {
     this.enabledLabel = 'Enabled';
     this.disabledLabel = 'Disabled';
     this.name = 'options';
-    this.checked = false;
+    this.checked = true;
   }
 
   connectedCallback() {
@@ -34,8 +34,8 @@ class SLDSToggle extends LitElement {
       <div class="slds-form-element">
         <label class="slds-form-element__label" for="${toggleId}">${this.label}</label>
         <div class="slds-form-element__control">
-          <span class="slds-checkbox_toggle slds-grid">
-            <span class="slds-checkbox_faux_container" id="${toggleId}">
+          <label class="slds-checkbox_toggle slds-grid" for="${toggleId}">
+            <span class="slds-checkbox_faux_container" aria-live="assertive">
               <span class="slds-checkbox_faux"></span>
               <span class="slds-checkbox_on">${this.enabledLabel}</span>
               <span class="slds-checkbox_off">${this.disabledLabel}</span>
@@ -48,7 +48,7 @@ class SLDSToggle extends LitElement {
               .checked="${this.checked}"
               @change="${this._handleToggle}"
             />
-          </span>
+          </label>
         </div>
       </div>
     `;
@@ -66,6 +66,7 @@ class SLDSToggle extends LitElement {
       composed: true,
       bubbles: true
     }));
+    this.requestUpdate();
   }
 }
 
