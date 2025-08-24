@@ -86,6 +86,7 @@ class Bookstore extends LitElement {
                 enabled-label="An"
                 disabledLabel="Aus"
                 name="options"
+                @toggle="${this.handleToggleLightswitch}"
               ></slds-toggle>
             </div>
             <div class="slds-col slds-text-align_right">
@@ -354,6 +355,10 @@ class Bookstore extends LitElement {
   // ============ Storage methods ============
 
 // ============ event handler  ============
+
+  handleToggleLightswitch(event) {
+    document.querySelector('html').classList.toggle('dark-mode', !event.detail.checked);
+  }
 
   handleNavigationEvent(event) {
     event.stopPropagation();
