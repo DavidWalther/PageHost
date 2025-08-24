@@ -80,6 +80,9 @@ class Bookstore extends LitElement {
             <span id="page-header-headline"></span>
           </div>
           <div slot="right" >
+            <div>
+              <slds-toggle></slds-toggle>
+            </div>
             <div class="slds-text-align_right">
               <oidc-component
                 provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
