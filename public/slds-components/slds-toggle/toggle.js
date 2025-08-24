@@ -10,7 +10,8 @@ class SLDSToggle extends LitElement {
     enabledLabel: { type: String, attribute: 'enabled-label' },
     disabledLabel: { type: String, attribute: 'disabled-label' },
     name: { type: String },
-    checked: { type: Boolean, reflect: true }
+    checked: { type: Boolean, reflect: true },
+    directionReversed: { type: Boolean, attribute: 'direction-reversed' }
   };
 
   constructor() {
@@ -24,10 +25,11 @@ class SLDSToggle extends LitElement {
 
   render() {
     const toggleId = `toggle-${Math.random().toString(36).substring(2, 11)}`;
+    const gridClasses = `slds-checkbox_toggle slds-grid${this.directionReversed ? ' slds-grid_reverse' : ''}`;
 
     return html`
       <div class="slds-form-element">
-        <label class="slds-checkbox_toggle slds-grid" for="${toggleId}">
+        <label class="${gridClasses}" for="${toggleId}">
           <span class="slds-form-element__label slds-m-bottom_none">${this.label}</span>
           <input
               type="checkbox"
