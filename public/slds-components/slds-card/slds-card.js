@@ -18,7 +18,7 @@ class Card extends HTMLElement {
     const styleSheet = new CSSStyleSheet();
     styleSheet.replaceSync(`
       article.slds-card {
-        background-color: white;
+        background-color: var(--slds-c-card-color-background) !important;
       }
     `);
     this.shadowRoot.adoptedStyleSheets = [styleSheet, ...this.shadowRoot.adoptedStyleSheets];
