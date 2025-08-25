@@ -337,6 +337,7 @@ class Combobox extends HTMLElement {
     const spanElem = content.querySelector('span.slds-media__body');
     spanElem.textContent = valueEntry.label;
     spanElem.title = valueEntry.title;
+    spanElem.style.color = 'var(--custom-combobox-option-color)';
 
     let liElement = content.querySelector('li');
     liElement.addEventListener('click', event => {
