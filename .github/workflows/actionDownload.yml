@@ -9,24 +9,32 @@ jobs:
     name: Create Backup
     steps:
       - name: Checkout
-        uses: actions/checkout@v2 # Required to mount the Github Workspace to a volume
+        uses: actions/checkout@v4 # Updated to v4
       - name: create output directory
-        run: mkdir output
+        run: mkdir -p output
       - name: Run PG Dump
-        uses: addnab/docker-run-action@v2
-        env:
-          POSTGRES_PASSWORD: ${{ secrets.NEON_POSTGRES_CONNECTSTR }}
+        uses: addnab/docker-run-action@v3
         with:
           image: postgres:latest
           options: -v ${{ github.workspace }}/output:/output
           run: |
             echo "Creating backup"
-            pg_dump ${{ secrets.NEON_POSTGRES_CONNECTSTR }} > output/backup.sql
+            pg_dump "${{ secrets.NEON_POSTGRES_CONNECTSTR }}" > /output/backup.sql
             echo "Backup created"
-            ls -la output
+            ls -la /output
       - name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      - name: Verify backup file
+        run: |
+          echo "Checking backup file size:"
+          ls -la output/
+          if [ -s output/backup.sql ]; then
+            echo "Backup file created successfully"
+          else
+            echo "Backup file is empty or missing"
+            exit 1
+          fi
       - name: Upload Backup
         id: upload-backup
         uses: actions/upload-artifact@v4
