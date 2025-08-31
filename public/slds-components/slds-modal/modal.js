@@ -1,5 +1,10 @@
-// Modal component using vanilla Web Components (no external dependencies)
+import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+
 class SLDSModal extends HTMLElement {
+  static get observedAttributes() {
+    return ['title', 'headless', 'footless', 'open'];
+  }
+
   constructor() {
     super();
     
@@ -13,13 +18,7 @@ class SLDSModal extends HTMLElement {
     this._open = false;
     
     // Bind methods
-    this._handleClose = this._handleClose.bind(this);
-    this._handleBackdropClick = this._handleBackdropClick.bind(this);
     this._handleKeydown = this._handleKeydown.bind(this);
-  }
-
-  static get observedAttributes() {
-    return ['title', 'headless', 'footless', 'open'];
   }
 
   get title() { return this._title; }
@@ -76,7 +75,7 @@ class SLDSModal extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this.addGlobalStyles();
+    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     
     // Set initial state
     this.style.display = this._open ? 'block' : 'none';
@@ -88,14 +87,6 @@ class SLDSModal extends HTMLElement {
   disconnectedCallback() {
     document.removeEventListener('keydown', this._handleKeydown);
     document.body.style.overflow = ''; // Restore body scroll
-  }
-
-  addGlobalStyles() {
-    // Add SLDS styles to shadow DOM
-    const linkElement = document.createElement('link');
-    linkElement.rel = 'stylesheet';
-    linkElement.href = '/node_modules/@salesforce-ux/design-system/assets/styles/salesforce-lightning-design-system.min.css';
-    this.shadowRoot.appendChild(linkElement);
   }
 
   render() {
@@ -166,9 +157,6 @@ class SLDSModal extends HTMLElement {
         this._handleBackdropClick(event);
       }
     });
-
-    // Re-add the link element for styles
-    this.addGlobalStyles();
   }
 
   _handleClose() {
