@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLDS Modal Component Test</title>
+    
+    <!-- SLDS Styles -->
+    <link rel="stylesheet" href="/node_modules/@salesforce-ux/design-system/assets/styles/salesforce-lightning-design-system.min.css">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem;
+            background-color: #f3f3f3;
+        }
+        
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 0.25rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button-group {
+            margin: 1rem 0;
+        }
+        
+        .button-group button {
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="slds-text-heading_large">SLDS Modal Component Test</h1>
+        
+        <div class="button-group">
+            <button class="slds-button slds-button_brand" onclick="showBasicModal()">Show Basic Modal</button>
+            <button class="slds-button slds-button_neutral" onclick="showHeadlessModal()">Show Headless Modal</button>
+            <button class="slds-button slds-button_neutral" onclick="showFootlessModal()">Show Footless Modal</button>
+            <button class="slds-button slds-button_neutral" onclick="showMinimalModal()">Show Minimal Modal</button>
+        </div>
+
+        <!-- Basic Modal -->
+        <slds-modal id="basicModal" title="Basic Modal Title">
+            <span slot="headline">Custom Headline from Slot</span>
+            <div>
+                <p>This is the modal content. It supports any HTML content.</p>
+                <p>The modal has a header with title and close button, plus a footer with action buttons.</p>
+            </div>
+        </slds-modal>
+
+        <!-- Headless Modal -->
+        <slds-modal id="headlessModal" headless title="This title won't show">
+            <div>
+                <h2 class="slds-text-heading_medium slds-m-bottom_medium">Custom Header Content</h2>
+                <p>This modal has no header (headless=true), so the title attribute and headline slot are not displayed.</p>
+                <p>You can put any content here, including custom headers.</p>
+            </div>
+        </slds-modal>
+
+        <!-- Footless Modal -->
+        <slds-modal id="footlessModal" footless title="Footless Modal">
+            <div>
+                <p>This modal has no footer (footless=true), so no action buttons are shown.</p>
+                <p>You can close it by clicking the X or clicking outside the modal.</p>
+                <div class="slds-m-top_medium">
+                    <button class="slds-button slds-button_brand" onclick="closeModal('footlessModal')">Custom Action</button>
+                </div>
+            </div>
+        </slds-modal>
+
+        <!-- Minimal Modal (both headless and footless) -->
+        <slds-modal id="minimalModal" headless footless>
+            <div class="slds-text-align_center">
+                <h2 class="slds-text-heading_medium slds-m-bottom_medium">Minimal Modal</h2>
+                <p>This modal has both headless=true and footless=true.</p>
+                <p>It shows only the content area.</p>
+                <div class="slds-m-top_medium">
+                    <button class="slds-button slds-button_neutral" onclick="closeModal('minimalModal')">Close</button>
+                </div>
+            </div>
+        </slds-modal>
+    </div>
+
+    <!-- Import the modal component -->
+    <script type="module" src="/slds-components/slds-modal/modal.js"></script>
+
+    <script>
+        function showBasicModal() {
+            document.getElementById('basicModal').show();
+        }
+
+        function showHeadlessModal() {
+            document.getElementById('headlessModal').show();
+        }
+
+        function showFootlessModal() {
+            document.getElementById('footlessModal').show();
+        }
+
+        function showMinimalModal() {
+            document.getElementById('minimalModal').show();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).hide();
+        }
+
+        // Listen for modal events
+        document.addEventListener('show', (event) => {
+            console.log('Modal shown:', event.detail);
+        });
+
+        document.addEventListener('close', (event) => {
+            console.log('Modal closed:', event.detail);
+        });
+    </script>
+</body>
+</html>
