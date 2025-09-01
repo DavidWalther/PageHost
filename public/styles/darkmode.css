@@ -72,6 +72,17 @@ html.dark-mode {
   --slds-c-listbox-option-color-background-focus: var(--dark-mode-color-base_50);
   */
   --custom-combobox-option-color: var(--dark-mode-color-base_100);
-}
 
+  /**
+   * Modal styles
+   */
+  --slds-c-modal-header-color-background: var(--dark-mode-color-base_40);
+  --slds-c-modal-header-text-color: var(--dark-mode-color-base_100);
+
+  --slds-c-modal-content-color-background: var(--dark-mode-color-base_40);
+  --slds-c-modal-content-text-color: var(--dark-mode-color-base_100);
+  --slds-c-modal-color-border: var(--dark-mode-color-base_50);
+
+  --slds-c-modal-footer-color-background: var(--dark-mode-color-base_40);
+  --slds-c-modal-footer-text-color: var(--dark-mode-color-base_100);
 }
