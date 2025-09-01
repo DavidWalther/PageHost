@@ -31,52 +31,6 @@ class SLDSModal extends LitElement {
     document.removeEventListener('keydown', this._handleKeyDown);
   }
 
-  static get styles() {
-    return css`
-      :host {
-        --slds-modal-z-index: 9001;
-        --slds-backdrop-z-index: 9000;
-      }
-
-      .slds-backdrop {
-        z-index: var(--slds-backdrop-z-index);
-      }
-
-      .slds-modal__container {
-        z-index: var(--slds-modal-z-index);
-      }
-
-      /* Hide modal when not open */
-      :host(:not([open])) .slds-backdrop,
-      :host(:not([open])) .slds-modal__container {
-        display: none;
-      }
-
-      /* Show modal when open */
-      :host([open]) .slds-backdrop {
-        display: block;
-      }
-
-      :host([open]) .slds-modal__container {
-        display: flex;
-      }
-
-      /* Custom styles for headless and footless variants */
-      :host([headless]) .slds-modal__header {
-        display: none;
-      }
-
-      :host([footless]) .slds-modal__footer {
-        display: none;
-      }
-
-      /* Ensure proper focus management */
-      .slds-modal__content:focus {
-        outline: none;
-      }
-    `;
-  }
-
   render() {
     return html`
       <section role="dialog" aria-labelledby="modal-heading" aria-modal="true" tabindex="-1" class="slds-modal slds-fade-in-open">
@@ -145,6 +99,7 @@ class SLDSModal extends LitElement {
       detail: { modal: this },
       bubbles: true
     }));
+    this.requestUpdate();
   }
 
   close() {
@@ -153,6 +108,7 @@ class SLDSModal extends LitElement {
       detail: { modal: this },
       bubbles: true
     }));
+    this.requestUpdate();
   }
 
   toggle() {
