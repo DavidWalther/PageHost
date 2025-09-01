@@ -79,26 +79,16 @@ class SLDSModal extends LitElement {
 
   render() {
     return html`
-      <!-- Modal Backdrop -->
-      <div class="slds-backdrop slds-backdrop_open" @click="${this._handleBackdropClick}"></div>
-      
-      <!-- Modal Container -->
-      <div class="slds-modal__container">
-        <div class="slds-modal__content slds-modal__content_medium" 
-             role="dialog" 
-             aria-labelledby="modal-heading" 
-             aria-modal="true"
-             tabindex="-1">
-          
-              <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" 
-                      title="Close" 
-                      @click="${this.close}">
-                <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-                  <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
-                </svg>
-                <span class="slds-assistive-text">Close</span>
+      <section role="dialog" aria-labelledby="modal-heading" aria-modal="true" tabindex="-1" class="slds-modal slds-fade-in-open">
+        <!-- Modal Container -->
+        <div class="slds-modal__container">
+          <button class="slds-button slds-button_icon slds-modal__close" @click="${this.close}">
+            <svg class="slds-button__icon slds-button__icon_large">
+              <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+            </svg>
+            <span class="slds-assistive-text">Cancel & Close</span>
+          </button>
 
-              </button>
           <!-- Modal Header -->
           ${!this.headless ? html`
             <div class="slds-modal__header">
@@ -107,27 +97,25 @@ class SLDSModal extends LitElement {
               </h1>
             </div>
           ` : ''}
-          
+
           <!-- Modal Body -->
-          <div class="slds-modal__body slds-p-around_medium">
-            <slot></slot>
-          </div>
-          
+          <div class="slds-modal__content slds-p-around_medium"><slot></slot></div>
+
           <!-- Modal Footer -->
           ${!this.footless ? html`
             <div class="slds-modal__footer">
-              <slot name="footer">
                 <button class="slds-button slds-button_neutral" @click="${this.close}">
                   Cancel
                 </button>
-                <button class="slds-button slds-button_brand">
+                <button class="slds-button slds-button_brand" @click="${this.close}">
                   Save
                 </button>
-              </slot>
             </div>
           ` : ''}
         </div>
-      </div>
+      </section>
+      <!-- Modal Backdrop -->
+      <div class="slds-backdrop slds-backdrop_open" @click="${this._handleBackdropClick}"></div>
     `;
   }
 
