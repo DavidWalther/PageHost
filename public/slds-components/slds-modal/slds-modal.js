@@ -58,12 +58,7 @@ class SLDSModal extends LitElement {
           <!-- Modal Footer -->
           ${!this.footless ? html`
             <div class="slds-modal__footer">
-                <button class="slds-button slds-button_neutral" @click="${this.close}">
-                  Cancel
-                </button>
-                <button class="slds-button slds-button_brand" @click="${this.close}">
-                  Save
-                </button>
+              <slot name="footer"></slot>
             </div>
           ` : ''}
         </div>
