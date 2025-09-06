@@ -32,6 +32,11 @@ class SLDSModal extends LitElement {
   }
 
   render() {
+    // Only render modal when open is true
+    if (!this.open) {
+      return html``;
+    }
+
     return html`
       <section role="dialog" aria-labelledby="modal-heading" aria-modal="true" tabindex="-1" class="slds-modal slds-fade-in-open">
         <!-- Modal Container -->
