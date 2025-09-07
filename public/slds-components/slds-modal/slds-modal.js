@@ -95,7 +95,7 @@ class SLDSModal extends LitElement {
 
   show() {
     this.open = true;
-    this.dispatchEvent(new CustomEvent('modal-open', {
+    this.dispatchEvent(new CustomEvent('open', {
       detail: { modal: this },
       bubbles: true
     }));
@@ -103,7 +103,7 @@ class SLDSModal extends LitElement {
 
   hide() {
     this.open = false;
-    this.dispatchEvent(new CustomEvent('modal-close', {
+    this.dispatchEvent(new CustomEvent('close', {
       detail: { modal: this },
       bubbles: true
     }));
