@@ -41,7 +41,7 @@ class SLDSModal extends LitElement {
       <section role="dialog" aria-labelledby="modal-heading" aria-modal="true" tabindex="-1" class="slds-modal slds-fade-in-open">
         <!-- Modal Container -->
         <div class="slds-modal__container">
-          <button class="slds-button slds-button_icon slds-modal__close" @click="${this.close}">
+          <button class="slds-button slds-button_icon slds-modal__close" @click="${this.hide}">
             <svg class="slds-button__icon slds-button__icon_large">
               <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
             </svg>
@@ -93,7 +93,7 @@ class SLDSModal extends LitElement {
     }
   }
 
-  open() {
+  show() {
     this.open = true;
     this.dispatchEvent(new CustomEvent('modal-open', {
       detail: { modal: this },
@@ -102,7 +102,7 @@ class SLDSModal extends LitElement {
     this.requestUpdate();
   }
 
-  close() {
+  hide() {
     this.open = false;
     this.dispatchEvent(new CustomEvent('modal-close', {
       detail: { modal: this },
@@ -113,16 +113,16 @@ class SLDSModal extends LitElement {
 
   toggle() {
     if (this.open) {
-      this.close();
+      this.hide();
     } else {
-      this.open();
+      this.show();
     }
   }
 
   _handleBackdropClick(event) {
     // Close modal when backdrop is clicked
     if (event.target.classList.contains('slds-backdrop')) {
-      this.close();
+      this.hide();
     }
   }
 
@@ -130,7 +130,7 @@ class SLDSModal extends LitElement {
     if (!this.open) return;
     
     if (event.key === 'Escape') {
-      this.close();
+      this.hide();
     } else if (event.key === 'Tab') {
       this._handleTabKey(event);
     }
