@@ -99,7 +99,6 @@ class SLDSModal extends LitElement {
       detail: { modal: this },
       bubbles: true
     }));
-    this.requestUpdate();
   }
 
   hide() {
@@ -108,7 +107,6 @@ class SLDSModal extends LitElement {
       detail: { modal: this },
       bubbles: true
     }));
-    this.requestUpdate();
   }
 
   toggle() {
