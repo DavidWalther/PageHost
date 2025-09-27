@@ -3,6 +3,10 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.3.0
+
+- create slds-modal component
+
 ### 3.2.0
 
 - create a dark-mode with 'light-switch'
