@@ -209,6 +209,9 @@ class CustomParagraph extends LitElement {
               <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
                 <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
               </li>
+              <li class="slds-tabs_default__item ${this.activeTab === 'settings' ? 'slds-active slds-has-focus' : ''}" title="Settings" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'settings'} aria-controls="settings-tab" id="settings-tab-link" @click=${() => this.switchTab('settings')}>Settings</a>
+              </li>
             </ul>
             <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
               <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
@@ -216,9 +219,48 @@ class CustomParagraph extends LitElement {
             <div id="html-tab" class="slds-tabs_default__content ${this.activeTab === 'html' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="html-tab-link">
               <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
             </div>
+            <div id="settings-tab" class="slds-tabs_default__content ${this.activeTab === 'settings' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="settings-tab-link">
+              ${this.renderSettingsTab(paragraphData)}
+            </div>
           </div>
         </div>
         ${buttons}
+      </div>
+    `;
+  }
+
+  renderSettingsTab(paragraphData) {
+    const canPublish = this.checkPublishPermission();
+    const isPublished = paragraphData?.publishDate ? true : false;
+    const isToggleDisabled = !canPublish || this.draftMode;
+
+    return html`
+      <div class="slds-grid slds-wrap slds-gutters">
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <div class="slds-form-element">
+            <label class="slds-form-element__label">
+              <abbr class="slds-required" title="required">*</abbr>Published Status
+            </label>
+            <div class="slds-form-element__control">
+              <slds-toggle
+                label="Published"
+                enabled-label="Published"
+                disabled-label="Unpublished"
+                name="publish-toggle"
+                ?checked=${isPublished}
+                ?disabled=${isToggleDisabled}
+                @toggle=${this.handlePublishToggleChange}
+              ></slds-toggle>
+              <div class="slds-form-element__help">
+                ${isToggleDisabled
+                  ? (this.draftMode
+                      ? 'Publishing is disabled in draft mode'
+                      : 'You do not have permission to publish content')
+                  : 'Toggle to publish or unpublish this paragraph'}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
