@@ -162,6 +162,15 @@ app.get('/api/1.0/data/delete', async (req, res) => {
   });
 });
 
+app.patch('/api/1.0/actions/publish', async (req, res) => {
+  const LOCATION = 'Server.patch(\'/api/1.0/actions/publish\')';
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  let headers = req.headers;
+  let bearerToken = headers['authorization']?.split(' ')[1];
+  let accessTokenService = new AccessTokenService().setEnvironment(environment);
+});
+
 app.get('/*', (req, res) => {
   const LOCATION = 'Server.get(\'/*\')';
 
