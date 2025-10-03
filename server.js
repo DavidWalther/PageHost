@@ -169,6 +169,12 @@ app.patch('/api/1.0/actions/publish', async (req, res) => {
   let headers = req.headers;
   let bearerToken = headers['authorization']?.split(' ')[1];
   let accessTokenService = new AccessTokenService().setEnvironment(environment);
+
+  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
+    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
+    res.status(401).send('Unauthorized');
+    return;
+  }
 });
 
 app.get('/*', (req, res) => {
