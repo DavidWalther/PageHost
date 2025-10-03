@@ -12,6 +12,7 @@ const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth
 const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
 const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
 const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
+const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -175,6 +176,11 @@ app.patch('/api/1.0/actions/publish', async (req, res) => {
     res.status(401).send('Unauthorized');
     return;
   }
+
+  const endpoint = new PublishEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'INFO', message: `Publish Endpoint executed`, location: LOCATION });
+  });
 });
 
 app.get('/*', (req, res) => {
