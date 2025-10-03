@@ -471,6 +471,19 @@ class CustomParagraph extends LitElement {
     }
   }
 
+  refreshParagraphData() {
+    // Refresh the paragraph data from server to get updated publishDate
+    this.fireQueryEvent_Paragraph(this.id, (error, data) => {
+      if (error) {
+        console.error('Error refreshing paragraph data:', error);
+        return;
+      }
+      this._paragraphData = data;
+      this._paragraphDataBackup = { ...data };
+      this.requestUpdate();
+    });
+  }
+
   switchTab(tab) {
     this.activeTab = tab;
     this.requestUpdate();
