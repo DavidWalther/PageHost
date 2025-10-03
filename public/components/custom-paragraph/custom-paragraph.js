@@ -419,6 +419,46 @@ class CustomParagraph extends LitElement {
     }
   }
 
+  async handlePublishToggleChange(event) {
+    const isChecked = event.detail.checked;
+    const wasPublished = this._paragraphData?.publishDate ? true : false;
+
+    // If toggling from unpublished to published, call publish endpoint
+    if (!wasPublished && isChecked) {
+      const authData = sessionStorage.getItem('code_exchange_response');
+      let token = '';
+      if (authData) {
+        try {
+          const parsedData = JSON.parse(authData);
+          token = parsedData?.authenticationResult?.access?.access_token;
+        } catch {}
+      }
+
+      if (!token) {
+        // Reset toggle state by dispatching a new event or refreshing component
+        this.requestUpdate();
+        this.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: 'Not authenticated', variant: 'error' },
+          bubbles: true,
+          composed: true
+        }));
+        return;
+      }
+
+      this.firePublishEvent_Paragraph(this.id, this.publishEventCallback_Paragraph.bind(this));
+    }
+    // If toggling from published to unpublished (future functionality)
+    else if (wasPublished && !isChecked) {
+      // Reset toggle state since unpublishing is not yet supported
+      this.requestUpdate();
+      this.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: 'Unpublishing not yet supported', variant: 'info' },
+        bubbles: true,
+        composed: true
+      }));
+    }
+  }
+
   switchTab(tab) {
     this.activeTab = tab;
     this.requestUpdate();
@@ -504,6 +544,44 @@ class CustomParagraph extends LitElement {
         })
       );
       this._paragraphDataBackup = this._paragraphData; // Update the backup with the new
+    }
+    this.requestUpdate();
+  }
+
+  // ========== publish Event ==========
+
+  firePublishEvent_Paragraph(paragraphid, callback) {
+    if (!paragraphid) return;
+    const payload = { object: 'paragraph', id: paragraphid, callback };
+    this.dispatchEvent(
+      new CustomEvent('publish', {
+        detail: { payload },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  publishEventCallback_Paragraph(error, data) {
+    if (error) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: error, variant: 'error' },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      return;
+    }
+    if (data) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Published', variant: 'success' },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      this.refreshParagraphData();
     }
     this.requestUpdate();
   }
