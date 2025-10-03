@@ -396,6 +396,18 @@ class CustomParagraph extends LitElement {
     }
   }
 
+  checkPublishPermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      const scopes = parsedData?.authenticationResult.access?.scopes || [];
+      return scopes.includes('publish') && scopes.includes('edit');
+    } catch (e) {
+      return false;
+    }
+  }
+
   async handleDeleteClick() {
     if (!confirm('Diesen Absatz wirklich löschen?')) return;
     const authData = sessionStorage.getItem('code_exchange_response');
