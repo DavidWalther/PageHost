@@ -499,7 +499,7 @@ class CustomParagraph extends LitElement {
         return;
       }
 
-      this.firePublishEvent_Paragraph(this.id, this.publishEventCallback_Paragraph.bind(this));
+      this.firePublishEvent_Paragraph(this.id);
     }
     // If toggling from published to unpublished (future functionality)
     else if (wasPublished && !isChecked) {
@@ -617,12 +617,21 @@ class CustomParagraph extends LitElement {
 
   // ========== publish Event ==========
 
-  firePublishEvent_Paragraph(paragraphid, callback) {
+  firePublishEvent_Paragraph(paragraphid) {
     if (!paragraphid) return;
-    const payload = { object: 'paragraph', id: paragraphid, callback };
+
+    const payload = {
+      id: paragraphid
+    };
+    let eventDetail = {
+      object: 'paragraph',
+      payload,
+      callback: this.publishEventCallback_Paragraph.bind(this),
+    };
+
     this.dispatchEvent(
       new CustomEvent('publish', {
-        detail: { payload },
+        detail: eventDetail,
         bubbles: true,
         composed: true,
       })
