@@ -621,7 +621,8 @@ class CustomParagraph extends LitElement {
     if (!paragraphid) return;
 
     const payload = {
-      id: paragraphid
+      id: paragraphid,
+      object: 'paragraph'
     };
     let eventDetail = {
       object: 'paragraph',
