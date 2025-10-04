@@ -9,7 +9,8 @@ async function initializeApp() {
   attachStorageEventListener(mainApp);
   attachSaveEventListener(mainApp);
   attachToastEventListener(mainApp);
-  attachCreateEventListener(mainApp); // <-- Add this line
+  attachCreateEventListener(mainApp);
+  attachPublishEventListener(mainApp);
 
   bodyElem.appendChild(mainApp);
 }
@@ -260,6 +261,37 @@ function attachCreateEventListener(element) {
       })
       .catch(error => {
         console.error('Error during create callout:', error);
+        callback(error, null);
+      });
+  });
+}
+
+function attachPublishEventListener(element) {
+  element.addEventListener('publish', (publishEvent) => {
+    let callback = publishEvent.detail.callback;
+    let authData = accessSessionStorage('code_exchange_response', 'read');
+    authData = JSON.parse(authData);
+    let authBearer = authData.authenticationResult?.access?.access_token;
+
+    fetch('/api/1.0/actions/publish', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authBearer}`
+      },
+      body: JSON.stringify(publishEvent.detail.payload)
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        callback(null, data);
+      })
+      .catch(error => {
+        console.error('Error during publispayloaout:', error);
         callback(error, null);
       });
   });
