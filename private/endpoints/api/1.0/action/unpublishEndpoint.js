@@ -43,7 +43,7 @@ class UnpublishEndpoint extends EndpointLogic {
       }
 
       // 4. Check if already unpublished
-      if (!existingRecord.publishDate) {
+      if (!existingRecord.publishdate) {
         this.responseObject.status(400).json({ success: false, error: 'Record is already unpublished' });
         return;
       }
