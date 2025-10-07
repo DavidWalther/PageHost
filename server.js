@@ -13,6 +13,7 @@ const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.
 const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
 const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
 const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
+const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -180,6 +181,26 @@ app.patch('/api/1.0/actions/publish', async (req, res) => {
   const endpoint = new PublishEndpoint();
   endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
     Logging.debugMessage({ severity: 'INFO', message: `Publish Endpoint executed`, location: LOCATION });
+  });
+});
+
+app.patch('/api/1.0/actions/unpublish', async (req, res) => {
+  const LOCATION = 'Server.patch(\'/api/1.0/actions/unpublish\')';
+  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+
+  let headers = req.headers;
+  let bearerToken = headers['authorization']?.split(' ')[1];
+  let accessTokenService = new AccessTokenService().setEnvironment(environment);
+
+  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
+    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
+    res.status(401).send('Unauthorized');
+    return;
+  }
+
+  const endpoint = new UnpublishEndpoint();
+  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({ severity: 'INFO', message: `Unpublish Endpoint executed`, location: LOCATION });
   });
 });
 
