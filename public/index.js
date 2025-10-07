@@ -11,6 +11,7 @@ async function initializeApp() {
   attachToastEventListener(mainApp);
   attachCreateEventListener(mainApp);
   attachPublishEventListener(mainApp);
+  attachUnpublishEventListener(mainApp);
 
   bodyElem.appendChild(mainApp);
 }
@@ -292,6 +293,37 @@ function attachPublishEventListener(element) {
       })
       .catch(error => {
         console.error('Error during publispayloaout:', error);
+        callback(error, null);
+      });
+  });
+}
+
+function attachUnpublishEventListener(element) {
+  element.addEventListener('unpublish', (unpublishEvent) => {
+    let callback = unpublishEvent.detail.callback;
+    let authData = accessSessionStorage('code_exchange_response', 'read');
+    authData = JSON.parse(authData);
+    let authBearer = authData.authenticationResult?.access?.access_token;
+
+    fetch('/api/1.0/actions/unpublish', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authBearer}`
+      },
+      body: JSON.stringify(unpublishEvent.detail.payload)
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        callback(null, data);
+      })
+      .catch(error => {
+        console.error('Error during unpublish callout:', error);
         callback(error, null);
       });
   });

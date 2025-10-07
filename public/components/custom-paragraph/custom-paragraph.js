@@ -231,7 +231,7 @@ class CustomParagraph extends LitElement {
 
   renderSettingsTab(paragraphData) {
     const canPublish = this.checkPublishPermission();
-    const isPublished = paragraphData?.publishDate ? true : false;
+    const isPublished = paragraphData?.publishdate ? true : false;
     const isToggleDisabled = !canPublish || this.draftMode;
 
     return html`
@@ -475,41 +475,36 @@ class CustomParagraph extends LitElement {
 
   async handlePublishToggleChange(event) {
     const isChecked = event.detail.checked;
-    const wasPublished = this._paragraphData?.publishDate ? true : false;
+    const wasPublished = this._paragraphData?.publishdate ? true : false;
 
-    // If toggling from unpublished to published, call publish endpoint
-    if (!wasPublished && isChecked) {
-      const authData = sessionStorage.getItem('code_exchange_response');
-      let token = '';
-      if (authData) {
-        try {
-          const parsedData = JSON.parse(authData);
-          token = parsedData?.authenticationResult?.access?.access_token;
-        } catch {}
-      }
-
-      if (!token) {
-        // Reset toggle state by dispatching a new event or refreshing component
-        this.requestUpdate();
-        this.dispatchEvent(new CustomEvent('toast', {
-          detail: { message: 'Not authenticated', variant: 'error' },
-          bubbles: true,
-          composed: true
-        }));
-        return;
-      }
-
-      this.firePublishEvent_Paragraph(this.id);
+    // Check authentication for both publish and unpublish operations
+    const authData = sessionStorage.getItem('code_exchange_response');
+    let token = '';
+    if (authData) {
+      try {
+        const parsedData = JSON.parse(authData);
+        token = parsedData?.authenticationResult?.access?.access_token;
+      } catch {}
     }
-    // If toggling from published to unpublished (future functionality)
-    else if (wasPublished && !isChecked) {
-      // Reset toggle state since unpublishing is not yet supported
+
+    if (!token) {
+      // Reset toggle state by dispatching a new event or refreshing component
       this.requestUpdate();
       this.dispatchEvent(new CustomEvent('toast', {
-        detail: { message: 'Unpublishing not yet supported', variant: 'info' },
+        detail: { message: 'Not authenticated', variant: 'error' },
         bubbles: true,
         composed: true
       }));
+      return;
+    }
+
+    // If toggling from unpublished to published, call publish endpoint
+    if (!wasPublished && isChecked) {
+      this.firePublishEvent_Paragraph(this.id);
+    }
+    // If toggling from published to unpublished, call unpublish endpoint
+    else if (wasPublished && !isChecked) {
+      this.fireUnpublishEvent_Paragraph(this.id);
     }
   }
 
@@ -654,6 +649,52 @@ class CustomParagraph extends LitElement {
       this.dispatchEvent(
         new CustomEvent('toast', {
           detail: { message: 'Published', variant: 'success' },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      this.refreshParagraphData();
+    }
+    this.requestUpdate();
+  }
+
+  fireUnpublishEvent_Paragraph(paragraphid) {
+    if (!paragraphid) return;
+
+    const payload = {
+      id: paragraphid,
+      object: 'paragraph'
+    };
+    let eventDetail = {
+      object: 'paragraph',
+      payload,
+      callback: this.unpublishEventCallback_Paragraph.bind(this),
+    };
+
+    this.dispatchEvent(
+      new CustomEvent('unpublish', {
+        detail: eventDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  unpublishEventCallback_Paragraph(error, data) {
+    if (error) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: error, variant: 'error' },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      return;
+    }
+    if (data) {
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Unpublished', variant: 'success' },
           bubbles: true,
           composed: true,
         })
