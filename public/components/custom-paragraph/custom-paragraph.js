@@ -84,6 +84,10 @@ class CustomParagraph extends LitElement {
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     this.spinner = true; // Show spinner when loading starts
     this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
+    
+    // Add event listeners for publishing events
+    this.addEventListener('published', this.handlePublishedEvent.bind(this));
+    this.addEventListener('unpublished', this.handleUnpublishedEvent.bind(this));
   }
 
   render() {
@@ -230,38 +234,13 @@ class CustomParagraph extends LitElement {
   }
 
   renderSettingsTab(paragraphData) {
-    const canPublish = this.checkPublishPermission();
-    const isPublished = paragraphData?.publishdate ? true : false;
-    const isToggleDisabled = !canPublish || this.draftMode;
-
     return html`
-      <div class="slds-grid slds-wrap slds-gutters">
-        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
-          <div class="slds-form-element">
-            <label class="slds-form-element__label">
-              <abbr class="slds-required" title="required">*</abbr>Published Status
-            </label>
-            <div class="slds-form-element__control">
-              <slds-toggle
-                label="Published"
-                enabled-label="Published"
-                disabled-label="Unpublished"
-                name="publish-toggle"
-                ?checked=${isPublished}
-                ?disabled=${isToggleDisabled}
-                @toggle=${this.handlePublishToggleChange}
-              ></slds-toggle>
-              <div class="slds-form-element__help">
-                ${isToggleDisabled
-                  ? (this.draftMode
-                      ? 'Publishing is disabled in draft mode'
-                      : 'You do not have permission to publish content')
-                  : 'Toggle to publish or unpublish this paragraph'}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <custom-publishing
+        record-id=${this.id}
+        object-name="paragraph"
+        publish-date=${paragraphData?.publishdate || ''}
+        ?disabled=${this.draftMode}
+      ></custom-publishing>
     `;
   }
 
@@ -438,18 +417,6 @@ class CustomParagraph extends LitElement {
     }
   }
 
-  checkPublishPermission() {
-    const authData = sessionStorage.getItem('code_exchange_response');
-    if (!authData) return false;
-    try {
-      const parsedData = JSON.parse(authData);
-      const scopes = parsedData?.authenticationResult.access?.scopes || [];
-      return scopes.includes('publish') && scopes.includes('edit');
-    } catch (e) {
-      return false;
-    }
-  }
-
   async handleDeleteClick() {
     if (!confirm('Diesen Absatz wirklich löschen?')) return;
     const authData = sessionStorage.getItem('code_exchange_response');
@@ -473,41 +440,6 @@ class CustomParagraph extends LitElement {
     }
   }
 
-  async handlePublishToggleChange(event) {
-    const isChecked = event.detail.checked;
-    const wasPublished = this._paragraphData?.publishdate ? true : false;
-
-    // Check authentication for both publish and unpublish operations
-    const authData = sessionStorage.getItem('code_exchange_response');
-    let token = '';
-    if (authData) {
-      try {
-        const parsedData = JSON.parse(authData);
-        token = parsedData?.authenticationResult?.access?.access_token;
-      } catch {}
-    }
-
-    if (!token) {
-      // Reset toggle state by dispatching a new event or refreshing component
-      this.requestUpdate();
-      this.dispatchEvent(new CustomEvent('toast', {
-        detail: { message: 'Not authenticated', variant: 'error' },
-        bubbles: true,
-        composed: true
-      }));
-      return;
-    }
-
-    // If toggling from unpublished to published, call publish endpoint
-    if (!wasPublished && isChecked) {
-      this.firePublishEvent_Paragraph(this.id);
-    }
-    // If toggling from published to unpublished, call unpublish endpoint
-    else if (wasPublished && !isChecked) {
-      this.fireUnpublishEvent_Paragraph(this.id);
-    }
-  }
-
   refreshParagraphData() {
     // Refresh the paragraph data from server to get updated publishDate
     this.fireQueryEvent_Paragraph(this.id, (error, data) => {
@@ -519,6 +451,16 @@ class CustomParagraph extends LitElement {
       this._paragraphDataBackup = { ...data };
       this.requestUpdate();
     });
+  }
+
+  handlePublishedEvent(event) {
+    // Refresh data when content is published
+    this.refreshParagraphData();
+  }
+
+  handleUnpublishedEvent(event) {
+    // Refresh data when content is unpublished
+    this.refreshParagraphData();
   }
 
   switchTab(tab) {
@@ -606,100 +548,6 @@ class CustomParagraph extends LitElement {
         })
       );
       this._paragraphDataBackup = this._paragraphData; // Update the backup with the new
-    }
-    this.requestUpdate();
-  }
-
-  // ========== publish Event ==========
-
-  firePublishEvent_Paragraph(paragraphid) {
-    if (!paragraphid) return;
-
-    const payload = {
-      id: paragraphid,
-      object: 'paragraph'
-    };
-    let eventDetail = {
-      object: 'paragraph',
-      payload,
-      callback: this.publishEventCallback_Paragraph.bind(this),
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('publish', {
-        detail: eventDetail,
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  publishEventCallback_Paragraph(error, data) {
-    if (error) {
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: error, variant: 'error' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      return;
-    }
-    if (data) {
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: 'Published', variant: 'success' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      this.refreshParagraphData();
-    }
-    this.requestUpdate();
-  }
-
-  fireUnpublishEvent_Paragraph(paragraphid) {
-    if (!paragraphid) return;
-
-    const payload = {
-      id: paragraphid,
-      object: 'paragraph'
-    };
-    let eventDetail = {
-      object: 'paragraph',
-      payload,
-      callback: this.unpublishEventCallback_Paragraph.bind(this),
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('unpublish', {
-        detail: eventDetail,
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  unpublishEventCallback_Paragraph(error, data) {
-    if (error) {
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: error, variant: 'error' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      return;
-    }
-    if (data) {
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: 'Unpublished', variant: 'success' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      this.refreshParagraphData();
     }
     this.requestUpdate();
   }
