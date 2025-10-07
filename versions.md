@@ -5,6 +5,7 @@
 
 ### 3.4.0 
 
+- create publishing component
 - create an publish-Endpoint
 - create an unpublish-Endpoint
 
