@@ -28,6 +28,7 @@ class UnpublishEndpoint extends EndpointLogic {
     try {
       // 1. Input validation
       if (!this.validateInput()) {
+        Logging.debugMessage({ severity: 'INFO', message: 'Invalid request data', location: LOCATION });
         this.responseObject.status(400).json({ success: false, error: 'Invalid request data' });
         return;
       }
@@ -38,12 +39,14 @@ class UnpublishEndpoint extends EndpointLogic {
       // 3. Get record to check if it exists and current publish status
       const existingRecord = await this.getRecord(object, id);
       if (!existingRecord) {
+        Logging.debugMessage({ severity: 'INFO', message: 'Record not found', location: LOCATION });
         this.responseObject.status(404).json({ success: false, error: 'Record not found' });
         return;
       }
 
       // 4. Check if already unpublished
       if (!existingRecord.publishdate) {
+        Logging.debugMessage({ severity: 'INFO', message: 'Record is already unpublished', location: LOCATION });
         this.responseObject.status(400).json({ success: false, error: 'Record is already unpublished' });
         return;
       }
