@@ -3,6 +3,12 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.4.0 
+
+- create publishing component
+- create an publish-Endpoint
+- create an unpublish-Endpoint
+
 ### 3.3.0
 
 - create slds-modal component

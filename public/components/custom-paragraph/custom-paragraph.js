@@ -84,6 +84,10 @@ class CustomParagraph extends LitElement {
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     this.spinner = true; // Show spinner when loading starts
     this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
+    
+    // Add event listeners for publishing events
+    this.addEventListener('published', this.handlePublishedEvent.bind(this));
+    this.addEventListener('unpublished', this.handleUnpublishedEvent.bind(this));
   }
 
   render() {
@@ -209,6 +213,9 @@ class CustomParagraph extends LitElement {
               <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
                 <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
               </li>
+              <li class="slds-tabs_default__item ${this.activeTab === 'settings' ? 'slds-active slds-has-focus' : ''}" title="Settings" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'settings'} aria-controls="settings-tab" id="settings-tab-link" @click=${() => this.switchTab('settings')}>Settings</a>
+              </li>
             </ul>
             <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
               <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
@@ -216,10 +223,24 @@ class CustomParagraph extends LitElement {
             <div id="html-tab" class="slds-tabs_default__content ${this.activeTab === 'html' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="html-tab-link">
               <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
             </div>
+            <div id="settings-tab" class="slds-tabs_default__content ${this.activeTab === 'settings' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="settings-tab-link">
+              ${this.renderSettingsTab(paragraphData)}
+            </div>
           </div>
         </div>
         ${buttons}
       </div>
+    `;
+  }
+
+  renderSettingsTab(paragraphData) {
+    return html`
+      <custom-publishing
+        record-id=${this.id}
+        object-name="paragraph"
+        publish-date=${paragraphData?.publishdate || ''}
+        ?disabled=${this.draftMode}
+      ></custom-publishing>
     `;
   }
 
@@ -417,6 +438,29 @@ class CustomParagraph extends LitElement {
     } catch (e) {
       this.dispatchEvent(new CustomEvent('toast', { detail: { message: e.message, variant: 'error' }, bubbles: true, composed: true }));
     }
+  }
+
+  refreshParagraphData() {
+    // Refresh the paragraph data from server to get updated publishDate
+    this.fireQueryEvent_Paragraph(this.id, (error, data) => {
+      if (error) {
+        console.error('Error refreshing paragraph data:', error);
+        return;
+      }
+      this._paragraphData = data;
+      this._paragraphDataBackup = { ...data };
+      this.requestUpdate();
+    });
+  }
+
+  handlePublishedEvent(event) {
+    // Refresh data when content is published
+    this.refreshParagraphData();
+  }
+
+  handleUnpublishedEvent(event) {
+    // Refresh data when content is unpublished
+    this.refreshParagraphData();
   }
 
   switchTab(tab) {
