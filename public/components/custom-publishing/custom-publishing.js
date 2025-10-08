@@ -6,7 +6,8 @@ class CustomPublishing extends LitElement {
     recordId: { type: String, attribute: 'record-id' },
     objectName: { type: String, attribute: 'object-name' },
     publishDate: { type: String, attribute: 'publish-date' },
-    disabled: { type: Boolean }
+    disabled: { type: Boolean },
+    title: { type: String },
   };
 
   static styles = css`
@@ -21,6 +22,7 @@ class CustomPublishing extends LitElement {
     this.objectName = '';
     this.publishDate = null;
     this.disabled = false;
+    this.title = 'Published Status';
   }
 
   connectedCallback() {
@@ -39,14 +41,13 @@ class CustomPublishing extends LitElement {
           <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
             <div class="slds-form-element">
               <label class="slds-form-element__label">
-                <abbr class="slds-required" title="required">*</abbr>Published Status
+                <abbr class="slds-required" title="required">*</abbr>${this.title}
               </label>
             </div>
           </div>
           <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
             <div class="slds-form-element__control">
               <slds-toggle
-                label="Published"
                 enabled-label="Published"
                 disabled-label="Unpublished"
                 name="publish-toggle"
