@@ -36,29 +36,24 @@ class CustomPublishing extends LitElement {
     return html`
       <div class="publish-container">
         <div class="slds-grid slds-wrap slds-gutters">
-          <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
             <div class="slds-form-element">
               <label class="slds-form-element__label">
                 <abbr class="slds-required" title="required">*</abbr>Published Status
               </label>
-              <div class="slds-form-element__control">
-                <slds-toggle
-                  label="Published"
-                  enabled-label="Published"
-                  disabled-label="Unpublished"
-                  name="publish-toggle"
-                  ?checked=${isPublished}
-                  ?disabled=${isToggleDisabled}
-                  @toggle=${this.handlePublishToggleChange}
-                ></slds-toggle>
-                <div class="slds-form-element__help">
-                  ${isToggleDisabled
-                    ? (this.disabled
-                        ? 'Publishing is disabled'
-                        : 'You do not have permission to publish content')
-                    : 'Toggle to publish or unpublish this content'}
-                </div>
-              </div>
+            </div>
+          </div>
+          <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+            <div class="slds-form-element__control">
+              <slds-toggle
+                label="Published"
+                enabled-label="Published"
+                disabled-label="Unpublished"
+                name="publish-toggle"
+                ?checked=${isPublished}
+                ?disabled=${isToggleDisabled}
+                @toggle=${this.handlePublishToggleChange}
+              ></slds-toggle>
             </div>
           </div>
         </div>
