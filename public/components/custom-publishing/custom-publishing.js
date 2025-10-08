@@ -22,7 +22,8 @@ class CustomPublishing extends LitElement {
     this.objectName = '';
     this.publishDate = null;
     this.disabled = false;
-    this.title = 'Published Status';
+    this.title = 'Publishing';
+    this.safetyEnabled = true; // Safety is active by default, internal only
   }
 
   connectedCallback() {
@@ -33,24 +34,39 @@ class CustomPublishing extends LitElement {
   render() {
     const canPublish = this.checkPublishPermission();
     const isPublished = this.publishDate ? true : false;
-    const isToggleDisabled = !canPublish || this.disabled;
+    const isToggleDisabled = this.safetyEnabled || !canPublish || this.disabled;
 
     return html`
       <div class="publish-container">
         <div class="slds-grid slds-wrap slds-gutters">
-          <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
             <div class="slds-form-element">
-              <label class="slds-form-element__label">
-                <abbr class="slds-required" title="required">*</abbr>${this.title}
-              </label>
+              <span class="slds-text-title slds-text-title_bold">
+                ${this.title}
+              </span>
             </div>
           </div>
-          <div class="slds-col slds-size_1-of-2 slds-m-bottom_medium">
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+            <div class="slds-form-element">
+              <div class="slds-form-element__control">
+                <slds-toggle
+                  label="Safety Lock"
+                  enabled-label="Safety On"
+                  disabled-label="Safety Off"
+                  name="safety-toggle"
+                  ?checked=${this.safetyEnabled}
+                  @toggle=${this.handleSafetyToggleChange}
+                ></slds-toggle>
+              </div>
+            </div>
+          </div>
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
             <div class="slds-form-element__control">
               <slds-toggle
+                label="Publish Status"
                 enabled-label="Published"
                 disabled-label="Unpublished"
-                name="publish-toggle"
+                name="publish-toggle" 
                 ?checked=${isPublished}
                 ?disabled=${isToggleDisabled}
                 @toggle=${this.handlePublishToggleChange}
@@ -72,6 +88,11 @@ class CustomPublishing extends LitElement {
     } catch (e) {
       return false;
     }
+  }
+
+  handleSafetyToggleChange(event) {
+    this.safetyEnabled = event.detail.checked;
+    this.requestUpdate();
   }
 
   async handlePublishToggleChange(event) {
