@@ -12,7 +12,8 @@ class SLDSToggle extends LitElement {
     name: { type: String },
     checked: { type: Boolean, reflect: true },
     directionReversed: { type: Boolean, attribute: 'direction-reversed' },
-    labelPosition: { type: String, attribute: 'label-position'}
+    labelPosition: { type: String, attribute: 'label-position'},
+    disabled: { type: Boolean, attribute: 'disabled' }
   };
 
   constructor() {
@@ -41,6 +42,7 @@ class SLDSToggle extends LitElement {
               aria-describedby="${toggleId}"
               .checked="${this.checked}"
               @change="${this._handleToggle}"
+              ?disabled="${this.disabled}"
           />
           <span class="slds-checkbox_faux_container" aria-live="assertive">
             <span class="slds-checkbox_faux"></span>
