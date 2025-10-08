@@ -8,6 +8,7 @@ class CustomPublishing extends LitElement {
     publishDate: { type: String, attribute: 'publish-date' },
     disabled: { type: Boolean },
     title: { type: String },
+    noSafety: { type: Boolean, attribute: 'no-safety' },
   };
 
   static styles = css`
@@ -23,6 +24,7 @@ class CustomPublishing extends LitElement {
     this.publishDate = null;
     this.disabled = false;
     this.title = 'Publishing';
+    this.noSafety = false;
     this.safetyEnabled = true; // Safety is active by default, internal only
   }
 
@@ -34,7 +36,7 @@ class CustomPublishing extends LitElement {
   render() {
     const canPublish = this.checkPublishPermission();
     const isPublished = this.publishDate ? true : false;
-    const isToggleDisabled = this.safetyEnabled || !canPublish || this.disabled;
+    const isToggleDisabled = (!this.noSafety && this.safetyEnabled) || !canPublish || this.disabled;
 
     return html`
       <div class="publish-container">
@@ -46,6 +48,7 @@ class CustomPublishing extends LitElement {
               </span>
             </div>
           </div>
+          ${!this.noSafety ? html`
           <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
             <div class="slds-form-element">
               <div class="slds-form-element__control">
@@ -60,6 +63,7 @@ class CustomPublishing extends LitElement {
               </div>
             </div>
           </div>
+          ` : html``}
           <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
             <div class="slds-form-element__control">
               <slds-toggle
