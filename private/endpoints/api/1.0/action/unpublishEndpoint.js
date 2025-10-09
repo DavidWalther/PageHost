@@ -25,7 +25,19 @@ class UnpublishEndpoint extends EndpointLogic {
     const LOCATION = 'UnpublishEndpoint.execute';
     Logging.debugMessage({ severity: 'INFO', message: `Request received - ${this.requestObject.url}`, location: LOCATION });
 
+    const environmentAllowedDmls = this.environment.APPLICATION_ACTIVE_ACTIONS || '[]';
+    let allowedDmls = JSON.parse(environmentAllowedDmls).map(permission => permission.toLowerCase());
+    Logging.debugMessage({ severity: 'INFO', message: `Parsed allowed DMLs: ${JSON.stringify(allowedDmls)}`, location: LOCATION });
+    this._allowedDmls = new Set(allowedDmls);
+
     try {
+      // check whether publish is allowed in application settings
+      if (!this.isAllowedPublish) {
+        Logging.debugMessage({ severity: 'INFO', message: 'Permission denied for publish operation', location: LOCATION });
+        this.responseObject.status(403).json({ success: false, error: 'Permission denied' });
+        return;
+      }
+
       // 1. Input validation
       if (!this.validateInput()) {
         Logging.debugMessage({ severity: 'INFO', message: 'Invalid request data', location: LOCATION });
@@ -61,6 +73,12 @@ class UnpublishEndpoint extends EndpointLogic {
       Logging.debugMessage({severity:'ERROR', message: `Operation failed: ${error.message}`, location: LOCATION});
       this.responseObject.status(500).json({ success: false, error: error.message });
     }
+  }
+
+  get isAllowedPublish() {
+    const LOCATION = 'PublishEndpoint.isAllowedPublish';
+    Logging.debugMessage({ severity: 'FINEST', message: `Checking if publish is allowed`, location: LOCATION });
+    return this._allowedDmls.has('publish');
   }
 
   /**
