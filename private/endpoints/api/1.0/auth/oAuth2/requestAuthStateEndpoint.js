@@ -1,9 +1,11 @@
 const { Logging } = require('../../../../../modules/logging');
 const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const { EndpointLogic } = require('../../../../EndpointLogic.js');
 const crypto = require('crypto');
 
-class RequestAuthStateEndpoint {
+class RequestAuthStateEndpoint extends EndpointLogic {
   constructor() {
+    super();
     this.environment = null;
     this.requestObject = null;
     this.responseObject = null;
