@@ -10,21 +10,6 @@ class LogoutEndpoint extends EndpointLogic {
     this.responseObject = null;
   }
 
-  setEnvironment(environment) {
-    this.environment = environment;
-    return this;
-  }
-
-  setRequestObject(requestObject) {
-    this.requestObject = requestObject;
-    return this;
-  }
-
-  setResponseObject(responseObject) {
-    this.responseObject = responseObject;
-    return this;
-  }
-
   async execute() {
     const LOCATION = 'LogoutEndpoint.execute';
     Logging.debugMessage({ severity: 'INFO', message: 'Executing logout', location: LOCATION });

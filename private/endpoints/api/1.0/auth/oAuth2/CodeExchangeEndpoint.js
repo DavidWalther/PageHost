@@ -14,22 +14,6 @@ class CodeExchangeEndpoint extends EndpointLogic {
     this.requestObject = null;
     this.responseObject = null;
   }
-
-  setEnvironment(environment) {
-    this.environment = environment;
-    return this;
-  }
-
-  setRequestObject(requestObject) {
-    this.requestObject = requestObject;
-    return this;
-  }
-
-  setResponseObject(responseObject) {
-    this.responseObject = responseObject;
-    return this;
-  }
-
   get envVarAuthUrl() {
     return this.environment.AUTH_OIDC_AUTH_URL;
   }

@@ -11,21 +11,6 @@ class RequestAuthStateEndpoint extends EndpointLogic {
     this.responseObject = null;
   }
 
-  setEnvironment(environment) {
-    this.environment = environment;
-    return this;
-  }
-
-  setRequestObject(requestObject) {
-    this.requestObject = requestObject;
-    return this;
-  }
-
-  setResponseObject(responseObject) {
-    this.responseObject = responseObject;
-    return this;
-  }
-
   generateRandomState(length = 32) {
     return crypto.randomBytes(length).toString('hex');
   }
