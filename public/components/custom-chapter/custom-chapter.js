@@ -123,6 +123,7 @@ class CustomChapter extends LitElement {
           <slds-button-icon
             icon="utility:arrowdown"
             variant="container-filled"
+            @click=${this.handleScrollDownClick}
           ></slds-button-icon>
         ${canCreate ? html`
           <slds-button-icon
@@ -212,6 +213,17 @@ class CustomChapter extends LitElement {
     const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
     this.fireCreateEvent_Paragraph(chapterId, storyId);
   };
+
+  handleScrollDownClick() {
+    console.log('Scroll down clicked');
+    this.scrollToParagraph({ paragraphSortNumber: 40 });
+  }
+
+  // ======== Actions ================
+
+  scrollToParagraph(scrollParameters) {
+
+  }
 
   // ======= Create Event ========
 
