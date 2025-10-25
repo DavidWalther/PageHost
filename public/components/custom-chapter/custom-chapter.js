@@ -120,6 +120,10 @@ class CustomChapter extends LitElement {
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
         <div slot="actions">
+          <slds-button-icon
+            icon="utility:arrowdown"
+            variant="container-filled"
+          ></slds-button-icon>
         ${canCreate ? html`
           <slds-button-icon
             icon="utility:add"
