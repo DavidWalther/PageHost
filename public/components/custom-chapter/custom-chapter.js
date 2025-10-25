@@ -157,6 +157,7 @@ class CustomChapter extends LitElement {
           <custom-paragraph
             id=${paragraph.id}
             data-name=${paragraph.name || ''}
+            data-sort-number=${paragraph.sortnumber || ''}
           ></custom-paragraph>
         </div>
       `
@@ -222,6 +223,21 @@ class CustomChapter extends LitElement {
   // ======== Actions ================
 
   scrollToParagraph(scrollParameters) {
+    const {paragraphId, paragraphSortNumber} = scrollParameters;
+
+    const paragraphContentElement = this.shadowRoot.getElementById('chapter-content');
+    if (!paragraphContentElement) return;
+
+    if(paragraphSortNumber) {
+      console.log('Scrolling to paragraph with sort number:', paragraphSortNumber);
+      let paragraph = Array.from(paragraphContentElement.querySelectorAll('custom-paragraph')).find( elem => (
+        elem.dataset.sortNumber == paragraphSortNumber
+      ));
+      if(paragraph) {
+        paragraph.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
 
   }
 
