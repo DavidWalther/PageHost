@@ -1,26 +1,13 @@
 const { Logging } = require('../../../../modules/logging');
+const { EndpointLogic } = require('../../../EndpointLogic.js');
 const AccessTokenService = require('../../../../modules/oAuth2/AccessTokenService');
 
-class LogoutEndpoint {
+class LogoutEndpoint extends EndpointLogic {
   constructor() {
+    super();
     this.environment = null;
     this.requestObject = null;
     this.responseObject = null;
-  }
-
-  setEnvironment(environment) {
-    this.environment = environment;
-    return this;
-  }
-
-  setRequestObject(requestObject) {
-    this.requestObject = requestObject;
-    return this;
-  }
-
-  setResponseObject(responseObject) {
-    this.responseObject = responseObject;
-    return this;
   }
 
   async execute() {

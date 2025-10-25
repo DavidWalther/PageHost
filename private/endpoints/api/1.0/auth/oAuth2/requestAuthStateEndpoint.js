@@ -1,27 +1,14 @@
 const { Logging } = require('../../../../../modules/logging');
 const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const { EndpointLogic } = require('../../../../EndpointLogic.js');
 const crypto = require('crypto');
 
-class RequestAuthStateEndpoint {
+class RequestAuthStateEndpoint extends EndpointLogic {
   constructor() {
+    super();
     this.environment = null;
     this.requestObject = null;
     this.responseObject = null;
-  }
-
-  setEnvironment(environment) {
-    this.environment = environment;
-    return this;
-  }
-
-  setRequestObject(requestObject) {
-    this.requestObject = requestObject;
-    return this;
-  }
-
-  setResponseObject(responseObject) {
-    this.responseObject = responseObject;
-    return this;
   }
 
   generateRandomState(length = 32) {

@@ -2,32 +2,18 @@ const { Logging } = require('../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
 const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
+const { EndpointLogic } = require('../../../../EndpointLogic.js');
 const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
 
 const GOOGLE_ENDPOINT_WELLKNOWN = 'https://accounts.google.com/.well-known/openid-configuration';
 
-class CodeExchangeEndpoint {
+class CodeExchangeEndpoint extends EndpointLogic {
   constructor() {
+    super();
     this.environment = null;
     this.requestObject = null;
     this.responseObject = null;
   }
-
-  setEnvironment(environment) {
-    this.environment = environment;
-    return this;
-  }
-
-  setRequestObject(requestObject) {
-    this.requestObject = requestObject;
-    return this;
-  }
-
-  setResponseObject(responseObject) {
-    this.responseObject = responseObject;
-    return this;
-  }
-
   get envVarAuthUrl() {
     return this.environment.AUTH_OIDC_AUTH_URL;
   }

@@ -83,8 +83,8 @@ class Bookstore extends LitElement {
             <div class="slds-col slds-text-align_right slds-size_1-of-1">
               <oidc-component
                 provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
-                server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
-                server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
+                server-endpoint-auth-code-exchange="/api/1.0/auth/oAuth2/codeexchange"
+                server-endpoint-auth-state-request="/api/1.0/auth/oAuth2/requestAuthState"
                 button-label="Login with Google"
               >
                 <button slot="auth-button-login">
