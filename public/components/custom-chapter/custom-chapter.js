@@ -217,7 +217,7 @@ class CustomChapter extends LitElement {
 
   handleScrollDownClick() {
     console.log('Scroll down clicked');
-    this.scrollToParagraph({ paragraphSortNumber: 40 });
+    this.scrollToParagraph({ paragraphId: '000p00000000000315'});
   }
 
   // ======== Actions ================
@@ -239,6 +239,16 @@ class CustomChapter extends LitElement {
       return;
     }
 
+    if(paragraphId) {
+      console.log('Scrolling to paragraph with ID:', paragraphId);
+      let paragraph = Array.from(paragraphContentElement.querySelectorAll('custom-paragraph')).find( elem => (
+        elem.id == paragraphId
+      ));
+      if (paragraph) {
+        paragraph.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
   }
 
   // ======= Create Event ========
