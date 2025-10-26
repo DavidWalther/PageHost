@@ -84,12 +84,34 @@ class CustomParagraph extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this.spinner = true; // Show spinner when loading starts
-    this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
+    
+    // Only load data if no-load is not set
+    if (!this.noLoad) {
+      this.loadParagraphData();
+    } else {
+      this.spinner = false; // Hide spinner for lazy-loaded components
+    }
     
     // Add event listeners for publishing events
     this.addEventListener('published', this.handlePublishedEvent.bind(this));
     this.addEventListener('unpublished', this.handleUnpublishedEvent.bind(this));
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    
+    // If no-load attribute was removed, start loading
+    if (changedProperties.has('noLoad') && changedProperties.get('noLoad') === true && !this.noLoad) {
+      this.loadParagraphData();
+    }
+  }
+
+  loadParagraphData() {
+    if (!this.id || this._paragraphData) return; // Don't load if already loaded
+    
+    console.log(`Loading paragraph data for ${this.id}`);
+    this.spinner = true; // Show spinner when loading starts
+    this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
   }
 
   render() {
@@ -109,6 +131,13 @@ class CustomParagraph extends LitElement {
           content = this.renderHtmlReadonly(htmlcontent);
         }
       }
+    } else if (this.noLoad) {
+      // Show placeholder for lazy-loaded content
+      content = html`
+        <div class="slds-box slds-box_x-small slds-theme_shade slds-text-align_center">
+          <p class="slds-text-color_weak">Loading...</p>
+        </div>
+      `;
     }
     return html`
       <slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>
