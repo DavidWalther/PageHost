@@ -36,6 +36,8 @@ class CustomChapter extends LitElement {
     this.templatePromise = null;
     this.loadedMarkUp = null;
     this.pendingNewParagraphId = null; // Track the id of a paragraph being created
+    this.intersectionObserver = null; // Intersection Observer for lazy loading
+    this.observedElements = new Map(); // Track observed elements
   }
 
   connectedCallback() {
@@ -43,11 +45,15 @@ class CustomChapter extends LitElement {
     addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
     // Listen for loaded events from paragraphs
     this.addEventListener('loaded', this._onParagraphLoaded, true);
+    // Initialize intersection observer for lazy loading
+    this.initializeIntersectionObserver();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener('loaded', this._onParagraphLoaded, true);
+    // Clean up intersection observer
+    this.cleanupIntersectionObserver();
   }
 
   _onParagraphLoaded = (event) => {
@@ -103,6 +109,48 @@ class CustomChapter extends LitElement {
   clearContent() {
     this.chapterData = null;
     this.paragraphsData = [];
+    // Clean up any existing observations
+    this.cleanupIntersectionObserver();
+  }
+
+  initializeIntersectionObserver() {
+    // Create intersection observer with some margin for preloading
+    this.intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const paragraphElement = entry.target.querySelector('custom-paragraph');
+            if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
+              console.log(`Triggering lazy load for paragraph ${paragraphElement.id}`);
+              // Remove no-load attribute to trigger loading
+              paragraphElement.removeAttribute('no-load');
+              // Stop observing this element
+              this.intersectionObserver.unobserve(entry.target);
+              this.observedElements.delete(entry.target);
+            }
+          }
+        });
+      },
+      {
+        root: null, // Use viewport as root
+        rootMargin: '100px', // Start loading 100px before element is visible
+        threshold: 0.1, // Trigger when 10% of element is visible
+      }
+    );
+  }
+
+  cleanupIntersectionObserver() {
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+      this.observedElements.clear();
+    }
+  }
+
+  observeElement(element) {
+    if (this.intersectionObserver && element) {
+      this.intersectionObserver.observe(element);
+      this.observedElements.set(element, true);
+    }
   }
 
   render() {
