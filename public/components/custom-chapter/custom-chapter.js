@@ -69,6 +69,27 @@ class CustomChapter extends LitElement {
     if (changedProperties.has('id')) {
       this.handleIdChange(this.id);
     }
+    
+    // Set up intersection observing for lazy-loaded paragraphs
+    if (changedProperties.has('paragraphsData') || changedProperties.has('chapterData')) {
+      this.setupParagraphObserving();
+    }
+  }
+
+  setupParagraphObserving() {
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+      paragraphContainers.forEach((container, index) => {
+        // Skip the first paragraph (index 0) as it loads immediately
+        if (index > 0) {
+          const paragraphElement = container.querySelector('custom-paragraph');
+          if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
+            this.observeElement(container);
+          }
+        }
+      });
+    });
   }
 
   async handleIdChange(newId) {
