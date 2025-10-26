@@ -25,6 +25,10 @@ class CustomChapter extends LitElement {
     #chapter-content {
       margin-top: 1rem;
     }
+    .paragraph-container {
+      min-height: 20px;
+      width: 100%;
+    }
   `;
 
   constructor() {
@@ -216,11 +220,13 @@ class CustomChapter extends LitElement {
       : this.paragraphsData;
 
     return paragraphs.map(
-      (paragraph) => html`
-        <div class="slds-col slds-p-bottom_small">
+      (paragraph, index) => html`
+        <div class="slds-col slds-p-bottom_small paragraph-container" 
+             data-paragraph-id=${paragraph.id}>
           <custom-paragraph
             id=${paragraph.id}
             data-name=${paragraph.name || ''}
+            ?no-load=${index > 0}
           ></custom-paragraph>
         </div>
       `
