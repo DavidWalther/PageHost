@@ -6,6 +6,7 @@ class CustomParagraph extends LitElement {
   static properties = {
     id: { type: String },
     _showDelete: { type: Boolean },
+    noLoad: { type: Boolean, attribute: 'no-load' },
   };
 
   static styles = css`
@@ -67,6 +68,7 @@ class CustomParagraph extends LitElement {
     this.spinner = true; // Spinner visible by default
     this.draftMode = false; // Track if user is in draft mode
     this._showDelete = false;
+    this.noLoad = false;
   }
 
   get hasDraft() {
