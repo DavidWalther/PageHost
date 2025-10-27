@@ -75,23 +75,38 @@ class CustomChapter extends LitElement {
     }
     
     // Set up intersection observing for lazy-loaded paragraphs
-    if (changedProperties.has('paragraphsData') || changedProperties.has('chapterData')) {
+    // Only when we have data AND we're not loading
+    if ((changedProperties.has('paragraphsData') || changedProperties.has('chapterData')) 
+        && !this.loading && this.paragraphsData.length > 0) {
       this.setupParagraphObserving();
     }
   }
 
   setupParagraphObserving() {
-    // Use requestAnimationFrame to ensure DOM is updated
+    // Clean up any existing observations first
+    this.cleanupIntersectionObserver();
+    this.initializeIntersectionObserver();
+    
+    // Use multiple animation frames to ensure DOM is fully rendered
     requestAnimationFrame(() => {
-      const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
-      paragraphContainers.forEach((container, index) => {
-        // Skip the first paragraph (index 0) as it loads immediately
-        if (index > 0) {
-          const paragraphElement = container.querySelector('custom-paragraph');
-          if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-            this.observeElement(container);
+      requestAnimationFrame(() => {
+        const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+        console.log(`Found ${paragraphContainers.length} paragraph containers`);
+        
+        paragraphContainers.forEach((container, index) => {
+          // Skip the first paragraph (index 0) as it loads immediately
+          if (index > 0) {
+            const paragraphElement = container.querySelector('custom-paragraph');
+            if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
+              console.log(`Setting up observer for paragraph ${index}: ${paragraphElement.id}`);
+              this.observeElement(container);
+            } else {
+              console.log(`Skipping paragraph ${index}: no no-load attribute or element not found`);
+            }
+          } else {
+            console.log(`Skipping first paragraph (index 0): ${container.querySelector('custom-paragraph')?.id}`);
           }
-        }
+        });
       });
     });
   }
@@ -167,6 +182,7 @@ class CustomChapter extends LitElement {
   cleanupIntersectionObserver() {
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
+      this.intersectionObserver = null;
       this.observedElements.clear();
     }
   }

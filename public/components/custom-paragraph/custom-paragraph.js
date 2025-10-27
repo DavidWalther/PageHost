@@ -101,8 +101,14 @@ class CustomParagraph extends LitElement {
     super.updated(changedProperties);
     
     // If no-load attribute was removed, start loading
-    if (changedProperties.has('noLoad') && changedProperties.get('noLoad') === true && !this.noLoad) {
-      this.loadParagraphData();
+    if (changedProperties.has('noLoad')) {
+      const previousValue = changedProperties.get('noLoad');
+      console.log(`noLoad changed from ${previousValue} to ${this.noLoad} for paragraph ${this.id}`);
+      
+      if (previousValue === true && this.noLoad === false) {
+        console.log(`Triggering load for paragraph ${this.id} due to no-load removal`);
+        this.loadParagraphData();
+      }
     }
   }
 
