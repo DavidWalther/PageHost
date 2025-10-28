@@ -26,8 +26,12 @@ class CustomChapter extends LitElement {
       margin-top: 1rem;
     }
     .paragraph-container {
-      min-height: 20px;
+      min-height: 120px; /* Reserve space to prevent layout shifts */
       width: 100%;
+      transition: min-height 0.3s ease; /* Smooth height transitions */
+    }
+    .paragraph-container.loaded {
+      min-height: auto; /* Allow natural height after loading */
     }
   `;
 
@@ -154,29 +158,49 @@ class CustomChapter extends LitElement {
   }
 
   initializeIntersectionObserver() {
-    // Create intersection observer with some margin for preloading
+    // Create intersection observer with conservative settings to prevent cascade loading
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const paragraphElement = entry.target.querySelector('custom-paragraph');
-            if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-              console.log(`Triggering lazy load for paragraph ${paragraphElement.id}`);
-              // Remove no-load attribute to trigger loading
-              paragraphElement.removeAttribute('no-load');
-              // Stop observing this element
-              this.intersectionObserver.unobserve(entry.target);
-              this.observedElements.delete(entry.target);
-            }
+            console.log(`Paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            this.executeLazyLoading(entry.target);
           }
         });
       },
       {
         root: null, // Use viewport as root
-        rootMargin: '100px', // Start loading 100px before element is visible
-        threshold: 0.1, // Trigger when 10% of element is visible
+        rootMargin: '0px 0px -200px 0px', // Only trigger when 200px above bottom of viewport
+        threshold: 0.1, // Require 10% visibility to prevent false triggers
       }
     );
+  }
+  
+  executeLazyLoading(element) {
+    if (element) {
+      const paragraphElement = element.querySelector('custom-paragraph');
+      if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
+        console.log(`Executing lazy load for paragraph ${paragraphElement.id}`);
+        
+        // Mark container as loading to prevent cascade
+        element.classList.add('loading');
+        
+        // Remove no-load attribute to trigger loading
+        paragraphElement.removeAttribute('no-load');
+        
+        // Stop observing this element immediately
+        this.intersectionObserver.unobserve(element);
+        this.observedElements.delete(element);
+        
+        // Mark as loaded after a short delay to allow content to load
+        setTimeout(() => {
+          element.classList.remove('loading');
+          element.classList.add('loaded');
+        }, 100);
+      } else {
+        console.log(`Skipping lazy load - paragraph already loaded or no-load not found`);
+      }
+    }
   }
 
   cleanupIntersectionObserver() {
@@ -237,7 +261,7 @@ class CustomChapter extends LitElement {
 
     return paragraphs.map(
       (paragraph, index) => html`
-        <div class="slds-col slds-p-bottom_small paragraph-container" 
+        <div class="slds-col slds-p-bottom_small paragraph-container pending" 
              data-paragraph-id=${paragraph.id}>
           <custom-paragraph
             id=${paragraph.id}

@@ -138,10 +138,13 @@ class CustomParagraph extends LitElement {
         }
       }
     } else if (this.noLoad) {
-      // Show placeholder for lazy-loaded content
+      // Show placeholder for lazy-loaded content with realistic size
       content = html`
-        <div class="slds-box slds-box_x-small slds-theme_shade slds-text-align_center">
-          <p class="slds-text-color_weak">Loading...</p>
+        <div class="slds-box slds-theme_shade" style="min-height: 80px; display: flex; align-items: center; justify-content: center;">
+          <div style="text-align: center;">
+            <slds-spinner size="x-small"></slds-spinner>
+            <p class="slds-text-color_weak slds-m-top_x-small">Loading paragraph...</p>
+          </div>
         </div>
       `;
     }
