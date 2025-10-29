@@ -99,18 +99,24 @@ class CustomChapter extends LitElement {
         
         paragraphContainers.forEach((container, index) => {
           // Skip the first paragraph (index 0) as it loads immediately
-          if (index > 0) {
-            const paragraphElement = container.querySelector('custom-paragraph');
-            if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-              console.log(`Setting up observer for paragraph ${index}: ${paragraphElement.id}`);
-              this.observeElement(container);
-            } else {
-              console.log(`Skipping paragraph ${index}: no no-load attribute or element not found`);
-            }
-          } else {
+          if (index == 0) {
             console.log(`Skipping first paragraph (index 0): ${container.querySelector('custom-paragraph')?.id}`);
+            return;
           }
-        });
+          const paragraphElement = container.querySelector('custom-paragraph');
+          if (! paragraphElement) {
+            console.log(`No custom-paragraph found in container for paragraph index ${index}`);
+            return;
+          }
+          let hasNoLoadAttribute = paragraphElement.hasAttribute('no-load');
+          if(!hasNoLoadAttribute) {
+            console.log(`Paragraph ${index} already loaded, skipping observer setup: ${paragraphElement.id}`);
+            return;
+          }
+
+          console.log(`Setting up observer for paragraph ${index}: ${paragraphElement.id}`);
+          this.observeElement(container);
+        }); 
       });
     });
   }
