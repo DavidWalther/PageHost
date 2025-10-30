@@ -45,6 +45,7 @@ class CustomChapter extends LitElement {
     this.loadedMarkUp = null;
     this.pendingNewParagraphId = null; // Track the id of a paragraph being created
     this.intersectionObserver = null; // Intersection Observer for lazy loading
+    this.lastItemObserver = null; // Special observer for the last item
     this.observedElements = new Map(); // Track observed elements
   }
 
@@ -114,8 +115,16 @@ class CustomChapter extends LitElement {
             return;
           }
 
-          console.log(`Setting up observer for paragraph ${index}: ${paragraphElement.id}`);
-          this.observeElement(container);
+          // Check if this is the last item
+          const isLastItem = index === paragraphContainers.length - 1;
+          
+          if (isLastItem) {
+            console.log(`Setting up LAST ITEM observer for paragraph ${index}: ${paragraphElement.id}`);
+            this.observeElementAsLast(container);
+          } else {
+            console.log(`Setting up regular observer for paragraph ${index}: ${paragraphElement.id}`);
+            this.observeElement(container);
+          }
         }); 
       });
     });
@@ -164,7 +173,7 @@ class CustomChapter extends LitElement {
   }
 
   initializeIntersectionObserver() {
-    // Create intersection observer with conservative settings to prevent cascade loading
+    // Create intersection observer with settings optimized for regular items
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -176,8 +185,25 @@ class CustomChapter extends LitElement {
       },
       {
         root: null, // Use viewport as root
-        rootMargin: '0px 0px -200px 0px', // Only trigger when 200px above bottom of viewport
-        threshold: 0.1, // Require 10% visibility to prevent false triggers
+        rootMargin: '0px 0px -100px 0px', // Reduced from -200px to -100px
+        threshold: [0, 0.1, 0.25], // Multiple thresholds to catch edge cases
+      }
+    );
+
+    // Create special observer for the last item with more lenient settings
+    this.lastItemObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            console.log(`Last paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            this.executeLazyLoading(entry.target);
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '50px 0px 50px 0px', // More lenient margins for last item
+        threshold: 0, // Any intersection triggers loading for last item
       }
     );
   }
@@ -194,8 +220,13 @@ class CustomChapter extends LitElement {
         // Remove no-load attribute to trigger loading
         paragraphElement.removeAttribute('no-load');
         
-        // Stop observing this element immediately
-        this.intersectionObserver.unobserve(element);
+        // Stop observing this element immediately from both observers
+        if (this.intersectionObserver) {
+          this.intersectionObserver.unobserve(element);
+        }
+        if (this.lastItemObserver) {
+          this.lastItemObserver.unobserve(element);
+        }
         this.observedElements.delete(element);
         
         // Mark as loaded after a short delay to allow content to load
@@ -213,14 +244,25 @@ class CustomChapter extends LitElement {
     if (this.intersectionObserver) {
       this.intersectionObserver.disconnect();
       this.intersectionObserver = null;
-      this.observedElements.clear();
     }
+    if (this.lastItemObserver) {
+      this.lastItemObserver.disconnect();
+      this.lastItemObserver = null;
+    }
+    this.observedElements.clear();
   }
 
   observeElement(element) {
     if (this.intersectionObserver && element) {
       this.intersectionObserver.observe(element);
-      this.observedElements.set(element, true);
+      this.observedElements.set(element, 'regular');
+    }
+  }
+
+  observeElementAsLast(element) {
+    if (this.lastItemObserver && element) {
+      this.lastItemObserver.observe(element);
+      this.observedElements.set(element, 'last');
     }
   }
 
