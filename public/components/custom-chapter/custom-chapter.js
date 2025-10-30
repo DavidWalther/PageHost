@@ -25,8 +25,10 @@ class CustomChapter extends LitElement {
     #chapter-content {
       margin-top: 1rem;
     }
+    .paragraph-container.pending {
+      min-height: 120px; /* Reserve space to prevent triggering the intersection observer too early */
+    }
     .paragraph-container {
-      min-height: 120px; /* Reserve space to prevent layout shifts */
       width: 100%;
       transition: min-height 0.3s ease; /* Smooth height transitions */
     }
@@ -217,6 +219,9 @@ class CustomChapter extends LitElement {
         // Mark container as loading to prevent cascade
         element.classList.add('loading');
         
+        // Remove pending class to free reserved space
+        element.classList.remove('pending');
+
         // Remove no-load attribute to trigger loading
         paragraphElement.removeAttribute('no-load');
         
