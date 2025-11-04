@@ -37,240 +37,6 @@ class CustomChapter extends LitElement {
     }
   `;
 
-  constructor() {
-    super();
-    this.id = null;
-    this.chapterData = null;
-    this.paragraphsData = [];
-    this.loading = false;
-    this.templatePromise = null;
-    this.loadedMarkUp = null;
-    this.pendingNewParagraphId = null; // Track the id of a paragraph being created
-    this.intersectionObserver = null; // Intersection Observer for lazy loading
-    this.lastItemObserver = null; // Special observer for the last item
-    this.observedElements = new Map(); // Track observed elements
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
-    // Listen for loaded events from paragraphs
-    this.addEventListener('loaded', this._onParagraphLoaded, true);
-    // Initialize intersection observer for lazy loading
-    this.initializeIntersectionObserver();
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.removeEventListener('loaded', this._onParagraphLoaded, true);
-    // Clean up intersection observer
-    this.cleanupIntersectionObserver();
-  }
-
-  _onParagraphLoaded = (event) => {
-    // - Only handle if we are waiting for a new paragraph
-    // - This also ensures the component will new proccess the event it has fired itself
-    if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
-      this.requestUpdate();
-      this.pendingNewParagraphId = null;
-    }
-  }
-
-  updated(changedProperties) {
-    if (changedProperties.has('id')) {
-      this.handleIdChange(this.id);
-    }
-    
-    // Set up intersection observing for lazy-loaded paragraphs
-    // Only when we have data AND we're not loading
-    if ((changedProperties.has('paragraphsData') || changedProperties.has('chapterData')) 
-        && !this.loading && this.paragraphsData.length > 0) {
-      this.setupParagraphObserving();
-    }
-  }
-
-  setupParagraphObserving() {
-    // Clean up any existing observations first
-    this.cleanupIntersectionObserver();
-    this.initializeIntersectionObserver();
-    
-    // Use multiple animation frames to ensure DOM is fully rendered
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
-        console.log(`Found ${paragraphContainers.length} paragraph containers`);
-        
-        paragraphContainers.forEach((container, index) => {
-          // Skip the first paragraph (index 0) as it loads immediately
-          if (index == 0) {
-            console.log(`Skipping first paragraph (index 0): ${container.querySelector('custom-paragraph')?.id}`);
-            return;
-          }
-          const paragraphElement = container.querySelector('custom-paragraph');
-          if (! paragraphElement) {
-            console.log(`No custom-paragraph found in container for paragraph index ${index}`);
-            return;
-          }
-          let hasNoLoadAttribute = paragraphElement.hasAttribute('no-load');
-          if(!hasNoLoadAttribute) {
-            console.log(`Paragraph ${index} already loaded, skipping observer setup: ${paragraphElement.id}`);
-            return;
-          }
-
-          // Check if this is the last item
-          const isLastItem = index === paragraphContainers.length - 1;
-          
-          if (isLastItem) {
-            console.log(`Setting up LAST ITEM observer for paragraph ${index}: ${paragraphElement.id}`);
-            this.observeElementAsLast(container);
-          } else {
-            console.log(`Setting up regular observer for paragraph ${index}: ${paragraphElement.id}`);
-            this.observeElement(container);
-          }
-        }); 
-      });
-    });
-  }
-
-  async handleIdChange(newId) {
-    if (!newId || newId === 'null') {
-      this.clearContent();
-    } else {
-      this.loading = true;
-      this.chapterData = null;
-      this.paragraphsData = [];
-      this.fetchAndDisplayChapter(newId);
-    }
-  }
-
-  async fetchAndDisplayChapter(chapterId) {
-    if (!chapterId) return;
-
-    this.fireQueryEvent_Chapter(chapterId, (error, data) => {
-      if (error) {
-        console.error('Error fetching chapter data:', error);
-        this.loading = false;
-        return;
-      }
-
-      this.dispatchEvent(
-        new CustomEvent('loaded', {
-          detail: { chapterData: data },
-          bubbles: true,
-          composed: true,
-        })
-      );
-
-      this.chapterData = data;
-      this.paragraphsData = data.paragraphs || [];
-      this.loading = false;
-    });
-  }
-
-  clearContent() {
-    this.chapterData = null;
-    this.paragraphsData = [];
-    // Clean up any existing observations
-    this.cleanupIntersectionObserver();
-  }
-
-  initializeIntersectionObserver() {
-    // Create intersection observer with settings optimized for regular items
-    this.intersectionObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            console.log(`Paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
-            this.executeLazyLoading(entry.target);
-          }
-        });
-      },
-      {
-        root: null, // Use viewport as root
-        rootMargin: '0px 0px -100px 0px', // Reduced from -200px to -100px
-        threshold: [0, 0.1, 0.25], // Multiple thresholds to catch edge cases
-      }
-    );
-
-    // Create special observer for the last item with more lenient settings
-    this.lastItemObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            console.log(`Last paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
-            this.executeLazyLoading(entry.target);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: '50px 0px 50px 0px', // More lenient margins for last item
-        threshold: 0, // Any intersection triggers loading for last item
-      }
-    );
-  }
-  
-  executeLazyLoading(element) {
-    if (element) {
-      const paragraphElement = element.querySelector('custom-paragraph');
-      if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-        console.log(`Executing lazy load for paragraph ${paragraphElement.id}`);
-        
-        // Mark container as loading to prevent cascade
-        element.classList.add('loading');
-        
-        // Remove pending class to free reserved space
-        element.classList.remove('pending');
-
-        // Remove no-load attribute to trigger loading
-        paragraphElement.removeAttribute('no-load');
-        
-        // Stop observing this element immediately from both observers
-        if (this.intersectionObserver) {
-          this.intersectionObserver.unobserve(element);
-        }
-        if (this.lastItemObserver) {
-          this.lastItemObserver.unobserve(element);
-        }
-        this.observedElements.delete(element);
-        
-        // Mark as loaded after a short delay to allow content to load
-        setTimeout(() => {
-          element.classList.remove('loading');
-          element.classList.add('loaded');
-        }, 100);
-      } else {
-        console.log(`Skipping lazy load - paragraph already loaded or no-load not found`);
-      }
-    }
-  }
-
-  cleanupIntersectionObserver() {
-    if (this.intersectionObserver) {
-      this.intersectionObserver.disconnect();
-      this.intersectionObserver = null;
-    }
-    if (this.lastItemObserver) {
-      this.lastItemObserver.disconnect();
-      this.lastItemObserver = null;
-    }
-    this.observedElements.clear();
-  }
-
-  observeElement(element) {
-    if (this.intersectionObserver && element) {
-      this.intersectionObserver.observe(element);
-      this.observedElements.set(element, 'regular');
-    }
-  }
-
-  observeElementAsLast(element) {
-    if (this.lastItemObserver && element) {
-      this.lastItemObserver.observe(element);
-      this.observedElements.set(element, 'last');
-    }
-  }
-
   render() {
     if (this.loading) {
       return html`<slds-spinner size="large"></slds-spinner>`;
@@ -314,7 +80,7 @@ class CustomChapter extends LitElement {
 
     return paragraphs.map(
       (paragraph, index) => html`
-        <div class="slds-col slds-p-bottom_small paragraph-container pending" 
+        <div class="slds-col slds-p-bottom_small paragraph-container pending"
              data-paragraph-id=${paragraph.id}>
           <custom-paragraph
             id=${paragraph.id}
@@ -324,6 +90,221 @@ class CustomChapter extends LitElement {
         </div>
       `
     );
+  }
+
+  constructor() {
+    super();
+    this.id = null;
+    this.chapterData = null;
+    this.paragraphsData = [];
+    this.loading = false;
+    this.templatePromise = null;
+    this.loadedMarkUp = null;
+    this.pendingNewParagraphId = null; // Track the id of a paragraph being created
+    this.intersectionObserver = null; // Intersection Observer for lazy loading
+    this.lastItemObserver = null; // Special observer for the last item
+    this.observedElements = new Map(); // Track observed elements
+  }
+
+  // ==================================================
+  // Lifecycle Methods
+  // ==================================================
+
+  connectedCallback() {
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot); // Add shared stylesheet
+    // Listen for loaded events from paragraphs
+    this.addEventListener('loaded', this._onParagraphLoaded, true);
+    // Initialize intersection observer for lazy loading
+    this.initializeIntersectionObserver();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('loaded', this._onParagraphLoaded, true);
+    // Clean up intersection observer
+    this.cleanupIntersectionObserver();
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('id')) {
+      this.handleIdChange(this.id);
+    }
+
+    // Set up intersection observing for lazy-loaded paragraphs
+    // Only when we have data AND we're not loading
+    if ((changedProperties.has('paragraphsData') || changedProperties.has('chapterData'))
+        && !this.loading && this.paragraphsData.length > 0) {
+      this.setupParagraphObserving();
+    }
+  }
+
+  // ==================================================
+  // Intersection Observer and Lazy Loading
+  // ==================================================
+
+  setupParagraphObserving() {
+    // Clean up any existing observations first
+    this.cleanupIntersectionObserver();
+    this.initializeIntersectionObserver();
+
+    // Use multiple animation frames to ensure DOM is fully rendered
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+        console.log(`Found ${paragraphContainers.length} paragraph containers`);
+
+        paragraphContainers.forEach((container, index) => {
+          // Skip the first paragraph (index 0) as it loads immediately
+          if (index == 0) {
+            console.log(`Skipping first paragraph (index 0): ${container.querySelector('custom-paragraph')?.id}`);
+            return;
+          }
+          const paragraphElement = container.querySelector('custom-paragraph');
+          if (! paragraphElement) {
+            console.log(`No custom-paragraph found in container for paragraph index ${index}`);
+            return;
+          }
+          let hasNoLoadAttribute = paragraphElement.hasAttribute('no-load');
+          if(!hasNoLoadAttribute) {
+            console.log(`Paragraph ${index} already loaded, skipping observer setup: ${paragraphElement.id}`);
+            return;
+          }
+
+          // Check if this is the last item
+          const isLastItem = index === paragraphContainers.length - 1;
+
+          if (isLastItem) {
+            console.log(`Setting up LAST ITEM observer for paragraph ${index}: ${paragraphElement.id}`);
+            this.observeElementAsLast(container);
+          } else {
+            console.log(`Setting up regular observer for paragraph ${index}: ${paragraphElement.id}`);
+            this.observeElement(container);
+          }
+        });
+      });
+    });
+  }
+
+  initializeIntersectionObserver() {
+    // Create intersection observer with settings optimized for regular items
+    this.intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            console.log(`Paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            this.executeLazyLoading(entry.target);
+          }
+        });
+      },
+      {
+        root: null, // Use viewport as root
+        rootMargin: '0px 0px -100px 0px', // Reduced from -200px to -100px
+        threshold: [0, 0.1, 0.25], // Multiple thresholds to catch edge cases
+      }
+    );
+
+    // Create special observer for the last item with more lenient settings
+    this.lastItemObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            console.log(`Last paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            this.executeLazyLoading(entry.target);
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '50px 0px 50px 0px', // More lenient margins for last item
+        threshold: 0, // Any intersection triggers loading for last item
+      }
+    );
+  }
+
+  executeLazyLoading(element) {
+    if (element) {
+      const paragraphElement = element.querySelector('custom-paragraph');
+      if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
+        console.log(`Executing lazy load for paragraph ${paragraphElement.id}`);
+
+        // Mark container as loading to prevent cascade
+        element.classList.add('loading');
+
+        // Remove pending class to free reserved space
+        element.classList.remove('pending');
+
+        // Remove no-load attribute to trigger loading
+        paragraphElement.removeAttribute('no-load');
+
+        // Stop observing this element immediately from both observers
+        if (this.intersectionObserver) {
+          this.intersectionObserver.unobserve(element);
+        }
+        if (this.lastItemObserver) {
+          this.lastItemObserver.unobserve(element);
+        }
+        this.observedElements.delete(element);
+
+        // Mark as loaded after a short delay to allow content to load
+        setTimeout(() => {
+          element.classList.remove('loading');
+          element.classList.add('loaded');
+        }, 100);
+      } else {
+        console.log(`Skipping lazy load - paragraph already loaded or no-load not found`);
+      }
+    }
+  }
+
+  cleanupIntersectionObserver() {
+    if (this.intersectionObserver) {
+      this.intersectionObserver.disconnect();
+      this.intersectionObserver = null;
+    }
+    if (this.lastItemObserver) {
+      this.lastItemObserver.disconnect();
+      this.lastItemObserver = null;
+    }
+    this.observedElements.clear();
+  }
+
+  observeElement(element) {
+    if (this.intersectionObserver && element) {
+      this.intersectionObserver.observe(element);
+      this.observedElements.set(element, 'regular');
+    }
+  }
+
+  observeElementAsLast(element) {
+    if (this.lastItemObserver && element) {
+      this.lastItemObserver.observe(element);
+      this.observedElements.set(element, 'last');
+    }
+  }
+
+  // ==================================================
+  // Event Handlers
+  // ==================================================
+
+  _onParagraphLoaded = (event) => {
+    // - Only handle if we are waiting for a new paragraph
+    // - This also ensures the component will new proccess the event it has fired itself
+    if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
+      this.requestUpdate();
+      this.pendingNewParagraphId = null;
+    }
+  }
+
+  async handleIdChange(newId) {
+    if (!newId || newId === 'null') {
+      this.clearContent();
+    } else {
+      this.loading = true;
+      this.chapterData = null;
+      this.paragraphsData = [];
+      this.fetchAndDisplayChapter(newId);
+    }
   }
 
   handleShareClick() {
@@ -338,22 +319,45 @@ class CustomChapter extends LitElement {
       composed: true,
     }));
   }
+  // ==================================================
+  // Actions
+  // ==================================================
+
+  async fetchAndDisplayChapter(chapterId) {
+    if (!chapterId) return;
+
+    this.fireQueryEvent_Chapter(chapterId, (error, data) => {
+      if (error) {
+        console.error('Error fetching chapter data:', error);
+        this.loading = false;
+        return;
+      }
+
+      this.dispatchEvent(
+        new CustomEvent('loaded', {
+          detail: { chapterData: data },
+          bubbles: true,
+          composed: true,
+        })
+      );
+
+      this.chapterData = data;
+      this.paragraphsData = data.paragraphs || [];
+      this.loading = false;
+    });
+  }
+
+  clearContent() {
+    this.chapterData = null;
+    this.paragraphsData = [];
+    // Clean up any existing observations
+    this.cleanupIntersectionObserver();
+  }
 
   writeToClipboard(value) {
     navigator.clipboard.writeText(value).catch((err) => {
       console.error('Error copying text to clipboard:', err);
     });
-  }
-
-  fireQueryEvent_Chapter(chapterId, callback) {
-    const payload = { object: 'chapter', id: chapterId };
-    this.dispatchEvent(
-      new CustomEvent('query', {
-        detail: { payload, callback },
-        bubbles: true,
-        composed: true,
-      })
-    );
   }
 
   checkCreatePermission() {
@@ -368,16 +372,9 @@ class CustomChapter extends LitElement {
     }
   }
 
-  handleCreateParagraphClick = async () => {
-    // Fire a 'create' event with chapterId and storyId, and a callback
-    if (!this.chapterData) return;
-
-    const chapterId = this.chapterData.id;
-    const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
-    this.fireCreateEvent_Paragraph(chapterId, storyId);
-  };
-
-  // ======= Create Event ========
+  // ==================================================
+  // Query Events
+  // ==================================================
 
   fireCreateEvent_Paragraph(chapterId, storyId) {
     let eventDatail = {}
@@ -426,6 +423,26 @@ class CustomChapter extends LitElement {
       }
     }
   }
+
+  fireQueryEvent_Chapter(chapterId, callback) {
+    const payload = { object: 'chapter', id: chapterId };
+    this.dispatchEvent(
+      new CustomEvent('query', {
+        detail: { payload, callback },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  handleCreateParagraphClick = async () => {
+    // Fire a 'create' event with chapterId and storyId, and a callback
+    if (!this.chapterData) return;
+
+    const chapterId = this.chapterData.id;
+    const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
+    this.fireCreateEvent_Paragraph(chapterId, storyId);
+  };
 }
 
 customElements.define('custom-chapter', CustomChapter);
