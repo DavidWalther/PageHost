@@ -170,7 +170,7 @@ class CustomChapter extends LitElement {
   }
 
   getCurrentObservedChunkIndex() {
-    return this.getChunkIndex(0) + 1; // Start with chunk 1 (chunk 0 loads immediately)
+    return this.currentObservedChunkIndex;
   }
 
   // ==================================================
