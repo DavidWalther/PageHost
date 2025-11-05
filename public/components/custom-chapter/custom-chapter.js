@@ -239,39 +239,77 @@ class CustomChapter extends LitElement {
     );
   }
 
-  executeLazyLoading(element) {
-    if (element) {
-      const paragraphElement = element.querySelector('custom-paragraph');
-      if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-        console.log(`Executing lazy load for paragraph ${paragraphElement.id}`);
+  executeChunkLoading(observedElement) {
+    const chunkIndex = parseInt(observedElement.dataset.chunkIndex);
+    console.log(`Loading chunk ${chunkIndex}`);
 
-        // Mark container as loading to prevent cascade
-        element.classList.add('loading');
+    // Immediately set up observer for next chunk before loading current chunk
+    this.setupNextChunkObserver(chunkIndex + 1);
 
-        // Remove pending class to free reserved space
-        element.classList.remove('pending');
+    // Unobserve current element
+    this.intersectionObserver.unobserve(observedElement);
+    this.observedElements.delete(observedElement);
 
-        // Remove no-load attribute to trigger loading
-        paragraphElement.removeAttribute('no-load');
+    // Load all paragraphs in the current chunk
+    this.loadChunk(chunkIndex);
+  }
 
-        // Stop observing this element immediately from both observers
-        if (this.intersectionObserver) {
-          this.intersectionObserver.unobserve(element);
+  loadChunk(chunkIndex) {
+    const startIndex = this.getChunkStartIndex(chunkIndex);
+    const endIndex = this.getChunkEndIndex(chunkIndex);
+    
+    console.log(`Loading chunk ${chunkIndex}: paragraphs ${startIndex} to ${endIndex}`);
+
+    // Find all containers in this chunk and remove no-load attribute
+    const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+    
+    for (let i = startIndex; i <= endIndex; i++) {
+      if (paragraphContainers[i]) {
+        const container = paragraphContainers[i];
+        const paragraphElement = container.querySelector('custom-paragraph');
+        
+        if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
+          console.log(`Removing no-load from paragraph ${i}: ${paragraphElement.id}`);
+          
+          // Mark container as loading
+          container.classList.add('loading');
+          container.classList.remove('pending');
+          
+          // Remove no-load attribute to trigger loading
+          paragraphElement.removeAttribute('no-load');
+          
+          // Mark as loaded after delay
+          setTimeout(() => {
+            container.classList.remove('loading');
+            container.classList.add('loaded');
+          }, 100);
         }
-        if (this.lastItemObserver) {
-          this.lastItemObserver.unobserve(element);
-        }
-        this.observedElements.delete(element);
-
-        // Mark as loaded after a short delay to allow content to load
-        setTimeout(() => {
-          element.classList.remove('loading');
-          element.classList.add('loaded');
-        }, 100);
-      } else {
-        console.log(`Skipping lazy load - paragraph already loaded or no-load not found`);
       }
     }
+  }
+
+  setupNextChunkObserver(nextChunkIndex) {
+    // Check if next chunk exists
+    if (nextChunkIndex >= Math.ceil(this.paragraphsData.length / this.loadingChunkSize)) {
+      console.log(`No more chunks to observe (requested chunk ${nextChunkIndex})`);
+      return;
+    }
+
+    const endIndex = this.getChunkEndIndex(nextChunkIndex);
+    console.log(`Setting up observer for chunk ${nextChunkIndex} endpoint (paragraph ${endIndex})`);
+
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
+      const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+      const targetContainer = paragraphContainers[endIndex];
+      
+      if (targetContainer) {
+        this.observeElement(targetContainer);
+        this.currentObservedChunkIndex = nextChunkIndex;
+      } else {
+        console.error(`Could not find container for chunk ${nextChunkIndex} endpoint at index ${endIndex}`);
+      }
+    });
   }
 
   cleanupIntersectionObserver() {
