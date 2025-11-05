@@ -15,6 +15,7 @@ class CustomChapter extends LitElement {
     chapterData: { type: Object },
     paragraphsData: { type: Array },
     loading: { type: Boolean },
+    loadingChunkSize: { type: Number, attribute: 'loading-chunk-size' },
   };
 
   static styles = css`
@@ -98,6 +99,7 @@ class CustomChapter extends LitElement {
     this.chapterData = null;
     this.paragraphsData = [];
     this.loading = false;
+    this.loadingChunkSize = 10; // Default chunk size
     this.templatePromise = null;
     this.loadedMarkUp = null;
     this.pendingNewParagraphId = null; // Track the id of a paragraph being created
