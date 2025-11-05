@@ -182,40 +182,24 @@ class CustomChapter extends LitElement {
     this.cleanupIntersectionObserver();
     this.initializeIntersectionObserver();
 
+    // Reset to observe chunk 1 (chunk 0 loads immediately)
+    this.currentObservedChunkIndex = 1;
+
     // Use multiple animation frames to ensure DOM is fully rendered
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
         console.log(`Found ${paragraphContainers.length} paragraph containers`);
+        console.log(`Chunk size: ${this.loadingChunkSize}`);
 
-        paragraphContainers.forEach((container, index) => {
-          // Skip the first paragraph (index 0) as it loads immediately
-          if (index == 0) {
-            console.log(`Skipping first paragraph (index 0): ${container.querySelector('custom-paragraph')?.id}`);
-            return;
-          }
-          const paragraphElement = container.querySelector('custom-paragraph');
-          if (! paragraphElement) {
-            console.log(`No custom-paragraph found in container for paragraph index ${index}`);
-            return;
-          }
-          let hasNoLoadAttribute = paragraphElement.hasAttribute('no-load');
-          if(!hasNoLoadAttribute) {
-            console.log(`Paragraph ${index} already loaded, skipping observer setup: ${paragraphElement.id}`);
-            return;
-          }
+        // Check if we have more than one chunk
+        if (this.paragraphsData.length <= this.loadingChunkSize) {
+          console.log(`All paragraphs fit in first chunk, no observer needed`);
+          return;
+        }
 
-          // Check if this is the last item
-          const isLastItem = index === paragraphContainers.length - 1;
-
-          if (isLastItem) {
-            console.log(`Setting up LAST ITEM observer for paragraph ${index}: ${paragraphElement.id}`);
-            this.observeElementAsLast(container);
-          } else {
-            console.log(`Setting up regular observer for paragraph ${index}: ${paragraphElement.id}`);
-            this.observeElement(container);
-          }
-        });
+        // Set up observer for chunk 1 endpoint (second chunk)
+        this.setupNextChunkObserver(1);
       });
     });
   }
