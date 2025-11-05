@@ -109,8 +109,8 @@ class CustomChapter extends LitElement {
     this.templatePromise = null;
     this.loadedMarkUp = null;
     this.pendingNewParagraphId = null; // Track the id of a paragraph being created
-    this.intersectionObserver = null; // Intersection Observer for lazy loading
-    this.lastItemObserver = null; // Special observer for the last item
+    this.intersectionObserver = null; // Intersection Observer for chunk-based lazy loading
+    this.currentObservedChunkIndex = 1; // Track which chunk we're currently observing
     this.observedElements = new Map(); // Track observed elements
   }
 
@@ -221,37 +221,20 @@ class CustomChapter extends LitElement {
   }
 
   initializeIntersectionObserver() {
-    // Create intersection observer with settings optimized for regular items
+    // Create single intersection observer for chunk-based lazy loading
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            console.log(`Paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
-            this.executeLazyLoading(entry.target);
+            console.log(`Chunk endpoint is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            this.executeChunkLoading(entry.target);
           }
         });
       },
       {
         root: null, // Use viewport as root
-        rootMargin: '0px 0px -100px 0px', // Reduced from -200px to -100px
-        threshold: [0, 0.1, 0.25], // Multiple thresholds to catch edge cases
-      }
-    );
-
-    // Create special observer for the last item with more lenient settings
-    this.lastItemObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            console.log(`Last paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
-            this.executeLazyLoading(entry.target);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: '50px 0px 50px 0px', // More lenient margins for last item
-        threshold: 0, // Any intersection triggers loading for last item
+        rootMargin: '100px', // Aggressive preloading for chunk endpoints
+        threshold: 0, // Any intersection triggers loading
       }
     );
   }
@@ -296,24 +279,13 @@ class CustomChapter extends LitElement {
       this.intersectionObserver.disconnect();
       this.intersectionObserver = null;
     }
-    if (this.lastItemObserver) {
-      this.lastItemObserver.disconnect();
-      this.lastItemObserver = null;
-    }
     this.observedElements.clear();
   }
 
   observeElement(element) {
     if (this.intersectionObserver && element) {
       this.intersectionObserver.observe(element);
-      this.observedElements.set(element, 'regular');
-    }
-  }
-
-  observeElementAsLast(element) {
-    if (this.lastItemObserver && element) {
-      this.lastItemObserver.observe(element);
-      this.observedElements.set(element, 'last');
+      this.observedElements.set(element, 'chunk-endpoint');
     }
   }
 
