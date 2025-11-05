@@ -80,16 +80,22 @@ class CustomChapter extends LitElement {
       : this.paragraphsData;
 
     return paragraphs.map(
-      (paragraph, index) => html`
-        <div class="slds-col slds-p-bottom_small paragraph-container pending"
-             data-paragraph-id=${paragraph.id}>
-          <custom-paragraph
-            id=${paragraph.id}
-            data-name=${paragraph.name || ''}
-            ?no-load=${index > 0}
-          ></custom-paragraph>
-        </div>
-      `
+      (paragraph, index) => {
+        // First chunk loads immediately, others get no-load attribute
+        const shouldLazyLoad = !this.isItemInFirstChunk(index);
+        
+        return html`
+          <div class="slds-col slds-p-bottom_small paragraph-container pending"
+               data-paragraph-id=${paragraph.id}
+               data-chunk-index=${this.getChunkIndex(index)}>
+            <custom-paragraph
+              id=${paragraph.id}
+              data-name=${paragraph.name || ''}
+              ?no-load=${shouldLazyLoad}
+            ></custom-paragraph>
+          </div>
+        `;
+      }
     );
   }
 
