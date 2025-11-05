@@ -142,6 +142,32 @@ class CustomChapter extends LitElement {
   }
 
   // ==================================================
+  // Chunk Calculation Helper Methods
+  // ==================================================
+
+  getChunkIndex(itemIndex) {
+    return Math.floor(itemIndex / this.loadingChunkSize);
+  }
+
+  getChunkStartIndex(chunkIndex) {
+    return chunkIndex * this.loadingChunkSize;
+  }
+
+  getChunkEndIndex(chunkIndex) {
+    const calculatedEnd = (chunkIndex + 1) * this.loadingChunkSize - 1;
+    const actualEnd = Math.min(calculatedEnd, this.paragraphsData.length - 1);
+    return actualEnd;
+  }
+
+  isItemInFirstChunk(itemIndex) {
+    return this.getChunkIndex(itemIndex) === 0;
+  }
+
+  getCurrentObservedChunkIndex() {
+    return this.getChunkIndex(0) + 1; // Start with chunk 1 (chunk 0 loads immediately)
+  }
+
+  // ==================================================
   // Intersection Observer and Lazy Loading
   // ==================================================
 
