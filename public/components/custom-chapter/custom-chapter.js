@@ -189,14 +189,31 @@ class CustomChapter extends LitElement {
       return null;
     }
 
-    const endIndex = this.getChunkEndIndex(nextChunkIndex);
-    console.log(`Identifying observer target for chunk ${nextChunkIndex} endpoint (paragraph ${endIndex})`);
+    // Instead of observing the end of the next chunk, observe an element 
+    // that's earlier to trigger loading before user reaches the end
+    // We'll observe an element in the current loaded chunk at about 75% through
+    const currentChunkIndex = nextChunkIndex - 1;
+    const currentChunkStart = this.getChunkStartIndex(currentChunkIndex);
+    const currentChunkEnd = this.getChunkEndIndex(currentChunkIndex);
+    
+    // Find trigger point at 75% through current chunk
+    const chunkSize = currentChunkEnd - currentChunkStart + 1;
+    const triggerOffset = Math.floor(chunkSize * 0.75);
+    const triggerIndex = currentChunkStart + triggerOffset;
+    
+    console.log(`Identifying observer target for chunk ${nextChunkIndex} (trigger at 75% of current chunk ${currentChunkIndex}, paragraph ${triggerIndex})`);
 
     const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
-    const targetContainer = paragraphContainers[endIndex];
+    const targetContainer = paragraphContainers[triggerIndex];
     
     if (!targetContainer) {
-      console.error(`Could not find container for chunk ${nextChunkIndex} endpoint at index ${endIndex}`);
+      console.error(`Could not find container for trigger at index ${triggerIndex}`);
+      // Fallback to end of current chunk if 75% point doesn't exist
+      const fallbackContainer = paragraphContainers[currentChunkEnd];
+      if (fallbackContainer) {
+        console.log(`Using fallback target at end of chunk ${currentChunkIndex} (paragraph ${currentChunkEnd})`);
+        return fallbackContainer;
+      }
       return null;
     }
 
@@ -217,22 +234,34 @@ class CustomChapter extends LitElement {
     const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
     const elementsToLoad = [];
     
+    console.log(`Total containers found: ${paragraphContainers.length}`);
+    
     for (let i = startIndex; i <= endIndex; i++) {
       if (paragraphContainers[i]) {
         const container = paragraphContainers[i];
         const paragraphElement = container.querySelector('custom-paragraph');
         
-        if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-          console.log(`Collecting paragraph ${i} for loading: ${paragraphElement.id}`);
-          elementsToLoad.push({
-            container: container,
-            paragraph: paragraphElement,
-            index: i
-          });
+        if (paragraphElement) {
+          const hasNoLoad = paragraphElement.hasAttribute('no-load');
+          console.log(`Paragraph ${i} (${paragraphElement.id}): has no-load = ${hasNoLoad}`);
+          
+          if (hasNoLoad) {
+            console.log(`✓ Collecting paragraph ${i} for loading: ${paragraphElement.id}`);
+            elementsToLoad.push({
+              container: container,
+              paragraph: paragraphElement,
+              index: i
+            });
+          }
+        } else {
+          console.log(`No paragraph element found in container ${i}`);
         }
+      } else {
+        console.log(`No container found at index ${i}`);
       }
     }
 
+    console.log(`Collected ${elementsToLoad.length} paragraphs to load for chunk ${chunkIndex}`);
     return elementsToLoad;
   }
 
@@ -321,28 +350,29 @@ class CustomChapter extends LitElement {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            console.log(`Chunk endpoint is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            console.log(`Chunk trigger is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
             this.executeChunkLoading(entry.target);
           }
         });
       },
       {
         root: null, // Use viewport as root
-        rootMargin: '100px', // Aggressive preloading for chunk endpoints
+        rootMargin: '200px', // Even more aggressive preloading for better UX
         threshold: 0, // Any intersection triggers loading
       }
     );
   }
 
   executeChunkLoading(observedElement) {
-    const chunkIndex = parseInt(observedElement.dataset.chunkIndex);
-    console.log(`Loading chunk ${chunkIndex}`);
+    const triggerChunkIndex = parseInt(observedElement.dataset.chunkIndex);
+    const chunkToLoad = triggerChunkIndex + 1; // Load the NEXT chunk when trigger element is intersecting
+    console.log(`Trigger element from chunk ${triggerChunkIndex} intersecting - loading chunk ${chunkToLoad}`);
 
     // 1. Identify the next element that should be observed
-    const nextObserverTarget = this.identifyNextObserverTarget(chunkIndex + 1);
+    const nextObserverTarget = this.identifyNextObserverTarget(chunkToLoad + 1);
     
-    // 2. Collect all paragraph elements that need to be loaded in current chunk
-    const elementsToLoad = this.collectParagraphsToLoad(chunkIndex);
+    // 2. Collect all paragraph elements that need to be loaded in the target chunk
+    const elementsToLoad = this.collectParagraphsToLoad(chunkToLoad);
     
     // 3. Unobserve the current element and clean up tracking
     this.unobserveCurrentElement(observedElement);
@@ -358,7 +388,7 @@ class CustomChapter extends LitElement {
       // Use requestAnimationFrame to ensure DOM is ready for next observation
       requestAnimationFrame(() => {
         this.observeElement(nextObserverTarget);
-        this.currentObservedChunkIndex = chunkIndex + 1;
+        this.currentObservedChunkIndex = chunkToLoad + 1;
       });
     }
   }
