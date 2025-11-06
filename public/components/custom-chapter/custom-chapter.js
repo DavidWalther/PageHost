@@ -134,6 +134,9 @@ class CustomChapter extends LitElement {
     this.cleanupIntersectionObserver();
   }
 
+  firstUpdated() {
+  }
+
   updated(changedProperties) {
     if (changedProperties.has('id')) {
       this.handleIdChange(this.id);
@@ -345,6 +348,14 @@ class CustomChapter extends LitElement {
           this.observeElement(initialObserverTarget);
           this.currentObservedChunkIndex = 1;
         }
+
+        // remove 'pending' class of the first chunk immediately
+        paragraphContainers.forEach((container, index) => {
+          if (this.isItemInFirstChunk(index)) {
+            container.classList.remove('pending');
+            container.classList.add('loaded');
+          };
+        });
       });
     });
   }
