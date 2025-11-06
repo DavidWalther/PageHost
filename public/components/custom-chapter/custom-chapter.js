@@ -231,35 +231,40 @@ class CustomChapter extends LitElement {
     
     console.log(`Collecting paragraphs for chunk ${chunkIndex}: paragraphs ${startIndex} to ${endIndex}`);
 
-    const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+    const paragraphContainers = Array.from(this.shadowRoot.querySelectorAll('.paragraph-container'));
     const elementsToLoad = [];
     
     console.log(`Total containers found: ${paragraphContainers.length}`);
-    
-    for (let i = startIndex; i <= endIndex; i++) {
-      if (paragraphContainers[i]) {
-        const container = paragraphContainers[i];
-        const paragraphElement = container.querySelector('custom-paragraph');
-        
-        if (paragraphElement) {
-          const hasNoLoad = paragraphElement.hasAttribute('no-load');
-          console.log(`Paragraph ${i} (${paragraphElement.id}): has no-load = ${hasNoLoad}`);
-          
-          if (hasNoLoad) {
-            console.log(`✓ Collecting paragraph ${i} for loading: ${paragraphElement.id}`);
-            elementsToLoad.push({
-              container: container,
-              paragraph: paragraphElement,
-              index: i
-            });
-          }
-        } else {
-          console.log(`No paragraph element found in container ${i}`);
-        }
-      } else {
-        console.log(`No container found at index ${i}`);
-      }
+
+    // Filter containers to only those in the specified chunk range
+    let filteredParagraphContainers = paragraphContainers.filter((container, index) => {
+      return index >= startIndex && index <= endIndex;
+    });
+    if (filteredParagraphContainers.length === 0) {
+      console.log(`No containers found in chunk ${chunkIndex}`);
+      return elementsToLoad;
     }
+
+    // Further filter to only those that still have no-load attribute
+    filteredParagraphContainers = filteredParagraphContainers.filter((container, i) => {
+      const paragraphElement = container.querySelector('custom-paragraph');
+      return paragraphElement && paragraphElement.hasAttribute('no-load');
+    });
+
+    if (filteredParagraphContainers.length === 0) {
+      console.log(`No paragraphs with no-load found in chunk ${chunkIndex}`);
+      return elementsToLoad;
+    }
+
+    // Map filtered containers to elements to load
+    filteredParagraphContainers.forEach((container, i) => {
+      const paragraphElement = container.querySelector('custom-paragraph');
+      elementsToLoad.push({
+        container: container,
+        paragraph: paragraphElement,
+        index: i
+      });
+    });
 
     console.log(`Collected ${elementsToLoad.length} paragraphs to load for chunk ${chunkIndex}`);
     return elementsToLoad;
