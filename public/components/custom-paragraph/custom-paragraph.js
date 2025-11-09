@@ -6,6 +6,7 @@ class CustomParagraph extends LitElement {
   static properties = {
     id: { type: String },
     _showDelete: { type: Boolean },
+    noLoad: { type: Boolean, attribute: 'no-load' },
   };
 
   static styles = css`
@@ -64,9 +65,9 @@ class CustomParagraph extends LitElement {
     this._paragraphData = null; // Data to be displayed in the component
     this.editMode = false; // Internal flag for edit mode
     this.activeTab = 'text'; // Default active tab
-    this.spinner = true; // Spinner visible by default
     this.draftMode = false; // Track if user is in draft mode
     this._showDelete = false;
+    this.noLoad = false;
   }
 
   get hasDraft() {
@@ -79,15 +80,44 @@ class CustomParagraph extends LitElement {
     }
   }
 
+  get spinner() {
+    return this.noLoad === false && this._paragraphData === null;
+  }
+
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this.spinner = true; // Show spinner when loading starts
-    this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
-    
+
+    // Only load data if no-load is not set
+    if (!this.noLoad) {
+      this.loadParagraphData();
+    }
+
     // Add event listeners for publishing events
     this.addEventListener('published', this.handlePublishedEvent.bind(this));
     this.addEventListener('unpublished', this.handleUnpublishedEvent.bind(this));
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+
+    // If no-load attribute was removed, start loading
+    if (changedProperties.has('noLoad')) {
+      const previousValue = changedProperties.get('noLoad');
+      console.log(`noLoad changed from ${previousValue} to ${this.noLoad} for paragraph ${this.id}`);
+
+      if (previousValue === true && this.noLoad === false) {
+        console.log(`Triggering load for paragraph ${this.id} due to no-load removal`);
+        this.loadParagraphData();
+      }
+    }
+  }
+
+  loadParagraphData() {
+    if (!this.id || this._paragraphData) return; // Don't load if already loaded
+
+    console.log(`Loading paragraph data for ${this.id}`);
+    this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
   }
 
   render() {
@@ -107,6 +137,16 @@ class CustomParagraph extends LitElement {
           content = this.renderHtmlReadonly(htmlcontent);
         }
       }
+    } else if (this.noLoad) {
+      // Show placeholder for lazy-loaded content with realistic size
+      content = html`
+        <div class="slds-box " style="min-height: 80px; display: flex; align-items: center; justify-content: center;">
+          <div style="text-align: center;">
+            <slds-spinner size="x-small"></slds-spinner>
+            <p class="slds-text-color_weak slds-m-top_x-small">Loading paragraph...</p>
+          </div>
+        </div>
+      `;
     }
     return html`
       <slds-spinner size="x-small" ?hidden=${!this.spinner}></slds-spinner>
@@ -485,12 +525,10 @@ class CustomParagraph extends LitElement {
   queryEventCallback_Paragraph(error, data) {
     if (error) {
       console.error(error);
-      this.spinner = false;
       return;
     }
     this._paragraphData = data;
     this._paragraphDataBackup = { ...data }; // Backup the original data
-    this.spinner = false; // Hide spinner when data is loaded
     // Dispatch loaded event
     this.dispatchEvent(
       new CustomEvent('loaded', {

@@ -3,6 +3,10 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.5.0
+
+- implement lazy loading
+
 ### 3.4.0 
 
 - create publishing component
