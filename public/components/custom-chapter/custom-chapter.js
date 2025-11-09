@@ -106,8 +106,6 @@ class CustomChapter extends LitElement {
     this.paragraphsData = [];
     this.loading = false;
     this.loadingChunkSize = 10; // Default chunk size
-    this.templatePromise = null;
-    this.loadedMarkUp = null;
     this.pendingNewParagraphId = null; // Track the id of a paragraph being created
     this.intersectionObserver = null; // Intersection Observer for chunk-based lazy loading
     this.currentObservedChunkIndex = 1; // Track which chunk we're currently observing
@@ -132,9 +130,6 @@ class CustomChapter extends LitElement {
     this.removeEventListener('loaded', this._onParagraphLoaded, true);
     // Clean up intersection observer
     this.cleanupIntersectionObserver();
-  }
-
-  firstUpdated() {
   }
 
   updated(changedProperties) {
@@ -170,10 +165,6 @@ class CustomChapter extends LitElement {
 
   isItemInFirstChunk(itemIndex) {
     return this.getChunkIndex(itemIndex) === 0;
-  }
-
-  getCurrentObservedChunkIndex() {
-    return this.currentObservedChunkIndex;
   }
 
   // ==================================================
