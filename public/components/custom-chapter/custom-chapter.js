@@ -15,6 +15,7 @@ class CustomChapter extends LitElement {
     chapterData: { type: Object },
     paragraphsData: { type: Array },
     loading: { type: Boolean },
+    loadingChunkSize: { type: Number, attribute: 'loading-chunk-size' },
   };
 
   static styles = css`
@@ -79,16 +80,22 @@ class CustomChapter extends LitElement {
       : this.paragraphsData;
 
     return paragraphs.map(
-      (paragraph, index) => html`
-        <div class="slds-col slds-p-bottom_small paragraph-container pending"
-             data-paragraph-id=${paragraph.id}>
-          <custom-paragraph
-            id=${paragraph.id}
-            data-name=${paragraph.name || ''}
-            ?no-load=${index > 0}
-          ></custom-paragraph>
-        </div>
-      `
+      (paragraph, index) => {
+        // First chunk loads immediately, others get no-load attribute
+        const shouldLazyLoad = !this.isItemInFirstChunk(index);
+        
+        return html`
+          <div class="slds-col slds-p-bottom_small paragraph-container pending"
+               data-paragraph-id=${paragraph.id}
+               data-chunk-index=${this.getChunkIndex(index)}>
+            <custom-paragraph
+              id=${paragraph.id}
+              data-name=${paragraph.name || ''}
+              ?no-load=${shouldLazyLoad}
+            ></custom-paragraph>
+          </div>
+        `;
+      }
     );
   }
 
@@ -98,11 +105,10 @@ class CustomChapter extends LitElement {
     this.chapterData = null;
     this.paragraphsData = [];
     this.loading = false;
-    this.templatePromise = null;
-    this.loadedMarkUp = null;
+    this.loadingChunkSize = 10; // Default chunk size
     this.pendingNewParagraphId = null; // Track the id of a paragraph being created
-    this.intersectionObserver = null; // Intersection Observer for lazy loading
-    this.lastItemObserver = null; // Special observer for the last item
+    this.intersectionObserver = null; // Intersection Observer for chunk-based lazy loading
+    this.currentObservedChunkIndex = 1; // Track which chunk we're currently observing
     this.observedElements = new Map(); // Track observed elements
   }
 
@@ -140,120 +146,257 @@ class CustomChapter extends LitElement {
   }
 
   // ==================================================
+  // Chunk Calculation Helper Methods
+  // ==================================================
+
+  getChunkIndex(itemIndex) {
+    return Math.floor(itemIndex / this.loadingChunkSize);
+  }
+
+  getChunkStartIndex(chunkIndex) {
+    return chunkIndex * this.loadingChunkSize;
+  }
+
+  getChunkEndIndex(chunkIndex) {
+    const calculatedEnd = (chunkIndex + 1) * this.loadingChunkSize - 1;
+    const actualEnd = Math.min(calculatedEnd, this.paragraphsData.length - 1);
+    return actualEnd;
+  }
+
+  isItemInFirstChunk(itemIndex) {
+    return this.getChunkIndex(itemIndex) === 0;
+  }
+
+  // ==================================================
   // Intersection Observer and Lazy Loading
   // ==================================================
+
+  /**
+   * Identifies the next element that should be observed for intersection
+   * @param {number} nextChunkIndex - The index of the next chunk to observe
+   * @returns {Element|null} The DOM element to observe, or null if no more chunks
+   */
+  identifyNextObserverTarget(nextChunkIndex) {
+    // Check if next chunk exists
+    if (nextChunkIndex >= Math.ceil(this.paragraphsData.length / this.loadingChunkSize)) {
+      console.log(`No more chunks to observe (requested chunk ${nextChunkIndex})`);
+      return null;
+    }
+
+    // Instead of observing the end of the next chunk, observe an element 
+    // that's earlier to trigger loading before user reaches the end
+    // We'll observe an element in the current loaded chunk at about 75% through
+    const currentChunkIndex = nextChunkIndex - 1;
+    const currentChunkStart = this.getChunkStartIndex(currentChunkIndex);
+    const currentChunkEnd = this.getChunkEndIndex(currentChunkIndex);
+    
+    // Find trigger point at 75% through current chunk
+    const chunkSize = currentChunkEnd - currentChunkStart + 1;
+    const triggerOffset = Math.floor(chunkSize * 0.75);
+    const triggerIndex = currentChunkStart + triggerOffset;
+    
+    console.log(`Identifying observer target for chunk ${nextChunkIndex} (trigger at 75% of current chunk ${currentChunkIndex}, paragraph ${triggerIndex})`);
+
+    const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+    const targetContainer = paragraphContainers[triggerIndex];
+    
+    if (!targetContainer) {
+      console.error(`Could not find container for trigger at index ${triggerIndex}`);
+      // Fallback to end of current chunk if 75% point doesn't exist
+      const fallbackContainer = paragraphContainers[currentChunkEnd];
+      if (fallbackContainer) {
+        console.log(`Using fallback target at end of chunk ${currentChunkIndex} (paragraph ${currentChunkEnd})`);
+        return fallbackContainer;
+      }
+      return null;
+    }
+
+    return targetContainer;
+  }
+
+  /**
+   * Collects all paragraph elements in the specified chunk that need to be loaded
+   * @param {number} chunkIndex - The index of the chunk to collect paragraphs from
+   * @returns {Array} Array of objects containing container and paragraph elements to load
+   */
+  collectParagraphsToLoad(chunkIndex) {
+    const startIndex = this.getChunkStartIndex(chunkIndex);
+    const endIndex = this.getChunkEndIndex(chunkIndex);
+    
+    console.log(`Collecting paragraphs for chunk ${chunkIndex}: paragraphs ${startIndex} to ${endIndex}`);
+
+    const paragraphContainers = Array.from(this.shadowRoot.querySelectorAll('.paragraph-container'));
+    const elementsToLoad = [];
+    
+    console.log(`Total containers found: ${paragraphContainers.length}`);
+
+    // Filter containers to only those in the specified chunk range
+    let filteredParagraphContainers = paragraphContainers.filter((container, index) => {
+      return index >= startIndex && index <= endIndex;
+    });
+    if (filteredParagraphContainers.length === 0) {
+      console.log(`No containers found in chunk ${chunkIndex}`);
+      return elementsToLoad;
+    }
+
+    // Further filter to only those that still have no-load attribute
+    filteredParagraphContainers = filteredParagraphContainers.filter((container, i) => {
+      const paragraphElement = container.querySelector('custom-paragraph');
+      return paragraphElement && paragraphElement.hasAttribute('no-load');
+    });
+
+    if (filteredParagraphContainers.length === 0) {
+      console.log(`No paragraphs with no-load found in chunk ${chunkIndex}`);
+      return elementsToLoad;
+    }
+
+    // Map filtered containers to elements to load
+    filteredParagraphContainers.forEach((container, i) => {
+      const paragraphElement = container.querySelector('custom-paragraph');
+      elementsToLoad.push({
+        container: container,
+        paragraph: paragraphElement,
+        index: i
+      });
+    });
+
+    console.log(`Collected ${elementsToLoad.length} paragraphs to load for chunk ${chunkIndex}`);
+    return elementsToLoad;
+  }
+
+  /**
+   * Unobserves the current intersection target element and cleans up tracking
+   * @param {Element} observedElement - The element that triggered the intersection
+   * @returns {void}
+   */
+  unobserveCurrentElement(observedElement) {
+    if (this.intersectionObserver && observedElement) {
+      this.intersectionObserver.unobserve(observedElement);
+      this.observedElements.delete(observedElement);
+      console.log('Unobserved element:', observedElement);
+    }
+  }
+
+  /**
+   * Removes no-load attributes from paragraph elements to trigger their loading
+   * @param {Array} elementsToLoad - Array of objects containing container and paragraph elements
+   * @returns {void}
+   */
+  removeParagraphNoLoadAttributes(elementsToLoad) {
+    elementsToLoad.forEach(({ paragraph, index }) => {
+      if (paragraph && paragraph.hasAttribute('no-load')) {
+        console.log(`Removing no-load from paragraph ${index}: ${paragraph.id}`);
+        paragraph.removeAttribute('no-load');
+      }
+    });
+  }
+
+  /**
+   * Updates container CSS classes to reflect the current loading state
+   * @param {Array} elementsToLoad - Array of objects containing container and paragraph elements
+   * @returns {void}
+   */
+  updateContainerClasses(elementsToLoad) {
+    elementsToLoad.forEach(({ container }) => {
+      if (container) {
+        // Mark container as loading
+        container.classList.add('loading');
+        container.classList.remove('pending');
+        
+        // Mark as loaded after delay
+        setTimeout(() => {
+          container.classList.remove('loading');
+          container.classList.add('loaded');
+        }, 100);
+      }
+    });
+  }
 
   setupParagraphObserving() {
     // Clean up any existing observations first
     this.cleanupIntersectionObserver();
     this.initializeIntersectionObserver();
 
+    // Reset to observe chunk 1 (chunk 0 loads immediately)
+    this.currentObservedChunkIndex = 1;
+
     // Use multiple animation frames to ensure DOM is fully rendered
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
         console.log(`Found ${paragraphContainers.length} paragraph containers`);
+        console.log(`Chunk size: ${this.loadingChunkSize}`);
 
+        // Check if we have more than one chunk
+        if (this.paragraphsData.length <= this.loadingChunkSize) {
+          console.log(`All paragraphs fit in first chunk, no observer needed`);
+          return;
+        }
+
+        // Set up observer for chunk 1 endpoint (second chunk)
+        const initialObserverTarget = this.identifyNextObserverTarget(1);
+        if (initialObserverTarget) {
+          this.observeElement(initialObserverTarget);
+          this.currentObservedChunkIndex = 1;
+        }
+
+        // remove 'pending' class of the first chunk immediately
         paragraphContainers.forEach((container, index) => {
-          // Skip the first paragraph (index 0) as it loads immediately
-          if (index == 0) {
-            console.log(`Skipping first paragraph (index 0): ${container.querySelector('custom-paragraph')?.id}`);
-            return;
-          }
-          const paragraphElement = container.querySelector('custom-paragraph');
-          if (! paragraphElement) {
-            console.log(`No custom-paragraph found in container for paragraph index ${index}`);
-            return;
-          }
-          let hasNoLoadAttribute = paragraphElement.hasAttribute('no-load');
-          if(!hasNoLoadAttribute) {
-            console.log(`Paragraph ${index} already loaded, skipping observer setup: ${paragraphElement.id}`);
-            return;
-          }
-
-          // Check if this is the last item
-          const isLastItem = index === paragraphContainers.length - 1;
-
-          if (isLastItem) {
-            console.log(`Setting up LAST ITEM observer for paragraph ${index}: ${paragraphElement.id}`);
-            this.observeElementAsLast(container);
-          } else {
-            console.log(`Setting up regular observer for paragraph ${index}: ${paragraphElement.id}`);
-            this.observeElement(container);
-          }
+          if (this.isItemInFirstChunk(index)) {
+            container.classList.remove('pending');
+            container.classList.add('loaded');
+          };
         });
       });
     });
   }
 
   initializeIntersectionObserver() {
-    // Create intersection observer with settings optimized for regular items
+    // Create single intersection observer for chunk-based lazy loading
     this.intersectionObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            console.log(`Paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
-            this.executeLazyLoading(entry.target);
+            console.log(`Chunk trigger is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            this.executeChunkLoading(entry.target);
           }
         });
       },
       {
         root: null, // Use viewport as root
-        rootMargin: '0px 0px -100px 0px', // Reduced from -200px to -100px
-        threshold: [0, 0.1, 0.25], // Multiple thresholds to catch edge cases
-      }
-    );
-
-    // Create special observer for the last item with more lenient settings
-    this.lastItemObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            console.log(`Last paragraph container is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
-            this.executeLazyLoading(entry.target);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: '50px 0px 50px 0px', // More lenient margins for last item
-        threshold: 0, // Any intersection triggers loading for last item
+        rootMargin: '200px', // Even more aggressive preloading for better UX
+        threshold: 0, // Any intersection triggers loading
       }
     );
   }
 
-  executeLazyLoading(element) {
-    if (element) {
-      const paragraphElement = element.querySelector('custom-paragraph');
-      if (paragraphElement && paragraphElement.hasAttribute('no-load')) {
-        console.log(`Executing lazy load for paragraph ${paragraphElement.id}`);
+  executeChunkLoading(observedElement) {
+    const triggerChunkIndex = parseInt(observedElement.dataset.chunkIndex);
+    const chunkToLoad = triggerChunkIndex + 1; // Load the NEXT chunk when trigger element is intersecting
+    console.log(`Trigger element from chunk ${triggerChunkIndex} intersecting - loading chunk ${chunkToLoad}`);
 
-        // Mark container as loading to prevent cascade
-        element.classList.add('loading');
+    // 1. Identify the next element that should be observed
+    const nextObserverTarget = this.identifyNextObserverTarget(chunkToLoad + 1);
+    
+    // 2. Collect all paragraph elements that need to be loaded in the target chunk
+    const elementsToLoad = this.collectParagraphsToLoad(chunkToLoad);
+    
+    // 3. Unobserve the current element and clean up tracking
+    this.unobserveCurrentElement(observedElement);
+    
+    // 4. Remove no-load attributes from collected paragraphs to trigger loading
+    this.removeParagraphNoLoadAttributes(elementsToLoad);
+    
+    // 5. Update container classes to reflect loading state
+    this.updateContainerClasses(elementsToLoad);
 
-        // Remove pending class to free reserved space
-        element.classList.remove('pending');
-
-        // Remove no-load attribute to trigger loading
-        paragraphElement.removeAttribute('no-load');
-
-        // Stop observing this element immediately from both observers
-        if (this.intersectionObserver) {
-          this.intersectionObserver.unobserve(element);
-        }
-        if (this.lastItemObserver) {
-          this.lastItemObserver.unobserve(element);
-        }
-        this.observedElements.delete(element);
-
-        // Mark as loaded after a short delay to allow content to load
-        setTimeout(() => {
-          element.classList.remove('loading');
-          element.classList.add('loaded');
-        }, 100);
-      } else {
-        console.log(`Skipping lazy load - paragraph already loaded or no-load not found`);
-      }
+    // Set up observer for next chunk if target was found
+    if (nextObserverTarget) {
+      // Use requestAnimationFrame to ensure DOM is ready for next observation
+      requestAnimationFrame(() => {
+        this.observeElement(nextObserverTarget);
+        this.currentObservedChunkIndex = chunkToLoad + 1;
+      });
     }
   }
 
@@ -262,24 +405,13 @@ class CustomChapter extends LitElement {
       this.intersectionObserver.disconnect();
       this.intersectionObserver = null;
     }
-    if (this.lastItemObserver) {
-      this.lastItemObserver.disconnect();
-      this.lastItemObserver = null;
-    }
     this.observedElements.clear();
   }
 
   observeElement(element) {
     if (this.intersectionObserver && element) {
       this.intersectionObserver.observe(element);
-      this.observedElements.set(element, 'regular');
-    }
-  }
-
-  observeElementAsLast(element) {
-    if (this.lastItemObserver && element) {
-      this.lastItemObserver.observe(element);
-      this.observedElements.set(element, 'last');
+      this.observedElements.set(element, 'chunk-endpoint');
     }
   }
 
