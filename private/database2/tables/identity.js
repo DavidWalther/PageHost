@@ -1,7 +1,7 @@
 class TableIdentity {
   constructor() {
     this.tableName = 'identity';
-    this.tableFields = ['id', 'recordnumber', 'key', 'active', 'createddate'];
+    this.tableFields = ['id', 'recordnumber', 'key', 'active', 'createddate', 'applicationincluded', 'applicationexcluded'];
     this.tableKeyPrefix = '000i';
   }
 

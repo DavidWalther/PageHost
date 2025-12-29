@@ -38,6 +38,7 @@ let mockActionGetExecute = jest.fn().mockResolvedValue([
 let mockActionConditionId = jest.fn().mockReturnThis();
 let mockActionConditionApplicationKey = jest.fn().mockReturnThis();
 let mockActionConditionPublishDate = jest.fn().mockReturnThis();
+let mockActionConditions = jest.fn().mockReturnThis();
 let mockActionOrderDirection = jest.fn().mockReturnThis();
 let mockActionRightTableSortField = jest.fn().mockReturnThis();
 let mockActionRightTableSortDirection = jest.fn().mockReturnThis();
@@ -53,6 +54,7 @@ ActionGet.mockImplementation(() => {
     setRightOrderDirection: mockActionRightTableSortDirection,
     setConditionId: mockActionConditionId,
     setConditionPublishDate: mockActionConditionPublishDate,
+    setConditions: mockActionConditions,
     setOrderDirection: mockActionOrderDirection,
     setConditionApplicationKey: mockActionConditionApplicationKey,
     setLeftJoin: jest.fn().mockReturnThis()
@@ -200,6 +202,44 @@ describe('DataStorage', () => {
         expect(result.parent.child1).toBe('value1');
         expect(result.parent.child2).toBe('value2');
         expect(result.singleLevel).toBe('singleValue');
+      });
+    });
+
+    it('queryIdentityByKey should call ActionGet with custom conditions and DataCleaner', async () => {
+      mockActionGetExecute.mockResolvedValue([
+        { id: '000i123', key: 'user@example.com', active: true, recordnumber: 1, createddate: '2023-01-01' }
+      ]);
+
+      dataStorage.setConditionApplicationKey('testApplication');
+      let queryPromise = dataStorage.queryIdentityByKey('user@example.com');
+
+      expect(dataStorage).toBeInstanceOf(DataStorage);
+      expect(queryPromise).toBeInstanceOf(Promise);
+      queryPromise.then((result) => {
+        expect(ActionGet).toHaveBeenCalled();
+        expect(mockActionConditions).toHaveBeenCalledWith(["key = 'user@example.com'", "active = true"]);
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(dataCleanerSpy).toHaveBeenCalled();
+        expect(result).toBeTruthy();
+        expect(result.id).toBe('000i123');
+        expect(result.key).toBe('user@example.com');
+        expect(result.active).toBe(true);
+      });
+    });
+
+    it('queryIdentityByKey should return empty object when no identity found', async () => {
+      mockActionGetExecute.mockResolvedValue([]);
+
+      dataStorage.setConditionApplicationKey('testApplication');
+      let queryPromise = dataStorage.queryIdentityByKey('nonexistent@example.com');
+
+      expect(dataStorage).toBeInstanceOf(DataStorage);
+      expect(queryPromise).toBeInstanceOf(Promise);
+      queryPromise.then((result) => {
+        expect(ActionGet).toHaveBeenCalled();
+        expect(mockActionConditions).toHaveBeenCalledWith(["key = 'nonexistent@example.com'", "active = true"]);
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(result).toEqual({});
       });
     });
   });

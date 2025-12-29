@@ -103,6 +103,10 @@ class DataFacadeSync {
         return this.getChapterWithoutCache(parameterObject);
       }
     }
+    if(parameterObject.request.table == 'identity') {
+      // Identity queries always bypass cache for data freshness
+      return this.getIdentityByKeyWithoutCache(parameterObject);
+    }
   }
 
   async updateData(data) {
@@ -347,6 +351,21 @@ class DataFacadeSync {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No chapter in database` });
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Chapter found in database` });
+    }
+    return product;
+  }
+
+  async getIdentityByKeyWithoutCache(parameterObject) {
+    let userKey = parameterObject?.request?.key;
+    const LOCATION = 'DataFacadeSync.getIdentityByKeyWithoutCache';
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying identity by key for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+    let product = await dataStorage.queryIdentityByKey(userKey);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No identity found in database for key: ${userKey}` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Identity found in database for key: ${userKey}` });
     }
     return product;
   }
