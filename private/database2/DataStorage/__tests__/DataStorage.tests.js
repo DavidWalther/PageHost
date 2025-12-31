@@ -42,6 +42,7 @@ let mockActionConditions = jest.fn().mockReturnThis();
 let mockActionOrderDirection = jest.fn().mockReturnThis();
 let mockActionRightTableSortField = jest.fn().mockReturnThis();
 let mockActionRightTableSortDirection = jest.fn().mockReturnThis();
+let mockActionCustomConditions = jest.fn().mockReturnThis();
 ActionGet.mockImplementation(() => {
   return {
     execute: mockActionGetExecute,
@@ -55,6 +56,7 @@ ActionGet.mockImplementation(() => {
     setConditionId: mockActionConditionId,
     setConditionPublishDate: mockActionConditionPublishDate,
     setConditions: mockActionConditions,
+    setCustomConditions: mockActionCustomConditions,
     setOrderDirection: mockActionOrderDirection,
     setConditionApplicationKey: mockActionConditionApplicationKey,
     setLeftJoin: jest.fn().mockReturnThis()
@@ -69,6 +71,7 @@ describe('DataStorage', () => {
       dataCleanerSpy = jest.spyOn(DataCleaner.prototype, 'removeApplicationKeys');
       PostgresActions.mockClear();
       ActionGet.mockClear();
+      mockActionCustomConditions.mockClear();
       dataStorage = new DataStorage(MOCK_ENVIRONMENT);
       process.env = MOCK_ENVIRONMENT;
   });
@@ -217,7 +220,9 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditions).toHaveBeenCalledWith(["key = 'user@example.com'", "active = true"]);
+        expect(mockActionCustomConditions).toHaveBeenCalledTimes(2);
+        expect(mockActionCustomConditions.mock.calls[0][0]).toBe("key = 'user@example.com'");
+        expect(mockActionCustomConditions.mock.calls[1][0]).toBe("active = true");
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
         expect(dataCleanerSpy).toHaveBeenCalled();
         expect(result).toBeTruthy();
@@ -237,7 +242,9 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditions).toHaveBeenCalledWith(["key = 'nonexistent@example.com'", "active = true"]);
+        expect(mockActionCustomConditions).toHaveBeenCalledTimes(2);
+        expect(mockActionCustomConditions.mock.calls[0][0]).toBe("key = 'nonexistent@example.com'");
+        expect(mockActionCustomConditions.mock.calls[1][0]).toBe("active = true");
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
         expect(result).toEqual({});
       });

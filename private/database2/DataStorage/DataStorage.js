@@ -260,7 +260,8 @@ class DataStorage {
       .setPgConnector(this.pgConnector)
       .setTableName(tableIdentity.tableName)
       .setTableFields(tableIdentity.tableFields)
-      .setConditions([`key = '${userKey}'`, `active = true`])
+      .setCustomConditions(`key = '${userKey}'`)
+      .setCustomConditions(`active = true`)
       .setConditionApplicationKey(this.applicationKey);
       
       actionGet.execute().then((result) => {
