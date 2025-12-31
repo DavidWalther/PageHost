@@ -306,4 +306,39 @@ describe('SQL-Actions', () => {
       });
     });
   });
+
+  describe('\'setCustomCondition\' creates proper SQL statement', () => {
+    it('without a right table', () => {
+      const actionGet = new ActionGet();
+      let tableStory = new TableStory();
+      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
+      actionGet.setTable(tableStory);
+      actionGet.setCustomConditions('Name = \'TestName\'');
+      let resultPromise = actionGet.execute();
+      expect(resultPromise).toBeInstanceOf(Promise);
+      let firstCall = mockExecuteSql.mock.calls[0];
+      expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (Name = \'TestName\')');
+      resultPromise.then((result) => {
+        expect(result).toBeTruthy();
+      });
+    });
+
+    it('with a right table', () => {
+      const actionGet = new ActionGet();
+      let tableStory = new TableStory();
+      let tableChapter = new TableChapter();
+      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
+      actionGet.setTable(tableStory);
+      actionGet.setRightTable(tableChapter);
+      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
+      actionGet.setCustomConditions('Story.Name = \'TestName\' AND Chapter.Name = \'TestChapterName\'');
+      let resultPromise = actionGet.execute();
+      expect(resultPromise).toBeInstanceOf(Promise);
+      let firstCall = mockExecuteSql.mock.calls[0];
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.Name = \'TestName\' AND Chapter.Name = \'TestChapterName\')');
+      resultPromise.then((result) => {
+        expect(result).toBeTruthy();
+      });
+    });
+  });
 });
