@@ -3,6 +3,7 @@ const { Logging } = require('../../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../../modules/oAuth2/OpenIdConnectClient.js');
 const { json } = require('stream/consumers');
 const { DataCache2 } = require('../../../../../../database2/DataCache/DataCache.js');
+const { DataFacade } = require('../../../../../../database2/DataFacade.js');
 const {Environment}= require('../../../../../../modules/environment.js');
 const AccessTokenService = require('../../../../../../modules/oAuth2/AccessTokenService.js');
 
@@ -11,6 +12,7 @@ jest.mock('../../../../../../modules/environment.js');
 jest.mock('../../../../../../modules/logging');
 jest.mock('../../../../../../modules/oAuth2/OpenIdConnectClient');
 jest.mock('../../../../../../database2/DataCache/DataCache.js');
+jest.mock('../../../../../../database2/DataFacade.js');
 
 const mockJwtHeader = { "test": "abc"};
 const mockJwtPayload = { "email": "legit.user@test.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890, "iss": "https://accounts.google.com", "sub": "test-subject" };
@@ -40,12 +42,13 @@ function createMockJwt(header, payload, signature) {
   return jwtParts.join('.');
 }
 
+let mockActionCreateBearer = jest.fn().mockResolvedValue('test-bearer-token');
 AccessTokenService.mockImplementation(() => {
   return {
     isUserValid: jest.fn().mockReturnValue(true),
     setEnvironment: jest.fn().mockReturnThis(),
     getUserScopes: jest.fn().mockReturnValue(['edit']),
-    createBearer: jest.fn().mockResolvedValue('test-bearer-token'),
+    createBearer: mockActionCreateBearer,
     getBearerCacheKey: jest.fn().mockReturnValue('test-bearer-cache-key')
   };
 });
@@ -139,13 +142,19 @@ describe('CodeExchangeEndpoint', () => {
       setCodeVerifier: jest.fn().mockReturnThis(),
     }));
 
+    DataFacade.mockImplementation(() => {
+      return {
+        getData: jest.fn().mockResolvedValue({ id: 'user-id', email: 'user@example.com' })
+      };
+    });
+
     await endpoint.execute();
 
     expect(mockCacheGet).toHaveBeenNthCalledWith(1, 'short-term-auth-state-test-state');
     expect(mockCacheGet).toHaveBeenNthCalledWith(2, 'short-term-used-auth-code-test-auth-code');
     expect(mockCacheGet).toHaveBeenCalledTimes(2);
     expect(mockResponseObject.status).toHaveBeenCalledWith(400);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Bad Request' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Authentication denied by provider' });
   });
 
   it('should return a valid response on successful token exchange', async () => {
@@ -173,5 +182,23 @@ describe('CodeExchangeEndpoint', () => {
 
     expect(mockResponseObject.status).toHaveBeenCalledWith(403);
     expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Login not allowed' });
+  });
+
+  it('should not create a Bearer if user was not found', async () => {
+    mockCacheGet = jest.fn()
+      .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
+      .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
+
+
+    DataFacade.mockImplementation(() => {
+      return {
+        getData: jest.fn().mockResolvedValue({}) // no user found
+      };
+    });
+
+    let environment = new Environment();
+    await endpoint.setEnvironment(environment).execute();
+
+    expect(mockActionCreateBearer).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,10 @@
 const { Logging } = require('../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
 const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const { DataFacade } = require('../../../../../database2/DataFacade.js');
 const crypto = require('crypto');
 const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
+const { table } = require('console');
 
 const GOOGLE_ENDPOINT_WELLKNOWN = 'https://accounts.google.com/.well-known/openid-configuration';
 
@@ -145,53 +147,66 @@ class CodeExchangeEndpoint {
       .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
       .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
 
+    let tokenResponse;
+    try {
+      tokenResponse = await oidcClient.exchangeAuthorizationCode(auth_code);
+    } catch (error) {
+      Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
+      this.responseObject.status(400).json({ error: 'Authentication denied by provider' });
+      return;
+    }
 
-    await oidcClient.exchangeAuthorizationCode(auth_code)
-    .then(tokenResponse => {
-      const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
-      let tokenPayload = JSON.parse(tokenPayloadStr);
-      /**
-       * The user checks and create on of the bearer token will eventually be moved to a separate module.
-       */
+    const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
+    let tokenPayload = JSON.parse(tokenPayloadStr);
 
-      let accessTokenService = new AccessTokenService();
-      accessTokenService.setEnvironment(this.environment);
+    /*
+     * - User's identity is now verified by provider
+     * - Next: check whether the user is allowed to access the requested resources
+     */
 
-      if(!accessTokenService.isUserValid(tokenPayload)) {
-        this.responseObject.status(401).json({ error: 'No new users allowed' });
-        Logging.debugMessage({ severity: 'INFO', message: `No new users allowed`, location: LOCATION });
-        return;
-      }
+    // The user checks and create on of the bearer token will eventually be moved to a separate module.
 
-      // extract the relevant information from the token response
-      // relevant: first_name, last_name, picture, display_name, email
+    let dataFacade = new DataFacade(this.environment);
+    let userData = {request : {table: 'identity', key: tokenPayload.email}};
+    let userWithAuthorization = await dataFacade.getData(userData);
+    if(!userWithAuthorization || !userWithAuthorization.id ) {
+      this.responseObject.status(401).json({ error: 'No new users allowed' });
+      Logging.debugMessage({ severity: 'INFO', message: `No new users allowed`, location: LOCATION });
+      return;
+    }
 
-      let scopes = accessTokenService.getUserScopes(tokenPayload);
-      accessTokenService.createBearer(tokenPayload)
-      .then( bearerToken => {
+    let accessTokenService = new AccessTokenService();
+    accessTokenService.setEnvironment(this.environment);
 
-          Logging.debugMessage({ severity: 'INFO', message: `Bearer token created for scope ${scopes}`, location: LOCATION });
-          let user = {
-            provider: 'google',
-            first_name: tokenPayload.given_name,
-            last_name: tokenPayload.family_name,
-            picture: tokenPayload.picture,
-            display_name: tokenPayload.name,
-            email: tokenPayload.email
-          };
-          const auth_response = {
-            authenticationResult: {
-              user,
-              access: {
-                access_token: bearerToken,
-                scopes
-              }
+    // extract the relevant information from the token response
+    // relevant: first_name, last_name, picture, display_name, email
+
+    let scopes = accessTokenService.getUserScopes(userWithAuthorization);
+    accessTokenService.createBearer(tokenPayload)
+    .then( bearerToken => {
+
+        Logging.debugMessage({ severity: 'INFO', message: `Bearer token created for scope ${scopes}`, location: LOCATION });
+        let user = {
+          provider: 'google',
+          first_name: tokenPayload.given_name,
+          last_name: tokenPayload.family_name,
+          picture: tokenPayload.picture,
+          display_name: tokenPayload.name,
+          email: tokenPayload.email
+        };
+        const auth_response = {
+          authenticationResult: {
+            user,
+            access: {
+              access_token: bearerToken,
+              scopes
             }
-          };
+          }
+        };
 
-          // send the response to the client
-          this.responseObject.json(auth_response);
-        });
+        // send the response to the client
+        this.responseObject.json(auth_response);
+
     })
     .catch(error => {
       Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
