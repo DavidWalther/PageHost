@@ -34,7 +34,6 @@ describe('AccessTokenService', () => {
   beforeEach(() => {
     const mockedEnvironment = new Environment();
     mockedEnvironment.getEnvironment = jest.fn().mockReturnValue({
-      AUTH_REGISTERED_USER_EMAIL: "test@mail.com",
       AUTH_SERVER_SECRET: serverSecret,
     });
 

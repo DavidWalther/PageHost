@@ -44,9 +44,7 @@ class AccessTokenService {
   getUserScopes(userInfo) {
     // Guard clauses
     if(!userInfo) { return []; }
-    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAIL) {
-      return [];
-    }
+
     // buisiness logic
 
     return ['edit','create', 'delete', 'publish']; // these are hardcoded (for as long as there is no user management and only one user)
@@ -55,10 +53,6 @@ class AccessTokenService {
   isUserValid(userInfo) {
     // Guard clauses
     if(!userInfo) { return false; }
-
-    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAIL) {
-      return false;
-    }
 
     return true;
   }
