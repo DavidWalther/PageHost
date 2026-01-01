@@ -21,11 +21,7 @@ class AccessTokenService {
   async createBearer(userInfo) {
     return new Promise(async (resolve, reject) => {
       // Guard clauses
-      if(!userInfo) { return null; }
-      if(!this.isUserValid(userInfo)) {
-        reject('User is not valid');
-        return;
-      }
+      if(!userInfo) { return reject('User information is missing'); }
 
       // buisiness logic
       let scopes = this.getUserScopes(userInfo);
@@ -44,23 +40,10 @@ class AccessTokenService {
   getUserScopes(userInfo) {
     // Guard clauses
     if(!userInfo) { return []; }
-    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAIL) {
-      return [];
-    }
+
     // buisiness logic
 
     return ['edit','create', 'delete', 'publish']; // these are hardcoded (for as long as there is no user management and only one user)
-  }
-
-  isUserValid(userInfo) {
-    // Guard clauses
-    if(!userInfo) { return false; }
-
-    if(userInfo.email !== this.environment.AUTH_REGISTERED_USER_EMAIL) {
-      return false;
-    }
-
-    return true;
   }
 
   /**
@@ -114,10 +97,6 @@ class AccessTokenService {
     }
 
     const { userInfo, scopes } = cacheValue;
-
-    if (!this.isUserValid(userInfo)) {
-      return false;
-    }
 
     // check if the Bearer was created for the requested scopes
     const isBearedRCreatedForRequestedScopes = requestedScopes.every(scope => scopes.includes(scope));

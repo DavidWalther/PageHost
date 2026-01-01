@@ -241,7 +241,17 @@ class ActionGet {
       this.conditionRecordId = `${leftTableName}.id = '${recordId}'`;
       return this;
     }
-    
+  }
+
+  setCustomConditions(customCondition) {
+    if(!customCondition) { return this; }
+
+    if(this.customConditions === undefined) {
+      this.customConditions = [];
+    }
+    this.customConditions.push(customCondition);
+
+    return this;
   }
 
   setConditions(conditions) {
@@ -360,6 +370,11 @@ class ActionGet {
     if(this.conditionRecordId) {conditionArray.push(this.conditionRecordId);}
     if(this.conditionPublishDate) {conditionArray.push(this.conditionPublishDate);}
     if(this.conditionApplicationKey) {conditionArray.push(this.getConditionApplicationKey());}
+    if(this.customConditions && this.customConditions.length >0) {
+      this.customConditions.forEach(customCondition => {
+        conditionArray.push(customCondition);
+      });
+    }
 
     return conditionArray;
   }

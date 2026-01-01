@@ -52,6 +52,7 @@ let mockQueryStory = jest.fn().mockReturnValue();
 let mockQueryAllStories = jest.fn().mockReturnValue();
 let mockQueryChapter = jest.fn().mockReturnValue();
 let mockQueryParagraphs = jest.fn().mockReturnValue();
+let mockQueryIdentityByKey = jest.fn().mockReturnValue();
 let setConditionApplicationKey = jest.fn();
 let setConditionPublishDate = jest.fn();
 DataStorage.mockImplementation(() => {
@@ -62,7 +63,8 @@ DataStorage.mockImplementation(() => {
     queryAllStories: mockQueryAllStories,
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
-    queryParagraphs: mockQueryParagraphs
+    queryParagraphs: mockQueryParagraphs,
+    queryIdentityByKey: mockQueryIdentityByKey
   };
 });
 
@@ -289,6 +291,7 @@ describe('getData with specific scopes', () => {
     mockCacheGet = jest.fn();
     mockQueryChapter = jest.fn();
     mockQueryParagraphs = jest.fn();
+    mockQueryIdentityByKey = jest.fn();
   });
 
   describe('skipping cache', () => {
@@ -342,6 +345,46 @@ describe('getData with specific scopes', () => {
         expect(setConditionPublishDate).toHaveBeenCalledWith(null);
         expect(result.id).toBe('000p00000000000045');
         expect(result.publishDate).toBe('2023-01-01');
+      });
+    });
+
+    describe('Identity', () => {
+      it('should always bypass cache when querying identity', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        mockQueryIdentityByKey.mockReturnValue({ id: '000i123', key: 'user@example.com', active: true });
+
+        await dataFacade.getData({ request: { table: 'identity', key: 'user@example.com' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryIdentityByKey).toHaveBeenCalledWith('user@example.com');
+      });
+
+      it('should return identity data directly from database', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        mockQueryIdentityByKey.mockReturnValue({ id: '000i123', key: 'user@example.com', active: true, recordnumber: 1 });
+
+        const result = await dataFacade.getData({ request: { table: 'identity', key: 'user@example.com' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryIdentityByKey).toHaveBeenCalledWith('user@example.com');
+        expect(setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+        expect(result.id).toBe('000i123');
+        expect(result.key).toBe('user@example.com');
+        expect(result.active).toBe(true);
+      });
+
+      it('should return empty object when identity not found', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        mockQueryIdentityByKey.mockReturnValue({});
+
+        const result = await dataFacade.getData({ request: { table: 'identity', key: 'nonexistent@example.com' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryIdentityByKey).toHaveBeenCalledWith('nonexistent@example.com');
+        expect(result).toEqual({});
       });
     });
   });
