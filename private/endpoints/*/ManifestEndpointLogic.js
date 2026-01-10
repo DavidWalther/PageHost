@@ -24,6 +24,7 @@ class ManifestEndpointLogic extends EndpointLogic {
     manifest.display = "standalone";
     manifest.background_color = "#ffffff";
     manifest.theme_color = "#000000";
+    manifest.icons = [];
 
     // check if configuration is defined
     if(!configuration.manifest) {
