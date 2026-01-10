@@ -17,6 +17,7 @@ class WildcardLogicFactory {
 
     switch (query) {
       case 'favicon.ico':
+      case 'favicon.svg':
         return new FaviconEndpointLogic();
       case 'robots.txt':
         return new RobotsEndpointLogic();

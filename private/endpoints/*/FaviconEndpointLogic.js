@@ -1,6 +1,6 @@
 const { Logging } = require('../../modules/logging');
 const { EndpointLogic } = require('../EndpointLogic');
-const NotFoundEndpointLogic = require('../misc/NotFoundEndpointLogic');
+const { DataFacade } = require('../../database2/DataFacade');
 
 class FaviconEndpointLogic extends EndpointLogic {
   constructor() {
@@ -10,11 +10,31 @@ class FaviconEndpointLogic extends EndpointLogic {
   async execute() {
     const LOCATION = 'Server.FaviconEndpoint.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing favicon.ico request', location: LOCATION});
-    Logging.debugMessage({severity:'INFO', message: 'Redirecting to 404 Not Found request', location: LOCATION});
+    Logging.debugMessage({severity:'INFO', message: 'Executing favicon request', location: LOCATION});
 
-    const notFoundEndpoint = new NotFoundEndpointLogic();
-    return notFoundEndpoint.setEnvironment(this.environment).setRequestObject(this.requestObject).setResponseObject(this.responseObject).execute();
+    let parameterObject = {};
+    parameterObject.returnPromise = true;
+    parameterObject.request = {
+      table: 'configuration',
+      id: this.requestObject.query.id
+    };
+
+    let dataFacade = new DataFacade(this.environment);
+    return new Promise((resolve) => {
+        dataFacade.getData(parameterObject).then(configuration => {
+
+        // Set the proper Content-Type based on the requested file
+        const requestedPath = this.requestObject.params[0];
+        if (requestedPath === 'favicon.svg') {
+          this.responseObject.setHeader('Content-Type', 'image/svg+xml');
+        } else if (requestedPath === 'favicon.ico') {
+          this.responseObject.setHeader('Content-Type', 'image/x-icon');
+        }
+
+        this.responseObject.send(configuration.icon.favicon);
+        resolve();
+      });
+    });
   }
 }
 
