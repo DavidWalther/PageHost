@@ -1,6 +1,7 @@
 const { Logging } = require('../../modules/logging');
 const { EndpointLogic } = require('../EndpointLogic');
 const { DataFacade } = require('../../database2/DataFacade');
+const NotFoundEndpointLogic = require('../misc/NotFoundEndpointLogic');
 
 class IconEndpointLogic extends EndpointLogic {
   constructor() {
@@ -35,24 +36,27 @@ class IconEndpointLogic extends EndpointLogic {
     };
 
     let dataFacade = new DataFacade(this.environment);
-    return new Promise((resolve) => {
-        dataFacade.getData(parameterObject).then(configuration => {
 
-        let height = this.iconHeight;
-        let width = this.iconWidth;
+    let configuration = await dataFacade.getData(parameterObject);
 
-        // Set the proper Content-Type based on the requested file
-        const requestedPath = this.requestObject.params[0];
-        this.responseObject.setHeader('Content-Type', 'image/svg+xml');
+    if(!configuration.icon || !configuration.icon.icons) {
+      Logging.debugMessage({severity:'INFO', message: 'Icons are not defined', location: LOCATION});
+      const notFoundEndpoint = new NotFoundEndpointLogic();
+      return notFoundEndpoint.setEnvironment(this.environment).setRequestObject(this.requestObject).setResponseObject(this.responseObject).execute();
+    }
 
-	let svgBody = configuration.icon.icons;
-	svgBody = svgBody.replace('${height}', this.iconHeight);
-	svgBody = svgBody.replace('${width}', this.iconWidth);
+    let height = this.iconHeight;
+    let width = this.iconWidth;
+
+    // Set the proper Content-Type based on the requested file
+    const requestedPath = this.requestObject.params[0];
+    this.responseObject.setHeader('Content-Type', 'image/svg+xml');
+
+    let svgBody = configuration.icon.icons;
+    svgBody = svgBody.replace('${height}', this.iconHeight);
+    svgBody = svgBody.replace('${width}', this.iconWidth);
 	
-        this.responseObject.send(svgBody);
-        resolve();
-      });
-    });
+    this.responseObject.send(svgBody);
   }
 }
 
