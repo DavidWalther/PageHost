@@ -27,6 +27,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
 
       let headerEntries = [];
       headerEntries.push('<meta charset="UTF-8">');
+      headerEntries.push('<meta name="viewport" content="width=device-width, initial-scale=1">');
       headerEntries.push('<link rel="icon" type="image/x-icon" href="favicon.svg">');
       headerEntries.push('<link rel="manifest" href="manifest.json" />');
       headerEntries.push('<link rel="stylesheet" type="text/css" href="/assets/styles/salesforce-lightning-design-system.min.css" />');
