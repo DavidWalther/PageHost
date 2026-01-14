@@ -3,6 +3,15 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.7.0
+
+- read favicon.svg from config in database
+- read icon SVGs from config in database
+
+### 3.6.0
+
+- read identities from Database
+
 ### 3.5.0
 
 - implement lazy loading
