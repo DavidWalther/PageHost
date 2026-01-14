@@ -24,6 +24,11 @@ class ManifestEndpointLogic extends EndpointLogic {
     manifest.display = "standalone";
     manifest.background_color = "#ffffff";
     manifest.theme_color = "#000000";
+    if(configuration.icon !== undefined) {
+      manifest.icons = [];
+      manifest.icons.push({ "src": "icon-192.svg", "sizes": "192x192"});
+      manifest.icons.push({ "src": "icon-512.svg", "sizes": "512x512"});
+    }
 
     // check if configuration is defined
     if(!configuration.manifest) {
