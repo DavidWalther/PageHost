@@ -22,7 +22,7 @@ html {
 }
 
 html.dark-mode {
-  background: var(--dark-mode-color-base_10);
+  background: hsl(45, 38%, 48%);
 
   --slds-g-color-neutral-base-100: var(--dark-mode-color-base_20);
   --slds-g-color-neutral-base-50: var(--dark-mode-color-base_100);
