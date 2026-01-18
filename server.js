@@ -14,6 +14,7 @@ const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.
 const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
 const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
 const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
+const ServiceWorkerEndpointLogic = require('./private/endpoints/*/ServiceWorkerEndpointLogic.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -21,6 +22,17 @@ const app = express();
 app.use(express.json());
 app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
+
+app.get('/sw.js', (req, res) => {
+  const LOCATION = 'Server.get(\'/sw.js\')';
+
+  Logging.debugMessage({severity:'INFO', message: `Service Worker request received - ${req.url}`, location: LOCATION});
+
+  const selectedEndpoint = new ServiceWorkerEndpointLogic();
+  selectedEndpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
+    Logging.debugMessage({severity:'FINER', message: `Service Worker Endpoint executed`, location: LOCATION});
+  });
+});
 
 app.use(express.static('public'));
 app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/assets'));
