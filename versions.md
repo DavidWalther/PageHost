@@ -3,6 +3,10 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.7.1
+
+Bugfix: Implement service worker with versionable cache
+
 ### 3.7.0
 
 - read favicon.svg from config in database
