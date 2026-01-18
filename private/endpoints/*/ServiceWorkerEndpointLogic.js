@@ -15,23 +15,23 @@ class ServiceWorkerEndpointLogic extends EndpointLogic {
 
     try {
       // Get version from environment variable
-      const appVersion = this.environment.APP_VERSION;
+      const appVersion = this.environment.APPLICATION_SERVICEWORKER_VERSION;
       
       // Debug logging
-      Logging.debugMessage({severity:'INFO', message: `APP_VERSION from environment: ${appVersion}`, location: LOCATION});
+      Logging.debugMessage({severity:'INFO', message: `APPLICATION_SERVICEWORKER_VERSION from environment: ${appVersion}`, location: LOCATION});
 
       // Read service worker template
       const swTemplatePath = path.join(__dirname, '../../../public/sw.js');
       const swTemplate = fs.readFileSync(swTemplatePath, 'utf8');
       
       // Debug: Check if placeholder exists in template
-      Logging.debugMessage({severity:'INFO', message: `Template contains placeholder: ${swTemplate.includes('{{APP_VERSION}}')}`, location: LOCATION});
+      Logging.debugMessage({severity:'INFO', message: `Template contains placeholder: ${swTemplate.includes('{{APPLICATION_SERVICEWORKER_VERSION}}')}`, location: LOCATION});
 
       // Replace version placeholder
-      const swContent = swTemplate.replace(/\{\{APP_VERSION\}\}/g, appVersion);
+      const swContent = swTemplate.replace(/\{\{APPLICATION_SERVICEWORKER_VERSION\}\}/g, appVersion);
       
       // Debug: Check if replacement worked
-      Logging.debugMessage({severity:'INFO', message: `Replacement successful: ${!swContent.includes('{{APP_VERSION}}')}`, location: LOCATION});
+      Logging.debugMessage({severity:'INFO', message: `Replacement successful: ${!swContent.includes('{{APPLICATION_SERVICEWORKER_VERSION}}')}`, location: LOCATION});
 
       // Set appropriate headers
       this.responseObject.setHeader('Content-Type', 'application/javascript');

@@ -1,6 +1,6 @@
 // Service Worker for PageHost Application
 // Version must match application version
-const APP_VERSION = '{{APP_VERSION}}';
+const APP_VERSION = '{{APPLICATION_SERVICEWORKER_VERSION}}';
 const CACHE_NAME = `app-cache-v${APP_VERSION}`;
 
 // Static files to cache (all application resources from public folder)
