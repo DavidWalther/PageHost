@@ -28,6 +28,7 @@ const STATIC_FILES = [
   '/components/global-header/global-header.js',
   '/components/custom-chapter/custom-chapter.js',
   '/components/custom-chapter/inValidTests/chapter.tests.js',
+  '/components/custom-login-module/custom-login-module.js',
   
   // SLDS Components - JS
   '/slds-components/slds-combobox/slds-combobox.js',
