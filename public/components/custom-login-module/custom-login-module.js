@@ -34,5 +34,5 @@ class LoginComponent extends LitElement {
   }
 }
 
-customElements.define('custom-login-component', CustomParagraph);
+customElements.define('custom-login-component', LoginComponent);
 
