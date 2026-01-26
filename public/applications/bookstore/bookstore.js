@@ -33,7 +33,7 @@ class Bookstore extends LitElement {
     console.log('After super.connectedCallback()');
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     console.log('After addGlobalStylesToShadowRoot');
-    
+
     console.log('Bookstore connected');
 
     // read url and identify init-flow
@@ -60,6 +60,13 @@ class Bookstore extends LitElement {
       this.clearUrlParameter();
     }
 
+    // get button to show login modal
+    let buttonId = 'button-login';
+    let button = document.querySelector(`#${buttonId}`);
+    if(button) {
+      button.addEventListener('click', this.handleClickShowLoginModal.bind(this));
+    }
+
     this.hydrate();
     this.hydrateAuthentication();
   }
@@ -67,43 +74,46 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <custom-global-header>
-          <div slot="left" class="slds-text-align_center">
-            <slds-button-icon
-              id="button-panel_open"
-              icon="utility:rows"
-              size="small"
-              variant="container-transparent"
-            ></slds-button-icon>
-          </div>
-          <div slot="mid" class="slds-text-align_center slds-text-heading_large">
-            <span id="page-header-headline"></span>
-          </div>
-          <div slot="right" class="slds-grid slds-wrap">
-            <div class="slds-col slds-text-align_right slds-size_1-of-1">
-              <oidc-component
-                provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
-                server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
-                server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
-                button-label="Login with Google"
-              >
-                <button slot="auth-button-login">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
-                </button>
-              </oidc-component>
+        <slds-modal></slds-modal>
+          <custom-global-header>
+            <div slot="left" class="slds-text-align_center">
+              <slds-button-icon
+                id="button-panel_open"
+                icon="utility:rows"
+                size="small"
+                variant="container-transparent"
+              ></slds-button-icon>
             </div>
-            <div class="slds-col slds-text-align_right slds-size_1-of-1">
-              <slds-toggle
-                label="Licht"
-                name="options"
-                @toggle="${this.handleToggleLightswitch}"
-                direction-reversed
-              ></slds-toggle>
+            <div slot="mid" class="slds-text-align_center slds-text-heading_large">
+              <span id="page-header-headline"></span>
             </div>
-          </div>
-        </custom-global-header>
-      </slds-card>
-
+            <div slot="right" class="slds-grid slds-wrap">
+              <div class="slds-col slds-text-align_right slds-size_1-of-1">
+                <button id="button-login" @click="${this.handleClickShowLoginModal}">Show Login</button>
+              </div>
+              <div class="slds-col slds-text-align_right slds-size_1-of-1">
+                <oidc-component
+                  provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
+                  server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
+                  server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
+                  button-label="Login with Google"
+                >
+                  <button slot="auth-button-login">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
+                  </button>
+                </oidc-component>
+              </div>
+              <div class="slds-col slds-text-align_right slds-size_1-of-1">
+                <slds-toggle
+                  label="Licht"
+                  name="options"
+                  @toggle="${this.handleToggleLightswitch}"
+                  direction-reversed
+                ></slds-toggle>
+              </div>
+            </div>
+          </custom-global-header>
+        </slds-card>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
@@ -122,8 +132,24 @@ class Bookstore extends LitElement {
     `;
   }
 
+  handleClickShowLoginModal() {
+    console.log('handleClickShowLoginModal - creating modal');
+    let rootElement = this.shadowRoot.querySelector('slds-card');
+
+    if(!rootElement) {
+      console.log('handleClickShowLoginModal - no modal found');
+      return;
+    }
+
+    console.log('handleClickShowLoginModal - modal found');
+    let modalCmp = this.shadowRoot.querySelector('slds-modal');
+    modalCmp.setAttribute('title', 'testmodal');
+    modalCmp.show();
+  }
+
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
+
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
 
@@ -511,14 +537,14 @@ class Bookstore extends LitElement {
   // add content of 'template-story_not_found' into container
   showStoryNotFound() {
     const storyContainer = this.storyContainer;
-    
+
     // Create the story not found content using DOM API
     const notFoundDiv = document.createElement('div');
     notFoundDiv.className = 'slds-text-align_center slds-text-heading_large';
-    
+
     const notFoundSpan = document.createElement('span');
     notFoundSpan.textContent = 'Entschuldigung. Da war leider nichts zu finden.';
-    
+
     notFoundDiv.appendChild(notFoundSpan);
     storyContainer.appendChild(notFoundDiv);
   }
