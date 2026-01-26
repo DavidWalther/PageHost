@@ -74,7 +74,9 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <slds-modal></slds-modal>
+        <slds-modal>
+          <custom-login-module></custom-login-module>
+        </slds-modal>
           <custom-global-header>
             <div slot="left" class="slds-text-align_center">
               <slds-button-icon
