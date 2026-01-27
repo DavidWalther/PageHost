@@ -68,7 +68,6 @@ class Bookstore extends LitElement {
     }
 
     this.hydrate();
-    this.hydrateAuthentication();
   }
 
   render() {
@@ -91,19 +90,9 @@ class Bookstore extends LitElement {
             </div>
             <div slot="right" class="slds-grid slds-wrap">
               <div class="slds-col slds-text-align_right slds-size_1-of-1">
-                <button id="button-login" @click="${this.handleClickShowLoginModal}">Show Login</button>
-              </div>
-              <div class="slds-col slds-text-align_right slds-size_1-of-1">
-                <oidc-component
-                  provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
-                  server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
-                  server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
-                  button-label="Login with Google"
-                >
-                  <button slot="auth-button-login">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
-                  </button>
-                </oidc-component>
+                <div class="slds-col slds-text-align_right slds-size_1-of-1">
+                  <button id="button-login" @click="${this.handleClickShowLoginModal}">Show Login</button>
+                </div>
               </div>
               <div class="slds-col slds-text-align_right slds-size_1-of-1">
                 <slds-toggle
@@ -263,20 +252,6 @@ class Bookstore extends LitElement {
     sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
   }
 
-  hydrateAuthentication() {
-    // Use setTimeout to ensure elements are rendered
-    setTimeout(() => {
-      const oidcComponent = this.shadowRoot.querySelector('oidc-component');
-      if (oidcComponent) {
-        // Listen for OIDC events
-        oidcComponent.addEventListener('click', (event) => this.handleOIDCClick(event));
-        oidcComponent.addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
-        oidcComponent.addEventListener('logout', (event) => this.handleLogout(event));
-        oidcComponent.addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
-      }
-    }, 0);
-  }
-
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
       fetch('/api/1.0/env/variables')
@@ -304,25 +279,6 @@ class Bookstore extends LitElement {
       redirect_uri: googleAuthConfig.redirect_uri,
       scope: googleAuthConfig.scope,
       response_type: googleAuthConfig.response_type,
-    });
-  }
-
-  async handleLogout(event) {
-    let logoutCallback = event.detail.callback;
-    let accessToken = sessionStorage.getItem('code_exchange_response');
-    if(!accessToken) { return; }
-
-    accessToken = JSON.parse(accessToken);
-    const authHeader = 'Bearer ' + accessToken.authenticationResult.access.access_token;
-    await fetch('/api/1.0/auth/logout', {
-      method: 'GET',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      }
-    }).then(() => {
-      this.fireToast('Logout successful', 'success');
-      logoutCallback();
     });
   }
 
