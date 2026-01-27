@@ -73,7 +73,7 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <slds-modal>
+        <slds-modal headless footless>
           <custom-login-module></custom-login-module>
         </slds-modal>
           <custom-global-header>
