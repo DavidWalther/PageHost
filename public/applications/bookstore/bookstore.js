@@ -73,7 +73,7 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <slds-modal headless footless>
+        <slds-modal headless footless @logout="${this.handleLogout}">
           <custom-login-module></custom-login-module>
         </slds-modal>
           <custom-global-header>
@@ -121,6 +121,20 @@ class Bookstore extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  handleLogout() {
+    console.log('handleLogout - creating modal');
+    let rootElement = this.shadowRoot.querySelector('slds-card');
+
+    if(!rootElement) {
+      console.log('handleLogout - no modal found');
+      return;
+    }
+
+    console.log('handleLogout - modal found');
+    let modalCmp = this.shadowRoot.querySelector('slds-modal');
+    modalCmp.hide();
   }
 
   handleClickShowLoginModal() {

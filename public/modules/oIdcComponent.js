@@ -218,9 +218,13 @@ class OIDCComponent extends LitElement {
   handleClickLogout(event) {
     event.preventDefault();
     event.stopPropagation();
-    this.dispatchEvent(new CustomEvent('logout', { detail: {
-      callback: this.logoutCallback.bind(this)
-    } }));
+    this.dispatchEvent(new CustomEvent('logout', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        callback: this.logoutCallback.bind(this)
+      }
+    }));
   }
 
   handleKeyDown(event) {
