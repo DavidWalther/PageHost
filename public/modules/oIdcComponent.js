@@ -218,13 +218,7 @@ class OIDCComponent extends LitElement {
   handleClickLogout(event) {
     event.preventDefault();
     event.stopPropagation();
-    this.dispatchEvent(new CustomEvent('logout', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        callback: this.logoutCallback.bind(this)
-      }
-    }));
+    this.logout();
   }
 
   handleKeyDown(event) {
@@ -233,6 +227,18 @@ class OIDCComponent extends LitElement {
     if (event.key === 'Enter' || event.key === ' ') {
       this.actionStartAuthentication();
     }
+  }
+
+  // ----------- API ----------------
+
+  logout() {
+    this.dispatchEvent(new CustomEvent('logout', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        callback: this.logoutCallback.bind(this)
+      }
+    }));
   }
 
   // ----------- actions ----------------

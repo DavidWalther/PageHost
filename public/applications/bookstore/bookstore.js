@@ -73,9 +73,6 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <slds-modal headless footless @logout="${this.handleLogout}">
-          <custom-login-module></custom-login-module>
-        </slds-modal>
           <custom-global-header>
             <div slot="left" class="slds-text-align_center">
               <slds-button-icon
@@ -90,9 +87,7 @@ class Bookstore extends LitElement {
             </div>
             <div slot="right" class="slds-grid slds-wrap">
               <div class="slds-col slds-text-align_right slds-size_1-of-1">
-                <div class="slds-col slds-text-align_right slds-size_1-of-1">
-                  <button id="button-login" @click="${this.handleClickShowLoginModal}">Show Login</button>
-                </div>
+          <custom-login-module></custom-login-module>
               </div>
               <div class="slds-col slds-text-align_right slds-size_1-of-1">
                 <slds-toggle

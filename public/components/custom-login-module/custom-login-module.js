@@ -23,24 +23,32 @@ class LoginComponent extends LitElement {
   render() {
     // will be called to generate new html
     return html`
-            <div slot="right" class="slds-grid slds-wrap">
-              <div class="slds-col slds-text-align_right slds-size_1-of-1">
-                <oidc-component
-                  provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
-                  server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
-                  server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
-                  button-label="Login with Google"
-                  @authenticated="${this.handleOIDCAuthenticated}"
-                  @click="${this.handleOIDCClick}"
-                  @logout="${this.handleLogout}"
-                  @rejected="${this.handleAuthenticationRejection}"
-                >
-                  <button slot="auth-button-login">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
-                  </button>
-                </oidc-component>
-              </div>
-            </div>
+      <div id="container-login" class="slds-col slds-text-align_right slds-size_1-of-1">
+        <button id="button-login" ?hidden=${this.isLoggedIn} @click="${this.handleClickShowLoginModal}">Login</button>
+      </div>
+
+      <div id="container-logout" class="slds-col slds-text-align_right slds-size_1-of-1">
+        <button id="button-logout" ?hidden=${!this.isLoggedIn} @click="${this.handleClickLogout}">Logout</button>
+      </div>
+
+      <slds-modal headless footless>
+        <div>
+          <oidc-component
+            provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
+            server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
+            server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
+            button-label="Login with Google"
+            @authenticated="${this.handleOIDCAuthenticated}"
+            @click="${this.handleOIDCClick}"
+            @logout="${this.handleLogout}"
+            @rejected="${this.handleAuthenticationRejection}"
+          >
+            <button slot="auth-button-login">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
+            </button>
+          </oidc-component>
+        </div>
+      </slds-modal>
     `;
   }
 
@@ -55,6 +63,21 @@ class LoginComponent extends LitElement {
   //===========================
   // Event handlers
   //===========================
+
+  handleClickShowLoginModal() {
+    this.showLoginModal();
+  }
+
+  handleClickLogout() {
+    this.startLogout();
+  }
+
+  // =========== Getter / Setter ==============
+
+  get isLoggedIn() {
+    let accessToken = sessionStorage.getItem('code_exchange_response');
+    return accessToken !== null;
+  }
 
   // =========== Authentication - Start =================
 
@@ -89,9 +112,12 @@ class LoginComponent extends LitElement {
      * For example, you can store the token in local storage or session storage
      */
     this.clearUrlParameter();
+
+    this.requestUpdate();
   }
 
   async handleOIDCClick(event) {
+    this.hideLoginModal();
     const callback = event.detail.callback;
     const googleAuthConfig = await this.getGoogleAuthConfig();
 
@@ -104,6 +130,7 @@ class LoginComponent extends LitElement {
   }
 
   async handleLogout(event) {
+    this.hideLoginModal();
     let logoutCallback = event.detail.callback;
     let accessToken = sessionStorage.getItem('code_exchange_response');
     if(!accessToken) { return; }
@@ -119,6 +146,7 @@ class LoginComponent extends LitElement {
     }).then(() => {
       this.fireToast('Logout successful', 'success');
       logoutCallback();
+      this.requestUpdate();
     });
   }
 
@@ -133,6 +161,20 @@ class LoginComponent extends LitElement {
   //===========================
   // Actions
   //===========================
+
+  startLogout() {
+    this.shadowRoot.querySelector('oidc-component').logout();
+  }
+
+  showLoginModal() {
+    let modalCmp = this.shadowRoot.querySelector('slds-modal');
+    modalCmp.show();
+  }
+
+  hideLoginModal() {
+    let modalCmp = this.shadowRoot.querySelector('slds-modal');
+    modalCmp.hide();
+  }
 
   clearUrlParameter() {
     window.history.replaceState({}, '', window.location.origin);
