@@ -31,22 +31,27 @@ class LoginComponent extends LitElement {
         <button id="button-logout" ?hidden=${!this.isLoggedIn} @click="${this.handleClickLogout}">Logout</button>
       </div>
 
-      <slds-modal headless footless>
-        <div>
-          <oidc-component
-            provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
-            server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
-            server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
-            button-label="Login with Google"
-            @authenticated="${this.handleOIDCAuthenticated}"
-            @click="${this.handleOIDCClick}"
-            @logout="${this.handleLogout}"
-            @rejected="${this.handleAuthenticationRejection}"
-          >
-            <button slot="auth-button-login">
-              <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
-            </button>
-          </oidc-component>
+      <slds-modal title="Login" footless>
+        <div class="slds-grid slds-border_bottom slds-border_top slds-border_left slds-border_right">
+          <div class="slds-colslds-border_bottom slds-size_9-of-12 slds-align_absolute-center">
+            <span>Login mit Google</span>
+          </div>
+          <div class="slds-col slds-size_3-of-12 slds-text-align_right">
+            <oidc-component
+              provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
+              server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
+              server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
+              button-label="Login with Google"
+              @authenticated="${this.handleOIDCAuthenticated}"
+              @click="${this.handleOIDCClick}"
+              @logout="${this.handleLogout}"
+              @rejected="${this.handleAuthenticationRejection}"
+            >
+              <button slot="auth-button-login">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
+              </button>
+             </oidc-component>
+           </div>
         </div>
       </slds-modal>
     `;
