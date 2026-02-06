@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PageHost PWA</title>
+    
+    <!-- SLDS Styling -->
+    <link rel="stylesheet" href="/assets/styles/salesforce-lightning-design-system.min.css">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Darkmode CSS -->
+    <link rel="stylesheet" href="/styles/darkmode.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Salesforce Sans', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- App will be inserted here by JavaScript -->
+    
+    <!-- Load all required components -->
+    <script type="module" src="/applications/bookstore/bookstore.js"></script>
+    <script type="module" src="/components/custom-story/custom-story.js"></script>
+    <script type="module" src="/components/custom-chapter/custom-chapter.js"></script>
+    <script type="module" src="/components/custom-paragraph/custom-paragraph.js"></script>
+    <script type="module" src="/components/global-header/global-header.js"></script>
+    
+    <!-- Load SLDS components -->
+    <script type="module" src="/slds-components/slds-card/slds-card.js"></script>
+    <script type="module" src="/slds-components/slds-button-icon/slds-button-icon.js"></script>
+    <script type="module" src="/slds-components/slds-panel/slds-panel.js"></script>
+    <script type="module" src="/slds-components/slds-toast/slds-toast.js"></script>
+    <script type="module" src="/slds-components/slds-spinner/slds-spinner.js"></script>
+    <script type="module" src="/slds-components/slds-combobox/slds-combobox.js"></script>
+    <script type="module" src="/slds-components/slds-input/slds-input.js"></script>
+    <script type="module" src="/slds-components/slds-global-header/slds-global-header.js"></script>
+    
+    <!-- Main App Script -->
+    <script src="/index.js"></script>
+    <script>
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
