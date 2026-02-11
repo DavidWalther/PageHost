@@ -13,7 +13,7 @@ class LoginComponent extends LitElement {
     logoutButton: 'Logout',
     modalTitle: 'Login',
     googleLoginButton: 'Login with Google',
-    noNewRegistrations: 'Neue Regisrierungen werden nicht angenommen.',
+    noNewRegistrations: 'Neue Regisrierungen sind im Moment nicht möglich.',
     loginWithGoogle: 'Login mit Google',
     logoutSuccessful: 'Logout successful',
     authenticationFailed: 'Authentication failed'
@@ -70,7 +70,7 @@ class LoginComponent extends LitElement {
                 provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
                 server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
                 server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
-                button-label="Login with Google"
+                button-label="${this.labels.googleLoginButton}"
                 @authenticated="${this.handleOIDCAuthenticated}"
                 @click="${this.handleOIDCClick}"
                 @logout="${this.handleLogout}"
@@ -179,14 +179,14 @@ class LoginComponent extends LitElement {
         'Content-Type': 'application/json'
       }
     }).then(() => {
-      this.fireToast('Logout successful', 'success');
+      this.fireToast(this.labels.logoutSuccessful, 'success');
       logoutCallback();
       this.requestUpdate();
     });
   }
 
   handleAuthenticationRejection() {
-    this.fireToast('Authentication failed', 'error');
+    this.fireToast(this.labels.authenticationFailed, 'error');
     // clear history
     window.history.replaceState({}, '', window.location.pathname);
   }
