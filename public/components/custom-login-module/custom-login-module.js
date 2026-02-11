@@ -22,6 +22,17 @@ class LoginComponent extends LitElement {
   static properties = {
   };
 
+  static styles = css`
+    /* Add component-specific styles here */
+
+    .warning {
+      border-widht: 1px
+      border-style: solid;
+      border-color: var(--slds-color_warning);
+      border-radius: 5px;
+      padding: 10px;
+    }
+  `;
   constructor() {
     super();
   }
@@ -45,7 +56,7 @@ class LoginComponent extends LitElement {
       <slds-modal title="Login" footless>
         <div class="slds-grid slds-gutters slds-wrap">
           <div class="slds-col slds-size_1-of-1">
-	          <div class="slds-align_absolute-center slds-m-bottom--medium">
+	          <div class="slds-align_absolute-center slds-m-bottom--medium warning">
 		          <span>${this.labels.noNewRegistrations}</span>
 	          </div>
 	        </div>
