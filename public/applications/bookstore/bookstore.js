@@ -86,8 +86,8 @@ class Bookstore extends LitElement {
               <span id="page-header-headline"></span>
             </div>
             <div slot="right" class="slds-grid slds-wrap">
-              <div class="slds-col slds-text-align_right slds-size_1-of-1">
-          <custom-login-module></custom-login-module>
+              <div class="slds-col slds-text-align_right slds-size_1-of-1 slds-m-bottom--x-small">
+                <custom-login-module></custom-login-module>
               </div>
               <div class="slds-col slds-text-align_right slds-size_1-of-1">
                 <slds-toggle
