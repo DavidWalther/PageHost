@@ -40,6 +40,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push('<script type="module" src="components/custom-chapter/custom-chapter.js"></script>');
       headerEntries.push('<script type="module" src="components/custom-story/custom-story.js"></script>');
       headerEntries.push('<script type="module" src="components/custom-publishing/custom-publishing.js"></script>');
+      headerEntries.push('<script type="module" src="components/custom-login-module/custom-login-module.js"></script>');
 
       headerEntries.push('<script type="module" src="slds-components/slds-toggle/toggle.js"></script>');
       headerEntries.push('<script type="module" src="slds-components/slds-input/slds-input.js"></script>');

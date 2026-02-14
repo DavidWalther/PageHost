@@ -33,7 +33,7 @@ class Bookstore extends LitElement {
     console.log('After super.connectedCallback()');
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     console.log('After addGlobalStylesToShadowRoot');
-    
+
     console.log('Bookstore connected');
 
     // read url and identify init-flow
@@ -60,50 +60,46 @@ class Bookstore extends LitElement {
       this.clearUrlParameter();
     }
 
+    // get button to show login modal
+    let buttonId = 'button-login';
+    let button = document.querySelector(`#${buttonId}`);
+    if(button) {
+      button.addEventListener('click', this.handleClickShowLoginModal.bind(this));
+    }
+
     this.hydrate();
-    this.hydrateAuthentication();
   }
 
   render() {
     return html`
       <slds-card no-footer no-header>
-        <custom-global-header>
-          <div slot="left" class="slds-text-align_center">
-            <slds-button-icon
-              id="button-panel_open"
-              icon="utility:rows"
-              size="small"
-              variant="container-transparent"
-            ></slds-button-icon>
-          </div>
-          <div slot="mid" class="slds-text-align_center slds-text-heading_large">
-            <span id="page-header-headline"></span>
-          </div>
-          <div slot="right" class="slds-grid slds-wrap">
-            <div class="slds-col slds-text-align_right slds-size_1-of-1">
-              <oidc-component
-                provider-endpoint-openid-configuration="https://accounts.google.com/.well-known/openid-configuration"
-                server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
-                server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
-                button-label="Login with Google"
-              >
-                <button slot="auth-button-login">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google G logo" width="24" height="24">
-                </button>
-              </oidc-component>
+          <custom-global-header>
+            <div slot="left" class="slds-text-align_center">
+              <slds-button-icon
+                id="button-panel_open"
+                icon="utility:rows"
+                size="small"
+                variant="container-transparent"
+              ></slds-button-icon>
             </div>
-            <div class="slds-col slds-text-align_right slds-size_1-of-1">
-              <slds-toggle
-                label="Licht"
-                name="options"
-                @toggle="${this.handleToggleLightswitch}"
-                direction-reversed
-              ></slds-toggle>
+            <div slot="mid" class="slds-text-align_center slds-text-heading_large">
+              <span id="page-header-headline"></span>
             </div>
-          </div>
-        </custom-global-header>
-      </slds-card>
-
+            <div slot="right" class="slds-grid slds-wrap">
+              <div class="slds-col slds-text-align_right slds-size_1-of-1 slds-m-bottom--x-small">
+                <custom-login-module></custom-login-module>
+              </div>
+              <div class="slds-col slds-text-align_right slds-size_1-of-1">
+                <slds-toggle
+                  label="Licht"
+                  name="options"
+                  @toggle="${this.handleToggleLightswitch}"
+                  direction-reversed
+                ></slds-toggle>
+              </div>
+            </div>
+          </custom-global-header>
+        </slds-card>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
@@ -122,8 +118,38 @@ class Bookstore extends LitElement {
     `;
   }
 
+  handleLogout() {
+    console.log('handleLogout - creating modal');
+    let rootElement = this.shadowRoot.querySelector('slds-card');
+
+    if(!rootElement) {
+      console.log('handleLogout - no modal found');
+      return;
+    }
+
+    console.log('handleLogout - modal found');
+    let modalCmp = this.shadowRoot.querySelector('slds-modal');
+    modalCmp.hide();
+  }
+
+  handleClickShowLoginModal() {
+    console.log('handleClickShowLoginModal - creating modal');
+    let rootElement = this.shadowRoot.querySelector('slds-card');
+
+    if(!rootElement) {
+      console.log('handleClickShowLoginModal - no modal found');
+      return;
+    }
+
+    console.log('handleClickShowLoginModal - modal found');
+    let modalCmp = this.shadowRoot.querySelector('slds-modal');
+    modalCmp.setAttribute('title', 'testmodal');
+    modalCmp.show();
+  }
+
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
+
     this.removeEventListener('navigation', this.handleNavigationEvent);
   }
 
@@ -235,20 +261,6 @@ class Bookstore extends LitElement {
     sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
   }
 
-  hydrateAuthentication() {
-    // Use setTimeout to ensure elements are rendered
-    setTimeout(() => {
-      const oidcComponent = this.shadowRoot.querySelector('oidc-component');
-      if (oidcComponent) {
-        // Listen for OIDC events
-        oidcComponent.addEventListener('click', (event) => this.handleOIDCClick(event));
-        oidcComponent.addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
-        oidcComponent.addEventListener('logout', (event) => this.handleLogout(event));
-        oidcComponent.addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
-      }
-    }, 0);
-  }
-
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
       fetch('/api/1.0/env/variables')
@@ -276,25 +288,6 @@ class Bookstore extends LitElement {
       redirect_uri: googleAuthConfig.redirect_uri,
       scope: googleAuthConfig.scope,
       response_type: googleAuthConfig.response_type,
-    });
-  }
-
-  async handleLogout(event) {
-    let logoutCallback = event.detail.callback;
-    let accessToken = sessionStorage.getItem('code_exchange_response');
-    if(!accessToken) { return; }
-
-    accessToken = JSON.parse(accessToken);
-    const authHeader = 'Bearer ' + accessToken.authenticationResult.access.access_token;
-    await fetch('/api/1.0/auth/logout', {
-      method: 'GET',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      }
-    }).then(() => {
-      this.fireToast('Logout successful', 'success');
-      logoutCallback();
     });
   }
 
@@ -511,14 +504,14 @@ class Bookstore extends LitElement {
   // add content of 'template-story_not_found' into container
   showStoryNotFound() {
     const storyContainer = this.storyContainer;
-    
+
     // Create the story not found content using DOM API
     const notFoundDiv = document.createElement('div');
     notFoundDiv.className = 'slds-text-align_center slds-text-heading_large';
-    
+
     const notFoundSpan = document.createElement('span');
     notFoundSpan.textContent = 'Entschuldigung. Da war leider nichts zu finden.';
-    
+
     notFoundDiv.appendChild(notFoundSpan);
     storyContainer.appendChild(notFoundDiv);
   }

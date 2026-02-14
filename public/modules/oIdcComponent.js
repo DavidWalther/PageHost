@@ -88,7 +88,7 @@ class OIDCComponent extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot);
-    
+
     this._updateSessionState();
     this._checkAuthParams();
     this.dispatchEvent(new CustomEvent('ready', {}));
@@ -146,7 +146,7 @@ class OIDCComponent extends LitElement {
       auth_code: new URLSearchParams(window.location.search).get('code'),
       state: new URLSearchParams(window.location.search).get('state')
     };
-    
+
     if (authParams.auth_code !== null && authParams.state !== null) {
       this.exchangeAuthCode(authParams, serverEndpoint);
     }
@@ -218,9 +218,7 @@ class OIDCComponent extends LitElement {
   handleClickLogout(event) {
     event.preventDefault();
     event.stopPropagation();
-    this.dispatchEvent(new CustomEvent('logout', { detail: {
-      callback: this.logoutCallback.bind(this)
-    } }));
+    this.logout();
   }
 
   handleKeyDown(event) {
@@ -229,6 +227,18 @@ class OIDCComponent extends LitElement {
     if (event.key === 'Enter' || event.key === ' ') {
       this.actionStartAuthentication();
     }
+  }
+
+  // ----------- API ----------------
+
+  logout() {
+    this.dispatchEvent(new CustomEvent('logout', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        callback: this.logoutCallback.bind(this)
+      }
+    }));
   }
 
   // ----------- actions ----------------
@@ -370,12 +380,16 @@ class OIDCComponent extends LitElement {
 
     // Dispatch event with the response
     const exchange_response = await response.json();
-    this.dispatchEvent(new CustomEvent('authenticated', { detail: exchange_response }));
-    
+    this.dispatchEvent(new CustomEvent('authenticated', {
+      bubbles: true,
+      composed: true,
+      detail: exchange_response
+    }));
+
     // Save the response in session storage
-    if (this.noSave) { 
+    if (this.noSave) {
       this.requestUpdate();
-      return; 
+      return;
     }
 
     let storageKey = this.sessionStorageKey;
@@ -387,7 +401,7 @@ class OIDCComponent extends LitElement {
     };
     let event = new CustomEvent('stored', { detail: eventPayload });
     this.dispatchEvent(event);
-    
+
     this.requestUpdate();
   }
 }
