@@ -22,6 +22,8 @@ jobs:
             pg_dump "${{ secrets.NEON_POSTGRES_CONNECTSTR }}" > /output/backup.sql
             echo "Backup created"
             ls -la /output
+        env:
+          DOCKER_API_VERSION: ${{ vars.DOCKER_API_VERSION }}
       - name: Get current date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
