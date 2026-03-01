@@ -1,6 +1,13 @@
 const { Logging } = require("../../../modules/logging");
 const { Sanitizer } = require("./sanitizer");
 
+/**
+ * ActionCreate class is responsible for constructing and executing SQL INSERT statements.
+ * It's agnostic to the specific database schema and can be used to insert records into any table by setting the appropriate values.
+ *
+ * It uses the Sanitizer module to sanitize input values to prevent SQL injection attacks.
+ */
+
 class ActionCreate {
   constructor() {
     this.values = {};
@@ -20,6 +27,13 @@ class ActionCreate {
 
   setValue(key, value) {
     if (!key || value === undefined) { return this; }
+
+    // check if the key is a valid field for the table
+    let tableFields = this.table.getTableFields()();
+    if (!tableFields.includes(key)) {
+      throw new Error(`Field "${key}" is not defined for table "${this.table.getTableName()()}"`);
+    }
+
     const sanitizedValue = Sanitizer.sanitize(value);
     if (typeof value === 'string') {
       this.values[key] = `'${sanitizedValue}'`;
