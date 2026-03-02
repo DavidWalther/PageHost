@@ -154,8 +154,12 @@ class DataStorage {
         .setLeftJoin(new TableChapter(), 'story.Id = chapter.storyId');
       actionGet
         .setConditionId(storyId)
-        .setConditionApplicationKey(this.applicationKey)
-        .setConditionPublishDate(new Date().toISOString().split('T')[0]);
+        .setConditionApplicationKey(this.applicationKey);
+      if(this.publishDate === undefined) {
+        actionGet.setConditionPublishDate(new Date().toISOString().split('T')[0]);
+      } else {
+        actionGet.setConditionPublishDate(this.publishDate);
+      }
 
       actionGet.execute().then((result) => {
         if(result.length === 0) {
@@ -263,7 +267,7 @@ class DataStorage {
       .setCustomConditions(`key = '${userKey}'`)
       .setCustomConditions(`active = true`)
       .setConditionApplicationKey(this.applicationKey);
-      
+
       actionGet.execute().then((result) => {
         if(result.length === 0) {
           Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No identity found for key: ${userKey}` });
