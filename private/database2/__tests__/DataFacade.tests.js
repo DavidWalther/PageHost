@@ -395,6 +395,33 @@ describe('getData with specific scopes', () => {
         expect(result.chapters[1].publishDate).toBe('2026-12-01');
       });
 
+      it('should return all chapters including future publishDates when scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(['edit']);
+        mockQueryStory.mockReturnValue({
+          id: '000s00000000000012',
+          name: 'Test Story with Future Chapters',
+          publishDate: '2026-01-01',
+          chapters: [
+            { id: '000c00000000000023', name: 'Published Chapter', publishDate: '2026-01-15' },
+            { id: '000c00000000000024', name: 'Future Chapter 1', publishDate: '2026-06-01' },
+            { id: '000c00000000000025', name: 'Future Chapter 2', publishDate: '2026-12-01' }
+          ]
+        });
+
+        const result = await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryStory).toHaveBeenCalledWith('000s00000000000012');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.chapters).toHaveLength(3);
+        // All chapters should be returned, including future ones
+        expect(result.chapters.find(c => c.id === '000c00000000000023')).toBeTruthy();
+        expect(result.chapters.find(c => c.id === '000c00000000000024')).toBeTruthy();
+        expect(result.chapters.find(c => c.id === '000c00000000000025')).toBeTruthy();
+      });
+
       it('should use cache and apply publishDate filtering when scope is not "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         // No scopes set, so default behavior should apply
