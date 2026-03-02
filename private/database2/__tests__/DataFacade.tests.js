@@ -377,6 +377,26 @@ describe('getData with specific scopes', () => {
         expect(result.chapters[0].publishDate).toBe('2026-06-01');
         expect(result.chapters[1].publishDate).toBe('2026-12-01');
       });
+
+      it('should use cache and apply publishDate filtering when scope is not "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        // No scopes set, so default behavior should apply
+        mockCacheGet.mockReturnValue({
+          id: '000s00000000000012',
+          name: 'Cached Story',
+          chapters: [
+            { id: '000c00000000000023', name: 'Published Chapter', publishDate: '2026-01-15' }
+          ]
+        });
+
+        const result = await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+
+        expect(mockCacheGet).toHaveBeenCalledWith('000s00000000000012');
+        expect(DataStorage).not.toHaveBeenCalled();
+        expect(setConditionPublishDate).not.toHaveBeenCalled();
+        expect(result.id).toBe('000s00000000000012');
+        expect(result.name).toBe('Cached Story');
+      });
     });
 
     describe('Identity', () => {
