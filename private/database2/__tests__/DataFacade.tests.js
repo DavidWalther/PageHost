@@ -292,6 +292,9 @@ describe('getData with specific scopes', () => {
     mockQueryChapter = jest.fn();
     mockQueryParagraphs = jest.fn();
     mockQueryIdentityByKey = jest.fn();
+    mockQueryStory = jest.fn();
+    setConditionPublishDate.mockClear();
+    setConditionApplicationKey.mockClear();
   });
 
   describe('skipping cache', () => {
@@ -346,6 +349,9 @@ describe('getData with specific scopes', () => {
         expect(result.id).toBe('000p00000000000045');
         expect(result.publishDate).toBe('2023-01-01');
       });
+    });
+
+    describe('Story', () => {
     });
 
     describe('Identity', () => {
