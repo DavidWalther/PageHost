@@ -352,6 +352,31 @@ describe('getData with specific scopes', () => {
     });
 
     describe('Story', () => {
+      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(['edit']);
+        mockQueryStory.mockReturnValue({
+          id: '000s00000000000012',
+          name: 'Test Story',
+          publishDate: '2026-03-15',
+          chapters: [
+            { id: '000c00000000000023', name: 'Chapter 1', publishDate: '2026-06-01' },
+            { id: '000c00000000000024', name: 'Chapter 2', publishDate: '2026-12-01' }
+          ]
+        });
+
+        const result = await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+        expect(DataStorage).toHaveBeenCalled();
+        expect(mockQueryStory).toHaveBeenCalledWith('000s00000000000012');
+        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
+        expect(result.id).toBe('000s00000000000012');
+        expect(result.name).toBe('Test Story');
+        expect(result.chapters).toHaveLength(2);
+        expect(result.chapters[0].publishDate).toBe('2026-06-01');
+        expect(result.chapters[1].publishDate).toBe('2026-12-01');
+      });
     });
 
     describe('Identity', () => {
