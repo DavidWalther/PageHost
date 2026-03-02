@@ -390,34 +390,34 @@ class DataFacade {
   }
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).getData(parameterObject);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).getData(parameterObject);
     }
   }
 
   updateData(data) {
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).updateData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).updateData(data);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).updateData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).updateData(data);
     }
   }
 
   createData(data) {
     // Always skip cache for creation
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(true).createData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(true).setScopes(this.scopes).createData(data);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(true).createData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(true).setScopes(this.scopes).createData(data);
     }
   }
 
   deleteData(data) {
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).deleteData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).deleteData(data);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).deleteData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).deleteData(data);
     }
   }
 
