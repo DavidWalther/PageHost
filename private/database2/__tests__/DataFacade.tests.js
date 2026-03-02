@@ -352,6 +352,23 @@ describe('getData with specific scopes', () => {
     });
 
     describe('Story', () => {
+      it('should not call DataCache if scope is "edit"', async () => {
+        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+        dataFacade.setScopes(['edit']);
+        mockQueryStory.mockReturnValue({
+          id: '000s00000000000012',
+          name: 'Test Story',
+          chapters: [
+            { id: '000c00000000000023', name: 'Chapter 1', publishDate: '2026-06-01' },
+            { id: '000c00000000000024', name: 'Chapter 2', publishDate: '2026-12-01' }
+          ]
+        });
+
+        await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+
+        expect(mockCacheGet).not.toHaveBeenCalled();
+      });
+
       it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         dataFacade.setScopes(['edit']);
