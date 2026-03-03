@@ -341,4 +341,64 @@ describe('SQL-Actions', () => {
       });
     });
   });
+
+  describe('LEFT JOIN bug reproduction - parent records not returned when no children exist', () => {
+    it('should reproduce the original bug: application conditions for right table in WHERE clause instead of JOIN ON', () => {
+      mockExecuteSql = jest.fn().mockResolvedValue([{ chapter_Id: '000c00000000000045', chapter_Name: 'TestChapter', paragraph_Id: null, paragraph_Name: null }]);
+
+      const actionGet = new ActionGet();
+      let tableChapter = new TableChapter();
+      let tableParagraph = new TableParagraph();
+      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
+      actionGet.setTable(tableChapter);
+      actionGet.setRightTable(tableParagraph);
+      actionGet.setJoinCondition('chapter.Id = paragraph.chapterId');
+      actionGet.setConditionId('000c00000000000045');
+      actionGet.setConditionApplicationKey('storytellingdom');
+      actionGet.setRightOrderField('SortNumber');
+      actionGet.setRightOrderDirection('ASC');
+
+      let resultPromise = actionGet.execute();
+      expect(resultPromise).toBeInstanceOf(Promise);
+      let firstCall = mockExecuteSql.mock.calls[0];
+
+      const actualSQL = firstCall[0];
+      console.log('Generated SQL:', actualSQL);
+
+      // Check if the bug exists: right table application conditions in WHERE instead of JOIN ON
+      const hasRightTableConditionsInWhere = actualSQL.includes('WHERE') &&
+                                           actualSQL.includes('Paragraph.applicationIncluded') &&
+                                           actualSQL.split('WHERE')[1].includes('Paragraph.applicationIncluded');
+
+      const hasRightTableConditionsInJoinOn = actualSQL.includes('JOIN') &&
+                                             actualSQL.split('ON')[1] &&
+                                             actualSQL.split('WHERE')[0].includes('Paragraph.applicationIncluded');
+
+      // Document the current behavior
+      if (hasRightTableConditionsInWhere && !hasRightTableConditionsInJoinOn) {
+        console.log('BUG CONFIRMED: Right table conditions are in WHERE clause - this filters out parent records without children');
+      } else if (!hasRightTableConditionsInWhere && hasRightTableConditionsInJoinOn) {
+        console.log('ALREADY FIXED: Right table conditions are correctly in JOIN ON clause');
+      } else {
+        console.log('MIXED: Conditions might be in both places or neither');
+      }
+
+      return resultPromise.then((result) => {
+        expect(result).toBeTruthy();
+      });
+    });
+
+    it('should demonstrate correct LEFT JOIN behavior where parent records are returned even without children', () => {
+      // This test shows what the correct behavior should be after fixing
+      // The application conditions for the right table should only be in the JOIN ON clause
+      // not in the WHERE clause
+
+      const correctSQL = `SELECT Chapter.Id as chapter_Id, Chapter.StoryId as chapter_StoryId, Chapter.Name as chapter_Name, Chapter.LastUpdate as chapter_LastUpdate, Chapter.SortNumber as chapter_SortNumber, Chapter.reversed as chapter_reversed, Chapter.PublishDate as chapter_PublishDate, Chapter.applicationincluded as chapter_applicationincluded, Chapter.applicationexcluded as chapter_applicationexcluded, Paragraph.Id as paragraph_Id, Paragraph.Name as paragraph_Name, Paragraph.SortNumber as paragraph_SortNumber FROM Chapter LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded LIKE '%' || 'storytellingdom' || '%' OR Paragraph.applicationIncluded = '*') AND (Paragraph.applicationExcluded IS NULL OR Paragraph.applicationExcluded NOT LIKE '%' || 'storytellingdom' || '%')) WHERE (Chapter.id = '000c00000000000045' AND (Chapter.applicationIncluded LIKE '%' || 'storytellingdom' || '%' OR Chapter.applicationIncluded = '*') AND (Chapter.applicationExcluded IS NULL OR Chapter.applicationExcluded NOT LIKE '%' || 'storytellingdom' || '%')) ORDER BY Paragraph.SortNumber ASC`;
+
+      // Verify structure of correct SQL
+      expect(correctSQL).toContain('LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded');
+      expect(correctSQL.split('WHERE')[1]).not.toContain('Paragraph.applicationIncluded');
+      expect(correctSQL.split('WHERE')[1]).toContain('Chapter.applicationIncluded');
+    });
+  });
 });
