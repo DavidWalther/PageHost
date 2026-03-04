@@ -30,7 +30,8 @@ class ActionCreate {
 
     // check if the key is a valid field for the table
     let tableFields = this.table.getTableFields()();
-    if (!tableFields.includes(key)) {
+    tableFields = tableFields.map(field => field.toLowerCase());
+    if (!tableFields.includes(key.toLowerCase())) {
       throw new Error(`Field "${key}" is not defined for table "${this.table.getTableName()()}"`);
     }
 
