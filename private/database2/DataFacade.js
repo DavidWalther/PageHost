@@ -313,6 +313,36 @@ class DataFacadeSync {
     return product;
   }
 
+  async getStoryWithoutCache(parameterObject) {
+    let recordId = parameterObject?.request?.id;
+    let publishDate = parameterObject?.request?.publishDate;
+    const LOCATION = 'DataFacadeSync.getStoryWithoutCache';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getStoryById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+
+    // Check if 'edit' scope is present to skip publishDate filtering
+    const hasEditScope = this.scopes && this.scopes.includes('edit');
+
+    if (publishDate !== undefined) {
+      dataStorage.setConditionPublishDate(publishDate);
+    } else if (hasEditScope) {
+      // Skip publishDate filtering if edit scope is present by setting publishDate to null
+      dataStorage.setConditionPublishDate(null);
+    }
+
+    let product = await dataStorage.queryStory(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No story found in database` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Story found in database` });
+    }
+    return product;
+  }
+
   async getChapter(recordId) {
     if(DataFacade.isDataMockEnabled()) {
       return new DataMock().getChapterById(recordId);
