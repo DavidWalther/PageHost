@@ -92,7 +92,16 @@ class DataFacadeSync {
     }
     if(parameterObject.request.table =='story' && parameterObject.request.id) {
       let recordId = parameterObject?.request?.id;
-      return this.getStory(recordId);
+
+      // Check if 'edit' scope is present to automatically skip cache
+      const hasEditScope = this.scopes && this.scopes.includes('edit');
+
+      if(!this.getSkipCache() && !hasEditScope) {
+        return this.getStory(recordId);
+      }
+      if(this.getSkipCache() || hasEditScope) {
+        return this.getStoryWithoutCache(parameterObject);
+      }
     }
     if(parameterObject.request.table == 'chapter') {
       let recordId = parameterObject?.request?.id;
@@ -293,20 +302,20 @@ class DataFacadeSync {
     return product;
   }
 
-  async getStory(storyId) {
+  async getStory(recordId) {
     const LOCATION = 'DataFacadeSync.getStory';
     if(DataFacade.isDataMockEnabled()) {
-      return new DataMock().getStoryById(storyId);
+      return new DataMock().getStoryById(recordId);
     }
     Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
     let cache = new DataCache2(this.environment);
-    let product = await cache.get(storyId);
+    let product = await cache.get(recordId);
     if (!product) {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No story in cache, querying database` });
       let dataStorage = new DataStorage(this.environment);
       dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
-      product = await dataStorage.queryStory(storyId);
-      cache.set(storyId, product);
+      product = await dataStorage.queryStory(recordId);
+      cache.set(recordId, product);
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Story found in cache` });
     }
