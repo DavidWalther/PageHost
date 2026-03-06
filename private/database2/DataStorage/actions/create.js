@@ -38,7 +38,7 @@ class ActionCreate {
     const sanitizedValue = Sanitizer.sanitize(value);
     if (typeof value === 'string') {
       this.values[key] = `'${sanitizedValue}'`;
-    } else if (typeof value === 'number' || value === null) {
+    } else if (typeof value === 'number' || value === null || typeof value === 'boolean') {
       this.values[key] = sanitizedValue;
     } else {
       throw new Error('Unsupported value type');
