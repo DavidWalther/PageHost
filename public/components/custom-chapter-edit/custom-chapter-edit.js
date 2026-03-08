@@ -4,6 +4,7 @@ import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 class CustomChapterEdit extends LitElement {
   labels = {
     modalTitle: 'Kapitel erstellen',
+    labelCreateChapter: 'Kapitel erstellen',
     chapterName: 'Kapitelname',
     sortNumber: 'Sortierung',
     reversed: 'Reihenfolge umkehren',
@@ -22,6 +23,7 @@ class CustomChapterEdit extends LitElement {
     storyId: { type: String, attribute: 'story-id' },
     mode: { type: String }, // 'create' or 'edit'
     chapterData: { type: Object },
+    chapters: { type: Array }, // Array of existing chapters for sort number calculation
   };
 
   static styles = css`
@@ -63,6 +65,7 @@ class CustomChapterEdit extends LitElement {
     this.storyId = null;
     this.mode = 'create';
     this.chapterData = {};
+    this.chapters = [];
   }
 
   connectedCallback() {
@@ -84,7 +87,21 @@ class CustomChapterEdit extends LitElement {
   }
 
   render() {
+    const canCreate = this.checkCreatePermission();
+
     return html`
+      <!-- Create Chapter Button -->
+      ${canCreate ? html`
+        <slds-button-icon
+          icon="utility:add"
+          variant="container-filled"
+          title="${this.labels.labelCreateChapter}"
+          @click=${this._handleCreateButtonClick}
+        ></slds-button-icon>`
+        : ''
+      }
+
+      <!-- Modal -->
       <slds-modal title="${this.labels.modalTitle}" @close=${this._handleModalClose}>
         <div class="chapter-edit-form">
           <!-- Name Field -->
@@ -180,9 +197,41 @@ class CustomChapterEdit extends LitElement {
     this.requestUpdate();
   }
 
+  checkCreatePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
+  }
+
   // ==================================================
   // Event Handlers
   // ==================================================
+
+  _handleCreateButtonClick() {
+    // Calculate next sort number
+    let nextSortNumber = 1;
+    if (this.chapters && this.chapters.length > 0) {
+      const maxSortNumber = Math.max(...this.chapters.map(ch => ch.sortnumber || 0));
+      nextSortNumber = maxSortNumber + 1;
+    }
+
+    // Set default data
+    this.setChapterData({
+      name: 'Neues Kapitel',
+      sortNumber: nextSortNumber,
+      reversed: false,
+      publishDate: null,
+      storyId: this.storyId
+    });
+
+    this.show();
+  }
 
   _handleNameChange(event) {
     const input =  event.detail;
