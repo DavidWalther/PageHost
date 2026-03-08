@@ -2,6 +2,10 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
 class CustomStory extends LitElement {
+  labels = {
+    labelNotificationLinkCopied: 'Link kopiert',
+  };
+
   static properties = {
     id: { type: String},
     chapterButtonsNumberMax: { type: Number, attribute: 'chapter-buttons_number-max' },
@@ -130,7 +134,7 @@ class CustomStory extends LitElement {
     navigator.clipboard.writeText(shareUrl).then(() => {
       this.dispatchEvent(
         new CustomEvent('toast', {
-          detail: { message: 'Link kopiert', variant: 'success' },
+          detail: { message: this.labels.labelNotificationLinkCopied, variant: 'success' },
           bubbles: true,
           composed: true,
         })

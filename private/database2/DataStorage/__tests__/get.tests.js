@@ -133,7 +133,7 @@ describe('SQL-Actions', () => {
   describe('\'setConditionPublishDate\' creates proper SQL statement', () => {
     it('without a right table, datetime is undefined', () => {
       mockExecuteSql = jest.fn().mockResolvedValue([{ Id: 1337, Name: 'TestName' }]);
-      
+
       const actionGet = new ActionGet();
       let tableStory = new TableStory();
       actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
@@ -368,7 +368,6 @@ describe('SQL-Actions', () => {
       let firstCall = mockExecuteSql.mock.calls[0];
 
       const actualSQL = firstCall[0];
-      console.log('Generated SQL:', actualSQL);
 
       // Check if the bug exists: right table application conditions in WHERE instead of JOIN ON
       const hasRightTableConditionsInWhere = actualSQL.includes('WHERE') &&
@@ -378,15 +377,6 @@ describe('SQL-Actions', () => {
       const hasRightTableConditionsInJoinOn = actualSQL.includes('JOIN') &&
                                              actualSQL.split('ON')[1] &&
                                              actualSQL.split('WHERE')[0].includes('Paragraph.applicationIncluded');
-
-      // Document the current behavior
-      if (hasRightTableConditionsInWhere && !hasRightTableConditionsInJoinOn) {
-        console.log('BUG CONFIRMED: Right table conditions are in WHERE clause - this filters out parent records without children');
-      } else if (!hasRightTableConditionsInWhere && hasRightTableConditionsInJoinOn) {
-        console.log('ALREADY FIXED: Right table conditions are correctly in JOIN ON clause');
-      } else {
-        console.log('MIXED: Conditions might be in both places or neither');
-      }
 
       return resultPromise.then((result) => {
         expect(result).toBeTruthy();
@@ -408,7 +398,7 @@ describe('SQL-Actions', () => {
 
     it('should handle both application key AND publish date conditions correctly in JOIN ON clause', () => {
       mockExecuteSql = jest.fn().mockResolvedValue([{ chapter_Id: '000c00000000000045', chapter_Name: 'TestChapter', paragraph_Id: null }]);
-      
+
       const actionGet = new ActionGet();
       let tableChapter = new TableChapter();
       let tableParagraph = new TableParagraph();
@@ -421,25 +411,23 @@ describe('SQL-Actions', () => {
       actionGet.setConditionPublishDate('2021-01-01');
       actionGet.setRightOrderField('SortNumber');
       actionGet.setRightOrderDirection('ASC');
-      
+
       let resultPromise = actionGet.execute();
       let firstCall = mockExecuteSql.mock.calls[0];
       const actualSQL = firstCall[0];
-      
+
       // Should have both application key AND publish date conditions in JOIN ON clause
       expect(actualSQL).toContain('LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded');
       expect(actualSQL).toContain('AND Paragraph.PublishDate <=');
-      
+
       // Left table conditions should be in WHERE clause
       expect(actualSQL).toContain('WHERE (Chapter.id = \'000c00000000000045\' AND Chapter.PublishDate <=');
       expect(actualSQL).toContain('AND (Chapter.applicationIncluded');
-      
+
       // Right table conditions should NOT be in WHERE clause
       expect(actualSQL.split('WHERE')[1]).not.toContain('Paragraph.applicationIncluded');
       expect(actualSQL.split('WHERE')[1]).not.toContain('Paragraph.PublishDate');
-      
-      console.log('Combined SQL with both conditions:', actualSQL);
-      
+
       return resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
