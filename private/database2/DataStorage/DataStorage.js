@@ -295,7 +295,9 @@ class DataStorage {
       actionCreate.execute()
         .then((result) => {
           Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record created in table: ${table.getTableName()()}` });
-          resolve(result[0]);
+          const createdRecord = result[0];
+          new DataCleaner().removeApplicationKeys(createdRecord);
+          resolve(createdRecord);
         })
         .catch((error) => {
           Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error creating record in table: ${table.getTableName()()}`, error });
