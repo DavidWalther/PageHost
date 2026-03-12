@@ -4,7 +4,9 @@ import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 class CustomChapterEdit extends LitElement {
   labels = {
     modalTitle: 'Kapitel erstellen',
+    modalTitleEdit: 'Kapitel bearbeiten',
     labelCreateChapter: 'Kapitel erstellen',
+    labelEditChapter: 'Kapitel bearbeiten',
     chapterName: 'Kapitelname',
     sortNumber: 'Sortierung',
     reversed: 'Reihenfolge umkehren',
@@ -12,16 +14,21 @@ class CustomChapterEdit extends LitElement {
     namePlaceholder: 'Name des Kapitels eingeben...',
     sortNumberPlaceholder: '1',
     createButton: 'Erstellen',
+    saveButton: 'Speichern',
     cancelButton: 'Abbrechen',
     nameRequired: 'Kapitelname ist erforderlich',
     sortNumberRequired: 'Sortierung muss mindestens 1 sein',
     chapterCreated: 'Kapitel erstellt',
     chapterCreateError: 'Fehler beim Erstellen des Kapitels',
+    chapterUpdated: 'Kapitel gespeichert',
+    chapterUpdateError: 'Fehler beim Speichern des Kapitels',
+    chapterLoadError: 'Fehler beim Laden des Kapitels',
   };
 
   static properties = {
     storyId: { type: String, attribute: 'story-id' },
-    mode: { type: String }, // 'create' or 'edit'
+    chapterId: { type: String, attribute: 'chapter-id' },
+    mode: { type: String }, // 'create' or 'edit' (kept for backward compatibility)
     chapterData: { type: Object },
     chapters: { type: Array }, // Array of existing chapters for sort number calculation
   };
@@ -63,6 +70,7 @@ class CustomChapterEdit extends LitElement {
   constructor() {
     super();
     this.storyId = null;
+    this.chapterId = null;
     this.mode = 'create';
     this.chapterData = {};
     this.chapters = [];
@@ -86,12 +94,30 @@ class CustomChapterEdit extends LitElement {
     }
   }
 
+  get _isEditMode() {
+    return !!this.chapterId;
+  }
+
   render() {
     const canCreate = this.checkCreatePermission();
+    const canEdit = this._isEditMode && this.checkEditPermission();
+    const modalTitle = this._isEditMode ? this.labels.modalTitleEdit : this.labels.modalTitle;
+    const confirmLabel = this._isEditMode ? this.labels.saveButton : this.labels.createButton;
 
     return html`
+      <!-- Edit Chapter Button -->
+      ${canEdit ? html`
+        <slds-button-icon
+          icon="utility:edit"
+          variant="container-filled"
+          title="${this.labels.labelEditChapter}"
+          @click=${this._handleEditButtonClick}
+        ></slds-button-icon>`
+        : ''
+      }
+
       <!-- Create Chapter Button -->
-      ${canCreate ? html`
+      ${!this._isEditMode && canCreate ? html`
         <slds-button-icon
           icon="utility:add"
           variant="container-filled"
@@ -102,7 +128,7 @@ class CustomChapterEdit extends LitElement {
       }
 
       <!-- Modal -->
-      <slds-modal title="${this.labels.modalTitle}" @close=${this._handleModalClose}>
+      <slds-modal title="${modalTitle}" @close=${this._handleModalClose}>
         <div class="chapter-edit-form">
           <!-- Name Field -->
           <div class="form-row">
@@ -162,7 +188,7 @@ class CustomChapterEdit extends LitElement {
             ${this.labels.cancelButton}
           </button>
           <button class="slds-button slds-button_brand" @click=${this._handleConfirm}>
-            ${this.labels.createButton}
+            ${confirmLabel}
           </button>
         </div>
       </slds-modal>
@@ -203,6 +229,18 @@ class CustomChapterEdit extends LitElement {
     try {
       const parsedData = JSON.parse(authData);
       return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+    } catch (e) {
+      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      return false;
+    }
+  }
+
+  checkEditPermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('edit') || false;
     } catch (e) {
       console.error('Failed to parse authenticationResult from sessionStorage:', e);
       return false;
@@ -273,6 +311,26 @@ class CustomChapterEdit extends LitElement {
     this.hide();
   }
 
+  _handleEditButtonClick() {
+    fetch(`/data/query/chapter?id=${this.chapterId}`)
+      .then(res => res.json())
+      .then(data => {
+        const chapter = data.result || data;
+        this.setChapterData({
+          id: chapter.id,
+          name: chapter.name,
+          sortNumber: chapter.sortnumber,
+          reversed: chapter.reversed || false,
+          publishDate: chapter.publishdate || null,
+          storyId: chapter.storyid || this.storyId,
+        });
+        this.show();
+      })
+      .catch(() => {
+        this._dispatchToast(this.labels.chapterLoadError, 'error');
+      });
+  }
+
   _handleConfirm() {
     // Validate form
     const validation = this._validate();
@@ -281,8 +339,11 @@ class CustomChapterEdit extends LitElement {
       return;
     }
 
-    // Create chapter
-    this._createChapter();
+    if (this._isEditMode) {
+      this._updateChapter();
+    } else {
+      this._createChapter();
+    }
     this.hide();
   }
 
@@ -341,6 +402,44 @@ class CustomChapterEdit extends LitElement {
     }
   }
 
+  _updateChapter() {
+    const eventDetail = {
+      object: 'chapter',
+      payload: {
+        id: this.chapterId,
+        storyId: this.chapterData.storyId || this.storyId,
+        name: this.chapterData.name,
+        sortNumber: this.chapterData.sortNumber,
+        reversed: this.chapterData.reversed || false,
+        publishDate: this.chapterData.publishDate || null,
+      },
+      callback: this._updateEventCallback.bind(this)
+    };
+
+    this.dispatchEvent(
+      new CustomEvent('save', {
+        detail: eventDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  _updateEventCallback(error, data) {
+    if (error) {
+      this._dispatchToast(this.labels.chapterUpdateError, 'error');
+      return;
+    }
+
+    if (data) {
+      const updatedChapter = data.result;
+      if (updatedChapter.id) {
+        this._dispatchToast(this.labels.chapterUpdated, 'success');
+        this._dispatchChapterUpdated(updatedChapter);
+      }
+    }
+  }
+
   _formatDateForInput(dateValue) {
     if (!dateValue) return '';
 
@@ -366,6 +465,14 @@ class CustomChapterEdit extends LitElement {
 
   _dispatchChapterCreated(chapterData) {
     this.dispatchEvent(new CustomEvent('chapter-created', {
+      detail: { chapterData },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  _dispatchChapterUpdated(chapterData) {
+    this.dispatchEvent(new CustomEvent('chapter-updated', {
       detail: { chapterData },
       bubbles: true,
       composed: true,

@@ -57,7 +57,7 @@ class ActionUpdate {
         .map(([key, value]) => {
           if (typeof value === "string") {
             return `${key} = '${value}'`;
-          } else if (typeof value === "number" || value === null) {
+          } else if (typeof value === "number" || value === null || typeof value === "boolean") {
             return `${key} = ${value}`;
           } else {
             throw new Error("Unsupported value type");

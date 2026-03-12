@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import '/components/custom-chapter-edit/custom-chapter-edit.js';
 
 class CustomChapter extends LitElement {
   labels = {
@@ -53,6 +54,11 @@ class CustomChapter extends LitElement {
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
         <div slot="actions">
+        <custom-chapter-edit
+          chapter-id="${this.id}"
+          story-id="${this.chapterData?.storyid || ''}"
+          @chapter-updated=${this._handleChapterUpdated}
+        ></custom-chapter-edit>
         ${canCreate ? html`
           <slds-button-icon
             icon="utility:add"
@@ -575,6 +581,14 @@ class CustomChapter extends LitElement {
     const storyId = this.chapterData.storyid || null; // Assuming storyId is part of chapterData
     this.fireCreateEvent_Paragraph(chapterId, storyId);
   };
+
+  _handleChapterUpdated(event) {
+    const updatedChapter = event.detail?.chapterData;
+    if (updatedChapter) {
+      this.chapterData = { ...this.chapterData, ...updatedChapter };
+      this.requestUpdate();
+    }
+  }
 }
 
 customElements.define('custom-chapter', CustomChapter);
