@@ -65,7 +65,7 @@ class ActionUpdate {
         })
         .join(", ");
 
-      const sqlStatement = `UPDATE ${tableName} SET ${setClauses} WHERE id = '${id}';`;
+      const sqlStatement = `UPDATE ${tableName} SET ${setClauses} WHERE id = '${id}' RETURNING * ;`;
 
       Logging.debugMessage({
         severity: "FINEST",
