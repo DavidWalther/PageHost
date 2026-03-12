@@ -134,7 +134,7 @@ class DataFacadeSync {
     try {
       // the id vanishes on saving to postgres, so we need to save it again
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      await dataStorage.updateData(object, payload);
+      let updatedData = await dataStorage.updateData(object, payload);
 
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);
@@ -143,6 +143,7 @@ class DataFacadeSync {
       } else {
         Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Skipping cache update for object: ${object}` });
       }
+      return updatedData;
     } catch (error) {
       Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to update data for object: ${object}`, error });
       throw error;

@@ -272,10 +272,10 @@ class CustomChapterEdit extends LitElement {
   }
 
   _handleNameChange(event) {
-    const input =  event.detail;
+    const input =  event.detail.value || event.target.value;
     this.chapterData = {
       ...this.chapterData,
-      name: input.value
+      name: input
     };
   }
 
@@ -436,6 +436,7 @@ class CustomChapterEdit extends LitElement {
       if (updatedChapter.id) {
         this._dispatchToast(this.labels.chapterUpdated, 'success');
         this._dispatchChapterUpdated(updatedChapter);
+        this.requestUpdate();
       }
     }
   }
