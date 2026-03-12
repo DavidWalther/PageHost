@@ -28,6 +28,9 @@ class CustomChapterEdit extends LitElement {
   static properties = {
     storyId: { type: String, attribute: 'story-id' },
     chapterId: { type: String, attribute: 'chapter-id' },
+    name: { type: String, attribute: 'name' },
+    sortNumber: { type: Number, attribute: 'sort-number' },
+    reversed: { type: Boolean, attribute: 'reversed' },
     mode: { type: String }, // 'create' or 'edit' (kept for backward compatibility)
     chapterData: { type: Object },
     chapters: { type: Array }, // Array of existing chapters for sort number calculation
@@ -71,6 +74,9 @@ class CustomChapterEdit extends LitElement {
     super();
     this.storyId = null;
     this.chapterId = null;
+    this.name = '';
+    this.sortNumber = 1;
+    this.reversed = false;
     this.mode = 'create';
     this.chapterData = {};
     this.chapters = [];
@@ -312,23 +318,15 @@ class CustomChapterEdit extends LitElement {
   }
 
   _handleEditButtonClick() {
-    fetch(`/data/query/chapter?id=${this.chapterId}`)
-      .then(res => res.json())
-      .then(data => {
-        const chapter = data.result || data;
-        this.setChapterData({
-          id: chapter.id,
-          name: chapter.name,
-          sortNumber: chapter.sortnumber,
-          reversed: chapter.reversed || false,
-          publishDate: chapter.publishdate || null,
-          storyId: chapter.storyid || this.storyId,
-        });
-        this.show();
-      })
-      .catch(() => {
-        this._dispatchToast(this.labels.chapterLoadError, 'error');
-      });
+    this.setChapterData({
+      id: this.chapterId,
+      name: this.name,
+      sortNumber: this.sortNumber,
+      reversed: this.reversed,
+      publishDate: null,
+      storyId: this.storyId,
+    });
+    this.show();
   }
 
   _handleConfirm() {
