@@ -86,7 +86,7 @@ class CustomChapter extends LitElement {
   }
 
   renderParagraphs() {
-    if (!this.paragraphsData || this.paragraphsData.length === 0) {
+    if (!this.paragraphsData || this.paragraphsData.length === 0 ) {
       return html`<p>${this.labels.labelNoParagraphs}</p>`;
     }
     const paragraphs = this.chapterData?.reversed
@@ -488,7 +488,10 @@ class CustomChapter extends LitElement {
       );
 
       this.chapterData = data;
-      this.paragraphsData = data.paragraphs || [];
+      
+      let paragraphsFound = data.paragraphs.length > 0 && !!(data.paragraphs[0].id);
+      
+      this.paragraphsData = paragraphsFound ? data.paragraphs : [];
       this.loading = false;
     });
   }
