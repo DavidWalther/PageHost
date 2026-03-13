@@ -164,16 +164,6 @@ class CustomChapterEdit extends LitElement {
                 required
               ></slds-input>
             </div>
-
-            <!-- Publish Date Field -->
-            <div class="form-group">
-              <slds-input
-                type="date"
-                label="${this.labels.publishDate}"
-                value="${this._formatDateForInput(this.chapterData?.publishDate)}"
-                @change="${this._handlePublishDateChange}"
-              ></slds-input>
-            </div>
           </div>
 
           <!-- Reversed Toggle -->
