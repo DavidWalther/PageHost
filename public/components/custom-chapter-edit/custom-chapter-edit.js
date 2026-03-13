@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import '/components/custom-publishing/custom-publishing.js';
 
 class CustomChapterEdit extends LitElement {
   labels = {
@@ -31,9 +32,11 @@ class CustomChapterEdit extends LitElement {
     name: { type: String, attribute: 'name' },
     sortNumber: { type: Number, attribute: 'sort-number' },
     reversed: { type: Boolean, attribute: 'reversed' },
+    publishDate: { type: String, attribute: 'publish-date' },
     mode: { type: String }, // 'create' or 'edit' (kept for backward compatibility)
     chapterData: { type: Object },
     chapters: { type: Array }, // Array of existing chapters for sort number calculation
+    _activeTab: { state: true },
   };
 
   static styles = css`
@@ -68,6 +71,10 @@ class CustomChapterEdit extends LitElement {
         grid-template-columns: 1fr;
       }
     }
+
+    .tab-panel {
+      padding-top: 1rem;
+    }
   `;
 
   constructor() {
@@ -77,9 +84,11 @@ class CustomChapterEdit extends LitElement {
     this.name = '';
     this.sortNumber = 1;
     this.reversed = false;
+    this.publishDate = null;
     this.mode = 'create';
     this.chapterData = {};
     this.chapters = [];
+    this._activeTab = 'edit';
   }
 
   connectedCallback() {
@@ -135,47 +144,83 @@ class CustomChapterEdit extends LitElement {
 
       <!-- Modal -->
       <slds-modal title="${modalTitle}" @close=${this._handleModalClose}>
-        <div class="chapter-edit-form">
-          <!-- Name Field -->
-          <div class="form-row">
-            <div class="form-group">
-              <slds-input
-                type="text"
-                label="${this.labels.chapterName}"
-                placeholder="${this.labels.namePlaceholder}"
-                value="${this.chapterData?.name || ''}"
-                @change="${this._handleNameChange}"
-                required
-              ></slds-input>
+
+        <!-- Tabs Navigation -->
+        <div class="slds-tabs_default">
+          <ul class="slds-tabs_default__nav" role="tablist">
+            <li
+              class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}"
+              role="presentation"
+            >
+              <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>
+                Edits
+              </a>
+            </li>
+            ${this._isEditMode ? html`
+              <li
+                class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}"
+                role="presentation"
+              >
+                <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>
+                  Publish
+                </a>
+              </li>
+            ` : ''}
+          </ul>
+
+          <!-- Edits Tab Panel -->
+          <div class="slds-tabs_default__content tab-panel ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
+            <!-- Name Field -->
+            <div class="form-row">
+              <div class="form-group">
+                <slds-input
+                  type="text"
+                  label="${this.labels.chapterName}"
+                  placeholder="${this.labels.namePlaceholder}"
+                  value="${this.chapterData?.name || ''}"
+                  @change="${this._handleNameChange}"
+                  required
+                ></slds-input>
+              </div>
+            </div>
+
+            <!-- Form Grid for Sort Number -->
+            <div class="form-grid">
+              <div class="form-group">
+                <slds-input
+                  type="number"
+                  label="${this.labels.sortNumber}"
+                  placeholder="${this.labels.sortNumberPlaceholder}"
+                  value="${this.chapterData?.sortNumber || 1}"
+                  @change="${this._handleSortNumberChange}"
+                  min="1"
+                  required
+                ></slds-input>
+              </div>
+            </div>
+
+            <!-- Reversed Toggle -->
+            <div class="form-row">
+              <div class="checkbox-group">
+                <slds-toggle
+                  ?checked="${this.chapterData?.reversed || false}"
+                  @change="${this._handleReversedChange}"
+                ></slds-toggle>
+                <label>${this.labels.reversed}</label>
+              </div>
             </div>
           </div>
 
-          <!-- Form Grid for Sort Number and Date -->
-          <div class="form-grid">
-            <!-- Sort Number Field -->
-            <div class="form-group">
-              <slds-input
-                type="number"
-                label="${this.labels.sortNumber}"
-                placeholder="${this.labels.sortNumberPlaceholder}"
-                value="${this.chapterData?.sortNumber || 1}"
-                @change="${this._handleSortNumberChange}"
-                min="1"
-                required
-              ></slds-input>
+          <!-- Publish Tab Panel -->
+          ${this._isEditMode ? html`
+            <div class="slds-tabs_default__content tab-panel ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
+              <custom-publishing
+                record-id="${this.chapterId}"
+                object-name="chapter"
+                publish-date="${this.publishDate || ''}"
+              ></custom-publishing>
             </div>
-          </div>
-
-          <!-- Reversed Toggle -->
-          <div class="form-row">
-            <div class="checkbox-group">
-              <slds-toggle
-                ?checked="${this.chapterData?.reversed || false}"
-                @change="${this._handleReversedChange}"
-              ></slds-toggle>
-              <label>${this.labels.reversed}</label>
-            </div>
-          </div>
+          ` : ''}
         </div>
 
         <!-- Modal Footer -->
@@ -183,9 +228,11 @@ class CustomChapterEdit extends LitElement {
           <button class="slds-button slds-button_neutral" @click=${this._handleCancel}>
             ${this.labels.cancelButton}
           </button>
-          <button class="slds-button slds-button_brand" @click=${this._handleConfirm}>
-            ${confirmLabel}
-          </button>
+          ${this._activeTab === 'edit' ? html`
+            <button class="slds-button slds-button_brand" @click=${this._handleConfirm}>
+              ${confirmLabel}
+            </button>
+          ` : ''}
         </div>
       </slds-modal>
     `;
@@ -299,8 +346,13 @@ class CustomChapterEdit extends LitElement {
   }
 
   _handleModalClose() {
+    this._activeTab = 'edit';
     this.reset();
     this._dispatchCancelEvent();
+  }
+
+  _setTab(tabName) {
+    this._activeTab = tabName;
   }
 
   _handleCancel() {

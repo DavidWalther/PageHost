@@ -60,6 +60,7 @@ class CustomChapter extends LitElement {
           name="${this.chapterData?.name || ''}"
           sort-number="${this.chapterData?.sortnumber || 1}"
           ?reversed="${this.chapterData?.reversed || false}"
+          publish-date="${this.chapterData?.publishdate || ''}"
           @chapter-updated=${this._handleChapterUpdated}
         ></custom-chapter-edit>
         ${canCreate ? html`
