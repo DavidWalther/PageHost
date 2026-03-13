@@ -9,6 +9,7 @@ class CustomChapter extends LitElement {
     labelNotifcationLinkCopied: 'Link kopiert',
     labelParagraphCreated: 'Absatzt erstellt',
     labelParagraphCreateError: 'Fehler beim Erstellen des Absatzes',
+    labelNoParagraphs: 'Keine Absätze vorhanden',
   };
 
   static properties = {
@@ -85,6 +86,9 @@ class CustomChapter extends LitElement {
   }
 
   renderParagraphs() {
+    if (!this.paragraphsData || this.paragraphsData.length === 0) {
+      return html`<p>${this.labels.labelNoParagraphs}</p>`;
+    }
     const paragraphs = this.chapterData?.reversed
       ? [...this.paragraphsData].reverse()
       : this.paragraphsData;
