@@ -149,8 +149,15 @@ class Bookstore extends LitElement {
 
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
-
     this.removeEventListener('navigation', this.handleNavigationEvent);
+    this.removeEventListener('chapter-updated', this._handleChapterUpdated);
+  }
+
+  _handleChapterUpdated(event) {
+    const updatedChapter = event.detail?.chapterData;
+    if (updatedChapter && this.storyElement) {
+      this.storyElement.handleChapterUpdated(updatedChapter);
+    }
   }
 
   // =========== Hydration - Start ============
@@ -188,6 +195,7 @@ class Bookstore extends LitElement {
         this.storyElement.setAttribute('chapter-buttons_number-max', 2);
       }
       this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+      this.addEventListener('chapter-updated', this._handleChapterUpdated.bind(this));
     }, 0);
   }
 

@@ -153,6 +153,17 @@ class CustomStory extends LitElement {
       this.requestUpdate();
     }
   }
+
+  handleChapterUpdated(chapterData) {
+    if (!this._bookData?.chapters || !chapterData?.id) return;
+    this._bookData = {
+      ...this._bookData,
+      chapters: this._bookData.chapters.map(ch =>
+        ch.id === chapterData.id ? { ...ch, ...chapterData } : ch
+      ),
+    };
+    this.requestUpdate();
+  }
   storyChangeCallback(error, data) {
     if(Array.isArray(data)) { return; }
 
