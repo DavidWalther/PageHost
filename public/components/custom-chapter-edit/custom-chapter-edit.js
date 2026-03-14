@@ -24,6 +24,8 @@ class CustomChapterEdit extends LitElement {
     chapterUpdated: 'Kapitel gespeichert',
     chapterUpdateError: 'Fehler beim Speichern des Kapitels',
     chapterLoadError: 'Fehler beim Laden des Kapitels',
+    TabEdit: 'Edits',
+    TabPublish: 'Veröffentlichen',
   };
 
   static properties = {
@@ -153,7 +155,7 @@ class CustomChapterEdit extends LitElement {
               role="presentation"
             >
               <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>
-                Edits
+                ${this.labels.TabEdit}
               </a>
             </li>
             ${this._isEditMode ? html`
@@ -162,7 +164,7 @@ class CustomChapterEdit extends LitElement {
                 role="presentation"
               >
                 <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>
-                  Publish
+                  ${this.labels.TabPublish}
                 </a>
               </li>
             ` : ''}
