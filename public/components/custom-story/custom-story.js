@@ -162,6 +162,15 @@ class CustomStory extends LitElement {
     this._bookData = { ...this._bookData, chapters: updated };
     this.requestUpdate();
   }
+
+  handleChapterDeleted(chapterId) {
+    if (!this._bookData?.chapters || !chapterId) return;
+    this._bookData = {
+      ...this._bookData,
+      chapters: this._bookData.chapters.filter(ch => ch.id !== chapterId),
+    };
+    this.requestUpdate();
+  }
   storyChangeCallback(error, data) {
     if(Array.isArray(data)) { return; }
 
