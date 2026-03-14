@@ -156,12 +156,10 @@ class CustomStory extends LitElement {
 
   handleChapterUpdated(chapterData) {
     if (!this._bookData?.chapters || !chapterData?.id) return;
-    this._bookData = {
-      ...this._bookData,
-      chapters: this._bookData.chapters.map(ch =>
-        ch.id === chapterData.id ? { ...ch, ...chapterData } : ch
-      ),
-    };
+    const updated = this._bookData.chapters
+      .map(ch => ch.id === chapterData.id ? { ...ch, ...chapterData } : ch)
+      .sort((a, b) => (a.sortnumber ?? 0) - (b.sortnumber ?? 0));
+    this._bookData = { ...this._bookData, chapters: updated };
     this.requestUpdate();
   }
   storyChangeCallback(error, data) {
