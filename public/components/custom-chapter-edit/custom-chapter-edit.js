@@ -176,11 +176,7 @@ class CustomChapterEdit extends LitElement {
           <!-- Publish Tab Panel -->
           ${this._isEditMode ? html`
             <div class="slds-tabs_default__content tab-panel ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
-              <custom-publishing
-                record-id="${this.chapterId}"
-                object-name="chapter"
-                publish-date="${this.publishDate || ''}"
-              ></custom-publishing>
+              ${this.renderPublishTab()}
             </div>
           ` : ''}
         </div>
@@ -237,6 +233,16 @@ class CustomChapterEdit extends LitElement {
           </div>
         </div>
       </div>
+    `;
+  }
+
+  renderPublishTab() {
+    return html`
+      <custom-publishing
+        record-id="${this.chapterId}"
+        object-name="chapter"
+        publish-date="${this.publishDate || ''}"
+      ></custom-publishing>
     `;
   }
 
