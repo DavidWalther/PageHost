@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 import '/components/custom-publishing/custom-publishing.js';
+import { deleteChapter } from './delete-chapter.api.js';
 
 class CustomChapterEdit extends LitElement {
   labels = {
@@ -24,6 +25,10 @@ class CustomChapterEdit extends LitElement {
     chapterUpdated: 'Kapitel gespeichert',
     chapterUpdateError: 'Fehler beim Speichern des Kapitels',
     chapterLoadError: 'Fehler beim Laden des Kapitels',
+    chapterDeleted: 'Kapitel gelöscht',
+    chapterDeleteError: 'Fehler beim Löschen des Kapitels',
+    chapterDeleteConfirm: 'Dieses Kapitel wirklich löschen?',
+    labelDeleteChapter: 'Kapitel löschen',
     TabEdit: 'Edits',
     TabPublish: 'Veröffentlichen',
   };
@@ -129,6 +134,17 @@ class CustomChapterEdit extends LitElement {
           variant="container-filled"
           title="${this.labels.labelEditChapter}"
           @click=${this._handleEditButtonClick}
+        ></slds-button-icon>`
+        : ''
+      }
+
+      <!-- Delete Chapter Button -->
+      ${this._isEditMode && this.checkDeletePermission() ? html`
+        <slds-button-icon
+          icon="utility:delete"
+          variant="container-filled"
+          title="${this.labels.labelDeleteChapter}"
+          @click=${this._handleDeleteClick}
         ></slds-button-icon>`
         : ''
       }
@@ -300,6 +316,17 @@ class CustomChapterEdit extends LitElement {
     }
   }
 
+  checkDeletePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('delete') || false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ==================================================
   // Event Handlers
   // ==================================================
@@ -367,6 +394,32 @@ class CustomChapterEdit extends LitElement {
 
   _handleCancel() {
     this.hide();
+  }
+
+  async _handleDeleteClick() {
+    if (!confirm(this.labels.chapterDeleteConfirm)) return;
+    const authData = sessionStorage.getItem('code_exchange_response');
+    let token = '';
+    if (authData) {
+      try {
+        token = JSON.parse(authData)?.authenticationResult?.access?.access_token;
+      } catch {}
+    }
+    if (!token) {
+      this._dispatchToast('Nicht eingeloggt', 'error');
+      return;
+    }
+    try {
+      await deleteChapter({ id: this.chapterId, token });
+      this._dispatchToast(this.labels.chapterDeleted, 'success');
+      this.dispatchEvent(new CustomEvent('chapter-deleted', {
+        detail: { chapterId: this.chapterId },
+        bubbles: true,
+        composed: true,
+      }));
+    } catch (e) {
+      this._dispatchToast(e.message || this.labels.chapterDeleteError, 'error');
+    }
   }
 
   _handleEditButtonClick() {
