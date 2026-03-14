@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
+import { deleteChapter } from '/components/custom-chapter/delete-chapter.api.js';
 
 class CustomChapter extends LitElement {
   labels = {
@@ -10,6 +11,10 @@ class CustomChapter extends LitElement {
     labelParagraphCreated: 'Absatzt erstellt',
     labelParagraphCreateError: 'Fehler beim Erstellen des Absatzes',
     labelNoParagraphs: 'Keine Absätze vorhanden',
+    labelDeleteChapter: 'Kapitel löschen',
+    labelChapterDeleted: 'Kapitel gelöscht',
+    labelChapterDeleteError: 'Fehler beim Löschen des Kapitels',
+    labelChapterDeleteConfirm: 'Dieses Kapitel wirklich löschen?',
   };
 
   static properties = {
@@ -66,12 +71,13 @@ class CustomChapter extends LitElement {
               @chapter-updated=${this._handleChapterUpdated}
             ></custom-chapter-edit>
           </div>
-          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
-            ${canCreate ? html`
+          <div class="slds-col slds-grow-none slds-align_absolute-center">
+            ${this.checkDeletePermission() ? html`
               <slds-button-icon
-                icon="utility:add"
+                icon="utility:delete"
                 variant="container-filled"
-                @click=${this.handleCreateParagraphClick}
+                title="${this.labels.labelDeleteChapter}"
+                @click=${this._handleDeleteClick}
               ></slds-button-icon>`
               : ''
             }
@@ -82,6 +88,16 @@ class CustomChapter extends LitElement {
               variant="container-filled"
               @click=${this.handleShareClick}
             ></slds-button-icon>
+          </div>
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+            ${canCreate ? html`
+              <slds-button-icon
+                icon="utility:add"
+                variant="container-filled"
+                @click=${this.handleCreateParagraphClick}
+              ></slds-button-icon>`
+              : ''
+            }
           </div>
         </div>
         <div id="chapter-content">
@@ -524,6 +540,44 @@ class CustomChapter extends LitElement {
     } catch (e) {
       console.error('Failed to parse authenticationResult from sessionStorage:', e);
       return false;
+    }
+  }
+
+  checkDeletePermission() {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsedData = JSON.parse(authData);
+      return parsedData?.authenticationResult.access?.scopes?.includes('delete') || false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async _handleDeleteClick() {
+    if (!confirm(this.labels.labelChapterDeleteConfirm)) return;
+    const authData = sessionStorage.getItem('code_exchange_response');
+    let token = '';
+    if (authData) {
+      try {
+        token = JSON.parse(authData)?.authenticationResult?.access?.access_token;
+      } catch {}
+    }
+    if (!token) {
+      this.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Nicht eingeloggt', variant: 'error' }, bubbles: true, composed: true }));
+      return;
+    }
+    try {
+      await deleteChapter({ id: this.id, token });
+      this.dispatchEvent(new CustomEvent('toast', { detail: { message: this.labels.labelChapterDeleted, variant: 'success' }, bubbles: true, composed: true }));
+      this.dispatchEvent(new CustomEvent('chapter-deleted', {
+        detail: { chapterId: this.id },
+        bubbles: true,
+        composed: true,
+      }));
+      this.clearContent();
+    } catch (e) {
+      this.dispatchEvent(new CustomEvent('toast', { detail: { message: e.message || this.labels.labelChapterDeleteError, variant: 'error' }, bubbles: true, composed: true }));
     }
   }
 
