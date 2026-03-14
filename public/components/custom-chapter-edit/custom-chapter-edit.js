@@ -170,45 +170,7 @@ class CustomChapterEdit extends LitElement {
 
           <!-- Edits Tab Panel -->
           <div class="slds-tabs_default__content tab-panel ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
-            <!-- Name Field -->
-            <div class="form-row">
-              <div class="form-group">
-                <slds-input
-                  type="text"
-                  label="${this.labels.chapterName}"
-                  placeholder="${this.labels.namePlaceholder}"
-                  value="${this.chapterData?.name || ''}"
-                  @change="${this._handleNameChange}"
-                  required
-                ></slds-input>
-              </div>
-            </div>
-
-            <!-- Form Grid for Sort Number -->
-            <div class="form-grid">
-              <div class="form-group">
-                <slds-input
-                  type="number"
-                  label="${this.labels.sortNumber}"
-                  placeholder="${this.labels.sortNumberPlaceholder}"
-                  value="${this.chapterData?.sortNumber || 1}"
-                  @change="${this._handleSortNumberChange}"
-                  min="1"
-                  required
-                ></slds-input>
-              </div>
-            </div>
-
-            <!-- Reversed Toggle -->
-            <div class="form-row">
-              <div class="checkbox-group">
-                <slds-toggle
-                  ?checked="${this.chapterData?.reversed || false}"
-                  @change="${this._handleReversedChange}"
-                ></slds-toggle>
-                <label>${this.labels.reversed}</label>
-              </div>
-            </div>
+            ${this.renderEditTab()}
           </div>
 
           <!-- Publish Tab Panel -->
@@ -235,6 +197,46 @@ class CustomChapterEdit extends LitElement {
           ` : ''}
         </div>
       </slds-modal>
+    `;
+  }
+
+  renderEditTab() {
+    return html`
+      <!-- Name Field -->
+      <div class="slds-grid slds-wrap slds-grid_vertical-align-end">
+        <div class="slds-col slds-size_1-of-1">
+          <slds-input
+            type="text"
+            label="${this.labels.chapterName}"
+            placeholder="${this.labels.namePlaceholder}"
+            value="${this.chapterData?.name || ''}"
+            @change="${this._handleNameChange}"
+            required
+          ></slds-input>
+        </div>
+
+        <div class="slds-col slds-size_1-of-4">
+           <slds-input
+            type="number"
+            label="${this.labels.sortNumber}"
+            placeholder="${this.labels.sortNumberPlaceholder}"
+            value="${this.chapterData?.sortNumber || 1}"
+            @change="${this._handleSortNumberChange}"
+            min="1"
+            required
+          ></slds-input>
+        </div>
+
+        <div class="slds-col slds-size_2-of-4 slds-col_bump-left">
+          <div class="slds-grid slds-wrap">
+            <slds-toggle
+              label="${this.labels.reversed}"
+              ?checked="${this.chapterData?.reversed || false}"
+              @change="${this._handleReversedChange}"
+            ></slds-toggle>
+          </div>
+        </div>
+      </div>
     `;
   }
 
