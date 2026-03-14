@@ -54,29 +54,35 @@ class CustomChapter extends LitElement {
     return html`
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
-        <div slot="actions">
-        <custom-chapter-edit
-          chapter-id="${this.id}"
-          story-id="${this.chapterData?.storyid || ''}"
-          name="${this.chapterData?.name || ''}"
-          sort-number="${this.chapterData?.sortnumber || 1}"
-          ?reversed="${this.chapterData?.reversed || false}"
-          publish-date="${this.chapterData?.publishdate || ''}"
-          @chapter-updated=${this._handleChapterUpdated}
-        ></custom-chapter-edit>
-        ${canCreate ? html`
-          <slds-button-icon
-            icon="utility:add"
-            variant="container-filled"
-            @click=${this.handleCreateParagraphClick}
-          ></slds-button-icon>`
-          : ''
-        }
-        <slds-button-icon
-          icon="utility:link"
-          variant="container-filled"
-          @click=${this.handleShareClick}
-        ></slds-button-icon>
+        <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+            <custom-chapter-edit
+              chapter-id="${this.id}"
+              story-id="${this.chapterData?.storyid || ''}"
+              name="${this.chapterData?.name || ''}"
+              sort-number="${this.chapterData?.sortnumber || 1}"
+              ?reversed="${this.chapterData?.reversed || false}"
+              publish-date="${this.chapterData?.publishdate || ''}"
+              @chapter-updated=${this._handleChapterUpdated}
+            ></custom-chapter-edit>
+          </div>
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+            ${canCreate ? html`
+              <slds-button-icon
+                icon="utility:add"
+                variant="container-filled"
+                @click=${this.handleCreateParagraphClick}
+              ></slds-button-icon>`
+              : ''
+            }
+          </div>
+          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+            <slds-button-icon
+              icon="utility:link"
+              variant="container-filled"
+              @click=${this.handleShareClick}
+            ></slds-button-icon>
+          </div>
         </div>
         <div id="chapter-content">
           ${this.renderParagraphs()}
@@ -97,7 +103,7 @@ class CustomChapter extends LitElement {
       (paragraph, index) => {
         // First chunk loads immediately, others get no-load attribute
         const shouldLazyLoad = !this.isItemInFirstChunk(index);
-        
+
         return html`
           <div class="slds-col slds-p-bottom_small paragraph-container pending"
                data-paragraph-id=${paragraph.id}
@@ -197,23 +203,23 @@ class CustomChapter extends LitElement {
       return null;
     }
 
-    // Instead of observing the end of the next chunk, observe an element 
+    // Instead of observing the end of the next chunk, observe an element
     // that's earlier to trigger loading before user reaches the end
     // We'll observe an element in the current loaded chunk at about 75% through
     const currentChunkIndex = nextChunkIndex - 1;
     const currentChunkStart = this.getChunkStartIndex(currentChunkIndex);
     const currentChunkEnd = this.getChunkEndIndex(currentChunkIndex);
-    
+
     // Find trigger point at 75% through current chunk
     const chunkSize = currentChunkEnd - currentChunkStart + 1;
     const triggerOffset = Math.floor(chunkSize * 0.75);
     const triggerIndex = currentChunkStart + triggerOffset;
-    
+
     console.log(`Identifying observer target for chunk ${nextChunkIndex} (trigger at 75% of current chunk ${currentChunkIndex}, paragraph ${triggerIndex})`);
 
     const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
     const targetContainer = paragraphContainers[triggerIndex];
-    
+
     if (!targetContainer) {
       console.error(`Could not find container for trigger at index ${triggerIndex}`);
       // Fallback to end of current chunk if 75% point doesn't exist
@@ -236,12 +242,12 @@ class CustomChapter extends LitElement {
   collectParagraphsToLoad(chunkIndex) {
     const startIndex = this.getChunkStartIndex(chunkIndex);
     const endIndex = this.getChunkEndIndex(chunkIndex);
-    
+
     console.log(`Collecting paragraphs for chunk ${chunkIndex}: paragraphs ${startIndex} to ${endIndex}`);
 
     const paragraphContainers = Array.from(this.shadowRoot.querySelectorAll('.paragraph-container'));
     const elementsToLoad = [];
-    
+
     console.log(`Total containers found: ${paragraphContainers.length}`);
 
     // Filter containers to only those in the specified chunk range
@@ -316,7 +322,7 @@ class CustomChapter extends LitElement {
         // Mark container as loading
         container.classList.add('loading');
         container.classList.remove('pending');
-        
+
         // Mark as loaded after delay
         setTimeout(() => {
           container.classList.remove('loading');
@@ -391,16 +397,16 @@ class CustomChapter extends LitElement {
 
     // 1. Identify the next element that should be observed
     const nextObserverTarget = this.identifyNextObserverTarget(chunkToLoad + 1);
-    
+
     // 2. Collect all paragraph elements that need to be loaded in the target chunk
     const elementsToLoad = this.collectParagraphsToLoad(chunkToLoad);
-    
+
     // 3. Unobserve the current element and clean up tracking
     this.unobserveCurrentElement(observedElement);
-    
+
     // 4. Remove no-load attributes from collected paragraphs to trigger loading
     this.removeParagraphNoLoadAttributes(elementsToLoad);
-    
+
     // 5. Update container classes to reflect loading state
     this.updateContainerClasses(elementsToLoad);
 
@@ -488,9 +494,9 @@ class CustomChapter extends LitElement {
       );
 
       this.chapterData = data;
-      
+
       let paragraphsFound = data.paragraphs.length > 0 && !!(data.paragraphs[0].id);
-      
+
       this.paragraphsData = paragraphsFound ? data.paragraphs : [];
       this.loading = false;
     });
