@@ -124,9 +124,8 @@ class CustomChapterEdit extends LitElement {
 
       <!-- Modal -->
       <slds-modal title="${modalTitle}" @close=${this._handleModalClose}>
-
         <!-- Tabs Navigation -->
-        <div class="slds-tabs_default">
+        <div class="slds-tabs_default" role="tablist">
           <ul class="slds-tabs_default__nav" role="tablist">
             <li class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}" role="presentation">
               <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>${this.labels.TabEdit}</a>
