@@ -60,7 +60,7 @@ class CustomChapter extends LitElement {
       <slds-card no-footer>
         <span slot="header">${this.chapterData.name}</span>
         <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
-          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+          <div class="slds-col slds-grow-none slds-align_absolute-center">
             <custom-chapter-edit
               chapter-id="${this.id}"
               story-id="${this.chapterData?.storyid || ''}"
@@ -72,29 +72,29 @@ class CustomChapter extends LitElement {
             ></custom-chapter-edit>
           </div>
           <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${this.checkDeletePermission() ? html`
-              <slds-button-icon
-                icon="utility:delete"
-                variant="container-filled"
-                title="${this.labels.labelDeleteChapter}"
-                @click=${this._handleDeleteClick}
-              ></slds-button-icon>`
-              : ''
-            }
-          </div>
-          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
             <slds-button-icon
               icon="utility:link"
               variant="container-filled"
               @click=${this.handleShareClick}
             ></slds-button-icon>
           </div>
-          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
+          <div class="slds-col slds-grow-none slds-align_absolute-center">
             ${canCreate ? html`
               <slds-button-icon
                 icon="utility:add"
                 variant="container-filled"
                 @click=${this.handleCreateParagraphClick}
+              ></slds-button-icon>`
+              : ''
+            }
+          </div>
+          <div class="slds-col slds-grow-none slds-align_absolute-center">
+            ${this.checkDeletePermission() ? html`
+              <slds-button-icon
+                icon="utility:delete"
+                variant="container-filled"
+                title="${this.labels.labelDeleteChapter}"
+                @click=${this._handleDeleteClick}
               ></slds-button-icon>`
               : ''
             }

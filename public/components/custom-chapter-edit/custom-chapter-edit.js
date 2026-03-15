@@ -142,6 +142,10 @@ class CustomChapterEdit extends LitElement {
     `;
   }
 
+  /**
+   * Renders the tab navigation and content based on the current mode (create/edit) and permissions.
+   * @returns {TemplateResult} The template for the tabs.
+   */
   renderTabs() {
     let tabHeads = [];
     let tabPanels = [];
@@ -173,16 +177,16 @@ class CustomChapterEdit extends LitElement {
     }
 
    return html`
-        <!-- Tabs Navigation -->
-        <div class="slds-tabs_default" role="tablist">
-          <!-- Tabs Headers -->
-          <ul class="slds-tabs_default__nav" role="tablist">
-            ${tabHeads}
-          </ul>
+    <!-- Tabs Navigation -->
+    <div class="slds-tabs_default" role="tablist">
+      <!-- Tabs Headers -->
+      <ul class="slds-tabs_default__nav" role="tablist">
+        ${tabHeads}
+      </ul>
 
-          <!-- Tabs Content -->
-          ${tabPanels}
-        </div>
+      <!-- Tabs Content -->
+      ${tabPanels}
+    </div>
     `;
   }
 
