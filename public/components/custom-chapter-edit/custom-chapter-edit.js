@@ -89,6 +89,10 @@ class CustomChapterEdit extends LitElement {
     return !!this.chapterId;
   }
 
+  get _isCreateMode() {
+    return !this.chapterId;
+  }
+
   render() {
     const canCreate = this.checkCreatePermission();
     const canEdit = this._isEditMode && this.checkEditPermission();
@@ -120,31 +124,8 @@ class CustomChapterEdit extends LitElement {
 
       <!-- Modal -->
       <slds-modal title="${modalTitle}" @close=${this._handleModalClose}>
-        <!-- Tabs Navigation -->
-        <div class="slds-tabs_default" role="tablist">
-          <ul class="slds-tabs_default__nav" role="tablist">
-            <li class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}" role="presentation">
-              <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>${this.labels.TabEdit}</a>
-            </li>
-            ${this._isEditMode ? html`
-              <li class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}" role="presentation">
-                <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>${this.labels.TabPublish}</a>
-              </li>` : ''
-            }
-          </ul>
-
-          <!-- Edits Tab Panel -->
-          <div class="slds-tabs_default__content ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
-            ${this.renderEditTab()}
-          </div>
-
-          <!-- Publish Tab Panel -->
-          ${this._isEditMode ? html`
-            <div class="slds-tabs_default__content ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
-              ${this.renderPublishTab()}
-            </div>` : ''
-          }
-        </div>
+        <!-- Modal Content -->
+          ${this.renderTabs()}
 
         <!-- Modal Footer -->
         <div slot="footer">
@@ -158,6 +139,50 @@ class CustomChapterEdit extends LitElement {
           ` : ''}
         </div>
       </slds-modal>
+    `;
+  }
+
+  renderTabs() {
+    let tabHeads = [];
+    let tabPanels = [];
+
+    // Edit Tab
+    tabHeads.push(html`
+      <li class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}" role="presentation">
+        <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>${this.labels.TabEdit}</a>
+      </li>`
+    );
+    tabPanels.push(html`
+      <div class="slds-tabs_default__content ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
+        ${this.renderEditTab()}
+      </div>`
+    );
+
+    if (this._isEditMode) {
+      // Publish Tab
+      tabHeads.push(html`
+        <li class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}" role="presentation">
+          <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>${this.labels.TabPublish}</a>
+        </li>`
+      );
+      tabPanels.push(html`
+        <div class="slds-tabs_default__content ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
+          ${this.renderPublishTab()}
+        </div>`
+      );
+    }
+
+   return html`
+        <!-- Tabs Navigation -->
+        <div class="slds-tabs_default" role="tablist">
+          <!-- Tabs Headers -->
+          <ul class="slds-tabs_default__nav" role="tablist">
+            ${tabHeads}
+          </ul>
+
+          <!-- Tabs Content -->
+          ${tabPanels}
+        </div>
     `;
   }
 
@@ -498,63 +523,6 @@ class CustomChapterEdit extends LitElement {
       bubbles: true,
       composed: true,
     }));
-  }
-}
-
-class TabBuilder {
-  constructor() {
-    this._isCreateEdit = false;
-    this._isPublishing = false;
-  }
-
-  addPublishingTab() {
-    this._isPublishing = true;
-    return this;
-  }
-
-  addEditTab() {
-    this._isCreateEdit = true;
-    return this;
-  }
-
-  build() {
-    let TabHeads = [];
-    let TabPanels = [];
-    if (this._isCreateEdit) {
-      TabHeads.push(html`
-        <li class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}" role="presentation">
-          <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>${this.labels.TabEdit}</a>
-        </li>
-      `);
-      TabPanels.push(html`
-        <div class="slds-tabs_default__content ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
-          ${this.renderEditTab()}
-        </div>
-      `);
-    }
-    if (this._isPublishing) {
-      TabHeads.push(html`
-        <li class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}" role="presentation">
-          <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>${this.labels.TabPublish}</a>
-        </li>
-      `);
-      TabPanels.push(html`
-        <div class="slds-tabs_default__content ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
-          ${this.renderPublishTab()}
-        </div>
-      `);
-    }
-
-    let Tabs = html`
-      <div class="slds-tabs_default" role="tablist">
-        <ul class="slds-tabs_default__nav" role="tablist">
-          ${TabHeads}
-        </ul>
-        ${TabPanels}
-       </div>
-    `;
-
-    return Tabs;
   }
 }
 
