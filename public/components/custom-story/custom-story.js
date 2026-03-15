@@ -48,9 +48,8 @@ class CustomStory extends LitElement {
       <div id="content" class="slds-grid slds-wrap ${!this._bookData ? 'slds-hide' : ''}">
         <div class="slds-col slds-size_1-of-1">
           <slds-card no-footer>
-            <span id="span-chapter-title" slot="header">${this._bookData?.name || ''}</span>
-            <div class="slds-grid" slot="actions">
-              <div class="slds-col slds-size_1-of-2">
+            <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
+              <div class="slds-col slds-grow-none slds-align_absolute-center">
                 <!-- Chapter Edit Component Button will appear here -->
                 <custom-chapter-edit
                   story-id="${this.id}"
@@ -59,7 +58,7 @@ class CustomStory extends LitElement {
                   @chapter-created=${this._handleChapterCreated}
                 ></custom-chapter-edit>
               </div>
-              <div class="slds-col slds-size_1-of-2">
+              <div class="slds-col slds-grow-none slds-align_absolute-center">
                 <slds-button-icon
                   icon="utility:link"
                   variant="container-filled"
@@ -67,6 +66,7 @@ class CustomStory extends LitElement {
                 ></slds-button-icon>
               </div>
             </div>
+            <span id="span-chapter-title" slot="header">${this._bookData?.name || ''}</span>
             <div id="chapter-list" class="slds-grid slds-gutters slds-wrap">
               ${this._renderChapters()}
             </div>
