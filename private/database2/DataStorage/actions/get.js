@@ -221,11 +221,39 @@ class ActionGet {
   }
 
   setConditionPublishDate(dateTime) {
-    let leftTableName = this.leftTable?.getTableName()() || this.tableName;
-    let rightTableName = this.rightTable?.getTableName()();
-    let conditionInstance = PublishDateConditionFactory.createCondition(leftTableName, dateTime, rightTableName);
-    this.conditionPublishDate = conditionInstance.getCondition();
+    this.publishDateTime = dateTime;
     return this;
+  }
+
+  getLeftTablePublishDate() {
+    if (this.publishDateTime === undefined) {
+      return 'PublishDate <= NOW()';
+    } else if (this.publishDateTime === null) {
+      return '';
+    } else {
+      const publishDateObject = new Date(this.publishDateTime);
+      const publishDateISO = publishDateObject.toISOString();
+      const [datePart, timePart] = publishDateISO.split('T');
+      const [timeWithoutMs] = timePart.split('.');
+      return `PublishDate <= '${datePart} ${timeWithoutMs}'`;
+    }
+  }
+
+  getRightTablePublishDate() {
+    if (!this.rightTable || this.publishDateTime === null) {
+      return '';
+    }
+
+    let rightTableName = this.rightTable.getTableName()();
+    if (this.publishDateTime === undefined) {
+      return `${rightTableName}.PublishDate <= NOW()`;
+    } else {
+      const publishDateObject = new Date(this.publishDateTime);
+      const publishDateISO = publishDateObject.toISOString();
+      const [datePart, timePart] = publishDateISO.split('T');
+      const [timeWithoutMs] = timePart.split('.');
+      return `${rightTableName}.PublishDate <= '${datePart} ${timeWithoutMs}'`;
+    }
   }
 
   setConditionId(recordId) {
@@ -315,45 +343,42 @@ class ActionGet {
     return this;
   }
 
-  getConditionApplicationKey() {
-    if(!this.rightTable) {
-      let applicationIncludedCriteria  = [];
-      applicationIncludedCriteria.push(`applicationIncluded LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
-      applicationIncludedCriteria.push(`applicationIncluded = '*'`);
+  getLeftTableApplicationKey() {
+    let leftTableName = this.leftTable?.getTableName()() || this.tableName;
+    let tablePrefix = this.rightTable ? `${leftTableName}.` : '';
+    
+    let applicationIncludedCriteria = [];
+    applicationIncludedCriteria.push(`${tablePrefix}applicationIncluded LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
+    applicationIncludedCriteria.push(`${tablePrefix}applicationIncluded = '*'`);
 
-      let applicationExcludedCriteria  = [];
-      applicationExcludedCriteria.push(`applicationExcluded isNull`);
-      applicationExcludedCriteria.push(`applicationExcluded NOT LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
+    let applicationExcludedCriteria = [];
+    applicationExcludedCriteria.push(`${tablePrefix}applicationExcluded isNull`);
+    applicationExcludedCriteria.push(`${tablePrefix}applicationExcluded NOT LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
 
-      let joinedCriteria = `(${applicationIncludedCriteria.join(' OR ')}) AND (${applicationExcludedCriteria.join(' OR ')})`;
+    return `(${applicationIncludedCriteria.join(' OR ')}) AND (${applicationExcludedCriteria.join(' OR ')})`;
+  }
 
-      return joinedCriteria;
-    } else {
-      let leftTableName = this.leftTable?.getTableName()() || this.tableName;
-      let rightTableName = this.rightTable.getTableName()();
-
-      let leftApplicationIncludedCriteria = [];
-      leftApplicationIncludedCriteria.push(`${leftTableName}.applicationIncluded LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
-      leftApplicationIncludedCriteria.push(`${leftTableName}.applicationIncluded = '*'`);
-      let leftApplicationExcludedCriteria = [];
-      leftApplicationExcludedCriteria.push(`${leftTableName}.applicationExcluded isNull`);
-      leftApplicationExcludedCriteria.push(`${leftTableName}.applicationExcluded NOT LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
-
-      let joinedLeftCriteria = `(${leftApplicationIncludedCriteria.join(' OR ')}) AND (${leftApplicationExcludedCriteria.join(' OR ')})`;
-
-      let rightApplicationIncludedCriteria = [];
-      rightApplicationIncludedCriteria.push(`${rightTableName}.applicationIncluded LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
-      rightApplicationIncludedCriteria.push(`${rightTableName}.applicationIncluded = '*'`);
-      let rightApplicationExcludedCriteria =[];
-      rightApplicationExcludedCriteria.push(`${rightTableName}.applicationExcluded isNull`);
-      rightApplicationExcludedCriteria.push(`${rightTableName}.applicationExcluded NOT LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
-
-      let joinedRightCriteria = `(${rightApplicationIncludedCriteria.join(' OR ')}) AND (${rightApplicationExcludedCriteria.join(' OR ')})`;
-
-      let joinedCriteria = `(${joinedLeftCriteria}) AND (${joinedRightCriteria})`;
-
-      return joinedCriteria;
+  getRightTableApplicationKey() {
+    if (!this.rightTable) {
+      return '';
     }
+
+    let rightTableName = this.rightTable.getTableName()();
+    
+    let rightApplicationIncludedCriteria = [];
+    rightApplicationIncludedCriteria.push(`${rightTableName}.applicationIncluded LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
+    rightApplicationIncludedCriteria.push(`${rightTableName}.applicationIncluded = '*'`);
+    
+    let rightApplicationExcludedCriteria = [];
+    rightApplicationExcludedCriteria.push(`${rightTableName}.applicationExcluded isNull`);
+    rightApplicationExcludedCriteria.push(`${rightTableName}.applicationExcluded NOT LIKE '%' || '${this.conditionApplicationKey}' || '%'`);
+
+    return `(${rightApplicationIncludedCriteria.join(' OR ')}) AND (${rightApplicationExcludedCriteria.join(' OR ')})`;
+  }
+
+  getConditionApplicationKey() {
+    // For WHERE clause - only return left table conditions
+    return this.getLeftTableApplicationKey();
   }
 
   setLeftJoin(rightTableClass, joinCondition) {
@@ -368,7 +393,24 @@ class ActionGet {
   createCombinedCriteria() {
     let conditionArray = [];
     if(this.conditionRecordId) {conditionArray.push(this.conditionRecordId);}
-    if(this.conditionPublishDate) {conditionArray.push(this.conditionPublishDate);}
+    
+    // Add left table publish date condition if it was set (even if undefined)
+    if(this.publishDateTime !== null && this.hasOwnProperty('publishDateTime')) {
+      let leftTableName = this.leftTable?.getTableName()() || this.tableName;
+      let leftPublishCondition = this.getLeftTablePublishDate();
+      if (leftPublishCondition) {
+        if (this.rightTable) {
+          // Prefix with table name for joins
+          if (leftPublishCondition.includes('PublishDate <= NOW()')) {
+            leftPublishCondition = `${leftTableName}.PublishDate <= NOW()`;
+          } else {
+            leftPublishCondition = leftPublishCondition.replace('PublishDate <=', `${leftTableName}.PublishDate <=`);
+          }
+        }
+        conditionArray.push(leftPublishCondition);
+      }
+    }
+    
     if(this.conditionApplicationKey) {conditionArray.push(this.getConditionApplicationKey());}
     if(this.customConditions && this.customConditions.length >0) {
       this.customConditions.forEach(customCondition => {
@@ -426,7 +468,30 @@ class ActionGet {
 
     if(this.rightTable) {
       let rightTableName = this.rightTable?.getTableName()();
-      return `${leftTableName} LEFT JOIN ${rightTableName} ON ${this.joinCondition}`;
+      let joinCondition = this.joinCondition;
+      let additionalConditions = [];
+      
+      // Add right table application conditions to JOIN ON clause if they exist
+      if (this.conditionApplicationKey) {
+        let rightTableConditions = this.getRightTableApplicationKey();
+        if (rightTableConditions) {
+          additionalConditions.push(rightTableConditions);
+        }
+      }
+      
+      // Add right table publish date conditions to JOIN ON clause if they exist
+      if (this.publishDateTime !== null && this.hasOwnProperty('publishDateTime')) {
+        let rightPublishCondition = this.getRightTablePublishDate();
+        if (rightPublishCondition) {
+          additionalConditions.push(rightPublishCondition);
+        }
+      }
+      
+      if (additionalConditions.length > 0) {
+        joinCondition = `(${this.joinCondition} AND ${additionalConditions.join(' AND ')})`;
+      }
+      
+      return `${leftTableName} LEFT JOIN ${rightTableName} ON ${joinCondition}`;
     }
     return leftTableName;
   }

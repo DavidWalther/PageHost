@@ -92,7 +92,16 @@ class DataFacadeSync {
     }
     if(parameterObject.request.table =='story' && parameterObject.request.id) {
       let recordId = parameterObject?.request?.id;
-      return this.getStory(recordId);
+
+      // Check if 'edit' scope is present to automatically skip cache
+      const hasEditScope = this.scopes && this.scopes.includes('edit');
+
+      if(!this.getSkipCache() && !hasEditScope) {
+        return this.getStory(recordId);
+      }
+      if(this.getSkipCache() || hasEditScope) {
+        return this.getStoryWithoutCache(parameterObject);
+      }
     }
     if(parameterObject.request.table == 'chapter') {
       let recordId = parameterObject?.request?.id;
@@ -125,7 +134,7 @@ class DataFacadeSync {
     try {
       // the id vanishes on saving to postgres, so we need to save it again
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      await dataStorage.updateData(object, payload);
+      let updatedData = await dataStorage.updateData(object, payload);
 
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);
@@ -134,6 +143,7 @@ class DataFacadeSync {
       } else {
         Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Skipping cache update for object: ${object}` });
       }
+      return updatedData;
     } catch (error) {
       Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Failed to update data for object: ${object}`, error });
       throw error;
@@ -293,22 +303,52 @@ class DataFacadeSync {
     return product;
   }
 
-  async getStory(storyId) {
+  async getStory(recordId) {
     const LOCATION = 'DataFacadeSync.getStory';
     if(DataFacade.isDataMockEnabled()) {
-      return new DataMock().getStoryById(storyId);
+      return new DataMock().getStoryById(recordId);
     }
     Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
     let cache = new DataCache2(this.environment);
-    let product = await cache.get(storyId);
+    let product = await cache.get(recordId);
     if (!product) {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No story in cache, querying database` });
       let dataStorage = new DataStorage(this.environment);
       dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
-      product = await dataStorage.queryStory(storyId);
-      cache.set(storyId, product);
+      product = await dataStorage.queryStory(recordId);
+      cache.set(recordId, product);
     } else {
       Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Story found in cache` });
+    }
+    return product;
+  }
+
+  async getStoryWithoutCache(parameterObject) {
+    let recordId = parameterObject?.request?.id;
+    let publishDate = parameterObject?.request?.publishDate;
+    const LOCATION = 'DataFacadeSync.getStoryWithoutCache';
+    if(DataFacade.isDataMockEnabled()) {
+      return new DataMock().getStoryById(recordId);
+    }
+    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}` });
+    let dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
+
+    // Check if 'edit' scope is present to skip publishDate filtering
+    const hasEditScope = this.scopes && this.scopes.includes('edit');
+
+    if (publishDate !== undefined) {
+      dataStorage.setConditionPublishDate(publishDate);
+    } else if (hasEditScope) {
+      // Skip publishDate filtering if edit scope is present by setting publishDate to null
+      dataStorage.setConditionPublishDate(null);
+    }
+
+    let product = await dataStorage.queryStory(recordId);
+    if (!product) {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No story found in database` });
+    } else {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Story found in database` });
     }
     return product;
   }
@@ -390,34 +430,34 @@ class DataFacade {
   }
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).getData(parameterObject);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).getData(parameterObject);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).getData(parameterObject);
     }
   }
 
   updateData(data) {
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).updateData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).updateData(data);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).updateData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).updateData(data);
     }
   }
 
   createData(data) {
     // Always skip cache for creation
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(true).createData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(true).setScopes(this.scopes).createData(data);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(true).createData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(true).setScopes(this.scopes).createData(data);
     }
   }
 
   deleteData(data) {
     if (data.returnPromise) {
-      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).deleteData(data);
+      return new DataFacadePromise(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).deleteData(data);
     } else {
-      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).deleteData(data);
+      return new DataFacadeSync(this.environment).setSkipCache(this._skipCache).setScopes(this.scopes).deleteData(data);
     }
   }
 

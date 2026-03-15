@@ -1,6 +1,13 @@
 const { Logging } = require("../../../modules/logging");
 const { Sanitizer } = require("./sanitizer");
 
+/**
+ * ActionCreate class is responsible for constructing and executing SQL INSERT statements.
+ * It's agnostic to the specific database schema and can be used to insert records into any table by setting the appropriate values.
+ *
+ * It uses the Sanitizer module to sanitize input values to prevent SQL injection attacks.
+ */
+
 class ActionCreate {
   constructor() {
     this.values = {};
@@ -20,10 +27,18 @@ class ActionCreate {
 
   setValue(key, value) {
     if (!key || value === undefined) { return this; }
+
+    // check if the key is a valid field for the table
+    let tableFields = this.table.getTableFields()();
+    tableFields = tableFields.map(field => field.toLowerCase());
+    if (!tableFields.includes(key.toLowerCase())) {
+      throw new Error(`Field "${key}" is not defined for table "${this.table.getTableName()()}"`);
+    }
+
     const sanitizedValue = Sanitizer.sanitize(value);
     if (typeof value === 'string') {
       this.values[key] = `'${sanitizedValue}'`;
-    } else if (typeof value === 'number' || value === null) {
+    } else if (typeof value === 'number' || value === null || typeof value === 'boolean') {
       this.values[key] = sanitizedValue;
     } else {
       throw new Error('Unsupported value type');
@@ -35,7 +50,7 @@ class ActionCreate {
     const tableName = this.table.getTableName()();
     const tableFields = Object.keys(this.values);
     const fieldValues = tableFields.map(field => `${this.values[field]}`);
-    const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${fieldValues.join(', ')}) RETURNING Id;`;
+    const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${fieldValues.join(', ')}) RETURNING *;`;
 
     Logging.debugMessage({ severity: 'FINEST', location: 'ActionCreate.execute', message: `Executing SQL: ${sqlStatement}` });
     return this.pgConnector.executeSql(sqlStatement);

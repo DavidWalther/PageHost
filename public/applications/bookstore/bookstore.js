@@ -149,8 +149,24 @@ class Bookstore extends LitElement {
 
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
-
     this.removeEventListener('navigation', this.handleNavigationEvent);
+    this.removeEventListener('chapter-updated', this._handleChapterUpdated);
+    this.removeEventListener('chapter-deleted', this._handleChapterDeleted);
+  }
+
+  _handleChapterUpdated(event) {
+    const updatedChapter = event.detail?.chapterData;
+    if (updatedChapter && this.storyElement) {
+      this.storyElement.handleChapterUpdated(updatedChapter);
+    }
+  }
+
+  _handleChapterDeleted(event) {
+    const chapterId = event.detail?.chapterId;
+    if (chapterId && this.storyElement) {
+      this.storyElement.handleChapterDeleted(chapterId);
+      this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
+    }
   }
 
   // =========== Hydration - Start ============
@@ -188,6 +204,8 @@ class Bookstore extends LitElement {
         this.storyElement.setAttribute('chapter-buttons_number-max', 2);
       }
       this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+      this.addEventListener('chapter-updated', this._handleChapterUpdated.bind(this));
+      this.addEventListener('chapter-deleted', this._handleChapterDeleted.bind(this));
     }, 0);
   }
 

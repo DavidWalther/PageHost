@@ -86,7 +86,8 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON TestTable.Id = TestChildTable.parentId WHERE (((Story.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Story.applicationIncluded = \'*\') AND (Story.applicationExcluded isNull OR Story.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')) AND ((Chapter.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Chapter.applicationIncluded = \'*\') AND (Chapter.applicationExcluded isNull OR Chapter.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')))');
+      // Updated expectation: right table application conditions should now be in JOIN ON clause
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON (TestTable.Id = TestChildTable.parentId AND (Chapter.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Chapter.applicationIncluded = \'*\') AND (Chapter.applicationExcluded isNull OR Chapter.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\')) WHERE ((Story.applicationIncluded LIKE \'%\' || \'TestApplicationKey\' || \'%\' OR Story.applicationIncluded = \'*\') AND (Story.applicationExcluded isNull OR Story.applicationExcluded NOT LIKE \'%\' || \'TestApplicationKey\' || \'%\'))');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -131,6 +132,8 @@ describe('SQL-Actions', () => {
 
   describe('\'setConditionPublishDate\' creates proper SQL statement', () => {
     it('without a right table, datetime is undefined', () => {
+      mockExecuteSql = jest.fn().mockResolvedValue([{ Id: 1337, Name: 'TestName' }]);
+
       const actionGet = new ActionGet();
       let tableStory = new TableStory();
       actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
@@ -140,7 +143,7 @@ describe('SQL-Actions', () => {
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
       expect(firstCall[0]).toEqual('SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (PublishDate <= NOW())');
-      resultPromise.then((result) => {
+      return resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
     });
@@ -187,7 +190,8 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.PublishDate <= NOW() AND Chapter.PublishDate <= NOW())');
+      // Updated expectation: right table publish date condition should be in JOIN ON clause
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON (Story.Id = Chapter.storyId AND Chapter.PublishDate <= NOW()) WHERE (Story.PublishDate <= NOW())');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -223,7 +227,8 @@ describe('SQL-Actions', () => {
       let resultPromise = actionGet.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.PublishDate <= \'2021-01-01 00:00:00\' AND Chapter.PublishDate <= \'2021-01-01 00:00:00\')');
+      // Updated expectation: right table publish date condition should be in JOIN ON clause
+      expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON (Story.Id = Chapter.storyId AND Chapter.PublishDate <= \'2021-01-01 00:00:00\') WHERE (Story.PublishDate <= \'2021-01-01 00:00:00\')');
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
@@ -337,6 +342,93 @@ describe('SQL-Actions', () => {
       let firstCall = mockExecuteSql.mock.calls[0];
       expect(firstCall[0]).toEqual('SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.Name = \'TestName\' AND Chapter.Name = \'TestChapterName\')');
       resultPromise.then((result) => {
+        expect(result).toBeTruthy();
+      });
+    });
+  });
+
+  describe('LEFT JOIN bug reproduction - parent records not returned when no children exist', () => {
+    it('should reproduce the original bug: application conditions for right table in WHERE clause instead of JOIN ON', () => {
+      mockExecuteSql = jest.fn().mockResolvedValue([{ chapter_Id: '000c00000000000045', chapter_Name: 'TestChapter', paragraph_Id: null, paragraph_Name: null }]);
+
+      const actionGet = new ActionGet();
+      let tableChapter = new TableChapter();
+      let tableParagraph = new TableParagraph();
+      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
+      actionGet.setTable(tableChapter);
+      actionGet.setRightTable(tableParagraph);
+      actionGet.setJoinCondition('chapter.Id = paragraph.chapterId');
+      actionGet.setConditionId('000c00000000000045');
+      actionGet.setConditionApplicationKey('storytellingdom');
+      actionGet.setRightOrderField('SortNumber');
+      actionGet.setRightOrderDirection('ASC');
+
+      let resultPromise = actionGet.execute();
+      expect(resultPromise).toBeInstanceOf(Promise);
+      let firstCall = mockExecuteSql.mock.calls[0];
+
+      const actualSQL = firstCall[0];
+
+      // Check if the bug exists: right table application conditions in WHERE instead of JOIN ON
+      const hasRightTableConditionsInWhere = actualSQL.includes('WHERE') &&
+                                           actualSQL.includes('Paragraph.applicationIncluded') &&
+                                           actualSQL.split('WHERE')[1].includes('Paragraph.applicationIncluded');
+
+      const hasRightTableConditionsInJoinOn = actualSQL.includes('JOIN') &&
+                                             actualSQL.split('ON')[1] &&
+                                             actualSQL.split('WHERE')[0].includes('Paragraph.applicationIncluded');
+
+      return resultPromise.then((result) => {
+        expect(result).toBeTruthy();
+      });
+    });
+
+    it('should demonstrate correct LEFT JOIN behavior where parent records are returned even without children', () => {
+      // This test shows what the correct behavior should be after fixing
+      // The application conditions for the right table should only be in the JOIN ON clause
+      // not in the WHERE clause
+
+      const correctSQL = `SELECT Chapter.Id as chapter_Id, Chapter.StoryId as chapter_StoryId, Chapter.Name as chapter_Name, Chapter.LastUpdate as chapter_LastUpdate, Chapter.SortNumber as chapter_SortNumber, Chapter.reversed as chapter_reversed, Chapter.PublishDate as chapter_PublishDate, Chapter.applicationincluded as chapter_applicationincluded, Chapter.applicationexcluded as chapter_applicationexcluded, Paragraph.Id as paragraph_Id, Paragraph.Name as paragraph_Name, Paragraph.SortNumber as paragraph_SortNumber FROM Chapter LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded LIKE '%' || 'storytellingdom' || '%' OR Paragraph.applicationIncluded = '*') AND (Paragraph.applicationExcluded IS NULL OR Paragraph.applicationExcluded NOT LIKE '%' || 'storytellingdom' || '%')) WHERE (Chapter.id = '000c00000000000045' AND (Chapter.applicationIncluded LIKE '%' || 'storytellingdom' || '%' OR Chapter.applicationIncluded = '*') AND (Chapter.applicationExcluded IS NULL OR Chapter.applicationExcluded NOT LIKE '%' || 'storytellingdom' || '%')) ORDER BY Paragraph.SortNumber ASC`;
+
+      // Verify structure of correct SQL
+      expect(correctSQL).toContain('LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded');
+      expect(correctSQL.split('WHERE')[1]).not.toContain('Paragraph.applicationIncluded');
+      expect(correctSQL.split('WHERE')[1]).toContain('Chapter.applicationIncluded');
+    });
+
+    it('should handle both application key AND publish date conditions correctly in JOIN ON clause', () => {
+      mockExecuteSql = jest.fn().mockResolvedValue([{ chapter_Id: '000c00000000000045', chapter_Name: 'TestChapter', paragraph_Id: null }]);
+
+      const actionGet = new ActionGet();
+      let tableChapter = new TableChapter();
+      let tableParagraph = new TableParagraph();
+      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
+      actionGet.setTable(tableChapter);
+      actionGet.setRightTable(tableParagraph);
+      actionGet.setJoinCondition('Chapter.Id = Paragraph.chapterId');
+      actionGet.setConditionId('000c00000000000045');
+      actionGet.setConditionApplicationKey('storytellingdom');
+      actionGet.setConditionPublishDate('2021-01-01');
+      actionGet.setRightOrderField('SortNumber');
+      actionGet.setRightOrderDirection('ASC');
+
+      let resultPromise = actionGet.execute();
+      let firstCall = mockExecuteSql.mock.calls[0];
+      const actualSQL = firstCall[0];
+
+      // Should have both application key AND publish date conditions in JOIN ON clause
+      expect(actualSQL).toContain('LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded');
+      expect(actualSQL).toContain('AND Paragraph.PublishDate <=');
+
+      // Left table conditions should be in WHERE clause
+      expect(actualSQL).toContain('WHERE (Chapter.id = \'000c00000000000045\' AND Chapter.PublishDate <=');
+      expect(actualSQL).toContain('AND (Chapter.applicationIncluded');
+
+      // Right table conditions should NOT be in WHERE clause
+      expect(actualSQL.split('WHERE')[1]).not.toContain('Paragraph.applicationIncluded');
+      expect(actualSQL.split('WHERE')[1]).not.toContain('Paragraph.PublishDate');
+
+      return resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
     });

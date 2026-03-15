@@ -39,7 +39,7 @@ describe('UpsertEndpoint', () => {
     endpoint = new UpsertEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
     await endpoint.execute();
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ success: true });
+    expect(res.json).toHaveBeenCalledWith({ success: true, result: { id: 'existingid', key: 'value' } });
     expect(mockUpdateData).toHaveBeenCalledWith(req.body);
   });
 
@@ -67,5 +67,67 @@ describe('UpsertEndpoint', () => {
     await endpoint.execute();
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+  });
+
+  it('should create a complete record and return the full created record with applicationIncluded', async () => {
+    // Set up environment with APPLICATION_KEY
+    environment.APPLICATION_APPLICATION_KEY = 'test-app-key';
+
+    // Create a more comprehensive payload similar to a chapter record
+    const inputPayload = {
+      title: 'Test Chapter',
+      description: 'Test chapter description',
+      content: 'Chapter content here',
+      sortOrder: 1,
+      isActive: true,
+      metadata: { author: 'testuser' }
+    };
+
+    req.body = {
+      object: 'chapter',
+      payload: inputPayload
+    };
+
+    // Mock the complete created record that would be returned from database
+    const createdRecord = {
+      id: 'generated-uuid-123',
+      ...inputPayload,
+      applicationIncluded: 'test-app-key',
+      createdAt: '2026-03-08T10:00:00Z',
+      updatedAt: '2026-03-08T10:00:00Z'
+    };
+
+    const mockCreateData = jest.fn().mockResolvedValue(createdRecord);
+    DataFacade.mockImplementation(() => ({
+      setSkipCache: jest.fn().mockReturnThis(),
+      createData: mockCreateData,
+    }));
+
+    endpoint = new UpsertEndpoint().setEnvironment(environment).setRequestObject(req).setResponseObject(res);
+    await endpoint.execute();
+
+    // Verify the applicationIncluded was added to the payload before sending to DataFacade
+    const expectedPayloadWithApp = {
+      object: 'chapter',
+      payload: {
+        ...inputPayload,
+        applicationIncluded: 'test-app-key'
+      }
+    };
+
+    expect(mockCreateData).toHaveBeenCalledWith(expectedPayloadWithApp);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      result: createdRecord
+    });
+
+    // Verify the complete record structure is returned
+    const response = res.json.mock.calls[0][0];
+    expect(response.result).toHaveProperty('id', 'generated-uuid-123');
+    expect(response.result).toHaveProperty('title', 'Test Chapter');
+    expect(response.result).toHaveProperty('applicationIncluded', 'test-app-key');
+    expect(response.result).toHaveProperty('createdAt');
+    expect(response.result).toHaveProperty('updatedAt');
   });
 });
