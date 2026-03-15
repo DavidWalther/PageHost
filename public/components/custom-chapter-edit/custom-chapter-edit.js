@@ -128,37 +128,27 @@ class CustomChapterEdit extends LitElement {
         <!-- Tabs Navigation -->
         <div class="slds-tabs_default">
           <ul class="slds-tabs_default__nav" role="tablist">
-            <li
-              class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}"
-              role="presentation"
-            >
-              <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>
-                ${this.labels.TabEdit}
-              </a>
+            <li class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}" role="presentation">
+              <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>${this.labels.TabEdit}</a>
             </li>
             ${this._isEditMode ? html`
-              <li
-                class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}"
-                role="presentation"
-              >
-                <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>
-                  ${this.labels.TabPublish}
-                </a>
-              </li>
-            ` : ''}
+              <li class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}" role="presentation">
+                <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>${this.labels.TabPublish}</a>
+              </li>` : ''
+            }
           </ul>
 
           <!-- Edits Tab Panel -->
-          <div class="slds-tabs_default__content tab-panel ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
+          <div class="slds-tabs_default__content ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
             ${this.renderEditTab()}
           </div>
 
           <!-- Publish Tab Panel -->
           ${this._isEditMode ? html`
-            <div class="slds-tabs_default__content tab-panel ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
+            <div class="slds-tabs_default__content ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
               ${this.renderPublishTab()}
-            </div>
-          ` : ''}
+            </div>` : ''
+          }
         </div>
 
         <!-- Modal Footer -->
