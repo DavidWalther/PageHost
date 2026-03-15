@@ -46,32 +46,10 @@ class CustomChapterEdit extends LitElement {
       display: block;
     }
 
-    .form-row {
-      margin-bottom: 1rem;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
     .checkbox-group {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-    }
-
-    .form-grid {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: 1fr 1fr;
-    }
-
-    @media (max-width: 768px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
     }
 
     .tab-panel {
