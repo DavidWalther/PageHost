@@ -2,11 +2,13 @@ const { Logging } = require('../../../modules/logging.js');
 const { DataCache2 } = require('../../../database2/DataCache/DataCache.js');
 const {Environment}= require('../../environment.js');
 const AccessTokenService = require('../AccessTokenService.js');
+const JwtService = require('../JwtService.js');
 const crypto = require('crypto');
 
 jest.mock('../../../modules/logging.js');
 jest.mock('../../../database2/DataCache/DataCache.js');
 jest.mock('../../environment.js');
+jest.mock('../JwtService.js');
 
 let mockCacheSet = jest.fn();
 let mockCacheGet = jest.fn();
@@ -111,6 +113,30 @@ describe('AccessTokenService', () => {
       const result = await accessTokenService.isBearerValidFromScope(bearerToken, ['delete']);
       expect(result).toBe(false);
       expect(mockCacheGet).toHaveBeenCalledWith(cacheKey);
+    });
+  });
+
+  describe('createJwt', () => {
+    const userInfo = { email: 'test@mail.com' };
+    const scopes = ['edit', 'create', 'delete', 'publish'];
+
+    beforeEach(() => {
+      JwtService.createJwt = jest.fn().mockReturnValue('mocked-jwt-token');
+    });
+
+    it('should call JwtService.createJwt with correct parameters', () => {
+      const token = accessTokenService.createJwt(userInfo, scopes);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret);
+      expect(token).toBe('mocked-jwt-token');
+    });
+
+    it('should throw an error when userInfo is missing', () => {
+      expect(() => accessTokenService.createJwt(null, scopes)).toThrow('User information is missing');
+    });
+
+    it('should throw an error when AUTH_SERVER_SECRET is not set', () => {
+      accessTokenService.setEnvironment({ AUTH_SERVER_SECRET: null });
+      expect(() => accessTokenService.createJwt(userInfo, scopes)).toThrow('No server secret provided');
     });
   });
 });

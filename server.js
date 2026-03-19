@@ -12,6 +12,7 @@ const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth
 const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
 const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
 const AccessTokenService = require('./private/modules/oAuth2/AccessTokenService.js');
+const JwtService = require('./private/modules/oAuth2/JwtService.js');
 const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
 const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
 const ServiceWorkerEndpointLogic = require('./private/endpoints/*/ServiceWorkerEndpointLogic.js');
@@ -43,6 +44,32 @@ function generateRandomState(length = 32) {
   return crypto.randomBytes(length).toString('hex');
 }
 
+/**
+ * Interim Validation:
+ * 1. If bearer is a valid JWT → validate scopes from JWT payload (stateless)
+ * 2. If not a JWT (or invalid) → fall back to original cache-based bearer check
+ *
+ * @param {string} bearerToken - Token from Authorization header
+ * @param {string[]} requiredScopes - Scopes required to access the resource
+ * @param {object} env - Environment object containing AUTH_SERVER_SECRET
+ * @returns {Promise<boolean>} True if the token is valid and has required scopes
+ */
+async function isTokenValidForScopes(bearerToken, requiredScopes, env) {
+  if (!bearerToken || !requiredScopes) {
+    return false;
+  }
+
+  // Step 3a: Check for JWT
+  const jwtScopes = JwtService.getScopesFromJwt(bearerToken, env.AUTH_SERVER_SECRET);
+  if (jwtScopes !== null) {
+    return requiredScopes.every(scope => jwtScopes.includes(scope));
+  }
+
+  // Step 3b: Original auth check with cache
+  const accessTokenService = new AccessTokenService().setEnvironment(env);
+  return await accessTokenService.isBearerValidFromScope(bearerToken, requiredScopes);
+}
+
 function handleWildcardRequest(req, res, LOCATION) {
   Logging.debugMessage({severity:'INFO', message: `Request received - ${req.url}`, location: LOCATION});
   res.sendFile(__dirname + '/public/index.html');
@@ -69,9 +96,15 @@ app.get('/data/query/*', async (req, res) => {
   // check for bearer token
   const bearerToken = req.headers['authorization']?.split(' ')[1];
   if (bearerToken) {
-    // if a bearer token is provided, check if it is valid
-    let accessTokenService = new AccessTokenService();
-    let userScopes = await accessTokenService.setEnvironment(environment).getScopesForBearer(bearerToken);
+    // if a bearer token is provided, validate it (JWT first, then cache)
+    const jwtScopes = JwtService.getScopesFromJwt(bearerToken, environment.AUTH_SERVER_SECRET);
+    let userScopes;
+    if (jwtScopes !== null) {
+      userScopes = jwtScopes;
+    } else {
+      let accessTokenService = new AccessTokenService();
+      userScopes = await accessTokenService.setEnvironment(environment).getScopesForBearer(bearerToken);
+    }
 
     if (!userScopes) {
       Logging.debugMessage({severity:'FINER', message: `Bearer token is invalid`, location: LOCATION});
@@ -143,8 +176,7 @@ app.post('/api/1.0/data/change/*', async (req, res) => {
   let headers = req.headers;
   let bearerToken = headers['authorization']?.split(' ')[1];
 
-  let accessTokenService = new AccessTokenService().setEnvironment(environment);
-  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['edit'])) {
+  if (!await isTokenValidForScopes(bearerToken, ['edit'], environment)) {
     Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid`, location: LOCATION });
     res.status(401).send('Unauthorized');
     return;
@@ -162,8 +194,7 @@ app.get('/api/1.0/data/delete', async (req, res) => {
 
   let headers = req.headers;
   let bearerToken = headers['authorization']?.split(' ')[1];
-  let accessTokenService = new AccessTokenService().setEnvironment(environment);
-  if (!accessTokenService.isBearerValidFromScope(bearerToken, ['delete'])) {
+  if (!await isTokenValidForScopes(bearerToken, ['delete'], environment)) {
     Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing delete scope`, location: LOCATION });
     res.status(401).send('Unauthorized');
     return;
@@ -182,9 +213,8 @@ app.patch('/api/1.0/actions/publish', async (req, res) => {
 
   let headers = req.headers;
   let bearerToken = headers['authorization']?.split(' ')[1];
-  let accessTokenService = new AccessTokenService().setEnvironment(environment);
 
-  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
+  if (!await isTokenValidForScopes(bearerToken, ['publish', 'edit'], environment)) {
     Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
     res.status(401).send('Unauthorized');
     return;
@@ -202,9 +232,8 @@ app.patch('/api/1.0/actions/unpublish', async (req, res) => {
 
   let headers = req.headers;
   let bearerToken = headers['authorization']?.split(' ')[1];
-  let accessTokenService = new AccessTokenService().setEnvironment(environment);
 
-  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
+  if (!await isTokenValidForScopes(bearerToken, ['publish', 'edit'], environment)) {
     Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
     res.status(401).send('Unauthorized');
     return;

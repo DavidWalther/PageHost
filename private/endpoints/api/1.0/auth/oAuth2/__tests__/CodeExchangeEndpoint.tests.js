@@ -42,13 +42,13 @@ function createMockJwt(header, payload, signature) {
   return jwtParts.join('.');
 }
 
-let mockActionCreateBearer = jest.fn().mockResolvedValue('test-bearer-token');
+let mockActionCreateJwt = jest.fn().mockReturnValue('test-jwt-token');
 AccessTokenService.mockImplementation(() => {
   return {
     isUserValid: jest.fn().mockReturnValue(true),
     setEnvironment: jest.fn().mockReturnThis(),
     getUserScopes: jest.fn().mockReturnValue(['edit']),
-    createBearer: mockActionCreateBearer,
+    createJwt: mockActionCreateJwt,
     getBearerCacheKey: jest.fn().mockReturnValue('test-bearer-cache-key')
   };
 });
@@ -184,7 +184,7 @@ describe('CodeExchangeEndpoint', () => {
     expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Login not allowed' });
   });
 
-  it('should not create a Bearer if user was not found', async () => {
+  it('should not create a JWT if user was not found', async () => {
     mockCacheGet = jest.fn()
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
@@ -199,6 +199,6 @@ describe('CodeExchangeEndpoint', () => {
     let environment = new Environment();
     await endpoint.setEnvironment(environment).execute();
 
-    expect(mockActionCreateBearer).not.toHaveBeenCalled();
+    expect(mockActionCreateJwt).not.toHaveBeenCalled();
   });
 });
