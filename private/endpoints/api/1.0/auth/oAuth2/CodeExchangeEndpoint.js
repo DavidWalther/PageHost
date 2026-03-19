@@ -182,36 +182,36 @@ class CodeExchangeEndpoint {
     // relevant: first_name, last_name, picture, display_name, email
 
     let scopes = accessTokenService.getUserScopes(userWithAuthorization);
-    accessTokenService.createBearer(tokenPayload)
-    .then( bearerToken => {
-
-        Logging.debugMessage({ severity: 'INFO', message: `Bearer token created for scope ${scopes}`, location: LOCATION });
-        let user = {
-          provider: 'google',
-          first_name: tokenPayload.given_name,
-          last_name: tokenPayload.family_name,
-          picture: tokenPayload.picture,
-          display_name: tokenPayload.name,
-          email: tokenPayload.email
-        };
-        const auth_response = {
-          authenticationResult: {
-            user,
-            access: {
-              access_token: bearerToken,
-              scopes
-            }
-          }
-        };
-
-        // send the response to the client
-        this.responseObject.json(auth_response);
-
-    })
-    .catch(error => {
-      Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
+    let jwtToken;
+    try {
+      jwtToken = accessTokenService.createJwt(tokenPayload, scopes);
+    } catch (error) {
+      Logging.debugMessage({ severity: 'INFO', message: `Error creating JWT: ${error}`, location: LOCATION });
       this.responseObject.status(400).json({ error: 'Bad Request' });
-    });
+      return;
+    }
+
+    Logging.debugMessage({ severity: 'INFO', message: `JWT created for scope ${scopes}`, location: LOCATION });
+    let user = {
+      provider: 'google',
+      first_name: tokenPayload.given_name,
+      last_name: tokenPayload.family_name,
+      picture: tokenPayload.picture,
+      display_name: tokenPayload.name,
+      email: tokenPayload.email
+    };
+    const auth_response = {
+      authenticationResult: {
+        user,
+        access: {
+          access_token: jwtToken,
+          scopes
+        }
+      }
+    };
+
+    this.responseObject.json(auth_response);
+
     Logging.debugMessage({ severity: 'INFO', message: `Code exchange completed`, location: LOCATION });
     return this.responseObject;
   }

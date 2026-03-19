@@ -1,5 +1,6 @@
 const { DataCache2 } = require('../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
+const JwtService = require('./JwtService.js');
 
 class AccessTokenService {
   constructor() {
@@ -16,6 +17,23 @@ class AccessTokenService {
 
   get environment() {
     return this._environment;
+  }
+
+  /**
+   * Creates a stateless JWT access token for the user.
+   *
+   * @param {object} userInfo - Object containing at least an `email` field
+   * @param {string[]} scopes - Scopes to embed in the JWT
+   * @returns {string} Signed JWT string
+   */
+  createJwt(userInfo, scopes) {
+    if (!userInfo) {
+      throw new Error('User information is missing');
+    }
+    if (!this.environment.AUTH_SERVER_SECRET) {
+      throw new Error('No server secret provided');
+    }
+    return JwtService.createJwt(userInfo.email, 'google', scopes, this.environment.AUTH_SERVER_SECRET);
   }
 
   async createBearer(userInfo) {
