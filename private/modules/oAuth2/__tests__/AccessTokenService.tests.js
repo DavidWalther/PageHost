@@ -2,11 +2,13 @@ const { Logging } = require('../../../modules/logging.js');
 const { DataCache2 } = require('../../../database2/DataCache/DataCache.js');
 const {Environment}= require('../../environment.js');
 const AccessTokenService = require('../AccessTokenService.js');
+const JwtService = require('../JwtService.js');
 const crypto = require('crypto');
 
 jest.mock('../../../modules/logging.js');
 jest.mock('../../../database2/DataCache/DataCache.js');
 jest.mock('../../environment.js');
+jest.mock('../JwtService.js');
 
 let mockCacheSet = jest.fn();
 let mockCacheGet = jest.fn();
@@ -111,6 +113,42 @@ describe('AccessTokenService', () => {
       const result = await accessTokenService.isBearerValidFromScope(bearerToken, ['delete']);
       expect(result).toBe(false);
       expect(mockCacheGet).toHaveBeenCalledWith(cacheKey);
+    });
+  });
+
+  describe('createJwt', () => {
+    const userInfo = { email: 'test@mail.com' };
+    const scopes = ['edit', 'create', 'delete', 'publish'];
+
+    beforeEach(() => {
+      JwtService.createJwt = jest.fn().mockReturnValue('mocked-jwt-token');
+    });
+
+    it('should call JwtService.createJwt with correct parameters and default lifetime', () => {
+      const token = accessTokenService.createJwt(userInfo, scopes);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret, 900);
+      expect(token).toBe('mocked-jwt-token');
+    });
+
+    it('should use AUTH_JWT_LIFETIME_SECONDS from environment when set', () => {
+      accessTokenService.setEnvironment({ AUTH_SERVER_SECRET: serverSecret, AUTH_JWT_LIFETIME_SECONDS: '3600' });
+      accessTokenService.createJwt(userInfo, scopes);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret, 3600);
+    });
+
+    it('should fall back to default lifetime when AUTH_JWT_LIFETIME_SECONDS is not a valid number', () => {
+      accessTokenService.setEnvironment({ AUTH_SERVER_SECRET: serverSecret, AUTH_JWT_LIFETIME_SECONDS: 'invalid' });
+      accessTokenService.createJwt(userInfo, scopes);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret, 900);
+    });
+
+    it('should throw an error when userInfo is missing', () => {
+      expect(() => accessTokenService.createJwt(null, scopes)).toThrow('User information is missing');
+    });
+
+    it('should throw an error when AUTH_SERVER_SECRET is not set', () => {
+      accessTokenService.setEnvironment({ AUTH_SERVER_SECRET: null });
+      expect(() => accessTokenService.createJwt(userInfo, scopes)).toThrow('No server secret provided');
     });
   });
 });
