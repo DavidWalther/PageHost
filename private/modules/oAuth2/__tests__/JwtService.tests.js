@@ -30,7 +30,7 @@ describe('JwtService', () => {
       expect(payload.scopes).toEqual(TEST_SCOPES);
     });
 
-    it('should set exp 15 minutes after iat and nbf equal to iat', () => {
+    it('should set exp 15 minutes (900 seconds) after nbf by default', () => {
       const before = Math.floor(Date.now() / 1000);
       const token = JwtService.createJwt(TEST_USER_ID, TEST_IDP, TEST_SCOPES, TEST_SECRET);
       const after = Math.floor(Date.now() / 1000);
@@ -39,7 +39,19 @@ describe('JwtService', () => {
       expect(payload.iat).toBeGreaterThanOrEqual(before);
       expect(payload.iat).toBeLessThanOrEqual(after);
       expect(payload.nbf).toBe(payload.iat);
-      expect(payload.exp).toBe(payload.iat + 15 * 60);
+      expect(payload.exp).toBe(payload.nbf + 900);
+    });
+
+    it('should use the provided lifetimeSeconds for exp', () => {
+      const customLifetime = 3600;
+      const before = Math.floor(Date.now() / 1000);
+      const token = JwtService.createJwt(TEST_USER_ID, TEST_IDP, TEST_SCOPES, TEST_SECRET, customLifetime);
+      const after = Math.floor(Date.now() / 1000);
+
+      const payload = jwt.decode(token);
+      expect(payload.nbf).toBeGreaterThanOrEqual(before);
+      expect(payload.nbf).toBeLessThanOrEqual(after);
+      expect(payload.exp).toBe(payload.nbf + customLifetime);
     });
   });
 

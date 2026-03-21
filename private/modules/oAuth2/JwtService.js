@@ -8,16 +8,17 @@ class JwtService {
    * @param {string} idp - Identity Provider (e.g. 'google')
    * @param {string[]} scopes - Array of permission scopes
    * @param {string} serverSecret - The secret used to sign the token ($AUTH_SERVER_SECRET)
+   * @param {number} [lifetimeSeconds=900] - Token lifetime in seconds (default: 15 minutes)
    * @returns {string} Signed JWT string
    */
-  static createJwt(userId, idp, scopes, serverSecret) {
+  static createJwt(userId, idp, scopes, serverSecret, lifetimeSeconds = 900) {
     const now = Math.floor(Date.now() / 1000);
 
     const payload = {
       userId,
       IdP: idp,
       scopes,
-      exp: now + 15 * 60,
+      exp: now + lifetimeSeconds,
       nbf: now,
     };
 

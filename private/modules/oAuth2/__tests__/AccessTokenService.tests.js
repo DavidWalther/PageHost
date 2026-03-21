@@ -124,10 +124,22 @@ describe('AccessTokenService', () => {
       JwtService.createJwt = jest.fn().mockReturnValue('mocked-jwt-token');
     });
 
-    it('should call JwtService.createJwt with correct parameters', () => {
+    it('should call JwtService.createJwt with correct parameters and default lifetime', () => {
       const token = accessTokenService.createJwt(userInfo, scopes);
-      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret, 900);
       expect(token).toBe('mocked-jwt-token');
+    });
+
+    it('should use AUTH_JWT_LIFETIME_SECONDS from environment when set', () => {
+      accessTokenService.setEnvironment({ AUTH_SERVER_SECRET: serverSecret, AUTH_JWT_LIFETIME_SECONDS: '3600' });
+      accessTokenService.createJwt(userInfo, scopes);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret, 3600);
+    });
+
+    it('should fall back to default lifetime when AUTH_JWT_LIFETIME_SECONDS is not a valid number', () => {
+      accessTokenService.setEnvironment({ AUTH_SERVER_SECRET: serverSecret, AUTH_JWT_LIFETIME_SECONDS: 'invalid' });
+      accessTokenService.createJwt(userInfo, scopes);
+      expect(JwtService.createJwt).toHaveBeenCalledWith(userInfo.email, 'google', scopes, serverSecret, 900);
     });
 
     it('should throw an error when userInfo is missing', () => {
