@@ -33,7 +33,11 @@ class AccessTokenService {
     if (!this.environment.AUTH_SERVER_SECRET) {
       throw new Error('No server secret provided');
     }
-    return JwtService.createJwt(userInfo.email, 'google', scopes, this.environment.AUTH_SERVER_SECRET);
+    const parsedLifetime = parseInt(this.environment.AUTH_JWT_LIFETIME_SECONDS, 10);
+    const lifetimeSeconds = (this.environment.AUTH_JWT_LIFETIME_SECONDS && !isNaN(parsedLifetime) && parsedLifetime > 0)
+      ? parsedLifetime
+      : 900;
+    return JwtService.createJwt(userInfo.email, 'google', scopes, this.environment.AUTH_SERVER_SECRET, lifetimeSeconds);
   }
 
   async createBearer(userInfo) {
