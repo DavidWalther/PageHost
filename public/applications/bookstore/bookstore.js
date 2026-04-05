@@ -85,16 +85,15 @@ class Bookstore extends LitElement {
             <div slot="mid" class="slds-text-align_center slds-text-heading_large">
               <span id="page-header-headline"></span>
             </div>
-            <div slot="right" class="slds-grid slds-wrap">
+            <div slot="right" class="slds-grid slds-grid_align-end slds-wrap">
               <div class="slds-col slds-text-align_right slds-size_1-of-1 slds-m-bottom--x-small">
                 <custom-login-module></custom-login-module>
               </div>
-              <div class="slds-col slds-text-align_right slds-size_1-of-1">
+              <div class="slds-col slds-text-align_right">
                 <slds-toggle
                   label="Licht"
                   name="options"
                   @toggle="${this.handleToggleLightswitch}"
-                  direction-reversed
                 ></slds-toggle>
               </div>
             </div>
