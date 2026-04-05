@@ -3,6 +3,7 @@
  *
  * Mocking strategy:
  *   - DataStorage (Postgres) and DataCache2 (Redis) are mocked — these are external I/O
+ *   - Logging is mocked to suppress console output during tests
  *   - All other modules (DataFacade, DataFacadeSync, EndpointLogic, DataCleaner, etc.) are real
  *   - OpenIdConnectClient is also mocked in auth tests to avoid real HTTP calls to Google
  */
@@ -12,6 +13,7 @@ const { DataCache2 } = require('../database2/DataCache/DataCache');
 
 jest.mock('../database2/DataStorage/DataStorage');
 jest.mock('../database2/DataCache/DataCache');
+jest.mock('../modules/logging');
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 
