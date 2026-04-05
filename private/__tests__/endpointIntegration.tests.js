@@ -485,3 +485,214 @@ describe('DeleteEndpoint Integration', () => {
     expect(mockDeleteData).not.toHaveBeenCalled();
   });
 });
+
+// ─── Step 3: Action Endpoints ────────────────────────────────────────────────
+
+const PublishEndpoint = require('../endpoints/api/1.0/action/publishEndpoint');
+const UnpublishEndpoint = require('../endpoints/api/1.0/action/unpublishEndpoint');
+
+describe('PublishEndpoint Integration', () => {
+  const ENV_WITH_PUBLISH = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['publish', 'edit']) };
+
+  it('should publish a record and return 200', async () => {
+    const existingRecord = { id: '000s001', title: 'Story One' }; // no publishDate
+    const updatedRecord = { id: '000s001', title: 'Story One', publishDate: '2026-01-01T00:00:00.000Z' };
+    mockQueryStory.mockResolvedValue(existingRecord);
+    mockUpdateData.mockResolvedValue(updatedRecord);
+
+    const req = {
+      url: '/api/1.0/actions/publish',
+      body: { object: 'story', id: '000s001' },
+    };
+    const res = createResMock();
+
+    await new PublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(mockUpdateData).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+  it('should return 403 when publish is not in allowed actions', async () => {
+    const envWithoutPublish = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+
+    const req = {
+      url: '/api/1.0/actions/publish',
+      body: { object: 'story', id: '000s001' },
+    };
+    const res = createResMock();
+
+    await new PublishEndpoint()
+      .setEnvironment(envWithoutPublish)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(mockUpdateData).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when request body is invalid (missing id)', async () => {
+    const req = {
+      url: '/api/1.0/actions/publish',
+      body: { object: 'story' },
+    };
+    const res = createResMock();
+
+    await new PublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+  });
+
+  it('should return 404 when record does not exist', async () => {
+    mockQueryStory.mockResolvedValue(null);
+
+    const req = {
+      url: '/api/1.0/actions/publish',
+      body: { object: 'story', id: '000s999' },
+    };
+    const res = createResMock();
+
+    await new PublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record not found' });
+  });
+
+  it('should return 400 when the record is already published', async () => {
+    mockQueryStory.mockResolvedValue({ id: '000s001', publishDate: '2025-01-01' });
+
+    const req = {
+      url: '/api/1.0/actions/publish',
+      body: { object: 'story', id: '000s001' },
+    };
+    const res = createResMock();
+
+    await new PublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record is already published' });
+    expect(mockUpdateData).not.toHaveBeenCalled();
+  });
+});
+
+describe('UnpublishEndpoint Integration', () => {
+  const ENV_WITH_PUBLISH = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['publish', 'edit']) };
+
+  it('should unpublish a record and return 200', async () => {
+    const existingRecord = { id: '000s001', publishdate: '2025-01-01' };
+    const updatedRecord = { id: '000s001', publishdate: null };
+    mockQueryStory.mockResolvedValue(existingRecord);
+    mockUpdateData.mockResolvedValue(updatedRecord);
+
+    const req = {
+      url: '/api/1.0/actions/unpublish',
+      body: { object: 'story', id: '000s001' },
+    };
+    const res = createResMock();
+
+    await new UnpublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(mockUpdateData).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+  it('should return 403 when publish is not in allowed actions', async () => {
+    const envWithoutPublish = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+
+    const req = {
+      url: '/api/1.0/actions/unpublish',
+      body: { object: 'story', id: '000s001' },
+    };
+    const res = createResMock();
+
+    await new UnpublishEndpoint()
+      .setEnvironment(envWithoutPublish)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(mockUpdateData).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when request body is invalid (missing id)', async () => {
+    const req = {
+      url: '/api/1.0/actions/unpublish',
+      body: { object: 'story' },
+    };
+    const res = createResMock();
+
+    await new UnpublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+  });
+
+  it('should return 404 when the record does not exist', async () => {
+    mockQueryStory.mockResolvedValue(null);
+
+    const req = {
+      url: '/api/1.0/actions/unpublish',
+      body: { object: 'story', id: '000s999' },
+    };
+    const res = createResMock();
+
+    await new UnpublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record not found' });
+  });
+
+  it('should return 400 when the record is already unpublished', async () => {
+    mockQueryStory.mockResolvedValue({ id: '000s001' }); // no publishdate
+
+    const req = {
+      url: '/api/1.0/actions/unpublish',
+      body: { object: 'story', id: '000s001' },
+    };
+    const res = createResMock();
+
+    await new UnpublishEndpoint()
+      .setEnvironment(ENV_WITH_PUBLISH)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record is already unpublished' });
+    expect(mockUpdateData).not.toHaveBeenCalled();
+  });
+});
