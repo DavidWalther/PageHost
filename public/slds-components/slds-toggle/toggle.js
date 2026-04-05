@@ -11,9 +11,8 @@ class SLDSToggle extends LitElement {
     disabledLabel: { type: String, attribute: 'disabled-label' },
     name: { type: String },
     checked: { type: Boolean, reflect: true },
-    directionReversed: { type: Boolean, attribute: 'direction-reversed' },
-    labelPosition: { type: String, attribute: 'label-position'},
-    disabled: { type: Boolean, attribute: 'disabled' }
+    disabled: { type: Boolean, attribute: 'disabled' },
+    direction: { type: String } // ['right-to-left']
   };
 
   constructor() {
@@ -51,28 +50,17 @@ class SLDSToggle extends LitElement {
           </span>
     `;
     const componentArray = [];
-    if (this.directionReversed && this.labelPosition === 'left') {
-      componentArray.push(htmlToggle);
-      componentArray.push(htmlLabel);
-    } 
-    if (this.directionReversed && this.labelPosition === 'right') {
-      componentArray.push(htmlLabel);
-      componentArray.push(htmlToggle);
-    }
-    if (!this.directionReversed && this.labelPosition === 'left') {
-      componentArray.push(htmlLabel);
-      componentArray.push(htmlToggle);
-    }
-    if (!this.directionReversed && this.labelPosition === 'right') {
-      componentArray.push(htmlToggle);
-      componentArray.push(htmlLabel);
-    }
+    componentArray.push(htmlLabel);
+    componentArray.push(htmlToggle);
 
+    let direction = this.direction === 'right-to-left' ? 'rtl' : 'ltr';
     return html`
-      <div class="slds-form-element">
-        <label class="${gridClasses}" for="${toggleId}">
-          ${componentArray}
-        </label>
+      <div dir="${direction}">
+        <div class="slds-form-element">
+          <label class="${gridClasses}" for="${toggleId}">
+            ${componentArray}
+          </label>
+        </div>
       </div>
     `;
   }
