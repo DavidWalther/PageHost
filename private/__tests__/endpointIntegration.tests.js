@@ -282,3 +282,206 @@ describe('ParagraphEndpoint Integration', () => {
     expect(res.json).toHaveBeenCalledWith({});
   });
 });
+
+// ─── Step 2: Data Mutation Endpoints ────────────────────────────────────────
+
+const UpsertEndpoint = require('../endpoints/api/1.0/data/upsertEndpoint');
+const DeleteEndpoint = require('../endpoints/api/1.0/data/deleteEndpoint');
+
+describe('UpsertEndpoint Integration — create', () => {
+  const ENV_WITH_CREATE = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create', 'edit']) };
+
+  it('should create a record and return 200 with the result', async () => {
+    const createdRecord = { id: 'new-p001', content: 'New paragraph' };
+    mockCreateRecord.mockResolvedValue(createdRecord);
+
+    const req = {
+      url: '/api/1.0/data/change/paragraph',
+      body: { object: 'paragraph', payload: { content: 'New paragraph' } },
+    };
+    const res = createResMock();
+
+    await new UpsertEndpoint()
+      .setEnvironment(ENV_WITH_CREATE)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(mockCreateRecord).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, result: createdRecord });
+  });
+
+  it('should set applicationIncluded on the payload before creating', async () => {
+    mockCreateRecord.mockResolvedValue({ id: 'new-p001' });
+
+    const req = {
+      url: '/api/1.0/data/change/paragraph',
+      body: { object: 'paragraph', payload: { content: 'New paragraph' } },
+    };
+    const res = createResMock();
+
+    await new UpsertEndpoint()
+      .setEnvironment(ENV_WITH_CREATE)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    const callArgs = mockCreateRecord.mock.calls[0][1];
+    expect(callArgs).toHaveProperty('applicationIncluded', ENVIRONMENT.APPLICATION_APPLICATION_KEY);
+  });
+
+  it('should return 403 when create is not in allowed actions', async () => {
+    const envWithoutCreate = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+
+    const req = {
+      url: '/api/1.0/data/change/paragraph',
+      body: { object: 'paragraph', payload: { content: 'New paragraph' } },
+    };
+    const res = createResMock();
+
+    await new UpsertEndpoint()
+      .setEnvironment(envWithoutCreate)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(mockCreateRecord).not.toHaveBeenCalled();
+  });
+});
+
+describe('UpsertEndpoint Integration — update', () => {
+  const ENV_WITH_EDIT = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create', 'edit']) };
+
+  it('should update a record and return 200 with the result', async () => {
+    const updatedRecord = { id: '000s001', title: 'Updated Title' };
+    mockUpdateData.mockResolvedValue(updatedRecord);
+
+    const req = {
+      url: '/api/1.0/data/change/story',
+      body: { object: 'story', payload: { id: '000s001', title: 'Updated Title' } },
+    };
+    const res = createResMock();
+
+    await new UpsertEndpoint()
+      .setEnvironment(ENV_WITH_EDIT)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(mockUpdateData).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true, result: updatedRecord });
+  });
+
+  it('should return 403 when edit is not in allowed actions', async () => {
+    const envWithoutEdit = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create']) };
+
+    const req = {
+      url: '/api/1.0/data/change/story',
+      body: { object: 'story', payload: { id: '000s001', title: 'Updated Title' } },
+    };
+    const res = createResMock();
+
+    await new UpsertEndpoint()
+      .setEnvironment(envWithoutEdit)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(mockUpdateData).not.toHaveBeenCalled();
+  });
+
+  it('should return 400 when payload is missing', async () => {
+    const req = {
+      url: '/api/1.0/data/change/story',
+      body: { object: 'story' },
+    };
+    const res = createResMock();
+
+    await new UpsertEndpoint()
+      .setEnvironment(ENV_WITH_EDIT)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+  });
+});
+
+describe('DeleteEndpoint Integration', () => {
+  const ENV_WITH_DELETE = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['delete']) };
+
+  it('should delete a record and return 200', async () => {
+    mockDeleteData.mockResolvedValue(undefined);
+
+    const req = {
+      url: '/api/1.0/data/delete',
+      query: { object: 'paragraph', id: '000p001' },
+    };
+    const res = createResMock();
+
+    await new DeleteEndpoint()
+      .setEnvironment(ENV_WITH_DELETE)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(mockDeleteData).toHaveBeenCalledWith('paragraph', '000p001');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+  it('should return 400 when object is missing', async () => {
+    const req = { url: '/api/1.0/data/delete', query: { id: '000p001' } };
+    const res = createResMock();
+
+    await new DeleteEndpoint()
+      .setEnvironment(ENV_WITH_DELETE)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Missing object or id' });
+  });
+
+  it('should return 400 when id is missing', async () => {
+    const req = { url: '/api/1.0/data/delete', query: { object: 'paragraph' } };
+    const res = createResMock();
+
+    await new DeleteEndpoint()
+      .setEnvironment(ENV_WITH_DELETE)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Missing object or id' });
+  });
+
+  it('should return 403 when delete is not in allowed actions', async () => {
+    const envWithoutDelete = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+
+    const req = {
+      url: '/api/1.0/data/delete',
+      query: { object: 'paragraph', id: '000p001' },
+    };
+    const res = createResMock();
+
+    await new DeleteEndpoint()
+      .setEnvironment(envWithoutDelete)
+      .setRequestObject(req)
+      .setResponseObject(res)
+      .execute();
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(mockDeleteData).not.toHaveBeenCalled();
+  });
+});
