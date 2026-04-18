@@ -1,30 +1,44 @@
 # Copilot Instructions
 
-## gneral behavior
+- Work with the Explore-Plan-Develop cycle. Do not skip any of the steps in the cycle.
 
-- Always follow the instructions in this file when generating code.
-- never make any assumptions 
-- ask for clarification if anything is not clear before generating code.
-- ask questions one by one instead of all at once 
+## Exploration
+
+- create a deep and solid understanding of the problem before starting to plan or write code
+- make no assumptions about the problem or the solution.
+- Ask questions to clarify any uncertainties before proceeding to the next step.
+- make sure to understand the relevant codebase
+- save all insights and information in the file ./files/epcc/<Task>/exploration.md
+- DO NOT CHANGE ANY CODE
+
+## Planning
+
+- create a detailed plan for implementing the feature or fixing the bug. The plan should include:
+- save the plan in the file ./files/epcc/<Task>/plan.md
+- the plan should have the following structure:
+
+   - [ ] Main Step 1
+      - [ ] Sub Step 1.1
+      - [ ] Sub Step 1.2
+      - ...
+   - [ ] Main Step 2
+      - [ ] Sub Step 2.1
+      - [ ] Sub Step 2.2
+      - ...
+   - ...
+- the plan should be as detailed as possible, breaking down the implementation into small, self-contained steps.
+- commit the plan to git with a message that starts with "Plan: " followed by a brief description of the plan.
+- DO NOT CHANGE ANY CODE
 
 ## Development
 
-- make small, incremental changes. With a commit after each change to create a clear history
-- make commit messages like "<ComponentName>: short description of the change" 
-
-### Backend development
-
-1. before starting run tests to eastablish a baseline
-   1.1. on failure: abort and ask for help
-   1.2. on success: create a new branch for the feature
-2. create a test for the new feature first before implementing the feature
-   2.1. on failure: this is expected, go to step 3
-   2.2. on success: this is unexpected, abort and ask for help
-3. commit the test to branch
-4. make changes to implement the feature
-6. run tests
-   6.1. on failure: go back to step 4 and try to fix the issue
-   6.2. on success: commit the changes and go back to step 4 until the feature is complete
+- implement the plan created in the previous step, following the steps in the plan one by one.
+- after completing each main step, commit the changes. List all the completed steps in the commit message.
+- For Backend
+   - run tests before starting to code, and make sure all tests are passing.
+   - after implementing the code, run tests again to make sure all tests are still passing.
+   - run tests after completing each main step to ensure that the implementation is correct and does not break any existing functionality.
+- mark the task as complete when all steps in the plan are completed and all tests are passing.
 
 ## commands
 
