@@ -55,20 +55,21 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push('<script type="module" src="slds-components/slds-modal/slds-modal.js"></script>');
       headerEntries.push('<script type="module" src="slds-components/slds-layout/slds-layout.js"></script>');
       headerEntries.push('<script type="module" src="slds-components/slds-layout/slds-layout-item.js"></script>');
+      headerEntries.push('<script type="module" src="slds-components/slds-breadcrumbs/slds-breadcrumbs.js"></script>');
 
       headerEntries.push('<script type="module" src="applications/bookstore/bookstore.js"></script>');
 
       let headPlaceholder = '\n' + headerEntries.join('\n') + '\n';
-      
+
       const indexContent = `
       <!DOCTYPE html>
       <html class="dark-mode">
         <head>${headPlaceholder}</head>
-        <body onload="initializeApp()"></body>  
+        <body onload="initializeApp()"></body>
       </html>
       `;
 
-      // headPlaceholder will be replaced with the actual content 
+      // headPlaceholder will be replaced with the actual content
       this.responseObject.send(indexContent);
 
       resolve();
