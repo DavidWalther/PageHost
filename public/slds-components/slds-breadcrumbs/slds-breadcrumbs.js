@@ -4,7 +4,8 @@ import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 class SldsBreadcrumbs extends LitElement {
   static properties = {
     items: { type: Array },
-    ariaLabel: { type: String, attribute: 'aria-label' }
+    ariaLabel: { type: String, attribute: 'aria-label' },
+    isCardContainer: { type: Boolean, attribute: 'card-container' },
   };
 
   constructor() {
@@ -19,13 +20,18 @@ class SldsBreadcrumbs extends LitElement {
   }
 
   render() {
-    return html`
-      <nav role="navigation" aria-label="${this.ariaLabel}">
+    const content = html`
+      <nav role="navigation" slot="${this.isCardContainer ? 'header' : ''}" aria-label="${this.ariaLabel}">
         <ol class="slds-breadcrumb slds-list_horizontal slds-wrap">
           ${this.items.map((item, index) => this._renderItem(item, index))}
         </ol>
       </nav>
     `;
+    
+    if(!this.isCardContainer) {
+      return content;
+    }
+    return html`<slds-card no-footer>${content}</slds-card>`;
   }
 
   _renderItem(item, index) {
