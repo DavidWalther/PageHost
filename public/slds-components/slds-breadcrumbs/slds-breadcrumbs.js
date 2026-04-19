@@ -6,17 +6,31 @@ class SldsBreadcrumbs extends LitElement {
     items: { type: Array },
     ariaLabel: { type: String, attribute: 'aria-label' },
     isCardContainer: { type: Boolean, attribute: 'card-container' },
+    size: { type: String, reflect: true } 
   };
 
   constructor() {
     super();
     this.items = [];
     this.ariaLabel = 'Breadcrumbs';
+    this.size = 'medium';
   }
 
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot);
+  }
+
+  get isSizeSmall() {
+    return this.size === 'small';
+  }
+
+  get isSizeMedium() {
+    return this.size === 'medium';
+  }
+
+  get isSizeLarge() {
+    return this.size === 'large';
   }
 
   render() {
@@ -35,12 +49,14 @@ class SldsBreadcrumbs extends LitElement {
   }
 
   _renderItem(item, index) {
+    const sizeClass = this.isSizeSmall ? 'slds-text-heading_small' : this.isSizeMedium ? 'slds-text-heading_medium' : this.isSizeLarge ? 'slds-text-heading_large' : '';
+
     return html`
-      <li class="slds-breadcrumb__item">
+      <li class="slds-breadcrumb__item ">
         <a
           href="${item.href ?? nothing}"
           @click="${(event) => this._handleClick(event, item, index)}"
-        >${item.label}</a>
+        ><div class="${sizeClass}">${item.label}</div></a>
       </li>
     `;
   }
