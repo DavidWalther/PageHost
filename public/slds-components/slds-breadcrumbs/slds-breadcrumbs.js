@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css, nothing } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
 const OVERFLOW_MARKER = Symbol('overflow');
@@ -12,6 +12,23 @@ class SldsBreadcrumbs extends LitElement {
     overflow: { type: Boolean },
     overflowLimit: { type: Number, attribute: 'overflow_limit' }
   };
+
+  static styles = css`
+    .slds-breadcrumb__overflow-indicator_small {
+      padding-left: .8rem;
+      padding-right: .5rem;
+    }
+
+    .slds-breadcrumb__overflow-indicator_medium { 
+      padding-left: 1rem;
+      padding-right: .75rem;
+    }
+
+    .slds-breadcrumb__overflow-indicator_large {
+      padding-left: 1.75rem;
+      padding-right: 1rem;
+    }
+  `;
 
   constructor() {
     super();
@@ -94,8 +111,15 @@ class SldsBreadcrumbs extends LitElement {
   }
 
   _renderOverflowIndicator() {
+    let overflowClass = 'slds-breadcrumb__overflow-indicator_medium';
+    if(this.isSizeSmall) {
+      overflowClass = 'slds-breadcrumb__overflow-indicator_small';
+    }
+    if(this.isSizeLarge) {
+      overflowClass = 'slds-breadcrumb__overflow-indicator_large';
+    }
     return html`
-      <li class="slds-breadcrumb__item">
+      <li class="slds-breadcrumb__item ${overflowClass}">
         <span>…</span>
       </li>
     `;
