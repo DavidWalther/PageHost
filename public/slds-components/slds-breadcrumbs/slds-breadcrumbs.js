@@ -1,19 +1,51 @@
-import { LitElement, html, nothing } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html, css, nothing } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+
+const OVERFLOW_MARKER = Symbol('overflow');
 
 class SldsBreadcrumbs extends LitElement {
   static properties = {
     items: { type: Array },
     ariaLabel: { type: String, attribute: 'aria-label' },
     isCardContainer: { type: Boolean, attribute: 'card-container' },
-    size: { type: String, reflect: true }
+    size: { type: String, reflect: true },
+    overflow: { type: Boolean },
+    overflowLimit: { type: Number, attribute: 'overflow_limit' }
   };
+
+  static styles = css`
+    .slds-breadcrumb__overflow-indicator_small {
+      padding-left: .8rem;
+      padding-right: .5rem;
+    }
+
+    .slds-breadcrumb__overflow-indicator_medium { 
+      padding-left: 1rem;
+      padding-right: .75rem;
+    }
+
+    .slds-breadcrumb__overflow-indicator_large {
+      padding-left: 1.75rem;
+      padding-right: 1rem;
+    }
+
+    .slds-breadcrumb__item a {
+      display: inline-block;
+      max-width: clamp(4rem, 20vw, 12rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
+  `;
 
   constructor() {
     super();
     this.items = [];
     this.ariaLabel = 'Breadcrumbs';
     this.size = 'medium';
+    this.overflow = false;
+    this.overflowLimit = 3;
   }
 
   connectedCallback() {
@@ -54,6 +86,14 @@ class SldsBreadcrumbs extends LitElement {
     return '.5rem';
   }
 
+  get _visibleItems() {
+    if (!this.overflow || this.items.length <= this.overflowLimit) {
+      return this.items;
+    }
+    const tail = this.items.slice(-(this.overflowLimit - 1));
+    return [this.items[0], OVERFLOW_MARKER, ...tail];
+  }
+
   render() {
     const sizeClass = this.isSizeSmall ? 'slds-text-heading_small' : this.isSizeMedium ? 'slds-text-heading_medium' : this.isSizeLarge ? 'slds-text-heading_large' : '';
     const spacingWidthStart = this.spacingStart;
@@ -64,7 +104,11 @@ class SldsBreadcrumbs extends LitElement {
     const content = html`
       <nav role="navigation" slot="${this.isCardContainer ? 'header' : ''}" aria-label="${this.ariaLabel}">
         <ol class="${sizeClass} slds-breadcrumb slds-list_horizontal slds-wrap">
-          ${this.items.map((item, index) => this._renderItem(item, index))}
+          ${this._visibleItems.map((item, index) =>
+            item === OVERFLOW_MARKER
+              ? this._renderOverflowIndicator()
+              : this._renderItem(item, index)
+          )}
         </ol>
       </nav>
     `;
@@ -75,12 +119,28 @@ class SldsBreadcrumbs extends LitElement {
     return html`<slds-card no-footer>${content}</slds-card>`;
   }
 
+  _renderOverflowIndicator() {
+    let overflowClass = 'slds-breadcrumb__overflow-indicator_medium';
+    if(this.isSizeSmall) {
+      overflowClass = 'slds-breadcrumb__overflow-indicator_small';
+    }
+    if(this.isSizeLarge) {
+      overflowClass = 'slds-breadcrumb__overflow-indicator_large';
+    }
+    return html`
+      <li class="slds-breadcrumb__item ${overflowClass}">
+        <span>…</span>
+      </li>
+    `;
+  }
+
   _renderItem(item, index) {
 
     return html`
       <li class="slds-breadcrumb__item ">
         <a
           href="${item.href ?? nothing}"
+          title="${item.label}"
           @click="${(event) => this._handleClick(event, item, index)}"
         >${item.label}</a>
       </li>
