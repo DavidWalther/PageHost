@@ -28,6 +28,15 @@ class SldsBreadcrumbs extends LitElement {
       padding-left: 1.75rem;
       padding-right: 1rem;
     }
+
+    .slds-breadcrumb__item a {
+      display: inline-block;
+      max-width: clamp(4rem, 20vw, 12rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
+    }
   `;
 
   constructor() {
@@ -131,6 +140,7 @@ class SldsBreadcrumbs extends LitElement {
       <li class="slds-breadcrumb__item ">
         <a
           href="${item.href ?? nothing}"
+          title="${item.label}"
           @click="${(event) => this._handleClick(event, item, index)}"
         >${item.label}</a>
       </li>
