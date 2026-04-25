@@ -67,15 +67,23 @@ Source: https://v1.lightningdesignsystem.com/components/breadcrumbs/
 ## Component API Design
 
 ### Attributes / Properties
-| Attribute    | Type   | Description                                               | Default          |
-|--------------|--------|-----------------------------------------------------------|------------------|
-| `items`      | Array  | JSON array of `{ label: string, href: string }` objects   | `[]`             |
-| `aria-label` | String | Label for the `<nav>` element                             | `"Breadcrumbs"`  |
+| Attribute        | Type    | Description                                                                     | Default          |
+|------------------|---------|---------------------------------------------------------------------------------|------------------|
+| `items`          | Array   | JSON array of `{ key, label, href }` objects                                    | `[]`             |
+| `aria-label`     | String  | Label for the `<nav>` element                                                   | `"Breadcrumbs"`  |
+| `overflow`       | Boolean | Activates overflow mode                                                         | `false`          |
+| `overflow_limit` | Number  | Max visible items in overflow mode. First + … + last (limit-1). Ignored without `overflow`. | `3` |
+
+### Overflow logic
+- `overflow` not set → all items rendered normally
+- `overflow` set, `items.length <= overflowLimit` → all items rendered normally
+- `overflow` set, `items.length > overflowLimit` → `[items[0], ELLIPSIS, ...items.slice(-(overflowLimit-1))]`
 
 ### Events
-| Event              | Detail                                       | Description                        |
-|--------------------|----------------------------------------------|------------------------------------|
-| `breadcrumbclick`  | `{ label, href, index }`                     | Fired when a breadcrumb is clicked |
+| Event   | Detail                          | Description                        |
+|---------|---------------------------------|------------------------------------|
+| `click` | `{ key, label, href, index }`   | Fired when a breadcrumb is clicked |
+
 
 ### Example Usage
 ```html

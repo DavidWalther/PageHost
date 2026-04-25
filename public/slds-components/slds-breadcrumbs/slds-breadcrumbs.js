@@ -1,12 +1,16 @@
 import { LitElement, html, nothing } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
+const OVERFLOW_MARKER = Symbol('overflow');
+
 class SldsBreadcrumbs extends LitElement {
   static properties = {
     items: { type: Array },
     ariaLabel: { type: String, attribute: 'aria-label' },
     isCardContainer: { type: Boolean, attribute: 'card-container' },
-    size: { type: String, reflect: true }
+    size: { type: String, reflect: true },
+    overflow: { type: Boolean },
+    overflowLimit: { type: Number, attribute: 'overflow_limit' }
   };
 
   constructor() {
@@ -14,6 +18,8 @@ class SldsBreadcrumbs extends LitElement {
     this.items = [];
     this.ariaLabel = 'Breadcrumbs';
     this.size = 'medium';
+    this.overflow = false;
+    this.overflowLimit = 3;
   }
 
   connectedCallback() {
@@ -54,6 +60,14 @@ class SldsBreadcrumbs extends LitElement {
     return '.5rem';
   }
 
+  get _visibleItems() {
+    if (!this.overflow || this.items.length <= this.overflowLimit) {
+      return this.items;
+    }
+    const tail = this.items.slice(-(this.overflowLimit - 1));
+    return [this.items[0], OVERFLOW_MARKER, ...tail];
+  }
+
   render() {
     const sizeClass = this.isSizeSmall ? 'slds-text-heading_small' : this.isSizeMedium ? 'slds-text-heading_medium' : this.isSizeLarge ? 'slds-text-heading_large' : '';
     const spacingWidthStart = this.spacingStart;
@@ -64,7 +78,11 @@ class SldsBreadcrumbs extends LitElement {
     const content = html`
       <nav role="navigation" slot="${this.isCardContainer ? 'header' : ''}" aria-label="${this.ariaLabel}">
         <ol class="${sizeClass} slds-breadcrumb slds-list_horizontal slds-wrap">
-          ${this.items.map((item, index) => this._renderItem(item, index))}
+          ${this._visibleItems.map((item, index) =>
+            item === OVERFLOW_MARKER
+              ? this._renderOverflowIndicator()
+              : this._renderItem(item, index)
+          )}
         </ol>
       </nav>
     `;
@@ -73,6 +91,14 @@ class SldsBreadcrumbs extends LitElement {
       return content;
     }
     return html`<slds-card no-footer>${content}</slds-card>`;
+  }
+
+  _renderOverflowIndicator() {
+    return html`
+      <li class="slds-breadcrumb__item">
+        <span>…</span>
+      </li>
+    `;
   }
 
   _renderItem(item, index) {
