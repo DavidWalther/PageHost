@@ -2,16 +2,16 @@ import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/li
 
 class SldsLayout extends LitElement {
   static properties = {
-    gutters: { type: String },
-    'horizontal-align': { type: String },
-    'vertical-align': { type: String },
+    gutters: { type: String, attribute: 'gutters' },
+    horizontalAlign: { type: String, attribute: 'horizontal-align' },
+    verticalAlign: { type: String, attribute: 'vertical-align' },
   };
 
   constructor() {
     super();
     this.gutters = '';
-    this['horizontal-align'] = '';
-    this['vertical-align'] = '';
+    this.horizontalAlign = '';
+    this.verticalAlign = '';
   }
 
   createRenderRoot() {
@@ -27,11 +27,11 @@ class SldsLayout extends LitElement {
     if (changedProperties.has('gutters')) {
       this._updateClass('slds-gutters_', changedProperties.get('gutters'), this.gutters);
     }
-    if (changedProperties.has('horizontal-align')) {
-      this._updateClass('slds-grid_align-', changedProperties.get('horizontal-align'), this['horizontal-align']);
+    if (changedProperties.has('horizontalAlign')) {
+      this._updateClass('slds-grid_align-', changedProperties.get('horizontalAlign'), this.horizontalAlign);
     }
-    if (changedProperties.has('vertical-align')) {
-      this._updateClass('slds-grid_vertical-align-', changedProperties.get('vertical-align'), this['vertical-align']);
+    if (changedProperties.has('verticalAlign')) {
+      this._updateClass('slds-grid_vertical-align-', changedProperties.get('verticalAlign'), this.verticalAlign);
     }
   }
 
