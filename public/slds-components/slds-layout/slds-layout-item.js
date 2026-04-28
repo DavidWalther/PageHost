@@ -3,11 +3,13 @@ import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/li
 class SldsLayoutItem extends LitElement {
   static properties = {
     size: { type: String },
+    sizeSmall: { type: String },
   };
 
   constructor() {
     super();
     this.size = '';
+    this.sizeSmall = '';
   }
 
   createRenderRoot() {
@@ -21,16 +23,19 @@ class SldsLayoutItem extends LitElement {
 
   updated(changedProperties) {
     if (changedProperties.has('size')) {
-      this._updateSizeClass(changedProperties.get('size'), this.size);
+      this._updateClass('slds-size_', changedProperties.get('size'), this.size);
+    }
+    if (changedProperties.has('sizeSmall')) {
+      this._updateClass('slds-small-size_', changedProperties.get('sizeSmall'), this.sizeSmall);
     }
   }
 
-  _updateSizeClass(oldSize, newSize) {
-    if (oldSize) {
-      this.classList.remove(`slds-size_${oldSize}`);
+  _updateClass(prefix, oldValue, newValue) {
+    if (oldValue) {
+      this.classList.remove(`${prefix}${oldValue}`);
     }
-    if (newSize) {
-      this.classList.add(`slds-size_${newSize}`);
+    if (newValue) {
+      this.classList.add(`${prefix}${newValue}`);
     }
   }
 
