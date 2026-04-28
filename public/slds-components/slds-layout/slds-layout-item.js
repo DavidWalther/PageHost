@@ -6,6 +6,7 @@ class SldsLayoutItem extends LitElement {
     sizeSmall: { type: String },
     sizeMedium: { type: String },
     sizeLarge: { type: String },
+    bump: { type: String },
   };
 
   constructor() {
@@ -14,6 +15,7 @@ class SldsLayoutItem extends LitElement {
     this.sizeSmall = '';
     this.sizeMedium = '';
     this.sizeLarge = '';
+    this.bump = '';
   }
 
   createRenderRoot() {
@@ -37,6 +39,9 @@ class SldsLayoutItem extends LitElement {
     }
     if (changedProperties.has('sizeLarge')) {
       this._updateClass('slds-large-size_', changedProperties.get('sizeLarge'), this.sizeLarge);
+    }
+    if (changedProperties.has('bump')) {
+      this._updateClass('slds-col_bump-', changedProperties.get('bump'), this.bump);
     }
   }
 
