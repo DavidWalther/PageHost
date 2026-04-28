@@ -4,12 +4,14 @@ class SldsLayout extends LitElement {
   static properties = {
     gutters: { type: String },
     'horizontal-align': { type: String },
+    'vertical-align': { type: String },
   };
 
   constructor() {
     super();
     this.gutters = '';
     this['horizontal-align'] = '';
+    this['vertical-align'] = '';
   }
 
   createRenderRoot() {
@@ -27,6 +29,9 @@ class SldsLayout extends LitElement {
     }
     if (changedProperties.has('horizontal-align')) {
       this._updateClass('slds-grid_align-', changedProperties.get('horizontal-align'), this['horizontal-align']);
+    }
+    if (changedProperties.has('vertical-align')) {
+      this._updateClass('slds-grid_vertical-align-', changedProperties.get('vertical-align'), this['vertical-align']);
     }
   }
 
