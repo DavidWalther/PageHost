@@ -106,6 +106,14 @@ class Bookstore extends LitElement {
         </slds-panel>
       </span>
 
+      <div style="color: white;">
+        <slds-layout>
+          <slds-layout-item size="1-of-3">Column 1</slds-layout-item>
+          <slds-layout-item size="1-of-3">Column 2</slds-layout-item>
+          <slds-layout-item size="1-of-3">Column 3</slds-layout-item>
+        </slds-layout>
+      </div>
+
       <div id="bookshelf" class="slds-grid slds-grid_vertical slds-m-top--small">
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
           <custom-story></custom-story>
