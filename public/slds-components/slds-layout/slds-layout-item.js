@@ -2,12 +2,12 @@ import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/li
 
 class SldsLayoutItem extends LitElement {
   static properties = {
-    size: { type: String },
-    sizeSmall: { type: String },
-    sizeMedium: { type: String },
-    sizeLarge: { type: String },
-    bump: { type: String },
-    align: { type: String },
+    size: { type: String, attribute: 'size' },
+    sizeSmall: { type: String, attribute: 'size-small' },
+    sizeMedium: { type: String, attribute: 'size-medium' },
+    sizeLarge: { type: String, attribute: 'size-large' },
+    bump: { type: String, attribute: 'bump' },
+    align: { type: String, attribute: 'align' },
   };
 
   constructor() {
