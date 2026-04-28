@@ -3,11 +3,21 @@ import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/li
 class SldsLayoutItem extends LitElement {
   static properties = {
     size: { type: String },
+    sizeSmall: { type: String },
+    sizeMedium: { type: String },
+    sizeLarge: { type: String },
+    bump: { type: String },
+    align: { type: String },
   };
 
   constructor() {
     super();
     this.size = '';
+    this.sizeSmall = '';
+    this.sizeMedium = '';
+    this.sizeLarge = '';
+    this.bump = '';
+    this.align = '';
   }
 
   createRenderRoot() {
@@ -21,16 +31,31 @@ class SldsLayoutItem extends LitElement {
 
   updated(changedProperties) {
     if (changedProperties.has('size')) {
-      this._updateSizeClass(changedProperties.get('size'), this.size);
+      this._updateClass('slds-size_', changedProperties.get('size'), this.size);
+    }
+    if (changedProperties.has('sizeSmall')) {
+      this._updateClass('slds-small-size_', changedProperties.get('sizeSmall'), this.sizeSmall);
+    }
+    if (changedProperties.has('sizeMedium')) {
+      this._updateClass('slds-medium-size_', changedProperties.get('sizeMedium'), this.sizeMedium);
+    }
+    if (changedProperties.has('sizeLarge')) {
+      this._updateClass('slds-large-size_', changedProperties.get('sizeLarge'), this.sizeLarge);
+    }
+    if (changedProperties.has('bump')) {
+      this._updateClass('slds-col_bump-', changedProperties.get('bump'), this.bump);
+    }
+    if (changedProperties.has('align')) {
+      this._updateClass('slds-align-', changedProperties.get('align'), this.align);
     }
   }
 
-  _updateSizeClass(oldSize, newSize) {
-    if (oldSize) {
-      this.classList.remove(`slds-size_${oldSize}`);
+  _updateClass(prefix, oldValue, newValue) {
+    if (oldValue) {
+      this.classList.remove(`${prefix}${oldValue}`);
     }
-    if (newSize) {
-      this.classList.add(`slds-size_${newSize}`);
+    if (newValue) {
+      this.classList.add(`${prefix}${newValue}`);
     }
   }
 
