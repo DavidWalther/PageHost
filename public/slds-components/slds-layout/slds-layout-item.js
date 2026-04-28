@@ -4,12 +4,14 @@ class SldsLayoutItem extends LitElement {
   static properties = {
     size: { type: String },
     sizeSmall: { type: String },
+    sizeMedium: { type: String },
   };
 
   constructor() {
     super();
     this.size = '';
     this.sizeSmall = '';
+    this.sizeMedium = '';
   }
 
   createRenderRoot() {
@@ -27,6 +29,9 @@ class SldsLayoutItem extends LitElement {
     }
     if (changedProperties.has('sizeSmall')) {
       this._updateClass('slds-small-size_', changedProperties.get('sizeSmall'), this.sizeSmall);
+    }
+    if (changedProperties.has('sizeMedium')) {
+      this._updateClass('slds-medium-size_', changedProperties.get('sizeMedium'), this.sizeMedium);
     }
   }
 
