@@ -2,6 +2,7 @@ import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/li
 
 class SldsLayout extends LitElement {
   static properties = {
+    wrap: { type: Boolean, attribute: 'wrap' },
     gutters: { type: String, attribute: 'gutters' },
     horizontalAlign: { type: String, attribute: 'horizontal-align' },
     verticalAlign: { type: String, attribute: 'vertical-align' },
@@ -9,6 +10,7 @@ class SldsLayout extends LitElement {
 
   constructor() {
     super();
+    this.wrap = false;
     this.gutters = '';
     this.horizontalAlign = '';
     this.verticalAlign = '';
@@ -20,10 +22,21 @@ class SldsLayout extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    this.classList.add('slds-grid', 'slds-wrap');
+    this.classList.add('slds-grid');
+    this.wrap = this.hasAttribute('wrap');
+    this.gutters = this.getAttribute('gutters') || '';
+    this.horizontalAlign = this.getAttribute('horizontal-align') || '';
+    this.verticalAlign = this.getAttribute('vertical-align') || '';
   }
 
   updated(changedProperties) {
+    if (changedProperties.has('wrap')) {
+      if (this.wrap) {
+        this.classList.add('slds-wrap');
+      } else {
+        this.classList.remove('slds-wrap');
+      }
+    }
     if (changedProperties.has('gutters')) {
       this._updateClass('slds-gutters_', changedProperties.get('gutters'), this.gutters);
     }
