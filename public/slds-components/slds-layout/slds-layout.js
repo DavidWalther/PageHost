@@ -2,18 +2,44 @@ import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/li
 
 class SldsLayout extends LitElement {
   static properties = {
+    // Wrap
     wrap: { type: Boolean, attribute: 'wrap' },
-    gutters: { type: String, attribute: 'gutters' },
-    horizontalAlign: { type: String, attribute: 'horizontal-align' },
-    verticalAlign: { type: String, attribute: 'vertical-align' },
+    // Gutters
+    gutters: { type: Boolean, attribute: 'gutters' },
+    guttersXxSmall: { type: Boolean, attribute: 'gutters-xx-small' },
+    guttersXSmall: { type: Boolean, attribute: 'gutters-x-small' },
+    guttersSmall: { type: Boolean, attribute: 'gutters-small' },
+    guttersMedium: { type: Boolean, attribute: 'gutters-medium' },
+    guttersLarge: { type: Boolean, attribute: 'gutters-large' },
+    guttersXxLarge: { type: Boolean, attribute: 'gutters-xx-large' },
+    // Horizontal align
+    alignCenter: { type: Boolean, attribute: 'align-center' },
+    alignSpace: { type: Boolean, attribute: 'align-space' },
+    alignSpread: { type: Boolean, attribute: 'align-spread' },
+    alignEnd: { type: Boolean, attribute: 'align-end' },
+    // Vertical align
+    verticalAlignStart: { type: Boolean, attribute: 'vertical-align-start' },
+    verticalAlignCenter: { type: Boolean, attribute: 'vertical-align-center' },
+    verticalAlignEnd: { type: Boolean, attribute: 'vertical-align-end' },
   };
 
   constructor() {
     super();
     this.wrap = false;
-    this.gutters = '';
-    this.horizontalAlign = '';
-    this.verticalAlign = '';
+    this.gutters = false;
+    this.guttersXxSmall = false;
+    this.guttersXSmall = false;
+    this.guttersSmall = false;
+    this.guttersMedium = false;
+    this.guttersLarge = false;
+    this.guttersXxLarge = false;
+    this.alignCenter = false;
+    this.alignSpace = false;
+    this.alignSpread = false;
+    this.alignEnd = false;
+    this.verticalAlignStart = false;
+    this.verticalAlignCenter = false;
+    this.verticalAlignEnd = false;
   }
 
   createRenderRoot() {
@@ -23,38 +49,28 @@ class SldsLayout extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.classList.add('slds-grid');
-    this.wrap = this.hasAttribute('wrap');
-    this.gutters = this.getAttribute('gutters') || '';
-    this.horizontalAlign = this.getAttribute('horizontal-align') || '';
-    this.verticalAlign = this.getAttribute('vertical-align') || '';
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('wrap')) {
-      if (this.wrap) {
-        this.classList.add('slds-wrap');
-      } else {
-        this.classList.remove('slds-wrap');
-      }
-    }
-    if (changedProperties.has('gutters')) {
-      this._updateClass('slds-gutters_', changedProperties.get('gutters'), this.gutters);
-    }
-    if (changedProperties.has('horizontalAlign')) {
-      this._updateClass('slds-grid_align-', changedProperties.get('horizontalAlign'), this.horizontalAlign);
-    }
-    if (changedProperties.has('verticalAlign')) {
-      this._updateClass('slds-grid_vertical-align-', changedProperties.get('verticalAlign'), this.verticalAlign);
-    }
-  }
+    const toggle = (prop, cls) => {
+      if (changedProperties.has(prop)) this.classList.toggle(cls, this[prop]);
+    };
 
-  _updateClass(prefix, oldValue, newValue) {
-    if (oldValue) {
-      this.classList.remove(`${prefix}${oldValue}`);
-    }
-    if (newValue) {
-      this.classList.add(`${prefix}${newValue}`);
-    }
+    toggle('wrap', 'slds-wrap');
+    toggle('gutters', 'slds-gutters');
+    toggle('guttersXxSmall', 'slds-gutters_xx-small');
+    toggle('guttersXSmall', 'slds-gutters_x-small');
+    toggle('guttersSmall', 'slds-gutters_small');
+    toggle('guttersMedium', 'slds-gutters_medium');
+    toggle('guttersLarge', 'slds-gutters_large');
+    toggle('guttersXxLarge', 'slds-gutters_xx-large');
+    toggle('alignCenter', 'slds-grid_align-center');
+    toggle('alignSpace', 'slds-grid_align-space');
+    toggle('alignSpread', 'slds-grid_align-spread');
+    toggle('alignEnd', 'slds-grid_align-end');
+    toggle('verticalAlignStart', 'slds-grid_vertical-align-start');
+    toggle('verticalAlignCenter', 'slds-grid_vertical-align-center');
+    toggle('verticalAlignEnd', 'slds-grid_vertical-align-end');
   }
 
   render() {

@@ -1,23 +1,61 @@
 import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
-class SldsLayoutItem extends LitElement {
-  static properties = {
-    size: { type: String, attribute: 'size' },
-    sizeSmall: { type: String, attribute: 'size-small' },
-    sizeMedium: { type: String, attribute: 'size-medium' },
-    sizeLarge: { type: String, attribute: 'size-large' },
-    bump: { type: String, attribute: 'bump' },
-    align: { type: String, attribute: 'align' },
-  };
+// Supported SLDS size fractions
+const SIZE_FRACTIONS = [
+  '1-of-1', '1-of-2',
+  '1-of-3', '2-of-3',
+  '1-of-4', '2-of-4', '3-of-4',
+  '1-of-5', '2-of-5', '3-of-5', '4-of-5',
+  '1-of-6', '2-of-6', '3-of-6', '4-of-6', '5-of-6',
+  '1-of-8', '2-of-8', '3-of-8', '4-of-8', '5-of-8', '6-of-8', '7-of-8',
+  '1-of-12', '2-of-12', '3-of-12', '4-of-12', '5-of-12', '6-of-12',
+  '7-of-12', '8-of-12', '9-of-12', '10-of-12', '11-of-12', '12-of-12',
+];
 
-  constructor() {
-    super();
-    this.size = '';
-    this.sizeSmall = '';
-    this.sizeMedium = '';
-    this.sizeLarge = '';
-    this.bump = '';
-    this.align = '';
+const BREAKPOINTS = [
+  { prefix: 'size', attrPrefix: 'size', classPrefix: 'slds-size_' },
+  { prefix: 'smallSize', attrPrefix: 'small-size', classPrefix: 'slds-small-size_' },
+  { prefix: 'mediumSize', attrPrefix: 'medium-size', classPrefix: 'slds-medium-size_' },
+  { prefix: 'largeSize', attrPrefix: 'large-size', classPrefix: 'slds-large-size_' },
+];
+
+// Converts a hyphenated fraction string to a camelCase suffix, e.g. "1-of-2" -> "1Of2"
+function fractionToCamel(fraction) {
+  return fraction.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
+}
+
+// Build the full prop name and attribute name for a breakpoint + fraction
+function propName(breakpointPrefix, fraction) {
+  return `${breakpointPrefix}${fractionToCamel('-' + fraction)}`;
+}
+
+function attrName(attrPrefix, fraction) {
+  return `${attrPrefix}-${fraction}`;
+}
+
+class SldsLayoutItem extends LitElement {
+  static get properties() {
+    const props = {};
+
+    // Size fraction booleans per breakpoint
+    for (const bp of BREAKPOINTS) {
+      for (const frac of SIZE_FRACTIONS) {
+        props[propName(bp.prefix, frac)] = { type: Boolean, attribute: attrName(bp.attrPrefix, frac) };
+      }
+    }
+
+    // Bump variants
+    props.bumpLeft   = { type: Boolean, attribute: 'bump-left' };
+    props.bumpRight  = { type: Boolean, attribute: 'bump-right' };
+    props.bumpTop    = { type: Boolean, attribute: 'bump-top' };
+    props.bumpBottom = { type: Boolean, attribute: 'bump-bottom' };
+
+    // Align variants
+    props.alignTop    = { type: Boolean, attribute: 'align-top' };
+    props.alignMiddle = { type: Boolean, attribute: 'align-middle' };
+    props.alignBottom = { type: Boolean, attribute: 'align-bottom' };
+
+    return props;
   }
 
   createRenderRoot() {
@@ -30,32 +68,35 @@ class SldsLayoutItem extends LitElement {
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('size')) {
-      this._updateClass('slds-size_', changedProperties.get('size'), this.size);
+    // Size fractions
+    for (const bp of BREAKPOINTS) {
+      for (const frac of SIZE_FRACTIONS) {
+        const prop = propName(bp.prefix, frac);
+        if (changedProperties.has(prop)) {
+          this.classList.toggle(`${bp.classPrefix}${frac}`, this[prop]);
+        }
+      }
     }
-    if (changedProperties.has('sizeSmall')) {
-      this._updateClass('slds-small-size_', changedProperties.get('sizeSmall'), this.sizeSmall);
-    }
-    if (changedProperties.has('sizeMedium')) {
-      this._updateClass('slds-medium-size_', changedProperties.get('sizeMedium'), this.sizeMedium);
-    }
-    if (changedProperties.has('sizeLarge')) {
-      this._updateClass('slds-large-size_', changedProperties.get('sizeLarge'), this.sizeLarge);
-    }
-    if (changedProperties.has('bump')) {
-      this._updateClass('slds-col_bump-', changedProperties.get('bump'), this.bump);
-    }
-    if (changedProperties.has('align')) {
-      this._updateClass('slds-align-', changedProperties.get('align'), this.align);
-    }
-  }
 
-  _updateClass(prefix, oldValue, newValue) {
-    if (oldValue) {
-      this.classList.remove(`${prefix}${oldValue}`);
+    // Bump
+    const bumpMap = {
+      bumpLeft: 'slds-col_bump-left',
+      bumpRight: 'slds-col_bump-right',
+      bumpTop: 'slds-col_bump-top',
+      bumpBottom: 'slds-col_bump-bottom',
+    };
+    for (const [prop, cls] of Object.entries(bumpMap)) {
+      if (changedProperties.has(prop)) this.classList.toggle(cls, this[prop]);
     }
-    if (newValue) {
-      this.classList.add(`${prefix}${newValue}`);
+
+    // Align
+    const alignMap = {
+      alignTop: 'slds-align-top',
+      alignMiddle: 'slds-align-middle',
+      alignBottom: 'slds-align-bottom',
+    };
+    for (const [prop, cls] of Object.entries(alignMap)) {
+      if (changedProperties.has(prop)) this.classList.toggle(cls, this[prop]);
     }
   }
 
