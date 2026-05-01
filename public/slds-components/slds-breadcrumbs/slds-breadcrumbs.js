@@ -10,7 +10,8 @@ class SldsBreadcrumbs extends LitElement {
     isCardContainer: { type: Boolean, attribute: 'card-container' },
     size: { type: String, reflect: true },
     overflow: { type: Boolean },
-    overflowLimit: { type: Number, attribute: 'overflow_limit' }
+    overflowLimit: { type: Number, attribute: 'overflow_limit' },
+    lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' }
   };
 
   static styles = css`
@@ -46,6 +47,7 @@ class SldsBreadcrumbs extends LitElement {
     this.size = 'medium';
     this.overflow = false;
     this.overflowLimit = 3;
+    this.lastItemAsLink = false;
   }
 
   connectedCallback() {
@@ -107,7 +109,7 @@ class SldsBreadcrumbs extends LitElement {
           ${this._visibleItems.map((item, index) =>
             item === OVERFLOW_MARKER
               ? this._renderOverflowIndicator()
-              : this._renderItem(item, index)
+              : this._renderItem(item, index, index === this._visibleItems.length - 1)
           )}
         </ol>
       </nav>
@@ -134,15 +136,18 @@ class SldsBreadcrumbs extends LitElement {
     `;
   }
 
-  _renderItem(item, index) {
-
-    return html`
-      <li class="slds-breadcrumb__item ">
-        <a
+  _renderItem(item, index, isLast = false) {
+    const innerContent = (isLast && !this.lastItemAsLink)
+      ? html`<span title="${item.label}">${item.label}</span>`
+      : html`<a
           href="${item.href ?? nothing}"
           title="${item.label}"
           @click="${(event) => this._handleClick(event, item, index)}"
-        >${item.label}</a>
+        >${item.label}</a>`;
+
+    return html`
+      <li class="slds-breadcrumb__item" aria-current="${isLast ? 'page' : nothing}">
+        ${innerContent}
       </li>
     `;
   }
