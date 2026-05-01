@@ -42,6 +42,8 @@ const STATIC_FILES = [
   '/slds-components/slds-button-icon/slds-button-icon.js',
   '/slds-components/slds-toggle/toggle.js',
   '/slds-components/slds-modal/slds-modal.js',
+  '/slds-components/slds-layout/slds-layout.js',
+  '/slds-components/slds-layout/slds-layout-item.js',
   
   // SLDS Components - HTML Templates
   '/slds-components/slds-combobox/slds-combobox.html',
