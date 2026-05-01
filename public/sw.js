@@ -8,18 +8,18 @@ const STATIC_FILES = [
   '/',
   '/index.js',
   '/sw.js',
-  
+
   // Modules
   '/modules/global-styles.mjs',
   '/modules/oIdcComponent.js',
-  
+
   // Styles
   '/styles/darkmode.css',
-  
+
   // Applications
   '/applications/bookstore/bookstore.html',
   '/applications/bookstore/bookstore.js',
-  
+
   // Custom Components
   '/components/custom-paragraph/custom-paragraph.js',
   '/components/custom-paragraph/delete-paragraph.api.js',
@@ -30,7 +30,7 @@ const STATIC_FILES = [
   '/components/custom-chapter/inValidTests/chapter.tests.js',
   '/components/custom-chapter-edit/custom-chapter-edit.js',
   '/components/custom-login-module/custom-login-module.js',
-  
+
   // SLDS Components - JS
   '/slds-components/slds-combobox/slds-combobox.js',
   '/slds-components/slds-panel/slds-panel.js',
@@ -44,7 +44,8 @@ const STATIC_FILES = [
   '/slds-components/slds-modal/slds-modal.js',
   '/slds-components/slds-layout/slds-layout.js',
   '/slds-components/slds-layout/slds-layout-item.js',
-  
+  '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
+
   // SLDS Components - HTML Templates
   '/slds-components/slds-combobox/slds-combobox.html',
   '/slds-components/slds-panel/slds-panel.html',
@@ -54,10 +55,10 @@ const STATIC_FILES = [
   '/slds-components/slds-card/slds-card.html',
   '/slds-components/slds-toast/slds-toast.html',
   '/slds-components/slds-button-icon/slds-button-icon.html',
-  
+
   // External assets (referenced in IndexHtmlEndpointLogic.js)
   '/assets/styles/salesforce-lightning-design-system.min.css',
-  
+
   // PWA essentials
   '/manifest.json'
 ];
@@ -65,7 +66,7 @@ const STATIC_FILES = [
 // Install Event - Cache all static files
 self.addEventListener('install', (event) => {
   console.log(`Service Worker v${APP_VERSION} installing...`);
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -79,14 +80,14 @@ self.addEventListener('install', (event) => {
         console.error('Service Worker installation failed:', error);
       })
   );
-  
+
   // Don't use skipWaiting() - update on next visit for complete setup
 });
 
 // Activate Event - Clean up old caches
 self.addEventListener('activate', (event) => {
   console.log(`Service Worker v${APP_VERSION} activating...`);
-  
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -109,15 +110,15 @@ self.addEventListener('activate', (event) => {
 // Fetch Event - Cache-first for static files, network-only for dynamic content
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
+
   // Never cache dynamic content (always go to network)
-  if (url.pathname.startsWith('/api/') || 
-      url.pathname.startsWith('/data/') || 
+  if (url.pathname.startsWith('/api/') ||
+      url.pathname.startsWith('/data/') ||
       url.pathname === '/metadata') {
     // Let browser handle normally - no interception
     return;
   }
-  
+
   // Cache-first strategy for all application resources
   event.respondWith(
     caches.match(event.request)
@@ -126,7 +127,7 @@ self.addEventListener('fetch', (event) => {
           // Return cached version if available
           return cachedResponse;
         }
-        
+
         // Fall back to network if not in cache
         return fetch(event.request)
           .then((networkResponse) => {

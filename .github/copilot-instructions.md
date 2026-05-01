@@ -1,5 +1,6 @@
 # Copilot Instructions
 
+<<<<<<< HEAD
 ## gneral behavior
 
 - Always follow the instructions in this file when generating code.
