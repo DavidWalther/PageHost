@@ -4,12 +4,15 @@ A Web Component (LitElement) that renders a Salesforce Lightning Design System (
 
 ## Attributes
 
-| Attribute        | Type    | Required | Default         | Description                                              |
-|------------------|---------|----------|-----------------|----------------------------------------------------------|
-| `items`          | Array   | Yes      | `[]`            | JSON array of breadcrumb item objects (see below)        |
-| `aria-label`     | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                 |
-| `overflow`       | Boolean | No       | `false`         | Activates overflow mode; limits visible items            |
-| `overflow_limit` | Number  | No       | `3`             | Max visible items when overflow is active (ignored if `overflow` is not set) |
+| Attribute           | Type    | Required | Default         | Description                                              |
+|---------------------|---------|----------|-----------------|----------------------------------------------------------|
+| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see below)             |
+| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                 |
+| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                 |
+| `card-container`    | Boolean | No       | `false`         | Wraps the component inside an `slds-card`                |
+| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; limits visible items            |
+| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored if `overflow` is not set) |
+| `last-item-as-link` | Boolean | No       | `false`         | By default the last item (current page) renders as a plain `<span>` per the SLDS spec. Set to `true` to render it as a clickable link instead. |
 
 ### Item Object Shape
 
@@ -29,9 +32,9 @@ A Web Component (LitElement) that renders a Salesforce Lightning Design System (
 
 ## Events
 
-| Event   | Detail                        | Description                             |
-|---------|-------------------------------|-----------------------------------------|
-| `click` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked |
+| Event   | Detail                        | Description                                                                         |
+|---------|-------------------------------|-------------------------------------------------------------------------------------|
+| `click` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item only fires this event when `last-item-as-link` is set. |
 
 ## Usage
 
@@ -82,3 +85,24 @@ document.querySelector('slds-breadcrumbs').addEventListener('click', (event) => 
 ```html
 <slds-breadcrumbs aria-label="Page navigation" items='[...]'></slds-breadcrumbs>
 ```
+
+### Last item as link
+
+By default the last item (current page) renders as a plain `<span>` with `aria-current="page"`, meaning it is not clickable:
+
+```html
+<slds-breadcrumbs
+  items='[{"key":"home","label":"Home","href":"/"},{"key":"page","label":"Current Page"}]'
+></slds-breadcrumbs>
+```
+
+Set `last-item-as-link` to opt in to rendering the last item as a clickable `<a>`:
+
+```html
+<slds-breadcrumbs
+  last-item-as-link
+  items='[{"key":"home","label":"Home","href":"/"},{"key":"page","label":"Current Page"}]'
+></slds-breadcrumbs>
+```
+
+`aria-current="page"` is still applied to the last item's `<li>` in both cases.
