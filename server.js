@@ -1,252 +1,37 @@
-const { Environment } = require('./private/modules/environment.js');
-const express = require('express');
+// Import the built-in 'http' module
+const http = require('http');
 
-const {Logging} = require('./private/modules/logging.js');
-const { DataQueryLogicFactory } = require('./private/endpoints/DataQueryLogicFactory.js');
-const WildcardLogicFactory = require('./private/endpoints/WildcardLogicFactory.js');
-const MetadataEndpointLogicFactory = require('./private/endpoints/MetadataEndpointLogicFactory.js');
-const { EnvironmentVariablesEndpoint } = require('./private/endpoints/api/1.0/environmetVariables.js');
-const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js');
-const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint.js');
-const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
-const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
-const JwtService = require('./private/modules/oAuth2/JwtService.js');
-const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
-const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
-const ServiceWorkerEndpointLogic = require('./private/endpoints/*/ServiceWorkerEndpointLogic.js');
+// Define the port number where the server will listen
+const PORT = 3000;
 
-const environment = new Environment().getEnvironment();
+// Create the server instance
+const server = http.createServer((req, res) => {
+    // req = Request (information about the incoming call)
+    // res = Response (what we send back to the user)
 
-const app = express();
-app.use(express.json());
-app.set('trust proxy', true);
-const PORT = process.env.PORT || 3000;
+    // Set the response header (Status 200 means 'OK', Content-Type tells the browser it's text/html)
+    res.writeHead(200, { 'Content-Type': 'text/html' });
 
-app.get('/sw.js', (req, res) => {
-  const LOCATION = 'Server.get(\'/sw.js\')';
-
-  Logging.debugMessage({severity:'INFO', message: `Service Worker request received - ${req.url}`, location: LOCATION});
-
-  const selectedEndpoint = new ServiceWorkerEndpointLogic();
-  selectedEndpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({severity:'FINER', message: `Service Worker Endpoint executed`, location: LOCATION});
-  });
-});
-
-app.use(express.static('public'));
-app.use('/assets', express.static('node_modules/@salesforce-ux/design-system/assets'));
-
-/**
- * Validates a JWT bearer token against the required scopes.
- *
- * @param {string} bearerToken - Token from Authorization header
- * @param {string[]} requiredScopes - Scopes required to access the resource
- * @param {object} env - Environment object containing AUTH_SERVER_SECRET
- * @returns {boolean} True if the token is a valid JWT with the required scopes
- */
-function isTokenValidForScopes(bearerToken, requiredScopes, env) {
-  if (!bearerToken || !requiredScopes) {
-    return false;
-  }
-
-  const jwtScopes = JwtService.getScopesFromJwt(bearerToken, env.AUTH_SERVER_SECRET);
-  if (jwtScopes === null) {
-    return false;
-  }
-
-  return requiredScopes.every(scope => jwtScopes.includes(scope));
-}
-
-function handleWildcardRequest(req, res, LOCATION) {
-  Logging.debugMessage({severity:'INFO', message: `Request received - ${req.url}`, location: LOCATION});
-  res.sendFile(__dirname + '/public/index.html');
-}
-
-app.get('/metadata', (req, res) => {
-  const LOCATION = 'Server.get(\'/metadata\')';
-
-  Logging.debugMessage({severity:'INFO', message: `Metadata Request received - ${req.url}`, location: LOCATION});
-
-  let selectedEndpoint = MetadataEndpointLogicFactory.getProduct(req);
-  selectedEndpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({severity:'FINER', message: `Metadata Endpoint executed`, location: LOCATION});
-  });
-});
-
-app.get('/data/query/*', async (req, res) => {
-  const LOCATION = 'Server.get(\'/data/query/*\')';
-
-  Logging.debugMessage({severity:'FINER', message: `Request received - params: ${JSON.stringify(req.params)}`, location: LOCATION});
-  Logging.debugMessage({severity:'FINER', message: `Request received - query: ${JSON.stringify(req.query)}`, location: LOCATION});
-
-  const selectedEndpoint = DataQueryLogicFactory.getProduct(req);
-  // check for bearer token
-  const bearerToken = req.headers['authorization']?.split(' ')[1];
-  if (bearerToken) {
-    const userScopes = JwtService.getScopesFromJwt(bearerToken, environment.AUTH_SERVER_SECRET);
-
-    if (!userScopes) {
-      Logging.debugMessage({severity:'FINER', message: `Bearer token is invalid`, location: LOCATION});
-      res.status(401).send('Unauthorized');
-      return;
+    // Check the URL path to serve different content
+    if (req.url === '/') {
+        res.write('<h1>Welcome to the Home Page!</h1>');
+        res.write('<p>This is a basic Node.js server.</p>');
+    } else if (req.url === '/about') {
+        res.write('<h1>About Us</h1>');
+        res.write('<p>This server was created using the built-in HTTP module.</p>');
+    } else {
+        // Handle 404 - Not Found
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.write('<h1>404 Error</h1>');
+        res.write('<p>The page you are looking for does not exist.</p>');
     }
 
-    selectedEndpoint.setScopes(new Set(userScopes));
-  }
-
-  Logging.debugMessage({severity:'FINER', message: `Selected Endpoint: ${selectedEndpoint.getClassName()}`, location: LOCATION});
-
-  selectedEndpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({severity:'FINER', message: `Endpoint executed`, location: LOCATION});
-  }).catch(error => {
-    Logging.debugMessage({severity:'FINER', message: `Error executing endpoint: ${error}`, location: LOCATION});
-    handleWildcardRequest(req, res, LOCATION);
-  });
+    // End the response
+    res.end();
 });
 
-/**
- * This endpoint provides the frontend with the necessary configuration without exposing sensitive data.
- */
-app.get('/api/1.0/env/variables', (req, res) => {
-  const LOCATION = 'Server.get(\'/api/1.0/env/variables\')';
-
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  const endpoint = new EnvironmentVariablesEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'FINER', message: `Environment Variables Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.get('/api/1.0/oAuth2/requestAuthState', async (req, res) => {
-  const LOCATION = 'Server.get(\'/api/1.0/oAuth2/requestAuthState\')';
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  const endpoint = new RequestAuthStateEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'FINER', message: `RequestAuthState Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.post('/api/1.0/oAuth2/codeexchange', async (req, res) => {
-  const LOCATION = 'Server.post(\'/api/1.0/oAuth2/codeexchange\')';
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  const endpoint = new CodeExchangeEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'FINER', message: `Code Exchange Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.get('/api/1.0/auth/logout', async (req, res) => {
-  const LOCATION = 'Server.get(\'/api/1.0/auth/logout\')';
-  Logging.debugMessage({ severity: 'INFO', message: 'Logout request received', location: LOCATION });
-
-  const endpoint = new LogoutEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'FINER', message: `Logout Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.post('/api/1.0/data/change/*', async (req, res) => {
-  const LOCATION = 'Server.post(\'/api/1.0/data/change/*\')';
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  let headers = req.headers;
-  let bearerToken = headers['authorization']?.split(' ')[1];
-
-  if (!isTokenValidForScopes(bearerToken, ['edit'], environment)) {
-    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid`, location: LOCATION });
-    res.status(401).send('Unauthorized');
-    return;
-  }
-
-  const endpoint = new UpsertEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'INFO', message: `Upsert Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.get('/api/1.0/data/delete', async (req, res) => {
-  const LOCATION = "Server.get('/api/1.0/data/delete')";
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  let headers = req.headers;
-  let bearerToken = headers['authorization']?.split(' ')[1];
-  if (!isTokenValidForScopes(bearerToken, ['delete'], environment)) {
-    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing delete scope`, location: LOCATION });
-    res.status(401).send('Unauthorized');
-    return;
-  }
-
-  const DeleteEndpoint = require('./private/endpoints/api/1.0/data/deleteEndpoint.js');
-  const endpoint = new DeleteEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'INFO', message: `Delete Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.patch('/api/1.0/actions/publish', async (req, res) => {
-  const LOCATION = 'Server.patch(\'/api/1.0/actions/publish\')';
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  let headers = req.headers;
-  let bearerToken = headers['authorization']?.split(' ')[1];
-
-  if (!isTokenValidForScopes(bearerToken, ['publish', 'edit'], environment)) {
-    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
-    res.status(401).send('Unauthorized');
-    return;
-  }
-
-  const endpoint = new PublishEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'INFO', message: `Publish Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.patch('/api/1.0/actions/unpublish', async (req, res) => {
-  const LOCATION = 'Server.patch(\'/api/1.0/actions/unpublish\')';
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
-
-  let headers = req.headers;
-  let bearerToken = headers['authorization']?.split(' ')[1];
-
-  if (!isTokenValidForScopes(bearerToken, ['publish', 'edit'], environment)) {
-    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
-    res.status(401).send('Unauthorized');
-    return;
-  }
-
-  const endpoint = new UnpublishEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({ severity: 'INFO', message: `Unpublish Endpoint executed`, location: LOCATION });
-  });
-});
-
-app.get('/*', (req, res) => {
-  const LOCATION = 'Server.get(\'/*\')';
-
-  const selectedEndpoint = WildcardLogicFactory.getProduct(req);
-
-  Logging.debugMessage({severity:'FINER', message: `Request url: ${req.url}`, location: LOCATION});
-  Logging.debugMessage({severity:'FINER', message: `Request params: ${JSON.stringify(req.params)}`, location: LOCATION});
-  Logging.debugMessage({severity:'FINER', message: `Selected Endpoint: ${selectedEndpoint.getClassName()}`, location: LOCATION});
-
-  selectedEndpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute().then(() => {
-    Logging.debugMessage({severity:'FINER', message: `Endpoint executed`, location: LOCATION});
-  }).catch(error => {
-    Logging.debugMessage({severity:'FINER', message: `Error executing endpoint: ${error}`, location: LOCATION});
-    handleWildcardRequest(req, res, LOCATION);
-  });
-});
-
-app.listen(PORT, () => {
-  const environment = new Environment();
-  const Application_Key = environment.getEnvironment().APPLICATION_APPLICATION_KEY;
-  Logging.debugMessage({severity:'INFO', message: `Application Key: ${Application_Key}`, location: 'Server.listen'});
-  const env = environment.getEnvironment();
-  const LOCATION = 'Server.listen';
-  Logging.debugMessage({severity:'INFO', message: `Host: ${env.HOST}`, location: LOCATION});
-  Logging.debugMessage({severity:'INFO', message: `Server running on port ${PORT}`, location: LOCATION});
+// Start the server and listen on the specified port
+server.listen(PORT, () => {
+    console.log(`Server is running at http://localhost:${PORT}/`);
+    console.log('Press Ctrl+C to stop the server.');
 });
