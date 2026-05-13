@@ -3,6 +3,7 @@ const { TableConfiguration } = require('../tables/configuration.js');
 const { TableParagraph } = require('../tables/paragraph.js');
 const { TableStory } = require('../tables/story.js');
 const { TableChapter } = require('../tables/chapter.js');
+const { TableIdentity } = require('../tables/identity.js');
 const { PostgresActions } = require('./pgConnector.js');
 const { Logging } = require('../../modules/logging.js');
 const { DataCleaner } = require('../../modules/DataCleaner.js');
@@ -153,8 +154,12 @@ class DataStorage {
         .setLeftJoin(new TableChapter(), 'story.Id = chapter.storyId');
       actionGet
         .setConditionId(storyId)
-        .setConditionApplicationKey(this.applicationKey)
-        .setConditionPublishDate(new Date().toISOString().split('T')[0]);
+        .setConditionApplicationKey(this.applicationKey);
+      if(this.publishDate === undefined) {
+        actionGet.setConditionPublishDate(new Date().toISOString().split('T')[0]);
+      } else {
+        actionGet.setConditionPublishDate(this.publishDate);
+      }
 
       actionGet.execute().then((result) => {
         if(result.length === 0) {
@@ -247,6 +252,37 @@ class DataStorage {
     });
   }
 
+  queryIdentityByKey(userKey) {
+    const LOCATION = 'DataStorage.queryIdentityByKey';
+    if (!this.applicationKey) {
+      throw new Error('Application key is required');
+    }
+    return new Promise((resolve) => {
+      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Querying identity by key for application key: ${this.applicationKey}` });
+      let tableIdentity = new TableIdentity();
+      let actionGet = new ActionGet()
+      .setPgConnector(this.pgConnector)
+      .setTableName(tableIdentity.tableName)
+      .setTableFields(tableIdentity.tableFields)
+      .setCustomConditions(`key = '${userKey}'`)
+      .setCustomConditions(`active = true`)
+      .setConditionApplicationKey(this.applicationKey);
+
+      actionGet.execute().then((result) => {
+        if(result.length === 0) {
+          Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `No identity found for key: ${userKey}` });
+          resolve({});
+        } else {
+          Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Identity found for key: ${userKey}` });
+          let identityRecord = result[0];
+          let dataCleaner = new DataCleaner();
+          dataCleaner.removeApplicationKeys(identityRecord);
+          resolve(identityRecord);
+        }
+      });
+    });
+  }
+
   createRecord(table, values) {
     const LOCATION = 'DataStorage.createRecord';
     Logging.debugMessage({ severity: 'FINE', location: LOCATION, message: `Creating record in table: ${table.getTableName()()}` });
@@ -259,7 +295,9 @@ class DataStorage {
       actionCreate.execute()
         .then((result) => {
           Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record created in table: ${table.getTableName()()}` });
-          resolve(result[0]);
+          const createdRecord = result[0];
+          new DataCleaner().removeApplicationKeys(createdRecord);
+          resolve(createdRecord);
         })
         .catch((error) => {
           Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error creating record in table: ${table.getTableName()()}`, error });
@@ -293,6 +331,9 @@ class DataStorage {
       case 'chapter':
         table = new TableChapter();
         break;
+      case 'identity':
+        table = new TableIdentity();
+        break;
       default:
         throw new Error(`Invalid table name: ${tableName}`);
     }
@@ -304,7 +345,9 @@ class DataStorage {
       actionUpdate.execute()
         .then((result) => {
           Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Record updated in table: ${table.getTableName()}` });
-          resolve(result[0]);
+          const updatedRecord = result[0];
+          new DataCleaner().removeApplicationKeys(updatedRecord);
+          resolve(updatedRecord);
         })
         .catch((error) => {
           Logging.debugMessage({ severity: 'ERROR', location: LOCATION, message: `Error updating record in table: ${table.getTableName()}`, error });
@@ -337,6 +380,9 @@ class DataStorage {
         break;
       case 'chapter':
         table = new TableChapter();
+        break;
+      case 'identity':
+        table = new TableIdentity();
         break;
       default:
         throw new Error(`Invalid table name: ${tableName}`);

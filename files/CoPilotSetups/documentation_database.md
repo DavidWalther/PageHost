@@ -71,12 +71,14 @@ The DataStorage layer enforces multi-tenant isolation through the `applicationKe
 - **Chapter**: Content sections within stories, containing paragraphs  
 - **Paragraph**: Individual content blocks
 - **Configuration**: Application-specific settings
+- **Identity**: User identity records (read-only, cache-bypassed)
 
 #### Query Patterns:
 - **Single Record Queries**: By ID with application key filtering
 - **Joined Queries**: Story-Chapter, Chapter-Paragraph relationships
 - **Configuration Queries**: Key-value pairs with nested object support
 - **Publish Date Filtering**: Optional temporal filtering for content visibility
+- **Identity Key Queries**: By user key (email) with active filtering and cache bypass
 
 ### DataCache Layer
 
@@ -244,6 +246,14 @@ keyElements.push(this.environmentVars.APPLICATION_APPLICATION_KEY);
 2. **Database Delete** → DataStorage.deleteData()  
 3. **Cache Invalidation** → DataCache.del(key) (if not skipCache)
 4. **Response** → Return success status
+
+### Identity Query Flow (Cache-Bypassed):
+1. **Request** → DataFacade with table='identity' and key='user@example.com'
+2. **Direct Database Query** → DataStorage.queryIdentityByKey() (no cache check)
+3. **Active Filtering** → WHERE active = true AND key = 'user@example.com'
+4. **Application Isolation** → applicationincluded/applicationexcluded filtering applied
+5. **Data Cleaning** → Remove internal fields with DataCleaner
+6. **Response** → Return fresh identity data (never cached)
 
 ## Configuration and Environment Variables
 

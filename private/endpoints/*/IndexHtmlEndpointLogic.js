@@ -28,6 +28,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       let headerEntries = [];
       headerEntries.push('<meta charset="UTF-8">');
       headerEntries.push('<meta name="viewport" content="width=device-width, initial-scale=1">');
+      headerEntries.push('<link rel="icon" type="image/x-icon" href="favicon.svg">');
       headerEntries.push('<link rel="manifest" href="manifest.json" />');
       headerEntries.push('<link rel="stylesheet" type="text/css" href="/assets/styles/salesforce-lightning-design-system.min.css" />');
       headerEntries.push('<link rel="stylesheet" type="text/css" href="/styles/darkmode.css"/>');
@@ -39,6 +40,8 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push('<script type="module" src="components/custom-chapter/custom-chapter.js"></script>');
       headerEntries.push('<script type="module" src="components/custom-story/custom-story.js"></script>');
       headerEntries.push('<script type="module" src="components/custom-publishing/custom-publishing.js"></script>');
+      headerEntries.push('<script type="module" src="components/custom-login-module/custom-login-module.js"></script>');
+      headerEntries.push('<script type="module" src="components/custom-chapter-edit/custom-chapter-edit.js"></script>');
 
       headerEntries.push('<script type="module" src="slds-components/slds-toggle/toggle.js"></script>');
       headerEntries.push('<script type="module" src="slds-components/slds-input/slds-input.js"></script>');
@@ -50,6 +53,8 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push('<script type="module" src="slds-components/slds-toast/slds-toast.js"></script>');
       headerEntries.push('<script type="module" src="slds-components/slds-combobox/slds-combobox.js"></script>');
       headerEntries.push('<script type="module" src="slds-components/slds-modal/slds-modal.js"></script>');
+      headerEntries.push('<script type="module" src="slds-components/slds-layout/slds-layout.js"></script>');
+      headerEntries.push('<script type="module" src="slds-components/slds-layout/slds-layout-item.js"></script>');
 
       headerEntries.push('<script type="module" src="applications/bookstore/bookstore.js"></script>');
 

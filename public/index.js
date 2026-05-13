@@ -167,7 +167,7 @@ function fetchDatabase(eventpayload) {
           // the story and its chapters must be returned
           let fetchPromises = [];
           fetchPromises.push(
-            fetch(`/data/query/story?id=${storyId}`)
+            fetch(`/data/query/story?id=${storyId}`, preparedHeaders)
               .then(storyResponse => {
                 return storyResponse.json()
           }));
@@ -183,7 +183,7 @@ function fetchDatabase(eventpayload) {
           });
         } else {
           // all stories are requested
-          fetch(`/data/query/story`)
+          fetch(`/data/query/story`, preparedHeaders)
           .then(allStoriesResponse => allStoriesResponse.json())
           .then(allStories => {
             resolve(allStories);

@@ -26,6 +26,7 @@ class MetaDataEndpointLogic extends EndpointLogic {
 
         let dataCleaner = new DataCleaner();
         dataCleaner.removeApplicationKeys(metadata); // Clean data here
+        delete(metadata.icon);
 
         this.responseObject.json(metadata);
         resolve();

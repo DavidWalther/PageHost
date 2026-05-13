@@ -12,6 +12,7 @@ class SingleStoryEndpoint extends EndpointLogic {
 
     Logging.debugMessage({severity:'INFO', message: 'Executing single story query', location: LOCATION});
 
+    let dataFacade = new DataFacade(this.environment);
     let parameterObject = {};
     parameterObject.returnPromise = true;
     parameterObject.request = {
@@ -19,7 +20,13 @@ class SingleStoryEndpoint extends EndpointLogic {
       id: this.requestObject.query.id
     };
 
-    let dataFacade = new DataFacade(this.environment);
+    Logging.debugMessage({severity:'INFO', message: 'Checking for edit scope', location: LOCATION});
+    if(this.scopes?.has('edit')) {
+      Logging.debugMessage({severity:'INFO', message: 'Edit scope detected, modifying request parameters', location: LOCATION});
+      parameterObject.request.publishDate = null;
+      dataFacade.setSkipCache(true).setScopes(['edit']);
+    }
+
     return dataFacade.getData(parameterObject).then(story => {
       Logging.debugMessage({severity:'FINER', message: `Story returned`, location: LOCATION});
       this.responseObject.json(story);

@@ -3,6 +3,23 @@
 ## Naming pattern
 `<major-version>.<minor-version>.<bugfix>`
 
+### 3.7.1
+
+Bugfix: Implement service worker with versionable cache
+
+### 3.7.0
+
+- read favicon.svg from config in database
+- read icon SVGs from config in database
+
+### 3.6.0
+
+- read identities from Database
+
+### 3.5.0
+
+- implement lazy loading
+
 ### 3.4.0 
 
 - create publishing component

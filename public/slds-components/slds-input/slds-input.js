@@ -96,6 +96,8 @@ class SldsInput extends HTMLElement {
   //-------------------
 
   handleChangeInput(event) {
+    event.stopPropagation();
+    event.preventDefault();
     const eventChange = new CustomEvent('change', {
       bubbles: true,
       detail: {
