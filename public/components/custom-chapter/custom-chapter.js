@@ -178,6 +178,8 @@ class CustomChapter extends LitElement {
     this.intersectionObserver = null; // Intersection Observer for chunk-based lazy loading
     this.currentObservedChunkIndex = 1; // Track which chunk we're currently observing
     this.observedElements = new Map(); // Track observed elements
+    this._scrollTargetLoadedCount = 0; // Count of loaded paragraphs in scroll-target range
+    this._scrollTargetTotalCount = 0; // Total paragraphs that need to load before scrolling
   }
 
   // ==================================================
@@ -428,6 +430,11 @@ class CustomChapter extends LitElement {
             container.classList.add('loaded');
           }
         });
+
+        // Start tracking loaded paragraphs for scroll-to if paragraphnumber is set
+        if (this.paragraphnumber) {
+          this.waitForParagraphAndScroll();
+        }
       });
     });
   }
@@ -497,15 +504,65 @@ class CustomChapter extends LitElement {
   }
 
   // ==================================================
+  // Scroll-to-Paragraph
+  // ==================================================
+
+  /**
+   * Sets up tracking to wait for all paragraphs up to the scroll target to be loaded,
+   * then triggers scrolling to the target paragraph.
+   */
+  waitForParagraphAndScroll() {
+    const immediateLoadUpToChunk = this.getImmediateLoadChunkBoundary();
+    const lastImmediateIndex = this.getChunkEndIndex(immediateLoadUpToChunk);
+
+    // Count paragraphs that need to load (chunks 0 through immediateLoadUpToChunk)
+    // +1 because indices are 0-based
+    const totalToLoad = lastImmediateIndex + 1;
+
+    console.log(`waitForParagraphAndScroll: waiting for ${totalToLoad} paragraphs to load (chunks 0-${immediateLoadUpToChunk}) before scrolling to paragraphnumber ${this.paragraphnumber}`);
+
+    this._scrollTargetLoadedCount = 0;
+    this._scrollTargetTotalCount = totalToLoad;
+  }
+
+  /**
+   * Executes the scroll to the target paragraph and resets the scroll tracking state.
+   */
+  _executeScrollToParagraph() {
+    const targetNumber = this.paragraphnumber;
+    console.log(`All target paragraphs loaded. Scrolling to paragraphnumber ${targetNumber}`);
+
+    // Reset tracking state
+    this._scrollTargetLoadedCount = 0;
+    this._scrollTargetTotalCount = 0;
+
+    // Use requestAnimationFrame to ensure the DOM is fully rendered
+    requestAnimationFrame(() => {
+      this.scrollToParagraph({ paragraphSortNumber: targetNumber });
+      // Reset paragraphnumber so it doesn't scroll again on re-render
+      this.paragraphnumber = null;
+    });
+  }
+
+  // ==================================================
   // Event Handlers
   // ==================================================
 
   _onParagraphLoaded = (event) => {
     // - Only handle if we are waiting for a new paragraph
-    // - This also ensures the component will new proccess the event it has fired itself
+    // - This also ensures the component will not process the event it has fired itself
     if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
       this.requestUpdate();
       this.pendingNewParagraphId = null;
+    }
+
+    // Track loaded paragraphs for scroll-to-paragraph feature
+    if (this._scrollTargetTotalCount > 0) {
+      this._scrollTargetLoadedCount++;
+      console.log(`Scroll target: ${this._scrollTargetLoadedCount}/${this._scrollTargetTotalCount} paragraphs loaded`);
+      if (this._scrollTargetLoadedCount >= this._scrollTargetTotalCount) {
+        this._executeScrollToParagraph();
+      }
     }
   }
 
