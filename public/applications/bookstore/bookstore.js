@@ -233,6 +233,9 @@ class Bookstore extends LitElement {
     // chapter does not fire navigation events
     // loaded eventlistener is attached right away
     this.chapterElement.setAttribute('id', chapterId);
+    if (this._initPara?.paragraphnumber) {
+      this.chapterElement.setAttribute('paragraphnumber', this._initPara.paragraphnumber);
+    }
     this.chapterElement.parentElement.addEventListener('loaded', (event) => {
       if(Array.isArray(event.detail.chapterData)) { return; }
       console.log('Custom chapter loaded event:', event.detail);
@@ -417,6 +420,11 @@ class Bookstore extends LitElement {
 
     let initmode = typeMape.get(initParameter.firstUrlParameter.substring(0, 4));
     initParameter.initmode = initmode || 'none';
+
+    // Read optional paragraphnumber query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const paragraphnumber = urlParams.get('paragraphnumber');
+    initParameter.paragraphnumber = paragraphnumber ? Number(paragraphnumber) : null;
 
     console.table('initParameter', initParameter);
     return initParameter;
