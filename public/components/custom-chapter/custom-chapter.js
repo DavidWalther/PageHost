@@ -24,6 +24,7 @@ class CustomChapter extends LitElement {
     loading: { type: Boolean },
     loadingChunkSize: { type: Number, attribute: 'loading-chunk-size' },
     paragraphnumber: { type: Number },
+    _scrollPending: { type: Boolean, state: true },
   };
 
   static styles = css`
@@ -58,7 +59,8 @@ class CustomChapter extends LitElement {
     const canCreate = this.checkCreatePermission();
 
     return html`
-      <slds-card no-footer>
+      ${this._scrollPending ? html`<slds-spinner size="large"></slds-spinner>` : ''}
+      <slds-card no-footer ?hidden=${this._scrollPending}>
         <span slot="header">${this.chapterData.name}</span>
         <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
           <div class="slds-col slds-grow-none slds-align_absolute-center">
@@ -119,11 +121,21 @@ class CustomChapter extends LitElement {
     // Determine which chunks must load immediately
     const immediateLoadUpToChunk = this.getImmediateLoadChunkBoundary();
 
+    // Find target paragraph index for no-display logic
+    let targetParagraphIndex = -1;
+    if (this.paragraphnumber) {
+      targetParagraphIndex = paragraphs.findIndex(
+        (p) => p.sortnumber == this.paragraphnumber
+      );
+    }
+
     return paragraphs.map(
       (paragraph, index) => {
         const chunkIndex = this.getChunkIndex(index);
         // Load immediately if in first chunk OR within the paragraphnumber target range
         const shouldLazyLoad = chunkIndex > immediateLoadUpToChunk;
+        // Hide paragraphs before the target when scrolling to a specific paragraph
+        const shouldHide = targetParagraphIndex > 0 && index < targetParagraphIndex;
 
         return html`
           <div class="slds-col slds-p-bottom_small paragraph-container pending"
@@ -134,6 +146,7 @@ class CustomChapter extends LitElement {
               data-name=${paragraph.name || ''}
               data-sort-number=${paragraph.sortnumber || ''}
               ?no-load=${shouldLazyLoad}
+              ?no-display=${shouldHide}
             ></custom-paragraph>
           </div>
         `;
@@ -178,8 +191,8 @@ class CustomChapter extends LitElement {
     this.intersectionObserver = null; // Intersection Observer for chunk-based lazy loading
     this.currentObservedChunkIndex = 1; // Track which chunk we're currently observing
     this.observedElements = new Map(); // Track observed elements
-    this._scrollTargetLoadedCount = 0; // Count of loaded paragraphs in scroll-target range
-    this._scrollTargetTotalCount = 0; // Total paragraphs that need to load before scrolling
+    this._pendingDisplaySet = new Set(); // IDs of paragraphs waiting to load before reveal
+    this._scrollPending = false; // True while waiting for paragraphs to load before scroll
   }
 
   // ==================================================
@@ -508,39 +521,66 @@ class CustomChapter extends LitElement {
   // ==================================================
 
   /**
-   * Sets up tracking to wait for all paragraphs up to the scroll target to be loaded,
-   * then triggers scrolling to the target paragraph.
+   * Sets up tracking to wait for all paragraphs before the scroll target to be loaded.
+   * Builds a Set of paragraph IDs that must load before the chapter is revealed.
    */
   waitForParagraphAndScroll() {
-    const immediateLoadUpToChunk = this.getImmediateLoadChunkBoundary();
-    const lastImmediateIndex = this.getChunkEndIndex(immediateLoadUpToChunk);
-
-    // Count paragraphs that need to load (chunks 0 through immediateLoadUpToChunk)
-    // +1 because indices are 0-based
-    const totalToLoad = lastImmediateIndex + 1;
-
-    console.log(`waitForParagraphAndScroll: waiting for ${totalToLoad} paragraphs to load (chunks 0-${immediateLoadUpToChunk}) before scrolling to paragraphnumber ${this.paragraphnumber}`);
-
-    this._scrollTargetLoadedCount = 0;
-    this._scrollTargetTotalCount = totalToLoad;
+    // Tracking is already set up via _buildPendingDisplaySet in fetchAndDisplayChapter
+    console.log(`waitForParagraphAndScroll: ${this._pendingDisplaySet.size} paragraphs pending before scroll to paragraphnumber ${this.paragraphnumber}`);
   }
 
   /**
-   * Executes the scroll to the target paragraph and resets the scroll tracking state.
+   * Builds the set of paragraph IDs that need to finish loading before the chapter is revealed.
+   * These are all paragraphs before the target paragraph (the ones with no-display).
+   * @param {Array} rawParagraphs - The raw paragraphs array from the server
    */
-  _executeScrollToParagraph() {
+  _buildPendingDisplaySet(rawParagraphs) {
+    const paragraphs = this.chapterData?.reversed
+      ? [...rawParagraphs].reverse()
+      : rawParagraphs;
+
+    const targetIndex = paragraphs.findIndex(
+      (p) => p.sortnumber == this.paragraphnumber
+    );
+
+    if (targetIndex <= 0) {
+      // Target is the first paragraph or not found — nothing to hide, just show immediately
+      this._scrollPending = false;
+      return;
+    }
+
+    this._scrollPending = true;
+    this._pendingDisplaySet = new Set();
+    for (let i = 0; i < targetIndex; i++) {
+      this._pendingDisplaySet.add(paragraphs[i].id);
+    }
+
+    console.log(`Built pending display set with ${this._pendingDisplaySet.size} paragraph IDs`);
+  }
+
+  /**
+   * Called when all pending paragraphs have loaded.
+   * Reveals all hidden paragraphs, stops the spinner, scrolls to target, and resets state.
+   */
+  _revealAndScroll() {
     const targetNumber = this.paragraphnumber;
-    console.log(`All target paragraphs loaded. Scrolling to paragraphnumber ${targetNumber}`);
+    console.log(`All pending paragraphs loaded. Revealing and scrolling to paragraphnumber ${targetNumber}`);
 
-    // Reset tracking state
-    this._scrollTargetLoadedCount = 0;
-    this._scrollTargetTotalCount = 0;
+    // 1. Stop the spinner
+    this._scrollPending = false;
 
-    // Use requestAnimationFrame to ensure the DOM is fully rendered
-    requestAnimationFrame(() => {
-      this.scrollToParagraph({ paragraphSortNumber: targetNumber });
-      // Reset paragraphnumber so it doesn't scroll again on re-render
-      this.paragraphnumber = null;
+    // 2. Wait for render, then remove no-display and scroll
+    this.updateComplete.then(() => {
+      // Remove no-display from all paragraphs
+      const paragraphs = this.shadowRoot.querySelectorAll('custom-paragraph[no-display]');
+      paragraphs.forEach((p) => p.removeAttribute('no-display'));
+
+      // Scroll to target paragraph
+      requestAnimationFrame(() => {
+        this.scrollToParagraph({ paragraphSortNumber: targetNumber });
+        // Reset paragraphnumber so it doesn't trigger again on re-render
+        this.paragraphnumber = null;
+      });
     });
   }
 
@@ -557,11 +597,14 @@ class CustomChapter extends LitElement {
     }
 
     // Track loaded paragraphs for scroll-to-paragraph feature
-    if (this._scrollTargetTotalCount > 0) {
-      this._scrollTargetLoadedCount++;
-      console.log(`Scroll target: ${this._scrollTargetLoadedCount}/${this._scrollTargetTotalCount} paragraphs loaded`);
-      if (this._scrollTargetLoadedCount >= this._scrollTargetTotalCount) {
-        this._executeScrollToParagraph();
+    if (this._pendingDisplaySet.size > 0) {
+      const paragraphId = event.target.id;
+      if (this._pendingDisplaySet.has(paragraphId)) {
+        this._pendingDisplaySet.delete(paragraphId);
+        console.log(`Pending display: removed ${paragraphId}, ${this._pendingDisplaySet.size} remaining`);
+      }
+      if (this._pendingDisplaySet.size === 0) {
+        this._revealAndScroll();
       }
     }
   }
@@ -616,6 +659,11 @@ class CustomChapter extends LitElement {
       let paragraphsFound = data.paragraphs.length > 0 && !!(data.paragraphs[0].id);
 
       this.paragraphsData = paragraphsFound ? data.paragraphs : [];
+
+      // If paragraphnumber is set, build pending display set (spinner via _scrollPending)
+      if (this.paragraphnumber && paragraphsFound) {
+        this._buildPendingDisplaySet(data.paragraphs);
+      }
       this.loading = false;
     });
   }
