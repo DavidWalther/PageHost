@@ -7,10 +7,14 @@ class CustomParagraph extends LitElement {
     id: { type: String },
     _showDelete: { type: Boolean },
     noLoad: { type: Boolean, attribute: 'no-load' },
+    noDisplay: { type: Boolean, attribute: 'no-display', reflect: true },
   };
 
   static styles = css`
     /* Add SLDS styling for your component here */
+    :host([no-display]) {
+      display: none;
+    }
     #content {
       position: relative;
     }
@@ -68,6 +72,7 @@ class CustomParagraph extends LitElement {
     this.draftMode = false; // Track if user is in draft mode
     this._showDelete = false;
     this.noLoad = false;
+    this.noDisplay = false;
   }
 
   get hasDraft() {
