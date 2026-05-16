@@ -58,6 +58,7 @@ das heißt:
 
 - Jeder Schritt bekommt einen eigenen Sub-Branch: `feature/<kurzbeschreibung>`
 - Jeder Teilschritt = ein Commit
+- Die Teilschritte müssen so klein wie möglich gehalten werden, um die Übersicht zu bewahren
 - Nach erfolgreichen Tests → Sub-Branch in den Feature-Branch mergen und löschen
 
 ### Plan-Format
