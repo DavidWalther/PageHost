@@ -44,6 +44,7 @@ const STATIC_FILES = [
   '/slds-components/slds-modal/slds-modal.js',
   '/slds-components/slds-layout/slds-layout.js',
   '/slds-components/slds-layout/slds-layout-item.js',
+  '/slds-components/slds-progress-bar/slds-progress-bar.js',
   
   // SLDS Components - HTML Templates
   '/slds-components/slds-combobox/slds-combobox.html',
