@@ -598,7 +598,7 @@ class CustomChapter extends LitElement {
 
     // Track loaded paragraphs for scroll-to-paragraph feature
     if (this._pendingDisplaySet.size > 0) {
-      const paragraphId = event.target.id;
+      const paragraphId = event.detail.paragraphData.id;
       if (this._pendingDisplaySet.has(paragraphId)) {
         this._pendingDisplaySet.delete(paragraphId);
         console.log(`Pending display: removed ${paragraphId}, ${this._pendingDisplaySet.size} remaining`);
