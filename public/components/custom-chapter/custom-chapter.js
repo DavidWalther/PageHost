@@ -134,10 +134,7 @@ class CustomChapter extends LitElement {
       ? [...this.paragraphsData].reverse()
       : this.paragraphsData;
 
-    // Determine which chunks must load immediately
-    const immediateLoadUpToChunk = this.getImmediateLoadChunkBoundary();
-
-    // Find target paragraph index for no-display logic
+    // Find target paragraph index for no-display and lazy-load logic
     let targetParagraphIndex = -1;
     if (this.paragraphnumber) {
       targetParagraphIndex = paragraphs.findIndex(
@@ -145,10 +142,18 @@ class CustomChapter extends LitElement {
       );
     }
 
+    // Without a target paragraph, only the first chunk loads immediately
+    const immediateLoadUpToChunk =
+      targetParagraphIndex === -1 ? this.getImmediateLoadChunkBoundary() : null;
+
     return paragraphs.map((paragraph, index) => {
       const chunkIndex = this.getChunkIndex(index);
-      // Load immediately if in first chunk OR within the paragraphnumber target range
-      const shouldLazyLoad = chunkIndex > immediateLoadUpToChunk;
+      // When scrolling to a target: load all paragraphs up to and including the target directly,
+      // lazy-load everything after. Without a target: use the standard chunk boundary.
+      const shouldLazyLoad =
+        targetParagraphIndex !== -1
+          ? index > targetParagraphIndex
+          : chunkIndex > immediateLoadUpToChunk;
       // Hide paragraphs before the target when scrolling to a specific paragraph
       const shouldHide =
         targetParagraphIndex > 0 && index < targetParagraphIndex;
