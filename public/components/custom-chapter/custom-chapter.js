@@ -1,7 +1,12 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
 import { deleteChapter } from '/components/custom-chapter/delete-chapter.api.js';
+import '/slds-components/slds-progress-bar/slds-progress-bar.js';
 
 class CustomChapter extends LitElement {
   labels = {
@@ -59,7 +64,9 @@ class CustomChapter extends LitElement {
     const canCreate = this.checkCreatePermission();
 
     return html`
-      ${this._scrollPending ? html`<slds-spinner size="large"></slds-spinner>` : ''}
+      ${this._scrollPending
+        ? html`<slds-spinner size="large"></slds-spinner>`
+        : ''}
       <slds-card no-footer ?hidden=${this._scrollPending}>
         <span slot="header">${this.chapterData.name}</span>
         <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
@@ -82,36 +89,32 @@ class CustomChapter extends LitElement {
             ></slds-button-icon>
           </div>
           <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${canCreate ? html`
-              <slds-button-icon
-                icon="utility:add"
-                variant="container-filled"
-                @click=${this.handleCreateParagraphClick}
-              ></slds-button-icon>`
-              : ''
-            }
+            ${canCreate
+              ? html` <slds-button-icon
+                  icon="utility:add"
+                  variant="container-filled"
+                  @click=${this.handleCreateParagraphClick}
+                ></slds-button-icon>`
+              : ''}
           </div>
           <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${this.checkDeletePermission() ? html`
-              <slds-button-icon
-                icon="utility:delete"
-                variant="container-filled"
-                title="${this.labels.labelDeleteChapter}"
-                @click=${this._handleDeleteClick}
-              ></slds-button-icon>`
-              : ''
-            }
+            ${this.checkDeletePermission()
+              ? html` <slds-button-icon
+                  icon="utility:delete"
+                  variant="container-filled"
+                  title="${this.labels.labelDeleteChapter}"
+                  @click=${this._handleDeleteClick}
+                ></slds-button-icon>`
+              : ''}
           </div>
         </div>
-        <div id="chapter-content">
-          ${this.renderParagraphs()}
-        </div>
+        <div id="chapter-content">${this.renderParagraphs()}</div>
       </slds-card>
     `;
   }
 
   renderParagraphs() {
-    if (!this.paragraphsData || this.paragraphsData.length === 0 ) {
+    if (!this.paragraphsData || this.paragraphsData.length === 0) {
       return html`<p>${this.labels.labelNoParagraphs}</p>`;
     }
     const paragraphs = this.chapterData?.reversed
@@ -129,29 +132,30 @@ class CustomChapter extends LitElement {
       );
     }
 
-    return paragraphs.map(
-      (paragraph, index) => {
-        const chunkIndex = this.getChunkIndex(index);
-        // Load immediately if in first chunk OR within the paragraphnumber target range
-        const shouldLazyLoad = chunkIndex > immediateLoadUpToChunk;
-        // Hide paragraphs before the target when scrolling to a specific paragraph
-        const shouldHide = targetParagraphIndex > 0 && index < targetParagraphIndex;
+    return paragraphs.map((paragraph, index) => {
+      const chunkIndex = this.getChunkIndex(index);
+      // Load immediately if in first chunk OR within the paragraphnumber target range
+      const shouldLazyLoad = chunkIndex > immediateLoadUpToChunk;
+      // Hide paragraphs before the target when scrolling to a specific paragraph
+      const shouldHide =
+        targetParagraphIndex > 0 && index < targetParagraphIndex;
 
-        return html`
-          <div class="slds-col slds-p-bottom_small paragraph-container pending"
-               data-paragraph-id=${paragraph.id}
-               data-chunk-index=${chunkIndex}>
-            <custom-paragraph
-              id=${paragraph.id}
-              data-name=${paragraph.name || ''}
-              data-sort-number=${paragraph.sortnumber || ''}
-              ?no-load=${shouldLazyLoad}
-              ?no-display=${shouldHide}
-            ></custom-paragraph>
-          </div>
-        `;
-      }
-    );
+      return html`
+        <div
+          class="slds-col slds-p-bottom_small paragraph-container pending"
+          data-paragraph-id=${paragraph.id}
+          data-chunk-index=${chunkIndex}
+        >
+          <custom-paragraph
+            id=${paragraph.id}
+            data-name=${paragraph.name || ''}
+            data-sort-number=${paragraph.sortnumber || ''}
+            ?no-load=${shouldLazyLoad}
+            ?no-display=${shouldHide}
+          ></custom-paragraph>
+        </div>
+      `;
+    });
   }
 
   /**
@@ -172,7 +176,9 @@ class CustomChapter extends LitElement {
     );
 
     if (targetIndex === -1) {
-      console.warn(`paragraphnumber ${this.paragraphnumber} not found in paragraphsData`);
+      console.warn(
+        `paragraphnumber ${this.paragraphnumber} not found in paragraphsData`
+      );
       return 0;
     }
 
@@ -222,8 +228,12 @@ class CustomChapter extends LitElement {
 
     // Set up intersection observing for lazy-loaded paragraphs
     // Only when we have data AND we're not loading
-    if ((changedProperties.has('paragraphsData') || changedProperties.has('chapterData'))
-        && !this.loading && this.paragraphsData.length > 0) {
+    if (
+      (changedProperties.has('paragraphsData') ||
+        changedProperties.has('chapterData')) &&
+      !this.loading &&
+      this.paragraphsData.length > 0
+    ) {
       this.setupParagraphObserving();
     }
   }
@@ -261,8 +271,13 @@ class CustomChapter extends LitElement {
    */
   identifyNextObserverTarget(nextChunkIndex) {
     // Check if next chunk exists
-    if (nextChunkIndex >= Math.ceil(this.paragraphsData.length / this.loadingChunkSize)) {
-      console.log(`No more chunks to observe (requested chunk ${nextChunkIndex})`);
+    if (
+      nextChunkIndex >=
+      Math.ceil(this.paragraphsData.length / this.loadingChunkSize)
+    ) {
+      console.log(
+        `No more chunks to observe (requested chunk ${nextChunkIndex})`
+      );
       return null;
     }
 
@@ -278,17 +293,25 @@ class CustomChapter extends LitElement {
     const triggerOffset = Math.floor(chunkSize * 0.75);
     const triggerIndex = currentChunkStart + triggerOffset;
 
-    console.log(`Identifying observer target for chunk ${nextChunkIndex} (trigger at 75% of current chunk ${currentChunkIndex}, paragraph ${triggerIndex})`);
+    console.log(
+      `Identifying observer target for chunk ${nextChunkIndex} (trigger at 75% of current chunk ${currentChunkIndex}, paragraph ${triggerIndex})`
+    );
 
-    const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+    const paragraphContainers = this.shadowRoot.querySelectorAll(
+      '.paragraph-container'
+    );
     const targetContainer = paragraphContainers[triggerIndex];
 
     if (!targetContainer) {
-      console.error(`Could not find container for trigger at index ${triggerIndex}`);
+      console.error(
+        `Could not find container for trigger at index ${triggerIndex}`
+      );
       // Fallback to end of current chunk if 75% point doesn't exist
       const fallbackContainer = paragraphContainers[currentChunkEnd];
       if (fallbackContainer) {
-        console.log(`Using fallback target at end of chunk ${currentChunkIndex} (paragraph ${currentChunkEnd})`);
+        console.log(
+          `Using fallback target at end of chunk ${currentChunkIndex} (paragraph ${currentChunkEnd})`
+        );
         return fallbackContainer;
       }
       return null;
@@ -306,27 +329,35 @@ class CustomChapter extends LitElement {
     const startIndex = this.getChunkStartIndex(chunkIndex);
     const endIndex = this.getChunkEndIndex(chunkIndex);
 
-    console.log(`Collecting paragraphs for chunk ${chunkIndex}: paragraphs ${startIndex} to ${endIndex}`);
+    console.log(
+      `Collecting paragraphs for chunk ${chunkIndex}: paragraphs ${startIndex} to ${endIndex}`
+    );
 
-    const paragraphContainers = Array.from(this.shadowRoot.querySelectorAll('.paragraph-container'));
+    const paragraphContainers = Array.from(
+      this.shadowRoot.querySelectorAll('.paragraph-container')
+    );
     const elementsToLoad = [];
 
     console.log(`Total containers found: ${paragraphContainers.length}`);
 
     // Filter containers to only those in the specified chunk range
-    let filteredParagraphContainers = paragraphContainers.filter((container, index) => {
-      return index >= startIndex && index <= endIndex;
-    });
+    let filteredParagraphContainers = paragraphContainers.filter(
+      (container, index) => {
+        return index >= startIndex && index <= endIndex;
+      }
+    );
     if (filteredParagraphContainers.length === 0) {
       console.log(`No containers found in chunk ${chunkIndex}`);
       return elementsToLoad;
     }
 
     // Further filter to only those that still have no-load attribute
-    filteredParagraphContainers = filteredParagraphContainers.filter((container, i) => {
-      const paragraphElement = container.querySelector('custom-paragraph');
-      return paragraphElement && paragraphElement.hasAttribute('no-load');
-    });
+    filteredParagraphContainers = filteredParagraphContainers.filter(
+      (container, i) => {
+        const paragraphElement = container.querySelector('custom-paragraph');
+        return paragraphElement && paragraphElement.hasAttribute('no-load');
+      }
+    );
 
     if (filteredParagraphContainers.length === 0) {
       console.log(`No paragraphs with no-load found in chunk ${chunkIndex}`);
@@ -339,11 +370,13 @@ class CustomChapter extends LitElement {
       elementsToLoad.push({
         container: container,
         paragraph: paragraphElement,
-        index: i
+        index: i,
       });
     });
 
-    console.log(`Collected ${elementsToLoad.length} paragraphs to load for chunk ${chunkIndex}`);
+    console.log(
+      `Collected ${elementsToLoad.length} paragraphs to load for chunk ${chunkIndex}`
+    );
     return elementsToLoad;
   }
 
@@ -368,7 +401,9 @@ class CustomChapter extends LitElement {
   removeParagraphNoLoadAttributes(elementsToLoad) {
     elementsToLoad.forEach(({ paragraph, index }) => {
       if (paragraph && paragraph.hasAttribute('no-load')) {
-        console.log(`Removing no-load from paragraph ${index}: ${paragraph.id}`);
+        console.log(
+          `Removing no-load from paragraph ${index}: ${paragraph.id}`
+        );
         paragraph.removeAttribute('no-load');
       }
     });
@@ -410,12 +445,16 @@ class CustomChapter extends LitElement {
     // Use multiple animation frames to ensure DOM is fully rendered
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const paragraphContainers = this.shadowRoot.querySelectorAll('.paragraph-container');
+        const paragraphContainers = this.shadowRoot.querySelectorAll(
+          '.paragraph-container'
+        );
         console.log(`Found ${paragraphContainers.length} paragraph containers`);
         console.log(`Chunk size: ${this.loadingChunkSize}`);
         console.log(`Immediate load up to chunk: ${immediateLoadUpToChunk}`);
 
-        const totalChunks = Math.ceil(this.paragraphsData.length / this.loadingChunkSize);
+        const totalChunks = Math.ceil(
+          this.paragraphsData.length / this.loadingChunkSize
+        );
 
         // Check if all chunks are already loaded immediately
         if (firstLazyChunk >= totalChunks) {
@@ -429,7 +468,8 @@ class CustomChapter extends LitElement {
         }
 
         // Set up observer for the first lazy chunk
-        const initialObserverTarget = this.identifyNextObserverTarget(firstLazyChunk);
+        const initialObserverTarget =
+          this.identifyNextObserverTarget(firstLazyChunk);
         if (initialObserverTarget) {
           this.observeElement(initialObserverTarget);
           this.currentObservedChunkIndex = firstLazyChunk;
@@ -458,7 +498,11 @@ class CustomChapter extends LitElement {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            console.log(`Chunk trigger is intersecting:`, entry.target, `ratio: ${entry.intersectionRatio}`);
+            console.log(
+              `Chunk trigger is intersecting:`,
+              entry.target,
+              `ratio: ${entry.intersectionRatio}`
+            );
             this.executeChunkLoading(entry.target);
           }
         });
@@ -474,7 +518,9 @@ class CustomChapter extends LitElement {
   executeChunkLoading(observedElement) {
     const triggerChunkIndex = parseInt(observedElement.dataset.chunkIndex);
     const chunkToLoad = triggerChunkIndex + 1; // Load the NEXT chunk when trigger element is intersecting
-    console.log(`Trigger element from chunk ${triggerChunkIndex} intersecting - loading chunk ${chunkToLoad}`);
+    console.log(
+      `Trigger element from chunk ${triggerChunkIndex} intersecting - loading chunk ${chunkToLoad}`
+    );
 
     // 1. Identify the next element that should be observed
     const nextObserverTarget = this.identifyNextObserverTarget(chunkToLoad + 1);
@@ -526,7 +572,9 @@ class CustomChapter extends LitElement {
    */
   waitForParagraphAndScroll() {
     // Tracking is already set up via _buildPendingDisplaySet in fetchAndDisplayChapter
-    console.log(`waitForParagraphAndScroll: ${this._pendingDisplaySet.size} paragraphs pending before scroll to paragraphnumber ${this.paragraphnumber}`);
+    console.log(
+      `waitForParagraphAndScroll: ${this._pendingDisplaySet.size} paragraphs pending before scroll to paragraphnumber ${this.paragraphnumber}`
+    );
   }
 
   /**
@@ -555,7 +603,9 @@ class CustomChapter extends LitElement {
       this._pendingDisplaySet.add(paragraphs[i].id);
     }
 
-    console.log(`Built pending display set with ${this._pendingDisplaySet.size} paragraph IDs`);
+    console.log(
+      `Built pending display set with ${this._pendingDisplaySet.size} paragraph IDs`
+    );
   }
 
   /**
@@ -564,7 +614,9 @@ class CustomChapter extends LitElement {
    */
   _revealAndScroll() {
     const targetNumber = this.paragraphnumber;
-    console.log(`All pending paragraphs loaded. Revealing and scrolling to paragraphnumber ${targetNumber}`);
+    console.log(
+      `All pending paragraphs loaded. Revealing and scrolling to paragraphnumber ${targetNumber}`
+    );
 
     // 1. Stop the spinner
     this._scrollPending = false;
@@ -572,7 +624,9 @@ class CustomChapter extends LitElement {
     // 2. Wait for render, then remove no-display and scroll
     this.updateComplete.then(() => {
       // Remove no-display from all paragraphs
-      const paragraphs = this.shadowRoot.querySelectorAll('custom-paragraph[no-display]');
+      const paragraphs = this.shadowRoot.querySelectorAll(
+        'custom-paragraph[no-display]'
+      );
       paragraphs.forEach((p) => p.removeAttribute('no-display'));
 
       // Scroll to target paragraph
@@ -591,7 +645,10 @@ class CustomChapter extends LitElement {
   _onParagraphLoaded = (event) => {
     // - Only handle if we are waiting for a new paragraph
     // - This also ensures the component will not process the event it has fired itself
-    if (this.pendingNewParagraphId && event.target.id === this.pendingNewParagraphId) {
+    if (
+      this.pendingNewParagraphId &&
+      event.target.id === this.pendingNewParagraphId
+    ) {
       this.requestUpdate();
       this.pendingNewParagraphId = null;
     }
@@ -601,13 +658,15 @@ class CustomChapter extends LitElement {
       const paragraphId = event.detail.paragraphData.id;
       if (this._pendingDisplaySet.has(paragraphId)) {
         this._pendingDisplaySet.delete(paragraphId);
-        console.log(`Pending display: removed ${paragraphId}, ${this._pendingDisplaySet.size} remaining`);
+        console.log(
+          `Pending display: removed ${paragraphId}, ${this._pendingDisplaySet.size} remaining`
+        );
       }
       if (this._pendingDisplaySet.size === 0) {
         this._revealAndScroll();
       }
     }
-  }
+  };
 
   async handleIdChange(newId) {
     if (!newId || newId === 'null') {
@@ -623,14 +682,16 @@ class CustomChapter extends LitElement {
   handleShareClick() {
     const shareUrl = `${location.origin}/${this.id}`;
     this.writeToClipboard(shareUrl);
-    this.dispatchEvent(new CustomEvent('toast', {
-      detail: {
-        message: this.labels.labelNotifcationLinkCopied,
-        variant: 'info',
-      },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('toast', {
+        detail: {
+          message: this.labels.labelNotifcationLinkCopied,
+          variant: 'info',
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
   // ==================================================
   // Actions
@@ -656,7 +717,8 @@ class CustomChapter extends LitElement {
 
       this.chapterData = data;
 
-      let paragraphsFound = data.paragraphs.length > 0 && !!(data.paragraphs[0].id);
+      let paragraphsFound =
+        data.paragraphs.length > 0 && !!data.paragraphs[0].id;
 
       this.paragraphsData = paragraphsFound ? data.paragraphs : [];
 
@@ -686,9 +748,15 @@ class CustomChapter extends LitElement {
     if (!authData) return false;
     try {
       const parsedData = JSON.parse(authData);
-      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+      return (
+        parsedData?.authenticationResult.access?.scopes?.includes('create') ||
+        false
+      );
     } catch (e) {
-      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      console.error(
+        'Failed to parse authenticationResult from sessionStorage:',
+        e
+      );
       return false;
     }
   }
@@ -698,7 +766,10 @@ class CustomChapter extends LitElement {
     if (!authData) return false;
     try {
       const parsedData = JSON.parse(authData);
-      return parsedData?.authenticationResult.access?.scopes?.includes('delete') || false;
+      return (
+        parsedData?.authenticationResult.access?.scopes?.includes('delete') ||
+        false
+      );
     } catch (e) {
       return false;
     }
@@ -710,56 +781,87 @@ class CustomChapter extends LitElement {
     let token = '';
     if (authData) {
       try {
-        token = JSON.parse(authData)?.authenticationResult?.access?.access_token;
+        token =
+          JSON.parse(authData)?.authenticationResult?.access?.access_token;
       } catch {}
     }
     if (!token) {
-      this.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Nicht eingeloggt', variant: 'error' }, bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Nicht eingeloggt', variant: 'error' },
+          bubbles: true,
+          composed: true,
+        })
+      );
       return;
     }
     try {
       await deleteChapter({ id: this.id, token });
-      this.dispatchEvent(new CustomEvent('toast', { detail: { message: this.labels.labelChapterDeleted, variant: 'success' }, bubbles: true, composed: true }));
-      this.dispatchEvent(new CustomEvent('chapter-deleted', {
-        detail: { chapterId: this.id },
-        bubbles: true,
-        composed: true,
-      }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: {
+            message: this.labels.labelChapterDeleted,
+            variant: 'success',
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      this.dispatchEvent(
+        new CustomEvent('chapter-deleted', {
+          detail: { chapterId: this.id },
+          bubbles: true,
+          composed: true,
+        })
+      );
       this.clearContent();
     } catch (e) {
-      this.dispatchEvent(new CustomEvent('toast', { detail: { message: e.message || this.labels.labelChapterDeleteError, variant: 'error' }, bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: {
+            message: e.message || this.labels.labelChapterDeleteError,
+            variant: 'error',
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
     }
   }
 
   handleScrollDownClick() {
     console.log('Scroll down clicked');
-    this.scrollToParagraph({ paragraphId: '000p00000000000315'});
+    this.scrollToParagraph({ paragraphId: '000p00000000000315' });
   }
 
   // ======== Actions ================
 
   scrollToParagraph(scrollParameters) {
-    const {paragraphId, paragraphSortNumber} = scrollParameters;
+    const { paragraphId, paragraphSortNumber } = scrollParameters;
 
-    const paragraphContentElement = this.shadowRoot.getElementById('chapter-content');
+    const paragraphContentElement =
+      this.shadowRoot.getElementById('chapter-content');
     if (!paragraphContentElement) return;
 
-    if(paragraphSortNumber) {
-      console.log('Scrolling to paragraph with sort number:', paragraphSortNumber);
-      let paragraph = Array.from(paragraphContentElement.querySelectorAll('custom-paragraph')).find( elem => (
-        elem.dataset.sortNumber == paragraphSortNumber
-      ));
-      if(paragraph) {
+    if (paragraphSortNumber) {
+      console.log(
+        'Scrolling to paragraph with sort number:',
+        paragraphSortNumber
+      );
+      let paragraph = Array.from(
+        paragraphContentElement.querySelectorAll('custom-paragraph')
+      ).find((elem) => elem.dataset.sortNumber == paragraphSortNumber);
+      if (paragraph) {
         paragraph.scrollIntoView({ behavior: 'smooth' });
       }
       return;
     }
 
-    if(paragraphId) {
+    if (paragraphId) {
       console.log('Scrolling to paragraph with ID:', paragraphId);
-      let paragraph = Array.from(paragraphContentElement.querySelectorAll('custom-paragraph')).find( elem => (
-        elem.id == paragraphId
-      ));
+      let paragraph = Array.from(
+        paragraphContentElement.querySelectorAll('custom-paragraph')
+      ).find((elem) => elem.id == paragraphId);
       if (paragraph) {
         paragraph.scrollIntoView({ behavior: 'smooth' });
       }
@@ -770,14 +872,15 @@ class CustomChapter extends LitElement {
   // ======= Create Event ========
 
   fireCreateEvent_Paragraph(chapterId, storyId) {
-    let eventDatail = {}
+    let eventDatail = {};
     eventDatail.object = 'paragraph';
     eventDatail.payload = {
       chapterId,
       storyId,
       name: '',
       content: '',
-      htmlcontent: '<slds-card no-footer><span slot="header">Neuer Absatz</span></slds-card>',
+      htmlcontent:
+        '<slds-card no-footer><span slot="header">Neuer Absatz</span></slds-card>',
     };
     eventDatail.callback = this.createEventCallback_Paragraph.bind(this);
 
@@ -792,20 +895,28 @@ class CustomChapter extends LitElement {
 
   createEventCallback_Paragraph(error, data) {
     if (error) {
-      this.dispatchEvent(new CustomEvent('toast', {
-        detail: { message: this.labels.labelParagraphCreateError, variant: 'error' },
-        bubbles: true,
-        composed: true,
-      }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: {
+            message: this.labels.labelParagraphCreateError,
+            variant: 'error',
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
       return;
     }
-    if(data) {
+    if (data) {
       let newParagraph = data.result;
       // Add the new paragraph to the list
       if (newParagraph.id) {
         this.dispatchEvent(
           new CustomEvent('toast', {
-            detail: { message: this.labels.labelParagraphCreated, variant: 'success' },
+            detail: {
+              message: this.labels.labelParagraphCreated,
+              variant: 'success',
+            },
             bubbles: true,
             composed: true,
           })
