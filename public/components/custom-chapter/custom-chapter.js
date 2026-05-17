@@ -72,7 +72,6 @@ class CustomChapter extends LitElement {
                 this._pendingTotalCount) *
                 100
             )}
-            size="x-small"
             circular
           ></slds-progress-bar>`
         : ''}
