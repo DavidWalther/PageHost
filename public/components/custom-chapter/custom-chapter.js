@@ -454,9 +454,21 @@ class CustomChapter extends LitElement {
     this.cleanupIntersectionObserver();
     this.initializeIntersectionObserver();
 
-    // Determine which chunks are immediately loaded
-    const immediateLoadUpToChunk = this.getImmediateLoadChunkBoundary();
-    const firstLazyChunk = immediateLoadUpToChunk + 1;
+    // When paragraphnumber is set, the lazy boundary is index-based (not chunk-based).
+    // Find the target paragraph index in display order to compute firstLazyChunk.
+    const paragraphs = this.chapterData?.reversed
+      ? [...this.paragraphsData].reverse()
+      : this.paragraphsData;
+    const targetParagraphIndex = this.paragraphnumber
+      ? paragraphs.findIndex((p) => p.sortnumber == this.paragraphnumber)
+      : -1;
+
+    // With a target: first lazy chunk is the chunk containing the first lazy paragraph (target+1).
+    // Without a target: only chunk 0 loads immediately, so first lazy chunk is 1.
+    const firstLazyChunk =
+      targetParagraphIndex !== -1
+        ? this.getChunkIndex(targetParagraphIndex + 1)
+        : this.getImmediateLoadChunkBoundary() + 1;
 
     // Reset to observe the first lazy chunk
     this.currentObservedChunkIndex = firstLazyChunk;
@@ -469,16 +481,15 @@ class CustomChapter extends LitElement {
         );
         console.log(`Found ${paragraphContainers.length} paragraph containers`);
         console.log(`Chunk size: ${this.loadingChunkSize}`);
-        console.log(`Immediate load up to chunk: ${immediateLoadUpToChunk}`);
+        console.log(`First lazy chunk: ${firstLazyChunk}`);
 
         const totalChunks = Math.ceil(
           this.paragraphsData.length / this.loadingChunkSize
         );
 
-        // Check if all chunks are already loaded immediately
+        // Check if all paragraphs load immediately (no observer needed)
         if (firstLazyChunk >= totalChunks) {
           console.log(`All paragraphs load immediately, no observer needed`);
-          // Mark all containers as loaded
           paragraphContainers.forEach((container) => {
             container.classList.remove('pending');
             container.classList.add('loaded');
@@ -494,10 +505,15 @@ class CustomChapter extends LitElement {
           this.currentObservedChunkIndex = firstLazyChunk;
         }
 
-        // Remove 'pending' class of all immediately loaded chunks
+        // Remove 'pending' class from immediately loaded containers.
+        // With a target: containers up to and including the target index are immediate.
+        // Without a target: containers in chunk 0 are immediate.
         paragraphContainers.forEach((container, index) => {
-          const chunkIndex = this.getChunkIndex(index);
-          if (chunkIndex <= immediateLoadUpToChunk) {
+          const isImmediate =
+            targetParagraphIndex !== -1
+              ? index <= targetParagraphIndex
+              : this.getChunkIndex(index) < firstLazyChunk;
+          if (isImmediate) {
             container.classList.remove('pending');
             container.classList.add('loaded');
           }
