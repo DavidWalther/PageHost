@@ -66,7 +66,15 @@ class CustomChapter extends LitElement {
 
     return html`
       ${this._scrollPending
-        ? html`<slds-spinner size="large"></slds-spinner>`
+        ? html`<slds-progress-bar
+            percent=${Math.round(
+              ((this._pendingTotalCount - this._pendingDisplaySet.size) /
+                this._pendingTotalCount) *
+                100
+            )}
+            size="x-small"
+            circular
+          ></slds-progress-bar>`
         : ''}
       <slds-card no-footer ?hidden=${this._scrollPending}>
         <span slot="header">${this.chapterData.name}</span>
