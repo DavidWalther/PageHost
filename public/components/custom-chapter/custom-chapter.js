@@ -604,6 +604,7 @@ class CustomChapter extends LitElement {
     for (let i = 0; i < targetIndex; i++) {
       this._pendingDisplaySet.add(paragraphs[i].id);
     }
+    this._pendingTotalCount = this._pendingDisplaySet.size;
 
     console.log(
       `Built pending display set with ${this._pendingDisplaySet.size} paragraph IDs`
