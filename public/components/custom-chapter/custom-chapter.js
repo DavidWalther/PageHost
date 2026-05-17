@@ -30,6 +30,7 @@ class CustomChapter extends LitElement {
     loadingChunkSize: { type: Number, attribute: 'loading-chunk-size' },
     paragraphnumber: { type: Number },
     _scrollPending: { type: Boolean, state: true },
+    _pendingTotalCount: { type: Number, state: true },
   };
 
   static styles = css`
@@ -199,6 +200,7 @@ class CustomChapter extends LitElement {
     this.observedElements = new Map(); // Track observed elements
     this._pendingDisplaySet = new Set(); // IDs of paragraphs waiting to load before reveal
     this._scrollPending = false; // True while waiting for paragraphs to load before scroll
+    this._pendingTotalCount = 0; // Total count of paragraphs to load before scroll
   }
 
   // ==================================================
