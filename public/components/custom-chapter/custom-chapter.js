@@ -53,6 +53,15 @@ class CustomChapter extends LitElement {
     }
   `;
 
+  get loadingProgress() {
+    if (this._pendingTotalCount === 0) return 0;
+    return Math.round(
+      ((this._pendingTotalCount - this._pendingDisplaySet.size) /
+        this._pendingTotalCount) *
+        100
+    );
+  }
+
   render() {
     if (this.loading) {
       return html`<slds-spinner size="large"></slds-spinner>`;
@@ -67,11 +76,7 @@ class CustomChapter extends LitElement {
     return html`
       ${this._scrollPending
         ? html`<slds-progress-bar
-            percent=${Math.round(
-              ((this._pendingTotalCount - this._pendingDisplaySet.size) /
-                this._pendingTotalCount) *
-                100
-            )}
+            percent=${this.loadingProgress}
             circular
           ></slds-progress-bar>`
         : ''}
@@ -672,6 +677,7 @@ class CustomChapter extends LitElement {
           `Pending display: removed ${paragraphId}, ${this._pendingDisplaySet.size} remaining`
         );
       }
+      this.requestUpdate();
       if (this._pendingDisplaySet.size === 0) {
         this._revealAndScroll();
       }
