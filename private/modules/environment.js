@@ -6,8 +6,8 @@ class Environment {
   }
 
   getEnvironment() {
-    return Object.freeze({... this._originalEnv});
+    return Object.freeze({ ...this._originalEnv });
   }
 }
 
-module.exports = {Environment};
+module.exports = { Environment };

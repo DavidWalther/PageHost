@@ -15,7 +15,7 @@ const deleteChapter = async (chapterId) => {
 };
 
 const chapterData = {};
-process.argv.slice(2).forEach(arg => {
+process.argv.slice(2).forEach((arg) => {
   const [key, value] = arg.split('=');
   const lowercaseKey = key.toLowerCase();
   chapterData[lowercaseKey] = value;

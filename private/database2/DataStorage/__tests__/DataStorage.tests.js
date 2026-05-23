@@ -1,6 +1,6 @@
 const { PostgresActions } = require('../pgConnector.js');
 const { ActionGet } = require('../actions/get.js');
-const ActionUpdate  = require('../actions/update.js'); // Mock ActionUpdate
+const ActionUpdate = require('../actions/update.js'); // Mock ActionUpdate
 const { DataStorage } = require('../DataStorage.js');
 const { DataCleaner } = require('../../../modules/DataCleaner.js');
 
@@ -15,10 +15,13 @@ const MOCK_ENVIRONMENT = {
   PGUSER: 'testUser',
   PGPASSWORD: 'testPassword',
   ENDPOINT_ID: 'testEndpoint',
-  PG_LOCAL_DB: 'true'
+  PG_LOCAL_DB: 'true',
 };
 
-const MOCK_CONFIGURATION = [{ key: 'firstname', value: 'Tom'}, { key: 'lastname', value: 'Jones'}];
+const MOCK_CONFIGURATION = [
+  { key: 'firstname', value: 'Tom' },
+  { key: 'lastname', value: 'Jones' },
+];
 
 // ----- Mock PostgresActions -----
 let mockExecuteSql = jest.fn().mockResolvedValue();
@@ -26,15 +29,25 @@ PostgresActions.mockImplementation(() => {
   return {
     executeSql: mockExecuteSql,
     connect: jest.fn(),
-    query: jest.fn().mockResolvedValue([])
+    query: jest.fn().mockResolvedValue([]),
   };
 });
 
 // ----- Mock ActionGet -----
 let mockActionGetExecute = jest.fn().mockResolvedValue([
-    { story_id: 1337, story_name: 'Test Story', chapter_name: 'Test Chapter', chapter_id: 1 },
-    { story_id: 1337, story_name: 'Test Story', chapter_name: 'Test Chapter', chapter_id: 2 }
-  ]);
+  {
+    story_id: 1337,
+    story_name: 'Test Story',
+    chapter_name: 'Test Chapter',
+    chapter_id: 1,
+  },
+  {
+    story_id: 1337,
+    story_name: 'Test Story',
+    chapter_name: 'Test Chapter',
+    chapter_id: 2,
+  },
+]);
 let mockActionConditionId = jest.fn().mockReturnThis();
 let mockActionConditionApplicationKey = jest.fn().mockReturnThis();
 let mockActionConditionPublishDate = jest.fn().mockReturnThis();
@@ -59,7 +72,7 @@ ActionGet.mockImplementation(() => {
     setCustomConditions: mockActionCustomConditions,
     setOrderDirection: mockActionOrderDirection,
     setConditionApplicationKey: mockActionConditionApplicationKey,
-    setLeftJoin: jest.fn().mockReturnThis()
+    setLeftJoin: jest.fn().mockReturnThis(),
   };
 });
 
@@ -68,12 +81,12 @@ describe('DataStorage', () => {
   let dataCleanerSpy;
 
   beforeEach(() => {
-      dataCleanerSpy = jest.spyOn(DataCleaner.prototype, 'removeApplicationKeys');
-      PostgresActions.mockClear();
-      ActionGet.mockClear();
-      mockActionCustomConditions.mockClear();
-      dataStorage = new DataStorage(MOCK_ENVIRONMENT);
-      process.env = MOCK_ENVIRONMENT;
+    dataCleanerSpy = jest.spyOn(DataCleaner.prototype, 'removeApplicationKeys');
+    PostgresActions.mockClear();
+    ActionGet.mockClear();
+    mockActionCustomConditions.mockClear();
+    dataStorage = new DataStorage(MOCK_ENVIRONMENT);
+    process.env = MOCK_ENVIRONMENT;
   });
 
   afterEach(() => {
@@ -97,7 +110,9 @@ describe('DataStorage', () => {
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionId).toHaveBeenCalledWith('testParagraphId');
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
         expect(result).toBeTruthy();
         expect(dataCleanerSpy).toHaveBeenCalled();
       });
@@ -111,7 +126,9 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
         expect(result).toBeTruthy();
       });
     });
@@ -124,7 +141,9 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
         expect(result).toBeTruthy();
       });
     });
@@ -138,9 +157,15 @@ describe('DataStorage', () => {
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionId).toHaveBeenCalledWith('testId');
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
-        expect(mockActionConditionPublishDate).toHaveBeenCalledWith(new Date().toISOString().split('T')[0]);
-        expect(mockActionRightTableSortField).toHaveBeenCalledWith('SortNumber');
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
+        expect(mockActionConditionPublishDate).toHaveBeenCalledWith(
+          new Date().toISOString().split('T')[0]
+        );
+        expect(mockActionRightTableSortField).toHaveBeenCalledWith(
+          'SortNumber'
+        );
         expect(mockActionRightTableSortDirection).toHaveBeenCalledWith('ASC');
         expect(dataCleanerSpy).toHaveBeenCalled();
         expect(result).toBeTruthy();
@@ -156,8 +181,18 @@ describe('DataStorage', () => {
 
     it('queryChapter should return a chapter record with its child paragraphs and call DataCleaner', async () => {
       mockActionGetExecute.mockResolvedValue([
-        { chapter_id: 1, chapter_name: 'Test Chapter', paragraph_id: 1, paragraph_content: 'Test Paragraph 1' },
-        { chapter_id: 1, chapter_name: 'Test Chapter', paragraph_id: 2, paragraph_content: 'Test Paragraph 2' }
+        {
+          chapter_id: 1,
+          chapter_name: 'Test Chapter',
+          paragraph_id: 1,
+          paragraph_content: 'Test Paragraph 1',
+        },
+        {
+          chapter_id: 1,
+          chapter_name: 'Test Chapter',
+          paragraph_id: 2,
+          paragraph_content: 'Test Paragraph 2',
+        },
       ]);
 
       dataStorage.setConditionApplicationKey('testApplication');
@@ -168,9 +203,15 @@ describe('DataStorage', () => {
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionId).toHaveBeenCalledWith('testChapterId');
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
-        expect(mockActionConditionPublishDate).toHaveBeenCalledWith(new Date().toISOString().split('T')[0]);
-        expect(mockActionRightTableSortField).toHaveBeenCalledWith('SortNumber');
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
+        expect(mockActionConditionPublishDate).toHaveBeenCalledWith(
+          new Date().toISOString().split('T')[0]
+        );
+        expect(mockActionRightTableSortField).toHaveBeenCalledWith(
+          'SortNumber'
+        );
         expect(mockActionRightTableSortDirection).toHaveBeenCalledWith('ASC');
         expect(dataCleanerSpy).toHaveBeenCalled();
         expect(result).toBeTruthy();
@@ -188,7 +229,7 @@ describe('DataStorage', () => {
       const nestedConfiguration = [
         { key: 'parent.child1', value: 'value1' },
         { key: 'parent.child2', value: 'value2' },
-        { key: 'singleLevel', value: 'singleValue' }
+        { key: 'singleLevel', value: 'singleValue' },
       ];
       mockActionGetExecute.mockResolvedValue(nestedConfiguration);
 
@@ -199,7 +240,9 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
         expect(result).toBeTruthy();
         expect(result.parent).toBeTruthy();
         expect(result.parent.child1).toBe('value1');
@@ -210,7 +253,13 @@ describe('DataStorage', () => {
 
     it('queryIdentityByKey should call ActionGet with custom conditions and DataCleaner', async () => {
       mockActionGetExecute.mockResolvedValue([
-        { id: '000i123', key: 'user@example.com', active: true, recordnumber: 1, createddate: '2023-01-01' }
+        {
+          id: '000i123',
+          key: 'user@example.com',
+          active: true,
+          recordnumber: 1,
+          createddate: '2023-01-01',
+        },
       ]);
 
       dataStorage.setConditionApplicationKey('testApplication');
@@ -221,9 +270,15 @@ describe('DataStorage', () => {
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionCustomConditions).toHaveBeenCalledTimes(2);
-        expect(mockActionCustomConditions.mock.calls[0][0]).toBe("key = 'user@example.com'");
-        expect(mockActionCustomConditions.mock.calls[1][0]).toBe("active = true");
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(mockActionCustomConditions.mock.calls[0][0]).toBe(
+          "key = 'user@example.com'"
+        );
+        expect(mockActionCustomConditions.mock.calls[1][0]).toBe(
+          'active = true'
+        );
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
         expect(dataCleanerSpy).toHaveBeenCalled();
         expect(result).toBeTruthy();
         expect(result.id).toBe('000i123');
@@ -236,16 +291,24 @@ describe('DataStorage', () => {
       mockActionGetExecute.mockResolvedValue([]);
 
       dataStorage.setConditionApplicationKey('testApplication');
-      let queryPromise = dataStorage.queryIdentityByKey('nonexistent@example.com');
+      let queryPromise = dataStorage.queryIdentityByKey(
+        'nonexistent@example.com'
+      );
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionCustomConditions).toHaveBeenCalledTimes(2);
-        expect(mockActionCustomConditions.mock.calls[0][0]).toBe("key = 'nonexistent@example.com'");
-        expect(mockActionCustomConditions.mock.calls[1][0]).toBe("active = true");
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith('testApplication');
+        expect(mockActionCustomConditions.mock.calls[0][0]).toBe(
+          "key = 'nonexistent@example.com'"
+        );
+        expect(mockActionCustomConditions.mock.calls[1][0]).toBe(
+          'active = true'
+        );
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
         expect(result).toEqual({});
       });
     });
@@ -260,7 +323,7 @@ describe('DataStorage', () => {
           setPgConnector: jest.fn().mockReturnThis(),
           setTable: jest.fn().mockReturnThis(),
           setValues: jest.fn().mockReturnThis(),
-          execute: mockActionUpdateExecute
+          execute: mockActionUpdateExecute,
         };
       });
     });
@@ -271,8 +334,7 @@ describe('DataStorage', () => {
       const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
       const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
 
-      dataStorage.updateData('paragraph', mockPayload)
-      .then((result) => {
+      dataStorage.updateData('paragraph', mockPayload).then((result) => {
         expect(ActionUpdate).toHaveBeenCalled();
         expect(mockActionUpdateExecute).toHaveBeenCalled();
         expect(result).toEqual({ id: '1234' });
@@ -285,8 +347,7 @@ describe('DataStorage', () => {
       const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
       const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
 
-      dataStorage.updateData('paragraph', mockPayload)
-      .catch((error) => {
+      dataStorage.updateData('paragraph', mockPayload).catch((error) => {
         expect(ActionUpdate).toHaveBeenCalled();
         expect(mockActionUpdateExecute).toHaveBeenCalled();
         expect(error.message).toBe('Update failed');

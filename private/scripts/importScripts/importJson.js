@@ -33,7 +33,9 @@
 const { DataStorage } = require('../../database2/DataStorage/DataStorage.js');
 const { TableParagraph } = require('../../database2/tables/paragraph.js');
 const { Environment } = require('../../modules/environment.js');
-const { PostgresActions } = require('../../database2/DataStorage/pgConnector.js');
+const {
+  PostgresActions,
+} = require('../../database2/DataStorage/pgConnector.js');
 require('dotenv').config();
 const fs = require('fs');
 const minimist = require('minimist');
@@ -44,7 +46,7 @@ let args = minimist(process.argv.slice(2));
 function readFile(filepath) {
   return new Promise((resolve, reject) => {
     fs.readFile(filepath, 'utf8', (err, data) => {
-      if(err) {
+      if (err) {
         reject(err);
       }
       resolve(data);
@@ -59,7 +61,7 @@ const importParameterMap = [
     required: true,
     environmeintVariable: 'STORY_ID',
     argument: 'storyid',
-    errorMessage: 'storyid not provided'
+    errorMessage: 'storyid not provided',
   },
   {
     name: 'chapterid',
@@ -67,7 +69,7 @@ const importParameterMap = [
     required: true,
     environmeintVariable: 'CHAPTER_ID',
     argument: 'chapterid',
-    errorMessage: 'chapterid not provided'
+    errorMessage: 'chapterid not provided',
   },
   {
     name: 'publishdate',
@@ -75,28 +77,31 @@ const importParameterMap = [
     required: false,
     environmeintVariable: 'PUBLISH_DATE',
     argument: null,
-    errorMessage: 'publishdate not provided'
-  }
-]
+    errorMessage: 'publishdate not provided',
+  },
+];
 
 function readParameters() {
   let inputParams = {};
 
   const parameterValue = (parameterMappingObject) => {
-    let value = process.env[parameterMappingObject.environmeintVariable] || args[parameterMappingObject.argument];
-    if(!value && parameterMappingObject.required) {
+    let value =
+      process.env[parameterMappingObject.environmeintVariable] ||
+      args[parameterMappingObject.argument];
+    if (!value && parameterMappingObject.required) {
       throw new Error(parameterMappingObject.errorMessage);
     }
     return value;
-  }
+  };
 
   try {
-
-    importParameterMap.forEach(parameterMappingObject => {
-      inputParams[parameterMappingObject.name] = parameterValue(parameterMappingObject);
+    importParameterMap.forEach((parameterMappingObject) => {
+      inputParams[parameterMappingObject.name] = parameterValue(
+        parameterMappingObject
+      );
     });
 
-    if(!args.jsonfile) {
+    if (!args.jsonfile) {
       throw new Error('jsonfile not provided');
     }
     inputParams.jsonfile = args.jsonfile;
@@ -135,25 +140,25 @@ function importParagraph(paragraph, input) {
 let inputParams = readParameters();
 
 readFile(inputParams.jsonfile)
-.then(data => {
-  data = JSON.parse(data);
-  if(!data.paragraphs) {
-    throw new Error('No paragraphs found in JSON file');
-  }
+  .then((data) => {
+    data = JSON.parse(data);
+    if (!data.paragraphs) {
+      throw new Error('No paragraphs found in JSON file');
+    }
 
-  let paragraphs = data.paragraphs;
-  let paragraphPromises = [];
-  paragraphs.forEach(paragraph => {
-    paragraph.publishdate = inputParams.publishdate;
-    paragraph.chapterid = inputParams.chapterid;
-    paragraph.storyid = inputParams.storyid;
+    let paragraphs = data.paragraphs;
+    let paragraphPromises = [];
+    paragraphs.forEach((paragraph) => {
+      paragraph.publishdate = inputParams.publishdate;
+      paragraph.chapterid = inputParams.chapterid;
+      paragraph.storyid = inputParams.storyid;
 
-    paragraphPromises.push(importParagraph(paragraph, inputParams));
+      paragraphPromises.push(importParagraph(paragraph, inputParams));
+    });
+    console.log(`Number of paragraphs to import: ${paragraphPromises.length}`);
+    return Promise.all(paragraphPromises);
+  })
+  .then(() => {
+    console.log('Paragraph imported');
+    exit(0);
   });
-  console.log(`Number of paragraphs to import: ${paragraphPromises.length}`);
-  return Promise.all(paragraphPromises)
-})
-.then(() => {
-  console.log('Paragraph imported');
-  exit(0);
-});

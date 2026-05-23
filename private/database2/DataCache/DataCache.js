@@ -130,19 +130,35 @@ class CacheKeyGeneratorFactory {
   getProduct(key) {
     const LOCATION = 'CacheKeyGeneratorFactory.getProduct';
 
-    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key: ${key}` });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Key: ${key}`,
+    });
 
     // first check for special keys
     if (key.startsWith('short-term')) {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ShortTermCacheKeyGenerator' });
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: 'Creating ShortTermCacheKeyGenerator',
+      });
       return new ShortTermCacheKeyGenerator(this.environmentVars);
     }
-    if(key === 'metadata') {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating MetaDataCacheKeyGenerator' });
+    if (key === 'metadata') {
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: 'Creating MetaDataCacheKeyGenerator',
+      });
       return new MetaDataCacheKeyGenerator(this.environmentVars);
     }
-    if(key === 'storiesAll') {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating StoriesAllCacheKeyGenerator' });
+    if (key === 'storiesAll') {
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: 'Creating StoriesAllCacheKeyGenerator',
+      });
       return new StoriesAllCacheKeyGenerator(this.environmentVars);
     }
 
@@ -152,18 +168,34 @@ class CacheKeyGeneratorFactory {
     switch (idPrefix) {
       case '000p':
         // paragraph
-        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ParagraphCacheKeyGenerator' });
+        Logging.debugMessage({
+          severity: 'FINEST',
+          location: LOCATION,
+          message: 'Creating ParagraphCacheKeyGenerator',
+        });
         return new ParagraphCacheKeyGenerator(this.environmentVars);
       case '000c':
         // chapter
-        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating ChapterCacheKeyGenerator' });
+        Logging.debugMessage({
+          severity: 'FINEST',
+          location: LOCATION,
+          message: 'Creating ChapterCacheKeyGenerator',
+        });
         return new ChapterCacheKeyGenerator(this.environmentVars);
       case '000s':
         // story
-        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Creating StoryCacheKeyGenerator' });
+        Logging.debugMessage({
+          severity: 'FINEST',
+          location: LOCATION,
+          message: 'Creating StoryCacheKeyGenerator',
+        });
         return new StoryCacheKeyGenerator(this.environmentVars);
       default:
-        Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: 'Unknown cache key' });
+        Logging.debugMessage({
+          severity: 'FINEST',
+          location: LOCATION,
+          message: 'Unknown cache key',
+        });
         throw new Error('Unknown cache key');
     }
   }
@@ -181,15 +213,23 @@ class DataCache2 {
   async get(key) {
     const LOCATION = 'DataCache2.get';
 
-    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key: ${key}` });
-    const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Key: ${key}`,
+    });
+    const cacheKeyGenerator = new CacheKeyGeneratorFactory(
+      this.environment
+    ).getProduct(key);
     let cacheKeyCurrent = cacheKeyGenerator.generateCacheKey(key);
     let cacheKeyDeprecated = cacheKeyGenerator.generateCacheKeyDeprecated(key);
 
     await this.redis.connect();
     let getPromises = [];
     getPromises.push(this.redis.get(cacheKeyCurrent));
-    if(cacheKeyDeprecated) { this.redis.get(cacheKeyDeprecated)};
+    if (cacheKeyDeprecated) {
+      this.redis.get(cacheKeyDeprecated);
+    }
 
     let promiseResults = await Promise.all(getPromises);
     await this.redis.disconnect();
@@ -198,31 +238,55 @@ class DataCache2 {
     let value = promiseResults[0] || promiseResults[1];
 
     if (value) {
-      Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key ${key}, Cache-Result: Hit` });
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Key ${key}, Cache-Result: Hit`,
+      });
       return JSON.parse(value);
     }
-    Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: `Key ${key}, Cache-Result: Miss` });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Key ${key}, Cache-Result: Miss`,
+    });
     return null;
   }
 
   async set(key, value) {
     const LOCATION = 'DataCache2.set';
-    const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
+    const cacheKeyGenerator = new CacheKeyGeneratorFactory(
+      this.environment
+    ).getProduct(key);
     let cacheKey = cacheKeyGenerator.generateCacheKey(key);
     const cacheExpirationSeconds = cacheKeyGenerator.getKeyLifetimeInSeconds();
 
-    Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: `Key: ${cacheKey}`,
+      location: LOCATION,
+    });
     await this.redis.connect();
-    await this.redis.setEx(cacheKey, cacheExpirationSeconds, JSON.stringify(value));
+    await this.redis.setEx(
+      cacheKey,
+      cacheExpirationSeconds,
+      JSON.stringify(value)
+    );
     return await this.redis.disconnect();
   }
 
   async del(key) {
     const LOCATION = 'DataCache2.del';
-    const cacheKeyGenerator = new CacheKeyGeneratorFactory(this.environment).getProduct(key);
+    const cacheKeyGenerator = new CacheKeyGeneratorFactory(
+      this.environment
+    ).getProduct(key);
     let cacheKey = cacheKeyGenerator.generateCacheKey(key);
 
-    Logging.debugMessage({ severity: 'FINEST', message: `Key: ${cacheKey}`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: `Key: ${cacheKey}`,
+      location: LOCATION,
+    });
     await this.redis.connect();
     await this.redis.del(cacheKey);
     return await this.redis.disconnect();
@@ -233,16 +297,17 @@ class DataCache2 {
    */
   async flush(key) {
     const LOCATION = 'DataCache.flush';
-    Logging.debugMessage({ severity: 'FINEST', message: `Key: ${key}`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: `Key: ${key}`,
+      location: LOCATION,
+    });
 
     return await this.redis.del(cacheKeyPrefix + '-' + key);
   }
 }
 
 module.exports = { DataCache2 };
-
-
-
 
 function flushCache(cacheKey) {
   const cache = new DataCache();
@@ -257,7 +322,6 @@ cacheChapter.get(cacheKey).then(cachedChapter => {
   console.log('cachedChapter:', cachedChapter);
 });
 */
-
 
 /*
 

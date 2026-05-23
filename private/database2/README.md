@@ -3,27 +3,32 @@
 This document describes how the `DataFacade`, `DataMock`, `DataCache`, and `DataStorage` classes work together to provide a seamless data retrieval and caching mechanism for the application.
 
 ### DataFacade
+
 - Acts as the main entry point for data retrieval.
 - Determines whether to return a promise or synchronous data based on the `parameterObject`.
 - Checks if mock data is enabled and uses `DataMock` if true.
 - Otherwise, it uses `DataCache` and `DataStorage` to fetch and cache data.
 
 ### DataMock
+
 - Provides mock data for testing purposes.
 - When mock data is enabled, `DataFacade` uses `DataMock` to create and return mock configurations.
 
 ### DataCache
+
 - Manages caching of data to improve performance and reduce database load.
 - Uses `RedisConnector` to interact with a Redis cache.
 - Generates cache keys using `CacheKeyGeneratorFactory` and its associated key generator classes.
 - Retrieves data from the cache if available; otherwise, it fetches data from `DataStorage` and caches it.
 
 ### DataStorage
+
 - Interacts with the database to fetch data.
 - Contains methods to query different types of data (e.g., paragraphs, configurations, stories, chapters).
 - Uses `ActionGet` to execute database queries and `DataCleaner` to clean up the data before returning it.
 
 ### Example Workflow
+
 1. **Data Request**:
    - A request for data is made through `DataFacade.getData(parameterObject)`.
 

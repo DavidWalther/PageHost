@@ -13,7 +13,6 @@ describe('Environment', () => {
     process.env = mockEnv;
 
     jest.resetModules();
-
   });
 
   it('should read environment variables from process.env', () => {

@@ -47,41 +47,48 @@ class OpenIdConnectClient {
 
   async executeCalloutWellKnownConfig() {
     return new Promise((resolve, reject) => {
-      if(!this._wellKnownEndpoint) {
+      if (!this._wellKnownEndpoint) {
         reject('Well Known Endpoint is not set');
         return;
       }
 
       fetch(this._wellKnownEndpoint)
-      .then(response => response.json())
-      .then(wellKnownConfig => {
-        this._wellKnownConfig = wellKnownConfig;
+        .then((response) => response.json())
+        .then((wellKnownConfig) => {
+          this._wellKnownConfig = wellKnownConfig;
 
-        // console.log('wellKnownConfig.authorization_endpoint:', wellKnownConfig.authorization_endpoint);
-        this.setAuthorizationEndpoint(wellKnownConfig.authorization_endpoint);
+          // console.log('wellKnownConfig.authorization_endpoint:', wellKnownConfig.authorization_endpoint);
+          this.setAuthorizationEndpoint(wellKnownConfig.authorization_endpoint);
 
-        // console.log('wellKnownConfig.token_endpoint:', wellKnownConfig.token_endpoint);
-        this.setTokenEndpoint(wellKnownConfig.token_endpoint);
+          // console.log('wellKnownConfig.token_endpoint:', wellKnownConfig.token_endpoint);
+          this.setTokenEndpoint(wellKnownConfig.token_endpoint);
 
-        // console.log('wellKnownConfig.userinfo_endpoint:', wellKnownConfig.userinfo_endpoint);
-        this.setUserInfoEndpoint(wellKnownConfig.userinfo_endpoint);
+          // console.log('wellKnownConfig.userinfo_endpoint:', wellKnownConfig.userinfo_endpoint);
+          this.setUserInfoEndpoint(wellKnownConfig.userinfo_endpoint);
 
-        resolve(wellKnownConfig);
-        return;
-      })
-      .catch(error => {
-        reject(error);
-        return;
-      });
-    })
+          resolve(wellKnownConfig);
+          return;
+        })
+        .catch((error) => {
+          reject(error);
+          return;
+        });
+    });
   }
 
   async exchangeAuthorizationCode(authCode) {
-    if(!authCode) { throw new Error('Authorization Code is required'); }
-    if(!this._clientId) { throw new Error('Client Id is not set'); }
-    if(!this._clientSecret) { throw new Error('Client Secret is not set'); }
-    if(!this._redirectUri) { throw new Error('Redirect Uri is not set'); }
-
+    if (!authCode) {
+      throw new Error('Authorization Code is required');
+    }
+    if (!this._clientId) {
+      throw new Error('Client Id is not set');
+    }
+    if (!this._clientSecret) {
+      throw new Error('Client Secret is not set');
+    }
+    if (!this._redirectUri) {
+      throw new Error('Redirect Uri is not set');
+    }
 
     const token_parameters = {
       code: authCode,
@@ -89,34 +96,35 @@ class OpenIdConnectClient {
       client_secret: this._clientSecret,
       redirect_uri: this._redirectUri,
       code_verifier: this._codeVerifier,
-      grant_type: 'authorization_code'
+      grant_type: 'authorization_code',
     };
 
     let openIdConfig = await this.executeCalloutWellKnownConfig(); // fetches the openId configuration and stores it in this._wellKnownConfig
 
-
     let exchangeResponse = await fetch(this._tokenEndpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams(token_parameters)
+      body: new URLSearchParams(token_parameters),
     });
     exchangeResponse = await exchangeResponse.json();
     if (exchangeResponse.error) {
       Logging.debugMessage({
         severity: 'ERROR',
         message: `Error exchanging authorization code: ${exchangeResponse.error}. Possible reason: Invalid or tampered authorization code.`,
-        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode',
       });
-      throw new Error('Error exchanging authorization code: ' + exchangeResponse.error);
+      throw new Error(
+        'Error exchanging authorization code: ' + exchangeResponse.error
+      );
     }
     // Check if the id_token is present in the response
     if (!exchangeResponse.id_token) {
       Logging.debugMessage({
         severity: 'ERROR',
         message: `No id_token found in the response. Possible reason: Malicious response from the token endpoint.`,
-        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode',
       });
       throw new Error('No id_token found in the response');
     }
@@ -130,7 +138,8 @@ class OpenIdConnectClient {
     // Check if the id_token is expired
     const currentTime = Math.floor(Date.now() / 1000);
     const clockSkew = 5; // Allow a 2 second clock skew
-    if (decodedIdToken.payload.exp + clockSkew < currentTime) { // Allow a 2 second clock skew
+    if (decodedIdToken.payload.exp + clockSkew < currentTime) {
+      // Allow a 2 second clock skew
       throw new Error('ID token is expired');
     }
     // Check if the id_token is not yet valid
@@ -149,24 +158,27 @@ class OpenIdConnectClient {
 
     let jwskKendpointResponse = await fetch(openIdConfig.jwks_uri);
     jwskKendpointResponse = await jwskKendpointResponse.json();
-    if (!jwskKendpointResponse.keys || jwskKendpointResponse.keys.length === 0) {
+    if (
+      !jwskKendpointResponse.keys ||
+      jwskKendpointResponse.keys.length === 0
+    ) {
       Logging.debugMessage({
         severity: 'ERROR',
         message: `No keys found in the JWKs response. Possible reason: Compromised or misconfigured JWKs endpoint.`,
-        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode',
       });
       throw new Error('No keys found in the JWKs response');
     }
 
     // Check if the kid in the id_token header matches any of the keys in the JWKs response
-    let matching_jwksKey = jwskKendpointResponse.keys.find(key => {
+    let matching_jwksKey = jwskKendpointResponse.keys.find((key) => {
       return key.kid === decodedIdToken.header.kid;
     });
     if (!matching_jwksKey) {
       Logging.debugMessage({
         severity: 'ERROR',
         message: `No matching JWKs key found for the given kid. Possible reason: Tampered or invalid ID token.`,
-        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode',
       });
       throw new Error('No matching JWKs key found for the given kid');
     }
@@ -177,12 +189,14 @@ class OpenIdConnectClient {
     const publicKey = rsaPemFromModExp(modulus, exponent);
 
     try {
-      jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
+      jwt.verify(exchangeResponse.id_token, publicKey, {
+        algorithms: ['RS256'],
+      });
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',
         message: `Invalid ID token: Signature verification failed. Possible reason: Forged or tampered ID token. Error: ${error.message}`,
-        location: 'OpenIdConnectClient.exchangeAuthorizationCode'
+        location: 'OpenIdConnectClient.exchangeAuthorizationCode',
       });
       throw new Error('Invalid ID token: Signature verification failed');
     }
@@ -204,7 +218,7 @@ class OpenIdConnectClient {
     return {
       header: JSON.parse(decodeBase64Url(header)),
       payload: JSON.parse(decodeBase64Url(payload)),
-      signature: decodeBase64Url(signature)
+      signature: decodeBase64Url(signature),
     };
   }
 }

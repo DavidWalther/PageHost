@@ -15,10 +15,10 @@ describe('DataCleaner', () => {
       applicationincluded: 'value1',
       applicationexcluded: 'value2',
       application: 'value3',
-      otherKey: 'value4'
+      otherKey: 'value4',
     };
     const expectedOutput = {
-      otherKey: 'value4'
+      otherKey: 'value4',
     };
 
     dataCleaner.removeApplicationKeys(input);
@@ -32,22 +32,22 @@ describe('DataCleaner', () => {
         applicationincluded: 'value1',
         applicationexcluded: 'value2',
         application: 'value3',
-        otherKey: 'value4'
+        otherKey: 'value4',
       },
       {
         applicationincluded: 'value5',
         applicationexcluded: 'value6',
         application: 'value7',
-        otherKey: 'value8'
-      }
+        otherKey: 'value8',
+      },
     ];
     const expectedOutput = [
       {
-        otherKey: 'value4'
+        otherKey: 'value4',
       },
       {
-        otherKey: 'value8'
-      }
+        otherKey: 'value8',
+      },
     ];
 
     dataCleaner.removeApplicationKeys(input);

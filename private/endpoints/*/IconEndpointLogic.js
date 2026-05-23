@@ -11,14 +11,14 @@ class IconEndpointLogic extends EndpointLogic {
   }
 
   setHeight(newHeight) {
-    if( !newHeight ) return;
+    if (!newHeight) return;
     this.iconHeight = newHeight;
 
     return this;
   }
 
-  setWidth( newWidth ) {
-    if( !newWidth ) return;
+  setWidth(newWidth) {
+    if (!newWidth) return;
     this.iconWidth = newWidth;
 
     return this;
@@ -27,7 +27,11 @@ class IconEndpointLogic extends EndpointLogic {
   async execute() {
     const LOCATION = 'Server.IconEndpointLogic.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing icon request', location: LOCATION});
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'Executing icon request',
+      location: LOCATION,
+    });
 
     let parameterObject = {};
     parameterObject.returnPromise = true;
@@ -39,10 +43,18 @@ class IconEndpointLogic extends EndpointLogic {
 
     let configuration = await dataFacade.getData(parameterObject);
 
-    if(!configuration.icon || !configuration.icon.icons) {
-      Logging.debugMessage({severity:'INFO', message: 'Icons are not defined', location: LOCATION});
+    if (!configuration.icon || !configuration.icon.icons) {
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: 'Icons are not defined',
+        location: LOCATION,
+      });
       const notFoundEndpoint = new NotFoundEndpointLogic();
-      return notFoundEndpoint.setEnvironment(this.environment).setRequestObject(this.requestObject).setResponseObject(this.responseObject).execute();
+      return notFoundEndpoint
+        .setEnvironment(this.environment)
+        .setRequestObject(this.requestObject)
+        .setResponseObject(this.responseObject)
+        .execute();
     }
 
     let height = this.iconHeight;
@@ -55,10 +67,9 @@ class IconEndpointLogic extends EndpointLogic {
     let svgBody = configuration.icon.icons;
     svgBody = svgBody.replace('${height}', this.iconHeight);
     svgBody = svgBody.replace('${width}', this.iconWidth);
-	
+
     this.responseObject.send(svgBody);
   }
 }
 
 module.exports = IconEndpointLogic;
-

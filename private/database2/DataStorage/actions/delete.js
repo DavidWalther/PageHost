@@ -25,14 +25,14 @@ class ActionDelete {
     }
     const tableName = this.table.getTableName()();
     const LOCATION = 'ActionDelete.execute';
-    const sqlStatementTpl = 'DELETE FROM {tablename} WHERE id = \'{recordId}\';';
+    const sqlStatementTpl = "DELETE FROM {tablename} WHERE id = '{recordId}';";
     const sqlStatement = sqlStatementTpl
       .replace('{tablename}', tableName)
       .replace('{recordId}', this.id);
     Logging.debugMessage({
-      severity: "FINEST",
+      severity: 'FINEST',
       location: LOCATION,
-      message: `Executing SQL: ${sqlStatement}`
+      message: `Executing SQL: ${sqlStatement}`,
     });
 
     const result = await this.pgConnector.executeSql(sqlStatement);

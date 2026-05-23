@@ -10,9 +10,9 @@ class DataMockBuilder {
   getProduct() {
     const idPrefixes = new Map([
       ['story', '000s'],
-      ['chapter', '000c'] ,
+      ['chapter', '000c'],
       ['paragraph', '000p'],
-      ['configuration', '000m']
+      ['configuration', '000m'],
     ]);
 
     // only pass for valid dataTableName
@@ -21,29 +21,35 @@ class DataMockBuilder {
     }
 
     let currentCounter = this.productParameters.productCounter || 0;
-    let idPrefix = idPrefixes.get(this.productParameters.dataTableName) ;
-    let generatedId = this.productParameters.id || idPrefix + currentCounter.toString().padStart(14, '0');
+    let idPrefix = idPrefixes.get(this.productParameters.dataTableName);
+    let generatedId =
+      this.productParameters.id ||
+      idPrefix + currentCounter.toString().padStart(14, '0');
 
     let product = {};
     switch (this.productParameters.dataTableName.toLowerCase()) {
       case 'story': {
         // logic for '000s' dataTableName
-        product.name = this.productParameters.name || `Story ${currentCounter + 1}`;
+        product.name =
+          this.productParameters.name || `Story ${currentCounter + 1}`;
         break;
       }
       case 'chapter': {
         // logic for '000c' dataTableName
-        product.name = this.productParameters.name || `Chapter ${currentCounter + 1}`;
+        product.name =
+          this.productParameters.name || `Chapter ${currentCounter + 1}`;
         break;
       }
       case 'paragraph': {
         // logic for '000p' dataTableName
-        product.name = this.productParameters.name || `Paragraph ${currentCounter + 1}`;
+        product.name =
+          this.productParameters.name || `Paragraph ${currentCounter + 1}`;
         break;
       }
       case 'configuration': {
         // logic for '000m' dataTableName
-        product.name = this.productParameters.name || `Configuration ${currentCounter + 1}`;
+        product.name =
+          this.productParameters.name || `Configuration ${currentCounter + 1}`;
         break;
       }
     }
@@ -55,10 +61,12 @@ class DataMockBuilder {
     });
 
     if (this.productParameters.applicationIncluded) {
-      product['applicationincluded'] = Array.from(this.productParameters.applicationIncluded).join(', ');
+      product['applicationincluded'] = Array.from(
+        this.productParameters.applicationIncluded
+      ).join(', ');
     }
 
-    this.productParameters.productCounter = currentCounter+1;
+    this.productParameters.productCounter = currentCounter + 1;
     return product;
   }
 
@@ -100,7 +108,7 @@ class DataMockBuilder {
   setStoryId(storyId) {
     this.setfields.add('storyid');
     this.productParameters.storyId = storyId;
-    return
+    return;
   }
 
   setDescription(description) {

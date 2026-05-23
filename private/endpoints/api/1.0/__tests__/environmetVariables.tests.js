@@ -7,16 +7,16 @@ describe('EnvironmentVariablesEndpoint', () => {
   beforeEach(() => {
     mockEnvironment = {
       GOOGLE_CLIENT_ID: 'test-client-id',
-      AUTH_OIDC_REDIRECT_URI: 'http://localhost:3000'
+      AUTH_OIDC_REDIRECT_URI: 'http://localhost:3000',
     };
 
     mockRequest = {
       protocol: 'http',
-      get: jest.fn().mockReturnValue('localhost:3000')
+      get: jest.fn().mockReturnValue('localhost:3000'),
     };
 
     mockResponse = {
-      json: jest.fn()
+      json: jest.fn(),
     };
   });
 
@@ -32,9 +32,9 @@ describe('EnvironmentVariablesEndpoint', () => {
     expect(mockResponse.json).toHaveBeenCalledWith({
       auth: {
         version: expect.any(String),
-        google: expect.any(Object)
+        google: expect.any(Object),
       },
-      system: expect.any(Object)
+      system: expect.any(Object),
     });
   });
 
@@ -52,9 +52,9 @@ describe('EnvironmentVariablesEndpoint', () => {
     expect(mockResponse.json).toHaveBeenCalledWith({
       auth: {
         version: expect.any(String),
-        google: expect.any(Object)
+        google: expect.any(Object),
       },
-      system: expect.any(Object)
+      system: expect.any(Object),
     });
   });
 });

@@ -18,25 +18,31 @@ describe('UnpublishEndpoint', () => {
     // Mock environment
     environment = {
       APPLICATION_APPLICATION_KEY: 'test-key',
-      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create', 'delete', 'publish']),
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify([
+        'edit',
+        'create',
+        'delete',
+        'publish',
+      ]),
       MOCK_DATA_ENABLE: 'false',
-      LOGGING_SEVERITY_LEVEL: 'DEBUG'
+      LOGGING_SEVERITY_LEVEL: 'DEBUG',
     };
 
     // Mock request and response objects
     req = {
       body: {},
-      url: '/api/1.0/actions/unpublish'
+      url: '/api/1.0/actions/unpublish',
     };
 
     res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis()
+      json: jest.fn().mockReturnThis(),
     };
 
     // Create endpoint instance
     endpoint = new UnpublishEndpoint();
-    endpoint.setEnvironment(environment)
+    endpoint
+      .setEnvironment(environment)
       .setRequestObject(req)
       .setResponseObject(res);
 
@@ -53,7 +59,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid request data'
+        error: 'Invalid request data',
       });
     });
 
@@ -65,7 +71,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid request data'
+        error: 'Invalid request data',
       });
     });
 
@@ -77,7 +83,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid request data'
+        error: 'Invalid request data',
       });
     });
 
@@ -89,7 +95,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid request data'
+        error: 'Invalid request data',
       });
     });
 
@@ -101,7 +107,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid request data'
+        error: 'Invalid request data',
       });
     });
 
@@ -113,7 +119,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid request data'
+        error: 'Invalid request data',
       });
     });
 
@@ -122,7 +128,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue(null)
+        getData: jest.fn().mockResolvedValue(null),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -137,7 +143,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue(null)
+        getData: jest.fn().mockResolvedValue(null),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -152,7 +158,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue(null)
+        getData: jest.fn().mockResolvedValue(null),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -169,7 +175,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue(null)
+        getData: jest.fn().mockResolvedValue(null),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -178,7 +184,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Record not found'
+        error: 'Record not found',
       });
     });
 
@@ -187,7 +193,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue(null)
+        getData: jest.fn().mockResolvedValue(null),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -198,8 +204,8 @@ describe('UnpublishEndpoint', () => {
       expect(mockDataFacadeInstance.getData).toHaveBeenCalledWith({
         request: {
           table: 'paragraph',
-          id: '123'
-        }
+          id: '123',
+        },
       });
     });
 
@@ -208,7 +214,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockRejectedValue(new Error('Database error'))
+        getData: jest.fn().mockRejectedValue(new Error('Database error')),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -217,7 +223,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Database error'
+        error: 'Database error',
       });
     });
   });
@@ -228,7 +234,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue({ id: '123', publishDate: null })
+        getData: jest.fn().mockResolvedValue({ id: '123', publishDate: null }),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -237,7 +243,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Record is already unpublished'
+        error: 'Record is already unpublished',
       });
     });
 
@@ -248,9 +254,9 @@ describe('UnpublishEndpoint', () => {
         setSkipCache: jest.fn().mockReturnThis(),
         getData: jest.fn().mockResolvedValue({
           id: '123',
-          publishdate: '2023-01-01T00:00:00.000Z'
+          publishdate: '2023-01-01T00:00:00.000Z',
         }),
-        updateData: jest.fn().mockResolvedValue({ id: '123' })
+        updateData: jest.fn().mockResolvedValue({ id: '123' }),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -260,14 +266,14 @@ describe('UnpublishEndpoint', () => {
         object: 'paragraph',
         payload: {
           id: '123',
-          publishDate: null
-        }
+          publishDate: null,
+        },
       });
 
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
-/*
+    /*
     // out of scope yet
 
     it('should successfully unpublish published chapter', async () => {
@@ -333,9 +339,9 @@ describe('UnpublishEndpoint', () => {
         setSkipCache: jest.fn().mockReturnThis(),
         getData: jest.fn().mockResolvedValue({
           id: '123',
-          publishdate: '2023-01-01T00:00:00.000Z'
+          publishdate: '2023-01-01T00:00:00.000Z',
         }),
-        updateData: jest.fn().mockRejectedValue(new Error('Update failed'))
+        updateData: jest.fn().mockRejectedValue(new Error('Update failed')),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -344,7 +350,7 @@ describe('UnpublishEndpoint', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Update failed'
+        error: 'Update failed',
       });
     });
   });
@@ -369,11 +375,14 @@ describe('UnpublishEndpoint', () => {
 
   describe('getRecord method', () => {
     it('should return record when found', async () => {
-      const expectedRecord = { id: '123', publishDate: '2023-01-01T00:00:00.000Z' };
+      const expectedRecord = {
+        id: '123',
+        publishDate: '2023-01-01T00:00:00.000Z',
+      };
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockResolvedValue(expectedRecord)
+        getData: jest.fn().mockResolvedValue(expectedRecord),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -385,11 +394,13 @@ describe('UnpublishEndpoint', () => {
     it('should throw error when DataFacade fails', async () => {
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        getData: jest.fn().mockRejectedValue(new Error('Database error'))
+        getData: jest.fn().mockRejectedValue(new Error('Database error')),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
-      await expect(endpoint.getRecord('paragraph', '123')).rejects.toThrow('Database error');
+      await expect(endpoint.getRecord('paragraph', '123')).rejects.toThrow(
+        'Database error'
+      );
     });
   });
 
@@ -399,7 +410,7 @@ describe('UnpublishEndpoint', () => {
 
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        updateData: jest.fn().mockResolvedValue(expectedResult)
+        updateData: jest.fn().mockResolvedValue(expectedResult),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
@@ -410,19 +421,21 @@ describe('UnpublishEndpoint', () => {
         object: 'paragraph',
         payload: {
           id: '123',
-          publishDate: null
-        }
+          publishDate: null,
+        },
       });
     });
 
     it('should throw error when updateData fails', async () => {
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
-        updateData: jest.fn().mockRejectedValue(new Error('Update failed'))
+        updateData: jest.fn().mockRejectedValue(new Error('Update failed')),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
-      await expect(endpoint.unpublishRecord('paragraph', '123')).rejects.toThrow('Update failed');
+      await expect(
+        endpoint.unpublishRecord('paragraph', '123')
+      ).rejects.toThrow('Update failed');
     });
   });
 });

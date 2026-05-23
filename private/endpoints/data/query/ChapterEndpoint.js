@@ -1,6 +1,6 @@
 const { Logging } = require('../../../modules/logging');
-const {EndpointLogic} = require('../../EndpointLogic');
-const {DataFacade} = require('../../../database2/DataFacade');
+const { EndpointLogic } = require('../../EndpointLogic');
+const { DataFacade } = require('../../../database2/DataFacade');
 
 class ChapterEndpoint extends EndpointLogic {
   constructor() {
@@ -10,26 +10,34 @@ class ChapterEndpoint extends EndpointLogic {
   async execute() {
     const LOCATION = 'Server.ChapterEndpoint.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing chapter query', location: LOCATION});
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'Executing chapter query',
+      location: LOCATION,
+    });
 
     let dataFacade = new DataFacade(this.environment);
     let parameterObject = {};
     parameterObject.returnPromise = true;
     parameterObject.request = {
       table: 'chapter',
-      id: this.requestObject.query.id
+      id: this.requestObject.query.id,
     };
 
-    if(this.scopes?.has('edit')) {
+    if (this.scopes?.has('edit')) {
       parameterObject.request.publishDate = null;
       dataFacade.setSkipCache(true);
     }
 
-    return dataFacade.getData(parameterObject).then(chapter => {
-      Logging.debugMessage({severity:'FINER', message: `Chapter returned`, location: LOCATION});
+    return dataFacade.getData(parameterObject).then((chapter) => {
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: `Chapter returned`,
+        location: LOCATION,
+      });
       this.responseObject.json(chapter);
     });
   }
 }
 
-module.exports = {ChapterEndpoint};
+module.exports = { ChapterEndpoint };

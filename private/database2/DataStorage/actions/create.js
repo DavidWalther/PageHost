@@ -1,5 +1,5 @@
-const { Logging } = require("../../../modules/logging");
-const { Sanitizer } = require("./sanitizer");
+const { Logging } = require('../../../modules/logging');
+const { Sanitizer } = require('./sanitizer');
 
 /**
  * ActionCreate class is responsible for constructing and executing SQL INSERT statements.
@@ -14,31 +14,43 @@ class ActionCreate {
   }
 
   setPgConnector(pgConnector) {
-    if (!pgConnector) { return this; }
+    if (!pgConnector) {
+      return this;
+    }
     this.pgConnector = pgConnector;
     return this;
   }
 
   setTable(table) {
-    if (!table) { return this; }
+    if (!table) {
+      return this;
+    }
     this.table = table;
     return this;
   }
 
   setValue(key, value) {
-    if (!key || value === undefined) { return this; }
+    if (!key || value === undefined) {
+      return this;
+    }
 
     // check if the key is a valid field for the table
     let tableFields = this.table.getTableFields()();
-    tableFields = tableFields.map(field => field.toLowerCase());
+    tableFields = tableFields.map((field) => field.toLowerCase());
     if (!tableFields.includes(key.toLowerCase())) {
-      throw new Error(`Field "${key}" is not defined for table "${this.table.getTableName()()}"`);
+      throw new Error(
+        `Field "${key}" is not defined for table "${this.table.getTableName()()}"`
+      );
     }
 
     const sanitizedValue = Sanitizer.sanitize(value);
     if (typeof value === 'string') {
       this.values[key] = `'${sanitizedValue}'`;
-    } else if (typeof value === 'number' || value === null || typeof value === 'boolean') {
+    } else if (
+      typeof value === 'number' ||
+      value === null ||
+      typeof value === 'boolean'
+    ) {
       this.values[key] = sanitizedValue;
     } else {
       throw new Error('Unsupported value type');
@@ -49,10 +61,14 @@ class ActionCreate {
   async execute() {
     const tableName = this.table.getTableName()();
     const tableFields = Object.keys(this.values);
-    const fieldValues = tableFields.map(field => `${this.values[field]}`);
+    const fieldValues = tableFields.map((field) => `${this.values[field]}`);
     const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${fieldValues.join(', ')}) RETURNING *;`;
 
-    Logging.debugMessage({ severity: 'FINEST', location: 'ActionCreate.execute', message: `Executing SQL: ${sqlStatement}` });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: 'ActionCreate.execute',
+      message: `Executing SQL: ${sqlStatement}`,
+    });
     return this.pgConnector.executeSql(sqlStatement);
   }
 }

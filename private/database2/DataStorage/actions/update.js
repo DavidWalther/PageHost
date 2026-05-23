@@ -1,5 +1,5 @@
-const { Logging } = require("../../../modules/logging");
-const { Sanitizer } = require("./sanitizer");
+const { Logging } = require('../../../modules/logging');
+const { Sanitizer } = require('./sanitizer');
 
 class ActionUpdate {
   constructor() {
@@ -8,7 +8,7 @@ class ActionUpdate {
 
   setPgConnector(pgConnector) {
     if (!pgConnector) {
-      throw new Error("Postgres connector is required");
+      throw new Error('Postgres connector is required');
     }
     this.pgConnector = pgConnector;
     return this;
@@ -16,15 +16,15 @@ class ActionUpdate {
 
   setTable(table) {
     if (!table) {
-      throw new Error("Table is required");
+      throw new Error('Table is required');
     }
     this.table = table;
     return this;
   }
 
   setValues(data) {
-    if (!data || typeof data !== "object") {
-      throw new Error("Data object is required");
+    if (!data || typeof data !== 'object') {
+      throw new Error('Data object is required');
     }
     // Sanitize all values
     const sanitized = {};
@@ -35,45 +35,56 @@ class ActionUpdate {
     return this;
   }
 
-
   /**
    * Executes the update operation.
    * @returns {Promise} - A promise that resolves to the result of the SQL execution.
    * @throws {Error} - Throws an error if the pgConnector, table, or values are not set.
    */
   async execute() {
-      if (!this.pgConnector) { throw new Error("Postgres connector is not set"); }
-      if (!this.table) { throw new Error("Table is not set"); }
-      if (!this.values) { throw new Error("Data object is not set"); }
-      if (!this.values.id) {
-        throw new Error("Update operation requires an 'id' field in the data object.");
-      }
+    if (!this.pgConnector) {
+      throw new Error('Postgres connector is not set');
+    }
+    if (!this.table) {
+      throw new Error('Table is not set');
+    }
+    if (!this.values) {
+      throw new Error('Data object is not set');
+    }
+    if (!this.values.id) {
+      throw new Error(
+        "Update operation requires an 'id' field in the data object."
+      );
+    }
 
-      const tableName = this.table.getTableName()();
-      const id = this.values.id;
-      delete this.values.id;
+    const tableName = this.table.getTableName()();
+    const id = this.values.id;
+    delete this.values.id;
 
-      const setClauses = Object.entries(this.values)
-        .map(([key, value]) => {
-          if (typeof value === "string") {
-            return `${key} = '${value}'`;
-          } else if (typeof value === "number" || value === null || typeof value === "boolean") {
-            return `${key} = ${value}`;
-          } else {
-            throw new Error("Unsupported value type");
-          }
-        })
-        .join(", ");
+    const setClauses = Object.entries(this.values)
+      .map(([key, value]) => {
+        if (typeof value === 'string') {
+          return `${key} = '${value}'`;
+        } else if (
+          typeof value === 'number' ||
+          value === null ||
+          typeof value === 'boolean'
+        ) {
+          return `${key} = ${value}`;
+        } else {
+          throw new Error('Unsupported value type');
+        }
+      })
+      .join(', ');
 
-      const sqlStatement = `UPDATE ${tableName} SET ${setClauses} WHERE id = '${id}' RETURNING * ;`;
+    const sqlStatement = `UPDATE ${tableName} SET ${setClauses} WHERE id = '${id}' RETURNING * ;`;
 
-      Logging.debugMessage({
-        severity: "FINEST",
-        location: "ActionUpdate.execute",
-        message: `Executing SQL: ${sqlStatement}`,
-      });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: 'ActionUpdate.execute',
+      message: `Executing SQL: ${sqlStatement}`,
+    });
 
-      return this.pgConnector.executeSql(sqlStatement,  {closeConnection: true});
+    return this.pgConnector.executeSql(sqlStatement, { closeConnection: true });
   }
 }
 

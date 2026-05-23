@@ -15,13 +15,15 @@ describe('AllStoriesEndpoint', () => {
   beforeEach(() => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = {
-      json: jest.fn()
+      json: jest.fn(),
     };
     mockDataCleaner = new DataCleaner();
     jest.spyOn(mockDataCleaner, 'removeApplicationKeys');
 
     allStoriesEndpoint = new AllStoriesEndpoint();
-    allStoriesEndpoint.setEnvironment(mockEnvironment).setResponseObject(mockResponseObject);
+    allStoriesEndpoint
+      .setEnvironment(mockEnvironment)
+      .setResponseObject(mockResponseObject);
   });
 
   afterEach(() => {
@@ -31,11 +33,11 @@ describe('AllStoriesEndpoint', () => {
   it('should return a JSON list of stories', async () => {
     const mockStories = [
       { id: 1, title: 'Story 1', applicationIncluded: true },
-      { id: 2, title: 'Story 2', applicationExcluded: false }
+      { id: 2, title: 'Story 2', applicationExcluded: false },
     ];
 
     DataFacade.mockImplementation(() => ({
-      getData: jest.fn().mockResolvedValue(mockStories)
+      getData: jest.fn().mockResolvedValue(mockStories),
     }));
 
     await allStoriesEndpoint.execute();
@@ -46,19 +48,19 @@ describe('AllStoriesEndpoint', () => {
   it('should clean the stories using DataCleaner before returning', async () => {
     const mockStories = [
       { id: 1, title: 'Story 1', applicationIncluded: true },
-      { id: 2, title: 'Story 2', applicationExcluded: false }
+      { id: 2, title: 'Story 2', applicationExcluded: false },
     ];
 
     DataFacade.mockImplementation(() => ({
-      getData: jest.fn().mockResolvedValue(mockStories)
+      getData: jest.fn().mockResolvedValue(mockStories),
     }));
 
     await allStoriesEndpoint.execute();
 
-//    expect(mockDataCleaner.removeApplicationKeys).toHaveBeenCalledWith(mockStories);
+    //    expect(mockDataCleaner.removeApplicationKeys).toHaveBeenCalledWith(mockStories);
     expect(mockResponseObject.json).toHaveBeenCalledWith([
       { id: 1, title: 'Story 1' },
-      { id: 2, title: 'Story 2' }
+      { id: 2, title: 'Story 2' },
     ]);
   });
 });

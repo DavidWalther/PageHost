@@ -1,7 +1,12 @@
 class TableConfiguration {
   constructor() {
     this.tableName = 'configuration';
-    this.tableFields = ['key', 'value', 'applicationincluded', 'applicationexcluded'];
+    this.tableFields = [
+      'key',
+      'value',
+      'applicationincluded',
+      'applicationexcluded',
+    ];
     this.tableKeyPrefix = '000m';
   }
 
@@ -10,7 +15,7 @@ class TableConfiguration {
   }
 
   getTableFields() {
-    return () => [... this.tableFields];
+    return () => [...this.tableFields];
   }
 
   getTableKeyPrefix() {

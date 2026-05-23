@@ -1,12 +1,12 @@
 const { Environment } = require('../../modules/environment.js');
 const postgres = require('postgres');
 
-
 let IS_LOCAL;
 class PostgresActions {
-
   static connect(environment) {
-    IS_LOCAL = environment.PG_LOCAL_DB ? environment.PG_LOCAL_DB === 'true' : false;
+    IS_LOCAL = environment.PG_LOCAL_DB
+      ? environment.PG_LOCAL_DB === 'true'
+      : false;
     if (IS_LOCAL) {
       return postgres({
         host: environment.PGHOST,
@@ -49,7 +49,9 @@ class PostgresActions {
         reject(error);
       } finally {
         // by default the conection stays open
-        if(options?.closeConnection) { this.sql.end() };
+        if (options?.closeConnection) {
+          this.sql.end();
+        }
       }
     });
   }

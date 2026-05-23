@@ -7,7 +7,7 @@ const MOCK_ENVIRONMENT = {
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
   REDIS_PASSWORD: 'test-password',
   REDIS_HOST: 'test-host',
-  REDIS_PORT: 'test-port'
+  REDIS_PORT: 'test-port',
 };
 
 jest.mock('redis', () => {
@@ -27,7 +27,7 @@ jest.mock('redis', () => {
   };
   return {
     createClient: jest.fn(() => mClient),
-   };
+  };
 });
 
 jest.mock('../../../modules/logging.js', () => ({
@@ -41,8 +41,6 @@ describe('RedisConnector', () => {
   let redisClient;
 
   beforeEach(() => {
-
-
     redisConnector = new RedisConnector(MOCK_ENVIRONMENT);
     redisClient = redis.createClient();
   });
@@ -104,7 +102,7 @@ describe('RedisConnector', () => {
       message: `Getting Key: ${key}`,
       location: 'RedisConnector.get',
     });
-  } );
+  });
 
   test('should set value in redis with expiration', async () => {
     const key = 'testKey';

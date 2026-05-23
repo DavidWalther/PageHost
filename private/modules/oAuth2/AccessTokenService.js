@@ -1,8 +1,7 @@
 const JwtService = require('./JwtService.js');
 
 class AccessTokenService {
-  constructor() {
-  }
+  constructor() {}
 
   setEnvironment(environment) {
     this._environment = environment;
@@ -10,7 +9,7 @@ class AccessTokenService {
   }
 
   get serverSecret() {
-   return this.environment.AUTH_SERVER_SECRET;
+    return this.environment.AUTH_SERVER_SECRET;
   }
 
   get environment() {
@@ -31,20 +30,34 @@ class AccessTokenService {
     if (!this.environment.AUTH_SERVER_SECRET) {
       throw new Error('No server secret provided');
     }
-    const parsedLifetime = parseInt(this.environment.AUTH_JWT_LIFETIME_SECONDS, 10);
-    const lifetimeSeconds = (this.environment.AUTH_JWT_LIFETIME_SECONDS && !isNaN(parsedLifetime) && parsedLifetime > 0)
-      ? parsedLifetime
-      : 900;
-    return JwtService.createJwt(userInfo.email, 'google', scopes, this.environment.AUTH_SERVER_SECRET, lifetimeSeconds);
+    const parsedLifetime = parseInt(
+      this.environment.AUTH_JWT_LIFETIME_SECONDS,
+      10
+    );
+    const lifetimeSeconds =
+      this.environment.AUTH_JWT_LIFETIME_SECONDS &&
+      !isNaN(parsedLifetime) &&
+      parsedLifetime > 0
+        ? parsedLifetime
+        : 900;
+    return JwtService.createJwt(
+      userInfo.email,
+      'google',
+      scopes,
+      this.environment.AUTH_SERVER_SECRET,
+      lifetimeSeconds
+    );
   }
 
   getUserScopes(userInfo) {
     // Guard clauses
-    if(!userInfo) { return []; }
+    if (!userInfo) {
+      return [];
+    }
 
     // buisiness logic
 
-    return ['edit','create', 'delete', 'publish']; // these are hardcoded (for as long as there is no user management and only one user)
+    return ['edit', 'create', 'delete', 'publish']; // these are hardcoded (for as long as there is no user management and only one user)
   }
 }
 

@@ -12,7 +12,7 @@ const MOCK_ENVIRONMENT = {
   PGUSER: 'testUser',
   PGPASSWORD: 'testPassword',
   ENDPOINT_ID: 'testEndpoint',
-  PG_LOCAL_DB: 'true'
+  PG_LOCAL_DB: 'true',
 };
 
 let mockExecuteSql = jest.fn().mockResolvedValue();
@@ -20,7 +20,7 @@ PostgresActions.mockImplementation(() => {
   return {
     executeSql: mockExecuteSql,
     connect: jest.fn(),
-    query: jest.fn().mockResolvedValue([])
+    query: jest.fn().mockResolvedValue([]),
   };
 });
 
@@ -33,7 +33,11 @@ describe('SQL-Actions', () => {
 
   describe('create', () => {
     it('should create a proper SQL insert statement', () => {
-      mockExecuteSql = jest.fn().mockResolvedValue([{ Id: 1337, Name: 'TestName', Content: 'TestContent' }]);
+      mockExecuteSql = jest
+        .fn()
+        .mockResolvedValue([
+          { Id: 1337, Name: 'TestName', Content: 'TestContent' },
+        ]);
       const actionCreate = new ActionCreate();
       actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
       actionCreate.setTable(new TableParagraph());
@@ -43,14 +47,18 @@ describe('SQL-Actions', () => {
       let resultPromise = actionCreate.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual("INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', 'TestContent') RETURNING *;");
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
+        "INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', 'TestContent') RETURNING *;"
+      );
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
     });
 
     it('should handle null values correctly', () => {
-      mockExecuteSql = jest.fn().mockResolvedValue([{ Id: 1337, Name: 'TestName', Content: null }]);
+      mockExecuteSql = jest
+        .fn()
+        .mockResolvedValue([{ Id: 1337, Name: 'TestName', Content: null }]);
       const actionCreate = new ActionCreate();
       actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
       actionCreate.setTable(new TableParagraph());
@@ -60,14 +68,22 @@ describe('SQL-Actions', () => {
       let resultPromise = actionCreate.execute();
       expect(resultPromise).toBeInstanceOf(Promise);
       expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual("INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', null) RETURNING *;");
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
+        "INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', null) RETURNING *;"
+      );
       resultPromise.then((result) => {
         expect(result).toBeTruthy();
       });
     });
 
     it('should use RETURNING * to return the full record', async () => {
-      const fullRecord = { Id: 42, Name: 'FullRecord', Content: 'Some content', applicationIncluded: 'app-key', createdAt: '2026-03-08' };
+      const fullRecord = {
+        Id: 42,
+        Name: 'FullRecord',
+        Content: 'Some content',
+        applicationIncluded: 'app-key',
+        createdAt: '2026-03-08',
+      };
       mockExecuteSql = jest.fn().mockResolvedValue([fullRecord]);
       const actionCreate = new ActionCreate();
       actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
@@ -87,7 +103,9 @@ describe('SQL-Actions', () => {
       actionCreate.setTable(new TableParagraph());
       actionCreate.setValue('Id', 99);
       actionCreate.execute();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual('INSERT INTO Paragraph (Id) VALUES (99) RETURNING *;');
+      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
+        'INSERT INTO Paragraph (Id) VALUES (99) RETURNING *;'
+      );
     });
   });
 });

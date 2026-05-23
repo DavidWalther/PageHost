@@ -205,7 +205,7 @@ class ContentActions {
   async updateParagraph(recordId, contentData) {
     this.paragraphActions = new ParagraphActions(this.pgConnector);
     try {
-      console.log('Updating paragraph...');      
+      console.log('Updating paragraph...');
       console.table(contentData);
       this.paragraphActions.updateParagraph(recordId, contentData);
       console.log('Paragraph updated successfully.');

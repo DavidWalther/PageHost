@@ -9,9 +9,21 @@ class DataQueryLogicFactory {
   static getProduct(requestObject) {
     let LOCATION = 'Server.DataQueryLogicFactory.getProduct';
     const url = requestObject.url;
-    Logging.debugMessage({severity:'INFO', message: `Url: ${url}`, location: LOCATION });
-    Logging.debugMessage({severity:'FINE', message: `Params: ${JSON.stringify(requestObject.params)}`, location: LOCATION });
-    Logging.debugMessage({severity:'FINE', message: `Query: ${JSON.stringify(requestObject.query)}`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Url: ${url}`,
+      location: LOCATION,
+    });
+    Logging.debugMessage({
+      severity: 'FINE',
+      message: `Params: ${JSON.stringify(requestObject.params)}`,
+      location: LOCATION,
+    });
+    Logging.debugMessage({
+      severity: 'FINE',
+      message: `Query: ${JSON.stringify(requestObject.query)}`,
+      location: LOCATION,
+    });
     const query = requestObject.params[0];
     const postgresTable = query.split('/')[0].toLowerCase();
 

@@ -1,6 +1,8 @@
 const { Logging } = require('../../../../../../modules/logging.js');
 const RequestAuthStateEndpoint = require('../requestAuthStateEndpoint');
-const { DataCache2 } = require('../../../../../../database2/DataCache/DataCache.js');
+const {
+  DataCache2,
+} = require('../../../../../../database2/DataCache/DataCache.js');
 
 let mockSetKey = jest.fn().mockResolvedValue(true);
 let mockGetKey = jest.fn().mockResolvedValue(false);
@@ -73,9 +75,13 @@ describe('RequestAuthStateEndpoint', () => {
   });
 
   it('should return 403 if login is not allowed', async () => {
-    mockEnvironment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify(['something_else']); // 'login' missing
+    mockEnvironment.APPLICATION_ACTIVE_ACTIONS = JSON.stringify([
+      'something_else',
+    ]); // 'login' missing
     await endpoint.setEnvironment(mockEnvironment).execute();
     expect(mockResponseObject.status).toHaveBeenCalledWith(403);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Login not allowed' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({
+      error: 'Login not allowed',
+    });
   });
 });

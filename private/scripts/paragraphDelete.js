@@ -14,7 +14,7 @@ const deleteParagraph = async (paragraphId) => {
 };
 
 const paragraphData = {};
-process.argv.slice(2).forEach(arg => {
+process.argv.slice(2).forEach((arg) => {
   const [key, value] = arg.split('=');
   const lowercaseKey = key.toLowerCase();
   paragraphData[lowercaseKey] = value;

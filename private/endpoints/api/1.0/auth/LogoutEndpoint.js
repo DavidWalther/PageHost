@@ -24,16 +24,30 @@ class LogoutEndpoint {
 
   async execute() {
     const LOCATION = 'LogoutEndpoint.execute';
-    Logging.debugMessage({ severity: 'INFO', message: 'Executing logout', location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'Executing logout',
+      location: LOCATION,
+    });
 
     const authHeader = this.requestObject.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      Logging.debugMessage({ severity: 'WARNING', message: `Missing or invalid Authorization header`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'WARNING',
+        message: `Missing or invalid Authorization header`,
+        location: LOCATION,
+      });
       return this.responseObject.status(401).json({ error: 'Unauthorized' });
     }
 
-    Logging.debugMessage({ severity: 'INFO', message: `Logout successful`, location: LOCATION });
-    return this.responseObject.status(200).json({ message: 'Logout successful' });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Logout successful`,
+      location: LOCATION,
+    });
+    return this.responseObject
+      .status(200)
+      .json({ message: 'Logout successful' });
   }
 }
 

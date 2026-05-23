@@ -5,12 +5,12 @@ const pgConnector = new PostgresActions();
 const chapterActions = new ChapterActions(pgConnector);
 
 const paragraphData = {};
-process.argv.slice(2).forEach(arg => {
+process.argv.slice(2).forEach((arg) => {
   const [key, value] = arg.split('=');
   const lowercaseKey = key.toLowerCase();
   paragraphData[lowercaseKey] = value;
 });
 
-chapterActions.readChapter(paragraphData).then(chapter => {
-    console.log(chapter);
+chapterActions.readChapter(paragraphData).then((chapter) => {
+  console.log(chapter);
 });

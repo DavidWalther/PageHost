@@ -1,6 +1,6 @@
 /**
  * This script is used to import paragraphs into the database.
- * 
+ *
  * It reads the input from STDIN and expects the following parameters:
  * --storyid: the id of the story
  * --chapterid: the id of the chapter
@@ -24,33 +24,33 @@ async function readStdin() {
     process.stdin.on('end', () => {
       resolve(input);
     });
-  })
+  });
 }
 
 function readParameters() {
   return new Promise((resolve, reject) => {
     let inputParams = {};
     try {
-      if(!args.storyid) {
+      if (!args.storyid) {
         throw new Error('storyid not provided');
       }
       inputParams.storyid = args.storyid;
-      
-      if(!args.chapterid) {
+
+      if (!args.chapterid) {
         throw new Error('chapterid not provided');
       }
       inputParams.chapterid = args.chapterid;
-      
-      if(!args.publishdate) {
+
+      if (!args.publishdate) {
         throw new Error('publishdate not provided');
       }
       inputParams.publishdate = args.publishdate;
 
-      if(!args.sortnumber) {
+      if (!args.sortnumber) {
         throw new Error('sortnumber not provided');
       }
       inputParams.sortnumber = args.sortnumber;
-      
+
       resolve(inputParams);
     } catch (error) {
       reject(error);
@@ -66,28 +66,29 @@ importParagraph = (paragraph, input) => {
     chapterid: input.chapterid,
     publishdate: input.publishdate,
     sortnumber: input.sortnumber,
-    content: paragraph
+    content: paragraph,
   };
-  
+
   const pgConnector = new PostgresActions();
   const actionLogic = new ActionLogic(pgConnector);
   actionLogic.execute(paramObj.operation, paramObj.table, paramObj);
-}
+};
 
 let promiseArray = [];
 promiseArray.push(readParameters());
 promiseArray.push(readStdin());
 
-Promise.all(promiseArray).then((resolveArray) => {
-  let inputParams = resolveArray[0];
-  let input = resolveArray[1];
-  
-  let paragraphs = input.split('\n\n');
-  paragraphs.forEach((paragraph) => {
-    importParagraph(paragraph, inputParams);
-    inputParams.sortnumber++;
+Promise.all(promiseArray)
+  .then((resolveArray) => {
+    let inputParams = resolveArray[0];
+    let input = resolveArray[1];
+
+    let paragraphs = input.split('\n\n');
+    paragraphs.forEach((paragraph) => {
+      importParagraph(paragraph, inputParams);
+      inputParams.sortnumber++;
+    });
+  })
+  .catch((error) => {
+    console.error(error);
   });
-})
-.catch((error) => {
-  console.error(error);
-});

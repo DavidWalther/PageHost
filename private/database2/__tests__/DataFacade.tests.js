@@ -9,20 +9,20 @@ const MOCK_ENVIRONMENT = {
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
   REDIS_PASSWORD: 'test-password',
   REDIS_HOST: 'test-host',
-  REDIS_PORT: 'test-port'
+  REDIS_PORT: 'test-port',
 };
 const MOCK_CACHE = {
   metaTitle: 'Mock Tabtitle',
   pageHeaderHeadline: 'Mock Headline',
-  pageSidebarTitle: 'Mock Contents'
-}
+  pageSidebarTitle: 'Mock Contents',
+};
 
 const MOCK_DATABASE = {
   rows: [
-    {key: 'metaTitle', value: 'Mock Tabtitle'},
-    {key: 'pageHeaderHeadline', value: 'Mock Headline'},
-    {key: 'pageSidebarTitle', value: 'Mock Contents'}
-  ]
+    { key: 'metaTitle', value: 'Mock Tabtitle' },
+    { key: 'pageHeaderHeadline', value: 'Mock Headline' },
+    { key: 'pageSidebarTitle', value: 'Mock Contents' },
+  ],
 };
 
 // ---- Environment.js mock ----
@@ -30,7 +30,7 @@ jest.mock('../../modules/environment.js');
 let mockGetEnvironment = jest.fn().mockReturnValue(MOCK_ENVIRONMENT);
 Environment.mockImplementation(() => {
   return {
-    getEnvironment: mockGetEnvironment
+    getEnvironment: mockGetEnvironment,
   };
 });
 
@@ -41,7 +41,7 @@ let mockCacheSet = jest.fn();
 DataCache2.mockImplementation(() => {
   return {
     get: mockCacheGet,
-    set: mockCacheSet
+    set: mockCacheSet,
   };
 });
 
@@ -64,13 +64,11 @@ DataStorage.mockImplementation(() => {
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
     queryParagraphs: mockQueryParagraphs,
-    queryIdentityByKey: mockQueryIdentityByKey
+    queryIdentityByKey: mockQueryIdentityByKey,
   };
 });
 
-
 describe('DataFacade', () => {
-
   afterEach(() => {
     DataCache2.mockClear();
     Environment.mockClear();
@@ -100,7 +98,7 @@ describe('DataFacade', () => {
       mockGetEnvironment = jest.fn().mockReturnValue({
         APPLICATION_APPLICATION_KEY: 'test-key',
         MOCK_DATA_ENABLE: 'true',
-        LOGGING_SEVERITY_LEVEL: 'DEBUG'
+        LOGGING_SEVERITY_LEVEL: 'DEBUG',
       });
       const result = DataFacade.isDataMockEnabled();
       expect(result).toBe(true);
@@ -110,7 +108,7 @@ describe('DataFacade', () => {
       mockGetEnvironment = jest.fn().mockReturnValue({
         APPLICATION_APPLICATION_KEY: 'test-key',
         MOCK_DATA_ENABLE: 'false',
-        LOGGING_SEVERITY_LEVEL: 'DEBUG'
+        LOGGING_SEVERITY_LEVEL: 'DEBUG',
       });
       const result = DataFacade.isDataMockEnabled();
       expect(result).toBe(false);
@@ -119,7 +117,6 @@ describe('DataFacade', () => {
 });
 
 describe('getData', () => {
-
   beforeEach(() => {
     DataStorage.mockClear();
     DataCache2.mockClear();
@@ -139,42 +136,49 @@ describe('getData', () => {
       expect(dataFacade.getData.length).toBe(1);
     });
 
-    it('getData should return a Promise if parameter \'returnPromise\' is set to true', () => {
+    it("getData should return a Promise if parameter 'returnPromise' is set to true", () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      const result = dataFacade.getData({ request: {id: '1234'}, returnPromise: true });
+      const result = dataFacade.getData({
+        request: { id: '1234' },
+        returnPromise: true,
+      });
       expect(result).toBeInstanceOf(Promise);
     });
 
-    it('getData should return a result object if parameter \'returnPromise\' is not true', () => {
+    it("getData should return a result object if parameter 'returnPromise' is not true", () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      const result = dataFacade.getData({request: {id: '1234'} });
+      const result = dataFacade.getData({ request: { id: '1234' } });
       expect(result).toBeTruthy();
     });
   });
 
   describe('Story', () => {
-    it('getData should trigger a query for stories if request.table is \'story\' and no id is given', async () => {
+    it("getData should trigger a query for stories if request.table is 'story' and no id is given", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       mockCacheGet = jest.fn().mockReturnValue(null);
-      mockQueryAllStories = jest.fn().mockReturnValue([{id: '1234'}, {id: '5678'}]);
+      mockQueryAllStories = jest
+        .fn()
+        .mockReturnValue([{ id: '1234' }, { id: '5678' }]);
 
       const result = await dataFacade.getData({ request: { table: 'story' } });
       expect(DataStorage).toHaveBeenCalled();
       expect(mockQueryAllStories).toHaveBeenCalled();
       expect(result).toBeTruthy();
-      expect(result).toStrictEqual([{id: '1234'}, {id: '5678'}]);
+      expect(result).toStrictEqual([{ id: '1234' }, { id: '5678' }]);
     });
 
-    it('getData should trigger a query for a story if request.table is \'story\' and an id is given', async () => {
+    it("getData should trigger a query for a story if request.table is 'story' and an id is given", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       mockCacheGet = jest.fn().mockReturnValue(null);
-      mockQueryStory = jest.fn().mockReturnValue({id: '1234'});
+      mockQueryStory = jest.fn().mockReturnValue({ id: '1234' });
 
-      const result = await dataFacade.getData({ request: { table: 'story', id: '1234' } });
+      const result = await dataFacade.getData({
+        request: { table: 'story', id: '1234' },
+      });
       expect(DataStorage).toHaveBeenCalled();
       expect(mockQueryStory).toHaveBeenCalled();
       expect(result).toBeTruthy();
-      expect(result).toStrictEqual({id: '1234'});
+      expect(result).toStrictEqual({ id: '1234' });
     });
   });
 
@@ -191,11 +195,13 @@ describe('getData', () => {
     });
     */
 
-    it('should call DataCache and DataStorage if request.table is \'chapter\'', async () => {
+    it("should call DataCache and DataStorage if request.table is 'chapter'", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       mockCacheGet = jest.fn().mockReturnValue();
 
-      const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' } });
+      const result = await dataFacade.getData({
+        request: { table: 'chapter', id: '000c00000000000023' },
+      });
       expect(DataCache2).toHaveBeenCalled();
       expect(mockCacheGet).toHaveBeenCalledWith('000c00000000000023');
       expect(DataStorage).toHaveBeenCalled();
@@ -204,9 +210,13 @@ describe('getData', () => {
 
     it('should return cache result if there was a hit', async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      mockCacheGet = jest.fn().mockReturnValue({id: '000c00000000000023', Name: 'Test Chapter'});
+      mockCacheGet = jest
+        .fn()
+        .mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter' });
 
-      const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' } });
+      const result = await dataFacade.getData({
+        request: { table: 'chapter', id: '000c00000000000023' },
+      });
       expect(DataCache2).toHaveBeenCalled();
       expect(mockCacheGet).toHaveBeenCalledWith('000c00000000000023');
       expect(DataStorage).not.toHaveBeenCalled();
@@ -217,9 +227,13 @@ describe('getData', () => {
     it('should call DataStorage if there was no hit in cache', async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       mockCacheGet = jest.fn().mockReturnValue(null);
-      mockQueryChapter = jest.fn().mockReturnValue({id: '000c00000000000023', Name: 'Test Chapter'});
+      mockQueryChapter = jest
+        .fn()
+        .mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter' });
 
-      const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' } });
+      const result = await dataFacade.getData({
+        request: { table: 'chapter', id: '000c00000000000023' },
+      });
       expect(DataCache2).toHaveBeenCalled();
       expect(mockCacheGet).toHaveBeenCalledWith('000c00000000000023');
       expect(DataStorage).toHaveBeenCalled();
@@ -241,45 +255,53 @@ describe('getData', () => {
       Environment.getEnvironment = mockGetEnvironment;
 
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      const result = await dataFacade.getData({ request: { table: 'configuration' } });
+      const result = await dataFacade.getData({
+        request: { table: 'configuration' },
+      });
       expect(result).toBeTruthy();
     });
 
     it("should call 'get' from Cache if MOCK_DATA_ENABLE is false", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      dataFacade.getData({ request: { table: 'configuration' } }).then(result => {
-        expect(mockCacheGet).toHaveBeenCalled();
-        expect(result).toStrictEqual(MOCK_CACHE);
-      });
+      dataFacade
+        .getData({ request: { table: 'configuration' } })
+        .then((result) => {
+          expect(mockCacheGet).toHaveBeenCalled();
+          expect(result).toStrictEqual(MOCK_CACHE);
+        });
     });
 
     it('should call DataStorage if MOCK_DATA_ENABLE is false and Cache returns nothing', async () => {
       mockCacheGet = jest.fn().mockReturnValue(null);
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
 
-      dataFacade.getData({ request: { table: 'configuration' } }).then(result => {
-        expect(DataCache2).toHaveBeenCalled();
-        expect(mockCacheGet).toHaveBeenCalled();
+      dataFacade
+        .getData({ request: { table: 'configuration' } })
+        .then((result) => {
+          expect(DataCache2).toHaveBeenCalled();
+          expect(mockCacheGet).toHaveBeenCalled();
 
-        expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryConfiguration).toHaveBeenCalled();
-        expect(result).toStrictEqual(MOCK_DATABASE);
-      });
+          expect(DataStorage).toHaveBeenCalled();
+          expect(mockQueryConfiguration).toHaveBeenCalled();
+          expect(result).toStrictEqual(MOCK_DATABASE);
+        });
     });
 
     it('should save the result from DataStorage to Cache', async () => {
       mockCacheGet = jest.fn().mockReturnValue(null);
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
 
-      dataFacade.getData({ request: { table: 'configuration' } }).then(result => {
-        expect(DataCache2).toHaveBeenCalled();
-        expect(mockCacheGet).toHaveBeenCalled();
+      dataFacade
+        .getData({ request: { table: 'configuration' } })
+        .then((result) => {
+          expect(DataCache2).toHaveBeenCalled();
+          expect(mockCacheGet).toHaveBeenCalled();
 
-        expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryConfiguration).toHaveBeenCalled();
-        expect(mockCacheSet).toHaveBeenCalled();
-        expect(result).toStrictEqual(MOCK_DATABASE);
-      });
+          expect(DataStorage).toHaveBeenCalled();
+          expect(mockQueryConfiguration).toHaveBeenCalled();
+          expect(mockCacheSet).toHaveBeenCalled();
+          expect(result).toStrictEqual(MOCK_DATABASE);
+        });
     });
   });
 });
@@ -298,13 +320,14 @@ describe('getData with specific scopes', () => {
   });
 
   describe('skipping cache', () => {
-
     describe('Chapter', () => {
       it('should not call DataCache if scope is "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         dataFacade.setSkipCache(true);
 
-        await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' }});
+        await dataFacade.getData({
+          request: { table: 'chapter', id: '000c00000000000023' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
       });
@@ -312,9 +335,19 @@ describe('getData with specific scopes', () => {
       it('should set publishDate to requested date if cache is skipped', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         dataFacade.setSkipCache(true);
-        mockQueryChapter.mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter', publishDate: '2023-01-01' });
+        mockQueryChapter.mockReturnValue({
+          id: '000c00000000000023',
+          Name: 'Test Chapter',
+          publishDate: '2023-01-01',
+        });
 
-        const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023', publishDate: null} });
+        const result = await dataFacade.getData({
+          request: {
+            table: 'chapter',
+            id: '000c00000000000023',
+            publishDate: null,
+          },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
@@ -330,7 +363,9 @@ describe('getData with specific scopes', () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         dataFacade.setSkipCache(true);
 
-        await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045' } });
+        await dataFacade.getData({
+          request: { table: 'paragraph', id: '000p00000000000045' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
       });
@@ -338,9 +373,19 @@ describe('getData with specific scopes', () => {
       it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         dataFacade.setSkipCache(true);
-        mockQueryParagraphs.mockReturnValue({ id: '000p00000000000045', Name: 'Test Paragraph', publishDate: '2023-01-01' });
+        mockQueryParagraphs.mockReturnValue({
+          id: '000p00000000000045',
+          Name: 'Test Paragraph',
+          publishDate: '2023-01-01',
+        });
 
-        const result = await dataFacade.getData({ request: { table: 'paragraph', id: '000p00000000000045', publishDate: null } });
+        const result = await dataFacade.getData({
+          request: {
+            table: 'paragraph',
+            id: '000p00000000000045',
+            publishDate: null,
+          },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
@@ -359,12 +404,22 @@ describe('getData with specific scopes', () => {
           id: '000s00000000000012',
           name: 'Test Story',
           chapters: [
-            { id: '000c00000000000023', name: 'Chapter 1', publishDate: '2026-06-01' },
-            { id: '000c00000000000024', name: 'Chapter 2', publishDate: '2026-12-01' }
-          ]
+            {
+              id: '000c00000000000023',
+              name: 'Chapter 1',
+              publishDate: '2026-06-01',
+            },
+            {
+              id: '000c00000000000024',
+              name: 'Chapter 2',
+              publishDate: '2026-12-01',
+            },
+          ],
         });
 
-        await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+        await dataFacade.getData({
+          request: { table: 'story', id: '000s00000000000012' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
       });
@@ -377,12 +432,22 @@ describe('getData with specific scopes', () => {
           name: 'Test Story',
           publishDate: '2026-03-15',
           chapters: [
-            { id: '000c00000000000023', name: 'Chapter 1', publishDate: '2026-06-01' },
-            { id: '000c00000000000024', name: 'Chapter 2', publishDate: '2026-12-01' }
-          ]
+            {
+              id: '000c00000000000023',
+              name: 'Chapter 1',
+              publishDate: '2026-06-01',
+            },
+            {
+              id: '000c00000000000024',
+              name: 'Chapter 2',
+              publishDate: '2026-12-01',
+            },
+          ],
         });
 
-        const result = await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+        const result = await dataFacade.getData({
+          request: { table: 'story', id: '000s00000000000012' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
@@ -403,13 +468,27 @@ describe('getData with specific scopes', () => {
           name: 'Test Story with Future Chapters',
           publishDate: '2026-01-01',
           chapters: [
-            { id: '000c00000000000023', name: 'Published Chapter', publishDate: '2026-01-15' },
-            { id: '000c00000000000024', name: 'Future Chapter 1', publishDate: '2026-06-01' },
-            { id: '000c00000000000025', name: 'Future Chapter 2', publishDate: '2026-12-01' }
-          ]
+            {
+              id: '000c00000000000023',
+              name: 'Published Chapter',
+              publishDate: '2026-01-15',
+            },
+            {
+              id: '000c00000000000024',
+              name: 'Future Chapter 1',
+              publishDate: '2026-06-01',
+            },
+            {
+              id: '000c00000000000025',
+              name: 'Future Chapter 2',
+              publishDate: '2026-12-01',
+            },
+          ],
         });
 
-        const result = await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+        const result = await dataFacade.getData({
+          request: { table: 'story', id: '000s00000000000012' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
@@ -417,9 +496,15 @@ describe('getData with specific scopes', () => {
         expect(setConditionPublishDate).toHaveBeenCalledWith(null);
         expect(result.chapters).toHaveLength(3);
         // All chapters should be returned, including future ones
-        expect(result.chapters.find(c => c.id === '000c00000000000023')).toBeTruthy();
-        expect(result.chapters.find(c => c.id === '000c00000000000024')).toBeTruthy();
-        expect(result.chapters.find(c => c.id === '000c00000000000025')).toBeTruthy();
+        expect(
+          result.chapters.find((c) => c.id === '000c00000000000023')
+        ).toBeTruthy();
+        expect(
+          result.chapters.find((c) => c.id === '000c00000000000024')
+        ).toBeTruthy();
+        expect(
+          result.chapters.find((c) => c.id === '000c00000000000025')
+        ).toBeTruthy();
       });
 
       it('should use cache and apply publishDate filtering when scope is not "edit"', async () => {
@@ -429,11 +514,17 @@ describe('getData with specific scopes', () => {
           id: '000s00000000000012',
           name: 'Cached Story',
           chapters: [
-            { id: '000c00000000000023', name: 'Published Chapter', publishDate: '2026-01-15' }
-          ]
+            {
+              id: '000c00000000000023',
+              name: 'Published Chapter',
+              publishDate: '2026-01-15',
+            },
+          ],
         });
 
-        const result = await dataFacade.getData({ request: { table: 'story', id: '000s00000000000012' } });
+        const result = await dataFacade.getData({
+          request: { table: 'story', id: '000s00000000000012' },
+        });
 
         expect(mockCacheGet).toHaveBeenCalledWith('000s00000000000012');
         expect(DataStorage).not.toHaveBeenCalled();
@@ -446,9 +537,15 @@ describe('getData with specific scopes', () => {
     describe('Identity', () => {
       it('should always bypass cache when querying identity', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        mockQueryIdentityByKey.mockReturnValue({ id: '000i123', key: 'user@example.com', active: true });
+        mockQueryIdentityByKey.mockReturnValue({
+          id: '000i123',
+          key: 'user@example.com',
+          active: true,
+        });
 
-        await dataFacade.getData({ request: { table: 'identity', key: 'user@example.com' } });
+        await dataFacade.getData({
+          request: { table: 'identity', key: 'user@example.com' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
@@ -457,9 +554,16 @@ describe('getData with specific scopes', () => {
 
       it('should return identity data directly from database', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        mockQueryIdentityByKey.mockReturnValue({ id: '000i123', key: 'user@example.com', active: true, recordnumber: 1 });
+        mockQueryIdentityByKey.mockReturnValue({
+          id: '000i123',
+          key: 'user@example.com',
+          active: true,
+          recordnumber: 1,
+        });
 
-        const result = await dataFacade.getData({ request: { table: 'identity', key: 'user@example.com' } });
+        const result = await dataFacade.getData({
+          request: { table: 'identity', key: 'user@example.com' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
@@ -474,11 +578,15 @@ describe('getData with specific scopes', () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
         mockQueryIdentityByKey.mockReturnValue({});
 
-        const result = await dataFacade.getData({ request: { table: 'identity', key: 'nonexistent@example.com' } });
+        const result = await dataFacade.getData({
+          request: { table: 'identity', key: 'nonexistent@example.com' },
+        });
 
         expect(mockCacheGet).not.toHaveBeenCalled();
         expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryIdentityByKey).toHaveBeenCalledWith('nonexistent@example.com');
+        expect(mockQueryIdentityByKey).toHaveBeenCalledWith(
+          'nonexistent@example.com'
+        );
         expect(result).toEqual({});
       });
     });
@@ -497,7 +605,7 @@ describe('updateData', () => {
 
     mockDataStorage = {
       setConditionApplicationKey: jest.fn(),
-      updateData: mockDataStorageUpdateData = jest.fn(),
+      updateData: (mockDataStorageUpdateData = jest.fn()),
     };
 
     mockDataCache = {
@@ -521,7 +629,7 @@ describe('updateData', () => {
     const invalidData = { object: 'InvalidObject', payload: { id: '1234' } };
 
     try {
-     let result =  await dataFacade.updateData(invalidData);
+      let result = await dataFacade.updateData(invalidData);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       expect(error.message).toBe('Invalid object type');
@@ -533,54 +641,90 @@ describe('updateData', () => {
   it('should throw an error if the payload does not have an ID', async () => {
     const invalidData = { object: 'configuration', payload: {} };
 
-    await expect(dataFacade.updateData(invalidData)).rejects.toThrow('Invalid data object: Missing object type or payload ID');
+    await expect(dataFacade.updateData(invalidData)).rejects.toThrow(
+      'Invalid data object: Missing object type or payload ID'
+    );
     expect(mockDataStorage.updateData).not.toHaveBeenCalled();
     expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 
   it('should call DataStorage.updateData and DataCache.set on success', async () => {
-    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const validData = {
+      object: 'configuration',
+      payload: { id: '1234', key: 'testKey', value: 'testValue' },
+    };
     mockDataStorage.updateData.mockResolvedValue({ id: '1234' });
 
     await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
 
-    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
-    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith(
+      'test-key'
+    );
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith(
+      'configuration',
+      validData.payload
+    );
     expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
   });
 
   it('should throw an error if DataStorage.updateData fails', async () => {
-    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const validData = {
+      object: 'configuration',
+      payload: { id: '1234', key: 'testKey', value: 'testValue' },
+    };
     mockDataStorage.updateData.mockRejectedValue(new Error('Update failed'));
 
-    await expect(dataFacade.updateData(validData)).rejects.toThrow('Update failed');
+    await expect(dataFacade.updateData(validData)).rejects.toThrow(
+      'Update failed'
+    );
 
-    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
-    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith(
+      'test-key'
+    );
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith(
+      'configuration',
+      validData.payload
+    );
     expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 
   it('should skip writing to cache when skipCache is true', async () => {
-    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const validData = {
+      object: 'configuration',
+      payload: { id: '1234', key: 'testKey', value: 'testValue' },
+    };
     const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
     dataFacade.setSkipCache(true);
 
     await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
 
-    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
-    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith(
+      'test-key'
+    );
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith(
+      'configuration',
+      validData.payload
+    );
     expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 
   it('should write to cache when skipCache is false', async () => {
-    const validData = { object: 'configuration', payload: { id: '1234', key: 'testKey', value: 'testValue' } };
+    const validData = {
+      object: 'configuration',
+      payload: { id: '1234', key: 'testKey', value: 'testValue' },
+    };
     const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
     dataFacade.setSkipCache(false);
 
     await expect(dataFacade.updateData(validData)).resolves.not.toThrow();
 
-    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
-    expect(mockDataStorage.updateData).toHaveBeenCalledWith('configuration', validData.payload);
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith(
+      'test-key'
+    );
+    expect(mockDataStorage.updateData).toHaveBeenCalledWith(
+      'configuration',
+      validData.payload
+    );
     expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
   });
 });
@@ -607,39 +751,82 @@ describe('createData', () => {
   });
 
   it('should throw an error if the object type is invalid', async () => {
-    const invalidData = { object: 'InvalidObject', payload: { key: 'testKey', value: 'testValue' } };
-    mockCreateRecord.mockImplementation(() => { throw new Error('Invalid table name: InvalidObject'); });
-    await expect(dataFacade.createData(invalidData)).rejects.toThrow('Invalid table name: InvalidObject');
-    expect(mockDataStorage.createRecord).not.toHaveBeenCalledWith(undefined, invalidData.payload);
+    const invalidData = {
+      object: 'InvalidObject',
+      payload: { key: 'testKey', value: 'testValue' },
+    };
+    mockCreateRecord.mockImplementation(() => {
+      throw new Error('Invalid table name: InvalidObject');
+    });
+    await expect(dataFacade.createData(invalidData)).rejects.toThrow(
+      'Invalid table name: InvalidObject'
+    );
+    expect(mockDataStorage.createRecord).not.toHaveBeenCalledWith(
+      undefined,
+      invalidData.payload
+    );
   });
 
   it('should throw an error if the payload is missing', async () => {
     const invalidData = { object: 'configuration' };
-    await expect(dataFacade.createData(invalidData)).rejects.toThrow('Invalid data object: Missing object type or payload');
+    await expect(dataFacade.createData(invalidData)).rejects.toThrow(
+      'Invalid data object: Missing object type or payload'
+    );
     expect(mockDataStorage.createRecord).not.toHaveBeenCalled();
   });
 
   it('should call DataStorage.createRecord on success', async () => {
-    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
-    mockCreateRecord.mockResolvedValue({ id: '1234', key: 'testKey', value: 'testValue' });
-    await expect(dataFacade.createData(validData)).resolves.toEqual({ id: '1234', key: 'testKey', value: 'testValue' });
-    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    const validData = {
+      object: 'configuration',
+      payload: { key: 'testKey', value: 'testValue' },
+    };
+    mockCreateRecord.mockResolvedValue({
+      id: '1234',
+      key: 'testKey',
+      value: 'testValue',
+    });
+    await expect(dataFacade.createData(validData)).resolves.toEqual({
+      id: '1234',
+      key: 'testKey',
+      value: 'testValue',
+    });
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith(
+      'test-key'
+    );
     expect(mockDataStorage.createRecord).toHaveBeenCalled();
   });
 
   it('should throw an error if DataStorage.createRecord fails', async () => {
-    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
+    const validData = {
+      object: 'configuration',
+      payload: { key: 'testKey', value: 'testValue' },
+    };
     mockCreateRecord.mockRejectedValue(new Error('Create failed'));
-    await expect(dataFacade.createData(validData)).rejects.toThrow('Create failed');
-    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith('test-key');
+    await expect(dataFacade.createData(validData)).rejects.toThrow(
+      'Create failed'
+    );
+    expect(mockDataStorage.setConditionApplicationKey).toHaveBeenCalledWith(
+      'test-key'
+    );
     expect(mockDataStorage.createRecord).toHaveBeenCalled();
   });
 
   it('should always skip cache when creating a record', async () => {
-    const validData = { object: 'configuration', payload: { key: 'testKey', value: 'testValue' } };
-    mockCreateRecord.mockResolvedValue({ id: '1234', key: 'testKey', value: 'testValue' });
+    const validData = {
+      object: 'configuration',
+      payload: { key: 'testKey', value: 'testValue' },
+    };
+    mockCreateRecord.mockResolvedValue({
+      id: '1234',
+      key: 'testKey',
+      value: 'testValue',
+    });
     dataFacade.setSkipCache(false); // Should be ignored for create
-    await expect(dataFacade.createData(validData)).resolves.toEqual({ id: '1234', key: 'testKey', value: 'testValue' });
+    await expect(dataFacade.createData(validData)).resolves.toEqual({
+      id: '1234',
+      key: 'testKey',
+      value: 'testValue',
+    });
     // No cache set or get should be called
     expect(mockDataStorage.createRecord).toHaveBeenCalled();
   });
