@@ -1,9 +1,12 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
-import OIDCComponent from "/modules/oIdcComponent.js";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import OIDCComponent from '/modules/oIdcComponent.js';
 
 class LoginComponent extends LitElement {
-
   //===========================
   // LIT - Methods
   //===========================
@@ -16,11 +19,10 @@ class LoginComponent extends LitElement {
     noNewRegistrations: 'Neue Regisrierungen sind im Moment nicht möglich.',
     loginWithGoogle: 'Login mit Google',
     logoutSuccessful: 'Logout successful',
-    authenticationFailed: 'Authentication failed'
+    authenticationFailed: 'Authentication failed',
   };
 
-  static properties = {
-  };
+  static properties = {};
 
   static styles = css`
     /* Add component-specific styles here */
@@ -92,8 +94,7 @@ class LoginComponent extends LitElement {
     super.updated(changedProperties);
   }
 
-  disconnectedCallback() {
-  }
+  disconnectedCallback() {}
 
   //===========================
   // Event handlers
@@ -117,16 +118,21 @@ class LoginComponent extends LitElement {
   // =========== Authentication - Start =================
 
   saveAuthParameterToStorage() {
-    let queryParameters = window.location.search.substring(1).split('&').reduce((aggregate, current) => {
-      let temp = current.split('=');
-      aggregate[temp[0]] = temp[1];
-      return aggregate;
-    },{});
+    let queryParameters = window.location.search
+      .substring(1)
+      .split('&')
+      .reduce((aggregate, current) => {
+        let temp = current.split('=');
+        aggregate[temp[0]] = temp[1];
+        return aggregate;
+      }, {});
 
-    if(!queryParameters.code && !queryParameters.state) { return; }
+    if (!queryParameters.code && !queryParameters.state) {
+      return;
+    }
     let authParameters = {
       code: queryParameters.code,
-      state: queryParameters.state
+      state: queryParameters.state,
     };
     sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
   }
@@ -134,10 +140,10 @@ class LoginComponent extends LitElement {
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
       fetch('/api/1.0/env/variables')
-      .then(response => response.json())
-      .then(variables => {
-        resolve(variables.auth.google);
-      });
+        .then((response) => response.json())
+        .then((variables) => {
+          resolve(variables.auth.google);
+        });
     });
   }
 
@@ -168,16 +174,19 @@ class LoginComponent extends LitElement {
     this.hideLoginModal();
     let logoutCallback = event.detail.callback;
     let accessToken = sessionStorage.getItem('code_exchange_response');
-    if(!accessToken) { return; }
+    if (!accessToken) {
+      return;
+    }
 
     accessToken = JSON.parse(accessToken);
-    const authHeader = 'Bearer ' + accessToken.authenticationResult.access.access_token;
+    const authHeader =
+      'Bearer ' + accessToken.authenticationResult.access.access_token;
     await fetch('/api/1.0/auth/logout', {
       method: 'GET',
       headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json'
-      }
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
     }).then(() => {
       this.fireToast(this.labels.logoutSuccessful, 'success');
       logoutCallback();
@@ -218,15 +227,15 @@ class LoginComponent extends LitElement {
   fireToast(message, variant) {
     this.dispatchEvent(
       new CustomEvent('toast', {
-      detail: {
-        message: message,
-        variant: variant
-      },
-      bubbles: true,
-      composed: true
-    }));
+        detail: {
+          message: message,
+          variant: variant,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }
 
 customElements.define('custom-login-module', LoginComponent);
-

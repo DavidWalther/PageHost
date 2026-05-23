@@ -1,14 +1,13 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const templatePath = 'slds-components/slds-card/slds-card.html';
 let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
 let loadedMarkUp = null;
 
 class Card extends HTMLElement {
-
   constructor() {
     super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });  // Attach a shadow root
+    const shadowRoot = this.attachShadow({ mode: 'open' }); // Attach a shadow root
 
     this.applyGlobalStyles();
   }
@@ -21,7 +20,10 @@ class Card extends HTMLElement {
         background-color: var(--slds-c-card-color-background) !important;
       }
     `);
-    this.shadowRoot.adoptedStyleSheets = [styleSheet, ...this.shadowRoot.adoptedStyleSheets];
+    this.shadowRoot.adoptedStyleSheets = [
+      styleSheet,
+      ...this.shadowRoot.adoptedStyleSheets,
+    ];
   }
 
   // ------------------------------
@@ -34,26 +36,30 @@ class Card extends HTMLElement {
     }
 
     // Append the main template
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
+    const mainTemplateContent =
+      loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     // Find the slots and replace them with the corresponding templates
 
     this.replaceSlotWithTemplate('placeholder-header', '#template-header');
-    this.replaceSlotWithTemplate('placeholder-header_icon', '#template-header_icon');
+    this.replaceSlotWithTemplate(
+      'placeholder-header_icon',
+      '#template-header_icon'
+    );
 
-    if(! this.isNoFooter) {
+    if (!this.isNoFooter) {
       this.replaceSlotWithTemplate('placeholder-footer', '#template-footer');
     }
 
     const slotTitleText = this.shadowRoot.querySelector('#header');
-    if(slotTitleText) {
+    if (slotTitleText) {
       const slotParentNode = slotTitleText.parentNode;
       slotParentNode.removeChild(slotParentNode);
       slotParentNode.textContent = 'i Am the title';
     }
     // Loop over the observed attributes and call the attributeChangedCallback
-    Card.observedAttributes.forEach(attr => {
+    Card.observedAttributes.forEach((attr) => {
       this.attributeChangedCallback(attr, null, this.getAttribute(attr));
     });
   }
@@ -67,34 +73,34 @@ class Card extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-      if (oldValue === newValue) return;
+    if (oldValue === newValue) return;
 
-      switch (name) {
-        case 'no-header': {
-          /*if (this.isNoHeader) {
+    switch (name) {
+      case 'no-header': {
+        /*if (this.isNoHeader) {
             this.shadowRoot.querySelector('#header').style.display = 'none';
           } else {
             this.shadowRoot.querySelector('#header').style.display = '';
           }*/
-          break;
-        }
-        case 'no-footer': {
-          /*if (this.isNoFooter) {
+        break;
+      }
+      case 'no-footer': {
+        /*if (this.isNoFooter) {
             this.shadowRoot.querySelector('#footer').style.display = 'none';
           } else {
             this.shadowRoot.querySelector('#footer').style.display = '';
           }*/
-          break;
-        }
-        case 'no-border': {
-          if (newValue !== null) {
-            this.border_hide();
-          } else {
-            this.border_show();
-          }
-          break;
-        }
+        break;
       }
+      case 'no-border': {
+        if (newValue !== null) {
+          this.border_hide();
+        } else {
+          this.border_show();
+        }
+        break;
+      }
+    }
   }
 
   get isNoHeader() {
@@ -112,10 +118,10 @@ class Card extends HTMLElement {
   async loadHtmlMarkup() {
     if (!templatePromise) {
       templatePromise = fetch(templatePath)
-      .then(response => response.text())
-      .then(html => {
-        return new DOMParser().parseFromString(html, 'text/html');
-      });
+        .then((response) => response.text())
+        .then((html) => {
+          return new DOMParser().parseFromString(html, 'text/html');
+        });
     }
     return templatePromise;
   }
@@ -134,16 +140,16 @@ class Card extends HTMLElement {
   // ------------------------------
 
   border_toggle() {
-    if(!this.getElement_Article()) return;
+    if (!this.getElement_Article()) return;
     this.getElement_Article().classList.toggle('no-border');
   }
   border_hide() {
-    if(!this.getElement_Article()) return;
+    if (!this.getElement_Article()) return;
     this.getElement_Article().classList.add('no-border');
   }
 
   border_show() {
-    if(!this.getElement_Article()) return;
+    if (!this.getElement_Article()) return;
     this.getElement_Article().classList.remove('no-border');
   }
 
@@ -156,4 +162,4 @@ class Card extends HTMLElement {
   }
 }
 
-customElements.define('slds-card', Card);  // Define the custom element
+customElements.define('slds-card', Card); // Define the custom element

@@ -1,6 +1,7 @@
 # Example: Advanced Lit Patterns
 
 Demonstrates:
+
 - Internal reactive state (`state: true`)
 - Custom events with `bubbles` and `composed`
 - `repeat` directive for efficient list rendering
@@ -17,18 +18,22 @@ Full bundle CDN import is used because directives are needed.
 
 ```js
 import {
-  LitElement, html, css,
-  repeat, classMap, when,
+  LitElement,
+  html,
+  css,
+  repeat,
+  classMap,
+  when,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 
 class TaskList extends LitElement {
   // --- Public reactive properties (component API) ---
   static properties = {
-    heading:  { type: String },
-    tasks:    { type: Array },
+    heading: { type: String },
+    tasks: { type: Array },
 
     // --- Internal reactive state (not part of public API) ---
-    _filter:  { state: true },
+    _filter: { state: true },
     _newTask: { state: true },
   };
 
@@ -107,7 +112,7 @@ class TaskList extends LitElement {
     super();
     this.heading = 'Tasks';
     this.tasks = [];
-    this._filter = 'all';   // 'all' | 'active' | 'done'
+    this._filter = 'all'; // 'all' | 'active' | 'done'
     this._newTask = '';
   }
 
@@ -121,11 +126,13 @@ class TaskList extends LitElement {
   updated(changedProperties) {
     // React to external tasks prop change
     if (changedProperties.has('tasks')) {
-      this.dispatchEvent(new CustomEvent('tasks-changed', {
-        detail: { count: this.tasks.length },
-        bubbles: true,
-        composed: true,   // crosses shadow DOM boundary
-      }));
+      this.dispatchEvent(
+        new CustomEvent('tasks-changed', {
+          detail: { count: this.tasks.length },
+          bubbles: true,
+          composed: true, // crosses shadow DOM boundary
+        })
+      );
     }
   }
 
@@ -137,8 +144,8 @@ class TaskList extends LitElement {
   // ---- Computed ----
 
   get _visibleTasks() {
-    if (this._filter === 'active') return this.tasks.filter(t => !t.done);
-    if (this._filter === 'done')   return this.tasks.filter(t => t.done);
+    if (this._filter === 'active') return this.tasks.filter((t) => !t.done);
+    if (this._filter === 'done') return this.tasks.filter((t) => t.done);
     return this.tasks;
   }
 
@@ -146,7 +153,7 @@ class TaskList extends LitElement {
 
   _toggleTask(id) {
     // Replace array (never mutate) so Lit detects the change
-    this.tasks = this.tasks.map(t =>
+    this.tasks = this.tasks.map((t) =>
       t.id === id ? { ...t, done: !t.done } : t
     );
   }
@@ -154,10 +161,7 @@ class TaskList extends LitElement {
   _addTask() {
     const name = this._newTask.trim();
     if (!name) return;
-    this.tasks = [
-      ...this.tasks,
-      { id: Date.now(), name, done: false },
-    ];
+    this.tasks = [...this.tasks, { id: Date.now(), name, done: false }];
     this._newTask = '';
   }
 
@@ -180,12 +184,21 @@ class TaskList extends LitElement {
 
       <!-- Filter buttons using classMap -->
       <div class="filters">
-        ${['all', 'active', 'done'].map(f => html`
-          <button
-            class="${classMap({ 'filter-btn': true, active: this._filter === f })}"
-            @click="${() => { this._filter = f; }}"
-          >${f}</button>
-        `)}
+        ${['all', 'active', 'done'].map(
+          (f) => html`
+            <button
+              class="${classMap({
+                'filter-btn': true,
+                active: this._filter === f,
+              })}"
+              @click="${() => {
+                this._filter = f;
+              }}"
+            >
+              ${f}
+            </button>
+          `
+        )}
       </div>
 
       <!-- Task list using repeat for keyed diffing -->
@@ -203,7 +216,7 @@ class TaskList extends LitElement {
                     type="checkbox"
                     .checked="${task.done}"
                     @change="${() => this._toggleTask(task.id)}"
-                  >
+                  />
                   <span>${task.name}</span>
                 </li>
               `
@@ -220,7 +233,7 @@ class TaskList extends LitElement {
           .value="${this._newTask}"
           @input="${this._onInput}"
           @keydown="${this._onKeydown}"
-        >
+        />
         <button @click="${this._addTask}">Add</button>
       </div>
 
@@ -270,13 +283,13 @@ customElements.define('task-list', TaskList);
 
 ## Key points
 
-| Pattern | Where used | Notes |
-|---|---|---|
-| `state: true` | `_filter`, `_newTask` | Internal state — not visible as attributes, not in public API |
-| `repeat(items, keyFn, tplFn)` | Task list | Lit reuses existing DOM nodes by key instead of recreating |
-| `classMap({cls: bool})` | Filter buttons, list items | Adds/removes classes based on booleans |
-| `when(cond, trueCase, falseCase)` | Empty state check | Cleaner than ternary for larger blocks |
-| `.checked="${task.done}"` | Checkbox | `.prop` binding sets the JS property, keeping it in sync with state |
-| `composed: true` | `tasks-changed` event | Required so the event crosses the shadow root boundary |
-| `slot` / `slot="actions"` | `<slot>` elements | Content projection — consumers insert their own HTML |
-| Never mutate arrays | `_toggleTask`, `_addTask` | Replace with new array so Lit's `hasChanged` (strict `!==`) detects the change |
+| Pattern                           | Where used                 | Notes                                                                          |
+| --------------------------------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `state: true`                     | `_filter`, `_newTask`      | Internal state — not visible as attributes, not in public API                  |
+| `repeat(items, keyFn, tplFn)`     | Task list                  | Lit reuses existing DOM nodes by key instead of recreating                     |
+| `classMap({cls: bool})`           | Filter buttons, list items | Adds/removes classes based on booleans                                         |
+| `when(cond, trueCase, falseCase)` | Empty state check          | Cleaner than ternary for larger blocks                                         |
+| `.checked="${task.done}"`         | Checkbox                   | `.prop` binding sets the JS property, keeping it in sync with state            |
+| `composed: true`                  | `tasks-changed` event      | Required so the event crosses the shadow root boundary                         |
+| `slot` / `slot="actions"`         | `<slot>` elements          | Content projection — consumers insert their own HTML                           |
+| Never mutate arrays               | `_toggleTask`, `_addTask`  | Replace with new array so Lit's `hasChanged` (strict `!==`) detects the change |

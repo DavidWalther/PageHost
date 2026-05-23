@@ -1,4 +1,4 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const templatePath = '/slds-components/slds-panel/slds-panel.html';
 let templatePromise = null;
@@ -18,8 +18,8 @@ class SldsPanel extends HTMLElement {
   async loadHtmlMarkup() {
     if (!templatePromise) {
       templatePromise = fetch(templatePath)
-        .then(response => response.text())
-        .then(html => {
+        .then((response) => response.text())
+        .then((html) => {
           return new DOMParser().parseFromString(html, 'text/html');
         });
     }
@@ -31,7 +31,8 @@ class SldsPanel extends HTMLElement {
       loadedMarkUp = await this.loadHtmlMarkup();
     }
 
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
+    const mainTemplateContent =
+      loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     this.initializeCloseButton();
@@ -40,7 +41,9 @@ class SldsPanel extends HTMLElement {
   initializeCloseButton() {
     const closeButton = this.shadowRoot.querySelector('.slds-panel__close');
     closeButton.addEventListener('click', () => this.closePanel());
-    this.shadowRoot.querySelector('.screencover').addEventListener('click', () => this.closePanel());
+    this.shadowRoot
+      .querySelector('.screencover')
+      .addEventListener('click', () => this.closePanel());
   }
 
   openPanel() {
@@ -50,7 +53,9 @@ class SldsPanel extends HTMLElement {
   }
 
   closePanel() {
-    this.shadowRoot.querySelector('.slds-panel').classList.remove('slds-is-open');
+    this.shadowRoot
+      .querySelector('.slds-panel')
+      .classList.remove('slds-is-open');
     this.shadowRoot.querySelector('.screencover').classList.add('slds-hide');
     this.shadowRoot.querySelector('.screencover').classList.remove('slds-show');
   }

@@ -1,6 +1,7 @@
 # Example: Basic Lit Component (Counter)
 
 A minimal, self-contained counter component demonstrating:
+
 - CDN import (core bundle)
 - `static properties` with `type: Number`
 - `static styles` with `:host` and scoped CSS
@@ -11,7 +12,11 @@ A minimal, self-contained counter component demonstrating:
 ## Component file: `simple-counter.js`
 
 ```js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 class SimpleCounter extends LitElement {
   static properties = {

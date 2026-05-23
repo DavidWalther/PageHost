@@ -1,19 +1,23 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
-import OIDCComponent from "/modules/oIdcComponent.js";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import OIDCComponent from '/modules/oIdcComponent.js';
 
 console.log('Bookstore.js file loaded');
 
 const recordIdPrefixToPostgresTableName = {
-  '000s' : 'Story',
-  '000c' : 'Chapter',
-  '000p' : 'Paragraph'
+  '000s': 'Story',
+  '000c': 'Chapter',
+  '000p': 'Paragraph',
 };
 
 class Bookstore extends LitElement {
   static properties = {
     isHydrated: { type: Boolean, state: true },
-    _initPara: { type: Object, state: true }
+    _initPara: { type: Object, state: true },
   };
 
   constructor() {
@@ -44,7 +48,7 @@ class Bookstore extends LitElement {
     let authParams = sessionStorage.getItem('authParameters');
     sessionStorage.removeItem('authParameters');
 
-    if(authParams) {
+    if (authParams) {
       authParams = JSON.parse(authParams);
       setTimeout(() => {
         let oidcComponent = this.shadowRoot.querySelector('oidc-component');
@@ -63,8 +67,11 @@ class Bookstore extends LitElement {
     // get button to show login modal
     let buttonId = 'button-login';
     let button = document.querySelector(`#${buttonId}`);
-    if(button) {
-      button.addEventListener('click', this.handleClickShowLoginModal.bind(this));
+    if (button) {
+      button.addEventListener(
+        'click',
+        this.handleClickShowLoginModal.bind(this)
+      );
     }
 
     this.hydrate();
@@ -73,32 +80,37 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-          <custom-global-header>
-            <div slot="left" class="slds-text-align_center">
-              <slds-button-icon
-                id="button-panel_open"
-                icon="utility:rows"
-                size="small"
-                variant="container-transparent"
-              ></slds-button-icon>
+        <custom-global-header>
+          <div slot="left" class="slds-text-align_center">
+            <slds-button-icon
+              id="button-panel_open"
+              icon="utility:rows"
+              size="small"
+              variant="container-transparent"
+            ></slds-button-icon>
+          </div>
+          <div
+            slot="mid"
+            class="slds-text-align_center slds-text-heading_large"
+          >
+            <span id="page-header-headline"></span>
+          </div>
+          <div slot="right" class="slds-grid slds-grid_align-end slds-wrap">
+            <div
+              class="slds-col slds-text-align_right slds-size_1-of-1 slds-m-bottom--x-small"
+            >
+              <custom-login-module></custom-login-module>
             </div>
-            <div slot="mid" class="slds-text-align_center slds-text-heading_large">
-              <span id="page-header-headline"></span>
+            <div class="slds-col slds-text-align_right">
+              <slds-toggle
+                label="Licht"
+                name="options"
+                @toggle="${this.handleToggleLightswitch}"
+              ></slds-toggle>
             </div>
-            <div slot="right" class="slds-grid slds-grid_align-end slds-wrap">
-              <div class="slds-col slds-text-align_right slds-size_1-of-1 slds-m-bottom--x-small">
-                <custom-login-module></custom-login-module>
-              </div>
-              <div class="slds-col slds-text-align_right">
-                <slds-toggle
-                  label="Licht"
-                  name="options"
-                  @toggle="${this.handleToggleLightswitch}"
-                ></slds-toggle>
-              </div>
-            </div>
-          </custom-global-header>
-        </slds-card>
+          </div>
+        </custom-global-header>
+      </slds-card>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
@@ -106,7 +118,10 @@ class Bookstore extends LitElement {
         </slds-panel>
       </span>
 
-      <div id="bookshelf" class="slds-grid slds-grid_vertical slds-m-top--small">
+      <div
+        id="bookshelf"
+        class="slds-grid slds-grid_vertical slds-m-top--small"
+      >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
           <custom-story></custom-story>
         </div>
@@ -121,7 +136,7 @@ class Bookstore extends LitElement {
     console.log('handleLogout - creating modal');
     let rootElement = this.shadowRoot.querySelector('slds-card');
 
-    if(!rootElement) {
+    if (!rootElement) {
       console.log('handleLogout - no modal found');
       return;
     }
@@ -135,7 +150,7 @@ class Bookstore extends LitElement {
     console.log('handleClickShowLoginModal - creating modal');
     let rootElement = this.shadowRoot.querySelector('slds-card');
 
-    if(!rootElement) {
+    if (!rootElement) {
       console.log('handleClickShowLoginModal - no modal found');
       return;
     }
@@ -178,12 +193,14 @@ class Bookstore extends LitElement {
     // Hydrate the component
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
-    this.fireQueryEvent_AllStories(this.queryEventCallback_AllStories.bind(this));
+    this.fireQueryEvent_AllStories(
+      this.queryEventCallback_AllStories.bind(this)
+    );
 
     // Use setTimeout to ensure elements are rendered before accessing them
     setTimeout(() => {
       // Initialize the story container
-      switch(this._initPara.initmode) {
+      switch (this._initPara.initmode) {
         case 'story':
           this.initWithStoryId(this._initPara.initId);
           break;
@@ -202,15 +219,27 @@ class Bookstore extends LitElement {
       if (this.storyElement) {
         this.storyElement.setAttribute('chapter-buttons_number-max', 2);
       }
-      this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-      this.addEventListener('chapter-updated', this._handleChapterUpdated.bind(this));
-      this.addEventListener('chapter-deleted', this._handleChapterDeleted.bind(this));
+      this.addEventListener(
+        'navigation',
+        this.handleNavigationEvent.bind(this)
+      );
+      this.addEventListener(
+        'chapter-updated',
+        this._handleChapterUpdated.bind(this)
+      );
+      this.addEventListener(
+        'chapter-deleted',
+        this._handleChapterDeleted.bind(this)
+      );
     }, 0);
   }
 
   initWithoutParameter() {
     // navigation-/loaded eventlisteners are attacherd right away
-    this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.storyElement.addEventListener(
+      'navigation',
+      this.handleNavigationEvent.bind(this)
+    );
     this.storyElement.addEventListener('loaded', (event) => {
       this.handleLoadStory(event);
       this._initPara = null;
@@ -226,7 +255,10 @@ class Bookstore extends LitElement {
       this.handleLoadStory(event);
       this._initPara = null;
     });
-    this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    this.storyElement.addEventListener(
+      'navigation',
+      this.handleNavigationEvent.bind(this)
+    );
   }
 
   initWithChapterId(chapterId) {
@@ -234,29 +266,45 @@ class Bookstore extends LitElement {
     // loaded eventlistener is attached right away
     this.chapterElement.setAttribute('id', chapterId);
     if (this._initPara?.paragraphnumber) {
-      this.chapterElement.setAttribute('paragraphnumber', this._initPara.paragraphnumber);
+      this.chapterElement.setAttribute(
+        'paragraphnumber',
+        this._initPara.paragraphnumber
+      );
     }
-    this.chapterElement.parentElement.addEventListener('loaded', (event) => {
-      if(Array.isArray(event.detail.chapterData)) { return; }
-      console.log('Custom chapter loaded event:', event.detail);
-      let storyId = event.detail.chapterData.storyid;
-      this.storyElement.setAttribute('id', storyId);
-      this.storyElement.setAttribute('selectedChapter', event.detail.chapterData.id);
-      this.storyElement.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-      this.storyElement.addEventListener('loaded', (event) => {
-        this.handleLoadStory(event);
-        this._initPara = null;
-      });
-    },
-    {once:true});
+    this.chapterElement.parentElement.addEventListener(
+      'loaded',
+      (event) => {
+        if (Array.isArray(event.detail.chapterData)) {
+          return;
+        }
+        console.log('Custom chapter loaded event:', event.detail);
+        let storyId = event.detail.chapterData.storyid;
+        this.storyElement.setAttribute('id', storyId);
+        this.storyElement.setAttribute(
+          'selectedChapter',
+          event.detail.chapterData.id
+        );
+        this.storyElement.addEventListener(
+          'navigation',
+          this.handleNavigationEvent.bind(this)
+        );
+        this.storyElement.addEventListener('loaded', (event) => {
+          this.handleLoadStory(event);
+          this._initPara = null;
+        });
+      },
+      { once: true }
+    );
   }
 
   handleLoadStory(event) {
-    if(Array.isArray(event.detail.bookData)) { return; }
+    if (Array.isArray(event.detail.bookData)) {
+      return;
+    }
     console.log('Custom story loaded event:', event.detail);
 
     let coverChapterId = event.detail.bookData.coverid;
-    if(coverChapterId && this._initPara?.initmode !== 'chapter') {
+    if (coverChapterId && this._initPara?.initmode !== 'chapter') {
       this.storyElement.setAttribute('selectedChapter', coverChapterId);
       this.chapterElement.setAttribute('id', coverChapterId);
     }
@@ -267,16 +315,21 @@ class Bookstore extends LitElement {
   // =========== Authentication - Start =================
 
   saveAuthParameterToStorage() {
-    let queryParameters = window.location.search.substring(1).split('&').reduce((aggregate, current) => {
-      let temp = current.split('=');
-      aggregate[temp[0]] = temp[1];
-      return aggregate;
-    },{});
+    let queryParameters = window.location.search
+      .substring(1)
+      .split('&')
+      .reduce((aggregate, current) => {
+        let temp = current.split('=');
+        aggregate[temp[0]] = temp[1];
+        return aggregate;
+      }, {});
 
-    if(!queryParameters.code && !queryParameters.state) { return; }
+    if (!queryParameters.code && !queryParameters.state) {
+      return;
+    }
     let authParameters = {
       code: queryParameters.code,
-      state: queryParameters.state
+      state: queryParameters.state,
     };
     sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
   }
@@ -284,10 +337,10 @@ class Bookstore extends LitElement {
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
       fetch('/api/1.0/env/variables')
-      .then(response => response.json())
-      .then(variables => {
-        resolve(variables.auth.google);
-      });
+        .then((response) => response.json())
+        .then((variables) => {
+          resolve(variables.auth.google);
+        });
     });
   }
 
@@ -328,10 +381,10 @@ class Bookstore extends LitElement {
           storageType,
           key,
           action: 'read',
-          callback: resolve
+          callback: resolve,
         },
         bubbles: true,
-        composed: true
+        composed: true,
       });
       this.dispatchEvent(event);
     });
@@ -343,10 +396,10 @@ class Bookstore extends LitElement {
         storageType,
         key,
         value,
-        action: 'write'
+        action: 'write',
       },
       bubbles: true,
-      composed: true
+      composed: true,
     });
     this.dispatchEvent(event);
   }
@@ -356,37 +409,41 @@ class Bookstore extends LitElement {
       detail: {
         storageType,
         key,
-        action: 'clear'
+        action: 'clear',
       },
       bubbles: true,
-      composed: true
+      composed: true,
     });
     this.dispatchEvent(event);
   }
 
   // ============ Storage methods ============
 
-// ============ event handler  ============
+  // ============ event handler  ============
 
   handleToggleLightswitch(event) {
-    document.querySelector('html').classList.toggle('dark-mode', !event.detail.checked);
+    document
+      .querySelector('html')
+      .classList.toggle('dark-mode', !event.detail.checked);
   }
 
   handleNavigationEvent(event) {
     event.stopPropagation();
-    if(!this.isHydrated) { return; }
+    if (!this.isHydrated) {
+      return;
+    }
 
     const { type, value } = event.detail;
     let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
     let isEventSourcePanel = event.srcElement.tagName === 'APP-BOOKSTORE';
 
-    if(isEventSourcePanel && type === 'story') {
+    if (isEventSourcePanel && type === 'story') {
       this.storyElement.setAttribute('id', value);
       this.chapterElement.removeAttribute('id');
       this.storyElement.removeAttribute('selectedChapter');
       return;
     }
-    if(isEventSourceStory && type === 'chapter') {
+    if (isEventSourceStory && type === 'chapter') {
       this.chapterElement.setAttribute('id', value);
       this.storyElement.setAttribute('selectedChapter', value);
       return;
@@ -398,13 +455,14 @@ class Bookstore extends LitElement {
   fireToast(message, variant) {
     this.dispatchEvent(
       new CustomEvent('toast', {
-      detail: {
-        message: message,
-        variant: variant
-      },
-      bubbles: true,
-      composed: true
-    }));
+        detail: {
+          message: message,
+          variant: variant,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   createInitializationParameterObject() {
@@ -415,16 +473,21 @@ class Bookstore extends LitElement {
 
     const initParameter = {};
     initParameter.firstUrlParameter = window.location.pathname.split('/').pop();
-    initParameter.isFirstUrlParameterSet = initParameter.firstUrlParameter.length > 0;
+    initParameter.isFirstUrlParameterSet =
+      initParameter.firstUrlParameter.length > 0;
     initParameter.initId = initParameter.firstUrlParameter;
 
-    let initmode = typeMape.get(initParameter.firstUrlParameter.substring(0, 4));
+    let initmode = typeMape.get(
+      initParameter.firstUrlParameter.substring(0, 4)
+    );
     initParameter.initmode = initmode || 'none';
 
     // Read optional paragraphnumber query parameter
     const urlParams = new URLSearchParams(window.location.search);
     const paragraphnumber = urlParams.get('paragraphnumber');
-    initParameter.paragraphnumber = paragraphnumber ? Number(paragraphnumber) : null;
+    initParameter.paragraphnumber = paragraphnumber
+      ? Number(paragraphnumber)
+      : null;
 
     console.table('initParameter', initParameter);
     return initParameter;
@@ -438,7 +501,8 @@ class Bookstore extends LitElement {
   async initializePanel(allStories) {
     // Use setTimeout to ensure elements are rendered
     setTimeout(() => {
-      const buttonPanelOpen = this.shadowRoot.querySelector('#button-panel_open');
+      const buttonPanelOpen =
+        this.shadowRoot.querySelector('#button-panel_open');
       if (buttonPanelOpen) {
         buttonPanelOpen.addEventListener('click', this.openPanel.bind(this));
       }
@@ -447,23 +511,27 @@ class Bookstore extends LitElement {
       const storyData = allStories;
 
       storyData.forEach((story) => {
-        dummyPills.push(this.createButtonElement(story.name, story.id, () => {
-          this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
-          this.dispatchEvent(new CustomEvent('navigation', {
-            detail: {
-              type: 'story',
-              value: story.id
-            },
-            bubbles: true,
-            //composed: true
-          }));
-          this.closePanel();
-        }));
+        dummyPills.push(
+          this.createButtonElement(story.name, story.id, () => {
+            this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
+            this.dispatchEvent(
+              new CustomEvent('navigation', {
+                detail: {
+                  type: 'story',
+                  value: story.id,
+                },
+                bubbles: true,
+                //composed: true
+              })
+            );
+            this.closePanel();
+          })
+        );
       });
 
       const pillContainer = this.shadowRoot.querySelector('#pill-container');
       if (pillContainer) {
-        dummyPills.forEach(pill => {
+        dummyPills.forEach((pill) => {
           pillContainer.appendChild(pill);
         });
       }
@@ -472,13 +540,17 @@ class Bookstore extends LitElement {
 
   openPanel() {
     const panelElem = this.shadowRoot.querySelector('#sidebar');
-    if(!panelElem) {return;}
+    if (!panelElem) {
+      return;
+    }
     panelElem.openPanel();
   }
 
   closePanel() {
     const panelElem = this.shadowRoot.querySelector('#sidebar');
-    if(!panelElem) {return;}
+    if (!panelElem) {
+      return;
+    }
     panelElem.closePanel();
   }
 
@@ -500,16 +572,22 @@ class Bookstore extends LitElement {
   }
 
   evaluateMetadata(metadata) {
-    let pageHeaderHeadline = !metadata.pageHeaderHeadline ? '#config:pageHeaderHeadline#' : metadata.pageHeaderHeadline;
+    let pageHeaderHeadline = !metadata.pageHeaderHeadline
+      ? '#config:pageHeaderHeadline#'
+      : metadata.pageHeaderHeadline;
     this.spanHeaderHeadline.textContent = pageHeaderHeadline;
-    let pageSidebarTitle = !metadata.pageSidebarTitle ? '#config:pageSidebarTitle#' : metadata.pageSidebarTitle;
+    let pageSidebarTitle = !metadata.pageSidebarTitle
+      ? '#config:pageSidebarTitle#'
+      : metadata.pageSidebarTitle;
     this.spanSidebarTitle.textContent = pageSidebarTitle;
-    let metaTitle = !metadata.metaTitle ? '#config:metaTitle#' : metadata.metaTitle;
+    let metaTitle = !metadata.metaTitle
+      ? '#config:metaTitle#'
+      : metadata.metaTitle;
     document.title = metaTitle;
 
-    let createdMetaTags =[];
+    let createdMetaTags = [];
     if (metadata.meta) {
-      Object.keys(metadata.meta).forEach(key => {
+      Object.keys(metadata.meta).forEach((key) => {
         const metaTag = document.createElement('meta');
         metaTag.name = key;
         metaTag.content = metadata.meta[key];
@@ -535,7 +613,8 @@ class Bookstore extends LitElement {
     notFoundDiv.className = 'slds-text-align_center slds-text-heading_large';
 
     const notFoundSpan = document.createElement('span');
-    notFoundSpan.textContent = 'Entschuldigung. Da war leider nichts zu finden.';
+    notFoundSpan.textContent =
+      'Entschuldigung. Da war leider nichts zu finden.';
 
     notFoundDiv.appendChild(notFoundSpan);
     storyContainer.appendChild(notFoundDiv);
@@ -575,47 +654,51 @@ class Bookstore extends LitElement {
 
   fireQueryEvent_AllStories(callback) {
     let payload = {
-        object: 'story',
-    }
+      object: 'story',
+    };
 
-    this.dispatchEvent(new CustomEvent('query', {
+    this.dispatchEvent(
+      new CustomEvent('query', {
         detail: { payload, callback },
         bubbles: true,
-        composed: true
-    }));
+        composed: true,
+      })
+    );
   }
 
   fireQueryEvent_Metadata(callback) {
     let payload = {
-        object: 'metadata',
-    }
+      object: 'metadata',
+    };
 
-    this.dispatchEvent(new CustomEvent('query', {
+    this.dispatchEvent(
+      new CustomEvent('query', {
         detail: { payload, callback },
         bubbles: true,
-        composed: true
-    }));
+        composed: true,
+      })
+    );
   }
 
   // --------- Query Event Callback methods ---------
 
   queryEventCallback_AllStories(error, data) {
-    if(data) {
+    if (data) {
       this.initializePanel(data);
     }
-    if(error) {
+    if (error) {
       console.error(error);
     }
   }
 
   queryEventCallback_Metadata(error, data) {
-    if(data) {
+    if (data) {
       this.evaluateMetadata(data);
     }
-    if(error) {
+    if (error) {
       console.error(error);
     }
   }
 }
 
-customElements.define('app-bookstore', Bookstore);  // Define the custom element
+customElements.define('app-bookstore', Bookstore); // Define the custom element

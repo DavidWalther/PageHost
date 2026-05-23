@@ -5,8 +5,8 @@ export async function deleteChapter({ id, token }) {
   const res = await fetch(url, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
     },
   });
   if (!res.ok) {

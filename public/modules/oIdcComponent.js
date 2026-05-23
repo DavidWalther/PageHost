@@ -1,5 +1,9 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 class OIDCComponent extends LitElement {
   static properties = {
@@ -27,30 +31,30 @@ class OIDCComponent extends LitElement {
       padding: 5px;
     }
 
-    div[name="botton"] {
+    div[name='botton'] {
       background-color: transparent;
       cursor: pointer;
     }
 
     div.button-colors {
-      background-color:hsl(0, 0.00%, 80.60%);
-      color: hsl(0, 0.00%, 30.0%);
+      background-color: hsl(0, 0%, 80.6%);
+      color: hsl(0, 0%, 30%);
     }
 
     div.button-colors:hover {
-      background-color: hsl(0, 0.00%, 30.0%);
-      color: hsl(0, 0.00%, 80.0%);
+      background-color: hsl(0, 0%, 30%);
+      color: hsl(0, 0%, 80%);
     }
 
     div.button-border {
-      border-color: hsl(0, 0.00%, 30.0%);
+      border-color: hsl(0, 0%, 30%);
       border-style: solid;
       border-width: 2px;
       border-radius: 2px;
     }
 
     div.button-border:hover {
-      border-color: hsl(0, 0.00%, 50.0%);
+      border-color: hsl(0, 0%, 50%);
     }
 
     div.default-button {
@@ -98,10 +102,22 @@ class OIDCComponent extends LitElement {
     return html`
       <div>
         <div class="button-container">
-          <div name="botton-login" class="button-container-item ${this._showLoginButton ? '' : 'hidden'}" role="button" tabindex="0">
+          <div
+            name="botton-login"
+            class="button-container-item ${this._showLoginButton
+              ? ''
+              : 'hidden'}"
+            role="button"
+            tabindex="0"
+          >
             ${this._renderLoginButton()}
           </div>
-          <div name="button-logout" class="button-container-item ${this._showLogoutButton ? '' : 'hidden'}">
+          <div
+            name="button-logout"
+            class="button-container-item ${this._showLogoutButton
+              ? ''
+              : 'hidden'}"
+          >
             ${this._renderLogoutButton()}
           </div>
         </div>
@@ -111,8 +127,16 @@ class OIDCComponent extends LitElement {
 
   _renderLoginButton() {
     return html`
-      <slot name="auth-button-login" @click=${this.handleClickAuthenticate} @keydown=${this.handleKeyDown}>
-        <button @click=${this.handleClickAuthenticate} @keydown=${this.handleKeyDown} tabindex="1">
+      <slot
+        name="auth-button-login"
+        @click=${this.handleClickAuthenticate}
+        @keydown=${this.handleKeyDown}
+      >
+        <button
+          @click=${this.handleClickAuthenticate}
+          @keydown=${this.handleKeyDown}
+          tabindex="1"
+        >
           ${this.buttonLabel}
         </button>
       </slot>
@@ -122,9 +146,7 @@ class OIDCComponent extends LitElement {
   _renderLogoutButton() {
     return html`
       <slot name="auth-button-logout" @click=${this.handleClickLogout}>
-        <button @click=${this.handleClickLogout} tabindex="1">
-          Logout
-        </button>
+        <button @click=${this.handleClickLogout} tabindex="1">Logout</button>
       </slot>
     `;
   }
@@ -144,7 +166,7 @@ class OIDCComponent extends LitElement {
     const serverEndpoint = this.serverEndpointAuthCodeExchange;
     const authParams = {
       auth_code: new URLSearchParams(window.location.search).get('code'),
-      state: new URLSearchParams(window.location.search).get('state')
+      state: new URLSearchParams(window.location.search).get('state'),
     };
 
     if (authParams.auth_code !== null && authParams.state !== null) {
@@ -197,8 +219,12 @@ class OIDCComponent extends LitElement {
   startAuthCodeExchange() {
     const serverEndpoint = this.serverEndpointAuthCodeExchange;
     const authParams = {
-      auth_code: this.authCode || new URLSearchParams(window.location.search).get('code'),
-      state: this.authState || new URLSearchParams(window.location.search).get('state')
+      auth_code:
+        this.authCode ||
+        new URLSearchParams(window.location.search).get('code'),
+      state:
+        this.authState ||
+        new URLSearchParams(window.location.search).get('state'),
     };
 
     if (authParams.auth_code !== null && authParams.state !== null) {
@@ -207,7 +233,6 @@ class OIDCComponent extends LitElement {
   }
 
   // ----------- event handlers ----------------
-
 
   handleClickAuthenticate(event) {
     event.preventDefault();
@@ -232,13 +257,15 @@ class OIDCComponent extends LitElement {
   // ----------- API ----------------
 
   logout() {
-    this.dispatchEvent(new CustomEvent('logout', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        callback: this.logoutCallback.bind(this)
-      }
-    }));
+    this.dispatchEvent(
+      new CustomEvent('logout', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          callback: this.logoutCallback.bind(this),
+        },
+      })
+    );
   }
 
   // ----------- actions ----------------
@@ -255,15 +282,16 @@ class OIDCComponent extends LitElement {
     this.dispatchEvent(
       new CustomEvent('click', {
         detail: {
-          callback: this.startAuthenticationFlow.bind(this)
-        }
+          callback: this.startAuthenticationFlow.bind(this),
+        },
       })
     );
   }
 
   // Utility function to generate a random string
   generateRandomString(length = 128) {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const charset =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     let result = '';
     for (let i = 0; i < length; i++) {
       result += charset.charAt(Math.floor(Math.random() * charset.length));
@@ -277,17 +305,23 @@ class OIDCComponent extends LitElement {
     const data = encoder.encode(verifier);
     const digest = await crypto.subtle.digest('SHA-256', data);
     return btoa(String.fromCharCode(...new Uint8Array(digest)))
-    .replace(/=/g, '')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_');
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
   }
 
-  async startAuthenticationFlow({ client_id, redirect_uri, scope, response_type, authorization_endpoint }) {
+  async startAuthenticationFlow({
+    client_id,
+    redirect_uri,
+    scope,
+    response_type,
+    authorization_endpoint,
+  }) {
     let state;
-    if(this.serverEndpointAuthStateRequest ) {
+    if (this.serverEndpointAuthStateRequest) {
       // if an endpoint to generate the state is provided, use it
       const stateResponse = await fetch(this.serverEndpointAuthStateRequest);
-      state  = await stateResponse.json();
+      state = await stateResponse.json();
     } else {
       // if no endpoint is provided, generate a random state locally
       state = this.generateRandomString();
@@ -309,11 +343,13 @@ class OIDCComponent extends LitElement {
       response_type,
       state,
       code_challenge: codeChallenge,
-      code_challenge_method: 'S256'
+      code_challenge_method: 'S256',
     };
 
     if (!authorization_endpoint && this.providerEndpointOpenIdConfiguration) {
-      let openIdConfiguration = await fetch(this.providerEndpointOpenIdConfiguration);
+      let openIdConfiguration = await fetch(
+        this.providerEndpointOpenIdConfiguration
+      );
       openIdConfiguration = await openIdConfiguration.json();
       authorization_endpoint = openIdConfiguration.authorization_endpoint;
     }
@@ -323,7 +359,7 @@ class OIDCComponent extends LitElement {
   }
 
   async exchangeAuthCode(exchangePayload, serverEndpoint) {
-    if(sessionStorage.getItem('oidc_state') !== exchangePayload.state) {
+    if (sessionStorage.getItem('oidc_state') !== exchangePayload.state) {
       console.error('State mismatch. Possible CSRF attack.');
       return;
     }
@@ -331,16 +367,17 @@ class OIDCComponent extends LitElement {
     sessionStorage.removeItem('oidc_state');
 
     // Check if the code_verifier is present in session storage
-    exchangePayload.code_verifier = sessionStorage.getItem('pkce_code_verifier');
+    exchangePayload.code_verifier =
+      sessionStorage.getItem('pkce_code_verifier');
     sessionStorage.removeItem('pkce_code_verifier');
 
     try {
       const response = await fetch(serverEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(exchangePayload)
+        body: JSON.stringify(exchangePayload),
       });
 
       switch (response.status) {
@@ -350,26 +387,36 @@ class OIDCComponent extends LitElement {
           break;
         case 400:
           // Handle bad request
-          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Bad Request' } }));
+          this.dispatchEvent(
+            new CustomEvent('rejected', { detail: { error: 'Bad Request' } })
+          );
           break;
         case 401:
           // Handle unauthorized
-          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Unauthorized' } }));
+          this.dispatchEvent(
+            new CustomEvent('rejected', { detail: { error: 'Unauthorized' } })
+          );
           break;
         case 403:
           // Handle forbidden
-          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Forbidden' } }));
+          this.dispatchEvent(
+            new CustomEvent('rejected', { detail: { error: 'Forbidden' } })
+          );
           break;
         case 500:
           // Handle server error
-          this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Server Error' } }));
+          this.dispatchEvent(
+            new CustomEvent('rejected', { detail: { error: 'Server Error' } })
+          );
           break;
         default:
           console.error('Unexpected response status:', response.status);
       }
     } catch (error) {
       console.error('Error during authentication:', error);
-      this.dispatchEvent(new CustomEvent('rejected', { detail: { error: 'Network Error' } }));
+      this.dispatchEvent(
+        new CustomEvent('rejected', { detail: { error: 'Network Error' } })
+      );
     }
   }
 
@@ -380,11 +427,13 @@ class OIDCComponent extends LitElement {
 
     // Dispatch event with the response
     const exchange_response = await response.json();
-    this.dispatchEvent(new CustomEvent('authenticated', {
-      bubbles: true,
-      composed: true,
-      detail: exchange_response
-    }));
+    this.dispatchEvent(
+      new CustomEvent('authenticated', {
+        bubbles: true,
+        composed: true,
+        detail: exchange_response,
+      })
+    );
 
     // Save the response in session storage
     if (this.noSave) {

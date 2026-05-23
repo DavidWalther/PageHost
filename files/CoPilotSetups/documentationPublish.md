@@ -61,8 +61,12 @@ Custom Component → Event System → HTTP Request → Server Auth → Endpoint 
 
 ```javascript
 app.patch('/api/1.0/actions/publish', async (req, res) => {
-  const LOCATION = 'Server.patch(\'/api/1.0/actions/publish\')';
-  Logging.debugMessage({ severity: 'INFO', message: `Request received - ${req.url}`, location: LOCATION });
+  const LOCATION = "Server.patch('/api/1.0/actions/publish')";
+  Logging.debugMessage({
+    severity: 'INFO',
+    message: `Request received - ${req.url}`,
+    location: LOCATION,
+  });
 
   // Extract bearer token from headers
   let headers = req.headers;
@@ -70,20 +74,31 @@ app.patch('/api/1.0/actions/publish', async (req, res) => {
   let accessTokenService = new AccessTokenService().setEnvironment(environment);
 
   // Validate token and required scopes
-  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
-    Logging.debugMessage({ severity: 'INFO', message: `Bearer token is invalid or missing required scopes`, location: LOCATION });
+  if (
+    !accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])
+  ) {
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Bearer token is invalid or missing required scopes`,
+      location: LOCATION,
+    });
     res.status(401).send('Unauthorized');
     return;
   }
 
   // Execute endpoint logic
   const endpoint = new PublishEndpoint();
-  endpoint.setEnvironment(environment)
+  endpoint
+    .setEnvironment(environment)
     .setRequestObject(req)
     .setResponseObject(res)
     .execute()
     .then(() => {
-      Logging.debugMessage({ severity: 'INFO', message: `Publish Endpoint executed`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Publish Endpoint executed`,
+        location: LOCATION,
+      });
     });
 });
 ```
@@ -114,6 +129,7 @@ class PublishEndpoint extends EndpointLogic {
 ### Request/Response Format
 
 #### Request Body
+
 ```javascript
 {
   "object": "paragraph",  // Required: "paragraph", "chapter", or "story"
@@ -122,6 +138,7 @@ class PublishEndpoint extends EndpointLogic {
 ```
 
 #### Success Response (200)
+
 ```javascript
 {
   "success": true
@@ -131,6 +148,7 @@ class PublishEndpoint extends EndpointLogic {
 #### Error Responses
 
 **400 - Invalid Input**:
+
 ```javascript
 {
   "success": false,
@@ -139,6 +157,7 @@ class PublishEndpoint extends EndpointLogic {
 ```
 
 **404 - Record Not Found**:
+
 ```javascript
 {
   "success": false,
@@ -147,6 +166,7 @@ class PublishEndpoint extends EndpointLogic {
 ```
 
 **400 - Already Published**:
+
 ```javascript
 {
   "success": false,
@@ -155,6 +175,7 @@ class PublishEndpoint extends EndpointLogic {
 ```
 
 **500 - Server Error**:
+
 ```javascript
 {
   "success": false,
@@ -340,7 +361,7 @@ renderSettingsTab(paragraphData) {
 checkPublishPermission() {
   const authData = sessionStorage.getItem('code_exchange_response');
   if (!authData) return false;
-  
+
   try {
     const parsedData = JSON.parse(authData);
     const scopes = parsedData?.authenticationResult.access?.scopes || [];
@@ -397,7 +418,7 @@ firePublishEvent_Paragraph(paragraphid) {
     id: paragraphid,
     object: 'paragraph'
   };
-  
+
   let eventDetail = {
     object: 'paragraph',
     payload,
@@ -428,7 +449,7 @@ publishEventCallback_Paragraph(error, data) {
     );
     return;
   }
-  
+
   if (data) {
     this.dispatchEvent(
       new CustomEvent('toast', {
@@ -439,7 +460,7 @@ publishEventCallback_Paragraph(error, data) {
     );
     this.refreshParagraphData(); // Refresh to get updated publishDate
   }
-  
+
   this.requestUpdate();
 }
 ```
@@ -473,7 +494,7 @@ async function initializeApp() {
 function attachPublishEventListener(element) {
   element.addEventListener('publish', (publishEvent) => {
     let callback = publishEvent.detail.callback;
-    
+
     // Extract authentication token from session storage
     let authData = accessSessionStorage('code_exchange_response', 'read');
     authData = JSON.parse(authData);
@@ -484,23 +505,23 @@ function attachPublishEventListener(element) {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authBearer}`
+        Authorization: `Bearer ${authBearer}`,
       },
-      body: JSON.stringify(publishEvent.detail.payload)
+      body: JSON.stringify(publishEvent.detail.payload),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      callback(null, data);
-    })
-    .catch(error => {
-      console.error('Error during publish callout:', error);
-      callback(error, null);
-    });
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        callback(null, data);
+      })
+      .catch((error) => {
+        console.error('Error during publish callout:', error);
+        callback(error, null);
+      });
   });
 }
 ```
@@ -544,6 +565,7 @@ function attachPublishEventListener(element) {
 ### Event Payload Structure
 
 #### Component Event Detail
+
 ```javascript
 {
   object: 'paragraph',
@@ -556,6 +578,7 @@ function attachPublishEventListener(element) {
 ```
 
 #### HTTP Request Body
+
 ```javascript
 {
   id: 'paragraph-id',
@@ -591,6 +614,7 @@ const result = await dataFacade.updateData({...});
 ### Cache Invalidation
 
 After successful publishing:
+
 - Cache is automatically invalidated for the specific record
 - Frontend refreshes data via `refreshParagraphData()`
 - Subsequent reads will get fresh data from database
@@ -602,12 +626,14 @@ After successful publishing:
 ### Validation Errors (400)
 
 **Triggers**:
+
 - Missing request body
 - Invalid or missing `object` parameter
 - Invalid or missing `id` parameter
 - Unsupported object type
 
 **Response**:
+
 ```javascript
 {
   "success": false,
@@ -618,10 +644,12 @@ After successful publishing:
 ### Not Found Errors (404)
 
 **Triggers**:
+
 - Record with specified ID doesn't exist
 - Record doesn't belong to current application instance
 
 **Response**:
+
 ```javascript
 {
   "success": false,
@@ -632,9 +660,11 @@ After successful publishing:
 ### Business Logic Errors (400)
 
 **Triggers**:
+
 - Attempting to publish already published record
 
 **Response**:
+
 ```javascript
 {
   "success": false,
@@ -645,11 +675,13 @@ After successful publishing:
 ### Server Errors (500)
 
 **Triggers**:
+
 - Database connection failures
 - DataFacade operation failures
 - Unexpected system errors
 
 **Response**:
+
 ```javascript
 {
   "success": false,
@@ -696,10 +728,12 @@ publishEventCallback_Paragraph(error, data) {
 ### Authorization Requirements
 
 **Required Scopes**:
+
 - `publish`: Permission to publish content
 - `edit`: Permission to modify content (prerequisite for publishing)
 
 **Token Format**:
+
 ```
 Authorization: Bearer <jwt-token>
 ```
@@ -752,11 +786,11 @@ describe('PublishEndpoint', () => {
     it('should return 400 for missing request body', async () => {
       req.body = undefined;
       await endpoint.execute();
-      
+
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ 
-        success: false, 
-        error: 'Invalid request data' 
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'Invalid request data',
       });
     });
   });
@@ -766,12 +800,12 @@ describe('PublishEndpoint', () => {
       const mockDataFacadeInstance = {
         setSkipCache: jest.fn().mockReturnThis(),
         getData: jest.fn().mockResolvedValue({ id: '123', publishDate: null }),
-        updateData: jest.fn().mockResolvedValue({ id: '123' })
+        updateData: jest.fn().mockResolvedValue({ id: '123' }),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
 
       await endpoint.execute();
-      
+
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });

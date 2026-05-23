@@ -22,6 +22,7 @@
 ## EXPLORE Phase
 
 das heißt:
+
 1. Ein tiefes Verständnis für die Anforderung entwickeln
 2. Unklarheiten beseitigen
 3. Betroffene Komponenten identifizieren
@@ -38,6 +39,7 @@ das heißt:
 ## PLAN Phase
 
 das heißt:
+
 1. Der Implementierungsplan muss in einem ./epcc_plan.md festgehalten werden
 2. Bei Refactorings: Falls Lücken in Tests identifiziert wurden, müssen diese zuerst geschlossen werden.
 3. Der Plan muss die folgende Arbeitsstruktur vorgeben:
@@ -64,21 +66,21 @@ das heißt:
 ### Plan-Format
 
 4. Der Plan muss als hierarchische Checkliste erstellt werden nach dem Muster:
-
-    - [ ] Schritt 0 - Baseline
-    - [ ] Schritt 1 - Integrationstests
-       - [ ] Teilschritt 1
-       - [ ] Teilschritt 2
-    - [ ] Schritt 2 - <Beschreibung>
-       - [ ] Teilschritt 1
-       - [ ] Teilschritt 2
-    ...
+   - [ ] Schritt 0 - Baseline
+   - [ ] Schritt 1 - Integrationstests
+     - [ ] Teilschritt 1
+     - [ ] Teilschritt 2
+   - [ ] Schritt 2 - <Beschreibung>
+     - [ ] Teilschritt 1
+     - [ ] Teilschritt 2
+           ...
 
 5. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_plan.md Datei schreibend zugegriffen werden.
 
 ## CODE Phase
 
 das heißt:
+
 1. Befolge exakt die Implementierungsschritte aus ./epcc_plan.md
 2. Aktualisiere die Plan-Datei bei jedem Fortschritt. Auch nach Teilschritten.
 
@@ -102,6 +104,7 @@ das heißt:
 ## COMMIT Phase
 
 das heißt:
+
 1. Es darf pro Commit nur eine Datei verändert werden
 2. Ein Commit pro Teilschritt
 3. Das Subject eines Commits muss mit einer kurzen Version des Namens der Komponente beginnen

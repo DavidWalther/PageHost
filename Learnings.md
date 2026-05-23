@@ -14,7 +14,6 @@ All components must import the SLDS Styling. Yet fetching the CSS-Sheet over and
 
 **Issue:** if css is not named directly in index it wont be delivered by express server
 
-
 ### Post mortem
 
 Yet it turned out even if fetch once works the stylesheet must be included in the html once too.
@@ -49,19 +48,19 @@ By focusing on the caching aspect, this logic provides an efficient way to retri
 
 Linking a domin to heroku app and activating [Heroku Automated Certificate Management (ACM)](https://devcenter.heroku.com/articles/automated-certificate-management)
 
-### Solution 
+### Solution
 
 1. Buy domain <your-domain.de> at registrar
 1. Add Domain to Heroku app
 
    **Note:** ACM requires subdomain like 'www.'
-   
+
 1. Copy dns target
 1. Enable ACM
 1. Add CNAME entry to DNS records
    - Name: subdomain (eg. 'www')
    - Value: dns target
-  
+
 1. add Forwarding
    - Protocoll: 'https://'
    - value: 'www.<your-domain.de>'

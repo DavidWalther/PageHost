@@ -1,5 +1,9 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { deleteParagraph } from './delete-paragraph.api.js';
 
 class CustomParagraph extends LitElement {
@@ -24,7 +28,7 @@ class CustomParagraph extends LitElement {
     }
 
     .editable.hasDraft {
-      border-color:rgb(255, 78, 78);
+      border-color: rgb(255, 78, 78);
       border-width: 1px;
       border-style: solid;
       border-radius: 5px;
@@ -35,7 +39,7 @@ class CustomParagraph extends LitElement {
       border-radius: 5px;
       bolder-width: 1px;
       border-style: solid;
-      border-color:rgb(69, 111, 209);
+      border-color: rgb(69, 111, 209);
       padding: 3px;
     }
 
@@ -100,7 +104,10 @@ class CustomParagraph extends LitElement {
 
     // Add event listeners for publishing events
     this.addEventListener('published', this.handlePublishedEvent.bind(this));
-    this.addEventListener('unpublished', this.handleUnpublishedEvent.bind(this));
+    this.addEventListener(
+      'unpublished',
+      this.handleUnpublishedEvent.bind(this)
+    );
   }
 
   updated(changedProperties) {
@@ -109,10 +116,14 @@ class CustomParagraph extends LitElement {
     // If no-load attribute was removed, start loading
     if (changedProperties.has('noLoad')) {
       const previousValue = changedProperties.get('noLoad');
-      console.log(`noLoad changed from ${previousValue} to ${this.noLoad} for paragraph ${this.id}`);
+      console.log(
+        `noLoad changed from ${previousValue} to ${this.noLoad} for paragraph ${this.id}`
+      );
 
       if (previousValue === true && this.noLoad === false) {
-        console.log(`Triggering load for paragraph ${this.id} due to no-load removal`);
+        console.log(
+          `Triggering load for paragraph ${this.id} due to no-load removal`
+        );
         this.loadParagraphData();
       }
     }
@@ -122,7 +133,10 @@ class CustomParagraph extends LitElement {
     if (!this.id || this._paragraphData) return; // Don't load if already loaded
 
     console.log(`Loading paragraph data for ${this.id}`);
-    this.fireQueryEvent_Paragraph(this.id, this.queryEventCallback_Paragraph.bind(this));
+    this.fireQueryEvent_Paragraph(
+      this.id,
+      this.queryEventCallback_Paragraph.bind(this)
+    );
   }
 
   render() {
@@ -133,7 +147,9 @@ class CustomParagraph extends LitElement {
         content = this.renderEditMode();
       } else {
         let localdraft = localStorage.getItem(this.id);
-        let paragraphData = localdraft ? JSON.parse(localdraft) : this._paragraphData;
+        let paragraphData = localdraft
+          ? JSON.parse(localdraft)
+          : this._paragraphData;
         const { name, content: textContent, htmlcontent } = paragraphData;
         const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
         if (displayOption === 'text-readonly') {
@@ -145,10 +161,15 @@ class CustomParagraph extends LitElement {
     } else if (this.noLoad) {
       // Show placeholder for lazy-loaded content with realistic size
       content = html`
-        <div class="slds-box " style="min-height: 80px; display: flex; align-items: center; justify-content: center;">
+        <div
+          class="slds-box "
+          style="min-height: 80px; display: flex; align-items: center; justify-content: center;"
+        >
           <div style="text-align: center;">
             <slds-spinner size="x-small"></slds-spinner>
-            <p class="slds-text-color_weak slds-m-top_x-small">Loading paragraph...</p>
+            <p class="slds-text-color_weak slds-m-top_x-small">
+              Loading paragraph...
+            </p>
           </div>
         </div>
       `;
@@ -169,16 +190,25 @@ class CustomParagraph extends LitElement {
     classesStringList.push(this.hasDraft ? 'hasDraft' : '');
     const classesString = classesStringList.join(' ');
     return html`
-      <div id="content" class=${classesString}
-        @mouseenter=${() => this._showDelete = true}
-        @mouseleave=${() => this._showDelete = false}>
+      <div
+        id="content"
+        class=${classesString}
+        @mouseenter=${() => (this._showDelete = true)}
+        @mouseleave=${() => (this._showDelete = false)}
+      >
         <p>
-          ${name ? html`<b>${name}</b><br>` : ''}
-          ${content.split('\n').map((line) => html`${line}<br>`)}
+          ${name ? html`<b>${name}</b><br />` : ''}
+          ${content.split('\n').map((line) => html`${line}<br />`)}
         </p>
         <div style="display: flex; gap: 0.5em;">
-          ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
-          ${canDelete ? html`<button @click=${this.handleDeleteClick} style="color:red;">Löschen</button>` : ''}
+          ${canEdit
+            ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>`
+            : ''}
+          ${canDelete
+            ? html`<button @click=${this.handleDeleteClick} style="color:red;">
+                Löschen
+              </button>`
+            : ''}
         </div>
       </div>
     `;
@@ -192,13 +222,22 @@ class CustomParagraph extends LitElement {
     classesStringList.push(this.hasDraft ? 'hasDraft' : '');
     const classesString = classesStringList.join(' ');
     return html`
-      <div id="content" class=${classesString}
-        @mouseenter=${() => this._showDelete = true}
-        @mouseleave=${() => this._showDelete = false}>
+      <div
+        id="content"
+        class=${classesString}
+        @mouseenter=${() => (this._showDelete = true)}
+        @mouseleave=${() => (this._showDelete = false)}
+      >
         <div .innerHTML=${htmlcontent}></div>
         <div style="display: flex; gap: 0.5em;">
-          ${canEdit ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>` : ''}
-          ${canDelete ? html`<button @click=${this.handleDeleteClick} style="color:red;">Löschen</button>` : ''}
+          ${canEdit
+            ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>`
+            : ''}
+          ${canDelete
+            ? html`<button @click=${this.handleDeleteClick} style="color:red;">
+                Löschen
+              </button>`
+            : ''}
         </div>
       </div>
     `;
@@ -241,34 +280,122 @@ class CustomParagraph extends LitElement {
     }
     return html`
       <div class="slds-grid slds-wrap editing">
-        <div class="slds-col slds-size_1-of-1"><label for="edit-name">Name</label></div>
-        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
-          <input type="text" id="edit-name" .value=${name || ''} @input=${this.handleEditInputChange} />
+        <div class="slds-col slds-size_1-of-1">
+          <label for="edit-name">Name</label>
         </div>
-        <div class="slds-col slds-size_1-of-1"><label for="edit-sortnumber">Sort Number</label></div>
         <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
-          <input type="text" id="edit-sortnumber" .value=${sortnumber || ''} @input=${this.handleEditInputChange} />
+          <input
+            type="text"
+            id="edit-name"
+            .value=${name || ''}
+            @input=${this.handleEditInputChange}
+          />
+        </div>
+        <div class="slds-col slds-size_1-of-1">
+          <label for="edit-sortnumber">Sort Number</label>
+        </div>
+        <div class="slds-col slds-size_1-of-1 slds-m-bottom_medium">
+          <input
+            type="text"
+            id="edit-sortnumber"
+            .value=${sortnumber || ''}
+            @input=${this.handleEditInputChange}
+          />
         </div>
         <div class="slds-col slds-size_1-of-1">
           <div class="slds-tabs_default">
             <ul class="slds-tabs_default__nav" role="tablist">
-              <li class="slds-tabs_default__item ${this.activeTab === 'text' ? 'slds-active slds-has-focus' : ''}" title="Text Input" role="presentation">
-                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'text'} aria-controls="text-tab" id="text-tab-link" @click=${() => this.switchTab('text')}>Text</a>
+              <li
+                class="slds-tabs_default__item ${this.activeTab === 'text'
+                  ? 'slds-active slds-has-focus'
+                  : ''}"
+                title="Text Input"
+                role="presentation"
+              >
+                <a
+                  class="slds-tabs_default__link"
+                  role="tab"
+                  tabindex="0"
+                  aria-selected=${this.activeTab === 'text'}
+                  aria-controls="text-tab"
+                  id="text-tab-link"
+                  @click=${() => this.switchTab('text')}
+                  >Text</a
+                >
               </li>
-              <li class="slds-tabs_default__item ${this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''}" title="HTML Input" role="presentation">
-                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'html'} aria-controls="html-tab" id="html-tab-link" @click=${() => this.switchTab('html')}>HTML</a>
+              <li
+                class="slds-tabs_default__item ${this.activeTab === 'html'
+                  ? 'slds-active slds-has-focus'
+                  : ''}"
+                title="HTML Input"
+                role="presentation"
+              >
+                <a
+                  class="slds-tabs_default__link"
+                  role="tab"
+                  tabindex="0"
+                  aria-selected=${this.activeTab === 'html'}
+                  aria-controls="html-tab"
+                  id="html-tab-link"
+                  @click=${() => this.switchTab('html')}
+                  >HTML</a
+                >
               </li>
-              <li class="slds-tabs_default__item ${this.activeTab === 'settings' ? 'slds-active slds-has-focus' : ''}" title="Settings" role="presentation">
-                <a class="slds-tabs_default__link" role="tab" tabindex="0" aria-selected=${this.activeTab === 'settings'} aria-controls="settings-tab" id="settings-tab-link" @click=${() => this.switchTab('settings')}>Settings</a>
+              <li
+                class="slds-tabs_default__item ${this.activeTab === 'settings'
+                  ? 'slds-active slds-has-focus'
+                  : ''}"
+                title="Settings"
+                role="presentation"
+              >
+                <a
+                  class="slds-tabs_default__link"
+                  role="tab"
+                  tabindex="0"
+                  aria-selected=${this.activeTab === 'settings'}
+                  aria-controls="settings-tab"
+                  id="settings-tab-link"
+                  @click=${() => this.switchTab('settings')}
+                  >Settings</a
+                >
               </li>
             </ul>
-            <div id="text-tab" class="slds-tabs_default__content ${this.activeTab === 'text' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="text-tab-link">
-              <textarea id="edit-content" .value=${content || ''} @input=${this.handleEditInputChange}></textarea>
+            <div
+              id="text-tab"
+              class="slds-tabs_default__content ${this.activeTab === 'text'
+                ? 'slds-show'
+                : 'slds-hide'}"
+              role="tabpanel"
+              aria-labelledby="text-tab-link"
+            >
+              <textarea
+                id="edit-content"
+                .value=${content || ''}
+                @input=${this.handleEditInputChange}
+              ></textarea>
             </div>
-            <div id="html-tab" class="slds-tabs_default__content ${this.activeTab === 'html' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="html-tab-link">
-              <textarea id="edit-htmlcontent" .value=${htmlcontent || ''} @input=${this.handleEditInputChange}></textarea>
+            <div
+              id="html-tab"
+              class="slds-tabs_default__content ${this.activeTab === 'html'
+                ? 'slds-show'
+                : 'slds-hide'}"
+              role="tabpanel"
+              aria-labelledby="html-tab-link"
+            >
+              <textarea
+                id="edit-htmlcontent"
+                .value=${htmlcontent || ''}
+                @input=${this.handleEditInputChange}
+              ></textarea>
             </div>
-            <div id="settings-tab" class="slds-tabs_default__content ${this.activeTab === 'settings' ? 'slds-show' : 'slds-hide'}" role="tabpanel" aria-labelledby="settings-tab-link">
+            <div
+              id="settings-tab"
+              class="slds-tabs_default__content ${this.activeTab === 'settings'
+                ? 'slds-show'
+                : 'slds-hide'}"
+              role="tabpanel"
+              aria-labelledby="settings-tab-link"
+            >
               ${this.renderSettingsTab(paragraphData)}
             </div>
           </div>
@@ -444,9 +571,15 @@ class CustomParagraph extends LitElement {
 
     try {
       const parsedData = JSON.parse(authData);
-      return parsedData?.authenticationResult.access?.scopes?.includes('edit') || false;
+      return (
+        parsedData?.authenticationResult.access?.scopes?.includes('edit') ||
+        false
+      );
     } catch (e) {
-      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      console.error(
+        'Failed to parse authenticationResult from sessionStorage:',
+        e
+      );
       return false;
     }
   }
@@ -456,7 +589,10 @@ class CustomParagraph extends LitElement {
     if (!authData) return false;
     try {
       const parsedData = JSON.parse(authData);
-      return parsedData?.authenticationResult.access?.scopes?.includes('delete') || false;
+      return (
+        parsedData?.authenticationResult.access?.scopes?.includes('delete') ||
+        false
+      );
     } catch (e) {
       return false;
     }
@@ -473,15 +609,33 @@ class CustomParagraph extends LitElement {
       } catch {}
     }
     if (!token) {
-      this.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Nicht eingeloggt', variant: 'error' }, bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Nicht eingeloggt', variant: 'error' },
+          bubbles: true,
+          composed: true,
+        })
+      );
       return;
     }
     try {
       await deleteParagraph({ id: this.id, token });
-      this.dispatchEvent(new CustomEvent('toast', { detail: { message: 'Absatz gelöscht', variant: 'success' }, bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: 'Absatz gelöscht', variant: 'success' },
+          bubbles: true,
+          composed: true,
+        })
+      );
       this.remove();
     } catch (e) {
-      this.dispatchEvent(new CustomEvent('toast', { detail: { message: e.message, variant: 'error' }, bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: { message: e.message, variant: 'error' },
+          bubbles: true,
+          composed: true,
+        })
+      );
     }
   }
 
@@ -513,7 +667,7 @@ class CustomParagraph extends LitElement {
     this.requestUpdate();
   }
 
-// ========== Query Event ==========
+  // ========== Query Event ==========
 
   fireQueryEvent_Paragraph(paragraphid, callback) {
     if (!paragraphid) return;
@@ -545,7 +699,7 @@ class CustomParagraph extends LitElement {
     this.requestUpdate();
   }
 
-// ========== Save Event ==========
+  // ========== Save Event ==========
 
   fireSaveEvent_Paragraph(paragraphData) {
     if (!paragraphData && !this._paragraphData) return;

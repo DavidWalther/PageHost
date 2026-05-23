@@ -1,12 +1,16 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 class SLDSModal extends LitElement {
   static properties = {
     title: { type: String },
     headless: { type: Boolean, reflect: true },
     footless: { type: Boolean, reflect: true },
-    open: { type: Boolean, reflect: true }
+    open: { type: Boolean, reflect: true },
   };
 
   constructor() {
@@ -20,7 +24,7 @@ class SLDSModal extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    
+
     // Handle ESC key to close modal
     this._handleKeyDown = this._handleKeyDown.bind(this);
     document.addEventListener('keydown', this._handleKeyDown);
@@ -38,38 +42,61 @@ class SLDSModal extends LitElement {
     }
 
     return html`
-      <section role="dialog" aria-labelledby="modal-heading" aria-modal="true" tabindex="-1" class="slds-modal slds-fade-in-open">
+      <section
+        role="dialog"
+        aria-labelledby="modal-heading"
+        aria-modal="true"
+        tabindex="-1"
+        class="slds-modal slds-fade-in-open"
+      >
         <!-- Modal Container -->
         <div class="slds-modal__container">
-          <button class="slds-button slds-button_icon slds-modal__close" @click="${this.hide}">
+          <button
+            class="slds-button slds-button_icon slds-modal__close"
+            @click="${this.hide}"
+          >
             <svg class="slds-button__icon slds-button__icon_large">
-              <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+              <use
+                xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+              ></use>
             </svg>
             <span class="slds-assistive-text">Cancel & Close</span>
           </button>
 
           <!-- Modal Header -->
-          ${!this.headless ? html`
-            <div class="slds-modal__header">
-              <h1 id="modal-heading" class="slds-modal__title slds-hyphenate">
-                <slot name="headline">${this.title}</slot>
-              </h1>
-            </div>
-          ` : ''}
+          ${!this.headless
+            ? html`
+                <div class="slds-modal__header">
+                  <h1
+                    id="modal-heading"
+                    class="slds-modal__title slds-hyphenate"
+                  >
+                    <slot name="headline">${this.title}</slot>
+                  </h1>
+                </div>
+              `
+            : ''}
 
           <!-- Modal Body -->
-          <div class="slds-modal__content slds-p-around_medium"><slot></slot></div>
+          <div class="slds-modal__content slds-p-around_medium">
+            <slot></slot>
+          </div>
 
           <!-- Modal Footer -->
-          ${!this.footless ? html`
-            <div class="slds-modal__footer">
-              <slot name="footer"></slot>
-            </div>
-          ` : ''}
+          ${!this.footless
+            ? html`
+                <div class="slds-modal__footer">
+                  <slot name="footer"></slot>
+                </div>
+              `
+            : ''}
         </div>
       </section>
       <!-- Modal Backdrop -->
-      <div class="slds-backdrop slds-backdrop_open" @click="${this._handleBackdropClick}"></div>
+      <div
+        class="slds-backdrop slds-backdrop_open"
+        @click="${this._handleBackdropClick}"
+      ></div>
     `;
   }
 
@@ -95,18 +122,22 @@ class SLDSModal extends LitElement {
 
   show() {
     this.open = true;
-    this.dispatchEvent(new CustomEvent('open', {
-      detail: { modal: this },
-      bubbles: true
-    }));
+    this.dispatchEvent(
+      new CustomEvent('open', {
+        detail: { modal: this },
+        bubbles: true,
+      })
+    );
   }
 
   hide() {
     this.open = false;
-    this.dispatchEvent(new CustomEvent('close', {
-      detail: { modal: this },
-      bubbles: true
-    }));
+    this.dispatchEvent(
+      new CustomEvent('close', {
+        detail: { modal: this },
+        bubbles: true,
+      })
+    );
   }
 
   toggle() {
@@ -126,7 +157,7 @@ class SLDSModal extends LitElement {
 
   _handleKeyDown(event) {
     if (!this.open) return;
-    
+
     if (event.key === 'Escape') {
       this.hide();
     } else if (event.key === 'Tab') {
@@ -161,7 +192,7 @@ class SLDSModal extends LitElement {
     const focusableElements = modal.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
 

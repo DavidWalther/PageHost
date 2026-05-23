@@ -4,7 +4,7 @@ async function initializeApp() {
   // Wait for the custom element to be defined before creating it
   await customElements.whenDefined('app-bookstore');
 
-  const mainApp =  document.createElement('app-bookstore');
+  const mainApp = document.createElement('app-bookstore');
   attachQueryEventListener(mainApp);
   attachStorageEventListener(mainApp);
   attachSaveEventListener(mainApp);
@@ -15,7 +15,6 @@ async function initializeApp() {
 
   bodyElem.appendChild(mainApp);
 }
-
 
 function attachToastEventListener(element) {
   element.addEventListener('toast', (toastEvent) => {
@@ -65,29 +64,29 @@ function attachSaveEventListener(element) {
     let callback = saveEvent.detail.callback;
     let authData = accessSessionStorage('code_exchange_response', 'read');
     authData = JSON.parse(authData);
-    let authBearer = authData.authenticationResult?.access?.access_token
+    let authBearer = authData.authenticationResult?.access?.access_token;
 
     fetch('/api/1.0/data/change/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authBearer}`
+        Authorization: `Bearer ${authBearer}`,
       },
-      body: JSON.stringify(saveEvent.detail)
+      body: JSON.stringify(saveEvent.detail),
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      callback(null, data);
-    })
-    .catch(error => {
-      console.error('Error during save callout:', error);
-      callback(error, null);
-    });
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Server responded with status ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        callback(null, data);
+      })
+      .catch((error) => {
+        console.error('Error during save callout:', error);
+        callback(error, null);
+      });
   });
 }
 
@@ -96,12 +95,12 @@ function attachQueryEventListener(element) {
     let callback = queryEvent.detail.callback;
     let eventpayload = queryEvent.detail.payload;
     fetchDatabase(eventpayload)
-    .then((returnValue) => {
-      callback(null, returnValue);
-    })
-    .catch((error) => {
-      callback(error, null);
-    });
+      .then((returnValue) => {
+        callback(null, returnValue);
+      })
+      .catch((error) => {
+        callback(error, null);
+      });
   });
 }
 
@@ -148,34 +147,36 @@ function fetchDatabase(eventpayload) {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-    }
+    },
   };
 
   let authData = accessSessionStorage('code_exchange_response', 'read');
   authData = JSON.parse(authData);
   if (authData && authData.authenticationResult) {
-    let authBearer = authData.authenticationResult?.access?.access_token
-    preparedHeaders.headers.Authorization = `Bearer ${authBearer}`
+    let authBearer = authData.authenticationResult?.access?.access_token;
+    preparedHeaders.headers.Authorization = `Bearer ${authBearer}`;
   }
 
   return new Promise((resolve, reject) => {
     switch (eventpayload.object) {
       case 'story': {
         let storyId = eventpayload.id;
-        if(storyId) {
+        if (storyId) {
           // a single story is requested
           // the story and its chapters must be returned
           let fetchPromises = [];
           fetchPromises.push(
-            fetch(`/data/query/story?id=${storyId}`, preparedHeaders)
-              .then(storyResponse => {
-                return storyResponse.json()
-          }));
+            fetch(`/data/query/story?id=${storyId}`, preparedHeaders).then(
+              (storyResponse) => {
+                return storyResponse.json();
+              }
+            )
+          );
 
-          Promise.all(fetchPromises).then(response => {
+          Promise.all(fetchPromises).then((response) => {
             let story = response[0];
 
-            if(story ) {
+            if (story) {
               resolve(story);
             } else {
               resolve();
@@ -184,10 +185,10 @@ function fetchDatabase(eventpayload) {
         } else {
           // all stories are requested
           fetch(`/data/query/story`, preparedHeaders)
-          .then(allStoriesResponse => allStoriesResponse.json())
-          .then(allStories => {
-            resolve(allStories);
-          });
+            .then((allStoriesResponse) => allStoriesResponse.json())
+            .then((allStories) => {
+              resolve(allStories);
+            });
         }
         break;
       }
@@ -195,12 +196,14 @@ function fetchDatabase(eventpayload) {
         let chapterId = eventpayload.id;
         let fetchPromises = [];
         fetchPromises.push(
-          fetch(`/data/query/chapter?id=${chapterId}`, preparedHeaders)
-          .then(chapterResponse => {
-            return chapterResponse.json()
-        }));
+          fetch(`/data/query/chapter?id=${chapterId}`, preparedHeaders).then(
+            (chapterResponse) => {
+              return chapterResponse.json();
+            }
+          )
+        );
 
-        Promise.all(fetchPromises).then(response => {
+        Promise.all(fetchPromises).then((response) => {
           let chapterResponse = response[0];
           resolve(chapterResponse);
         });
@@ -209,24 +212,26 @@ function fetchDatabase(eventpayload) {
       case 'paragraph': {
         let paragraphId = eventpayload.id;
         fetch(`/data/query/paragraph?id=${paragraphId}`, preparedHeaders)
-        .then(paragraphResponse => paragraphResponse.json())
-        .then(paragraph => {
-          if(!paragraph || paragraph.length === 0) { reject('No paragraph found');}
+          .then((paragraphResponse) => paragraphResponse.json())
+          .then((paragraph) => {
+            if (!paragraph || paragraph.length === 0) {
+              reject('No paragraph found');
+            }
 
-          if (Array.isArray(paragraph) ) {
-            resolve(paragraph[0]);
-          } else if (typeof paragraph === 'object'){
-            resolve(paragraph);
-          }
-        });
+            if (Array.isArray(paragraph)) {
+              resolve(paragraph[0]);
+            } else if (typeof paragraph === 'object') {
+              resolve(paragraph);
+            }
+          });
         break;
       }
       case 'metadata': {
         fetch('/metadata')
-        .then(metadataResponse => metadataResponse.json())
-        .then(metadata => {
-          resolve(metadata);
-        });
+          .then((metadataResponse) => metadataResponse.json())
+          .then((metadata) => {
+            resolve(metadata);
+          });
         break;
       }
       default: {
@@ -247,20 +252,20 @@ function attachCreateEventListener(element) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authBearer}`
+        Authorization: `Bearer ${authBearer}`,
       },
-      body: JSON.stringify(createEvent.detail)
+      body: JSON.stringify(createEvent.detail),
     })
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error(`Server responded with status ${response.status}`);
         }
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
         callback(null, data);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error during create callout:', error);
         callback(error, null);
       });
@@ -278,20 +283,20 @@ function attachPublishEventListener(element) {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authBearer}`
+        Authorization: `Bearer ${authBearer}`,
       },
-      body: JSON.stringify(publishEvent.detail.payload)
+      body: JSON.stringify(publishEvent.detail.payload),
     })
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error(`Server responded with status ${response.status}`);
         }
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
         callback(null, data);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error during publispayloaout:', error);
         callback(error, null);
       });
@@ -309,20 +314,20 @@ function attachUnpublishEventListener(element) {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authBearer}`
+        Authorization: `Bearer ${authBearer}`,
       },
-      body: JSON.stringify(unpublishEvent.detail.payload)
+      body: JSON.stringify(unpublishEvent.detail.payload),
     })
-      .then(response => {
+      .then((response) => {
         if (!response.ok) {
           throw new Error(`Server responded with status ${response.status}`);
         }
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
         callback(null, data);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error during unpublish callout:', error);
         callback(error, null);
       });
@@ -331,9 +336,11 @@ function attachUnpublishEventListener(element) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then((registration) => {
-    }).catch((error) => {
-      console.error('Service Worker registration failed:', error);
-    });
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((registration) => {})
+      .catch((error) => {
+        console.error('Service Worker registration failed:', error);
+      });
   });
 }

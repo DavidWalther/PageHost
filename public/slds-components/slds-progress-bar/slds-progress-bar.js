@@ -1,22 +1,25 @@
-import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 class SLDSProgressBar extends LitElement {
   static properties = {
-    percent:  { type: Number },
-    size:     { type: String },
+    percent: { type: Number },
+    size: { type: String },
     circular: { type: Boolean },
     vertical: { type: Boolean },
-    variant:  { type: String }
+    variant: { type: String },
   };
 
   constructor() {
     super();
-    this.percent  = 0;
-    this.size     = 'medium';
+    this.percent = 0;
+    this.size = 'medium';
     this.circular = false;
     this.vertical = false;
-    this.variant  = 'base';
+    this.variant = 'base';
   }
 
   connectedCallback() {
@@ -31,13 +34,17 @@ class SLDSProgressBar extends LitElement {
       'slds-progress-bar',
       this.size !== 'medium' ? `slds-progress-bar_${this.size}` : '',
       this.circular ? 'slds-progress-bar_circular' : '',
-      this.vertical ? 'slds-progress-bar_vertical' : ''
-    ].filter(Boolean).join(' ');
+      this.vertical ? 'slds-progress-bar_vertical' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     const valueClasses = [
       'slds-progress-bar__value',
-      this.variant === 'success' ? 'slds-progress-bar__value_success' : ''
-    ].filter(Boolean).join(' ');
+      this.variant === 'success' ? 'slds-progress-bar__value_success' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     const style = this.vertical
       ? `height: ${clampedPercent}%;`

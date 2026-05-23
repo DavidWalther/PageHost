@@ -7,41 +7,49 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Buttons
 
 ### Base (unstyled)
+
 ```html
 <button class="slds-button">Label</button>
 ```
 
 ### Neutral
+
 ```html
 <button class="slds-button slds-button_neutral">Neutral</button>
 ```
 
 ### Brand (primary action)
+
 ```html
 <button class="slds-button slds-button_brand">Save</button>
 ```
 
 ### Brand Outline
+
 ```html
 <button class="slds-button slds-button_outline-brand">Cancel</button>
 ```
 
 ### Destructive
+
 ```html
 <button class="slds-button slds-button_destructive">Delete</button>
 ```
 
 ### Text Destructive
+
 ```html
 <button class="slds-button slds-button_text-destructive">Remove</button>
 ```
 
 ### Success
+
 ```html
 <button class="slds-button slds-button_success">Approve</button>
 ```
 
 ### Inverse (on dark background)
+
 ```html
 <div class="slds-theme_inverse slds-p-around_medium">
   <button class="slds-button slds-button_inverse">Inverse</button>
@@ -49,11 +57,13 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Disabled
+
 ```html
 <button class="slds-button slds-button_brand" disabled>Disabled</button>
 ```
 
 ### Button with left icon
+
 ```html
 <button class="slds-button slds-button_neutral">
   <svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
@@ -64,28 +74,38 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Button with right icon
+
 ```html
 <button class="slds-button slds-button_neutral">
   New
   <svg class="slds-button__icon slds-button__icon_right" aria-hidden="true">
-    <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#chevrondown"></use>
+    <use
+      xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#chevrondown"
+    ></use>
   </svg>
 </button>
 ```
 
 ### Icon-only button (bare)
+
 ```html
 <button class="slds-button slds-button_icon" title="Settings">
   <svg class="slds-button__icon" aria-hidden="true">
-    <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#settings"></use>
+    <use
+      xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#settings"
+    ></use>
   </svg>
   <span class="slds-assistive-text">Settings</span>
 </button>
 ```
 
 ### Icon-only button (bordered)
+
 ```html
-<button class="slds-button slds-button_icon slds-button_icon-border" title="More">
+<button
+  class="slds-button slds-button_icon slds-button_icon-border"
+  title="More"
+>
   <svg class="slds-button__icon" aria-hidden="true">
     <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#down"></use>
   </svg>
@@ -94,6 +114,7 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Button Group
+
 ```html
 <div class="slds-button-group" role="group">
   <button class="slds-button slds-button_neutral">Refresh</button>
@@ -107,6 +128,7 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Cards
 
 ### Base card
+
 ```html
 <article class="slds-card">
   <div class="slds-card__header slds-grid">
@@ -114,13 +136,20 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
       <div class="slds-media__figure">
         <span class="slds-icon_container slds-icon-standard-contact">
           <svg class="slds-icon slds-icon_small" aria-hidden="true">
-            <use xlink:href="/assets/icons/standard-sprite/svg/symbols.svg#contact"></use>
+            <use
+              xlink:href="/assets/icons/standard-sprite/svg/symbols.svg#contact"
+            ></use>
           </svg>
         </span>
       </div>
       <div class="slds-media__body">
         <h2 class="slds-card__header-title">
-          <a href="#" class="slds-card__header-link slds-truncate" title="Card Title">Card Title</a>
+          <a
+            href="#"
+            class="slds-card__header-link slds-truncate"
+            title="Card Title"
+            >Card Title</a
+          >
         </h2>
       </div>
     </header>
@@ -132,12 +161,15 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
     <p>Card body content goes here.</p>
   </div>
   <footer class="slds-card__footer">
-    <a class="slds-card__footer-action" href="#">View All <span class="slds-assistive-text">Contacts</span></a>
+    <a class="slds-card__footer-action" href="#"
+      >View All <span class="slds-assistive-text">Contacts</span></a
+    >
   </footer>
 </article>
 ```
 
 ### Card without footer
+
 ```html
 <article class="slds-card">
   <div class="slds-card__header slds-grid">
@@ -147,9 +179,7 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
       </div>
     </header>
   </div>
-  <div class="slds-card__body slds-card__body_inner">
-    Content goes here.
-  </div>
+  <div class="slds-card__body slds-card__body_inner">Content goes here.</div>
 </article>
 ```
 
@@ -158,27 +188,35 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Badges
 
 ### Base
+
 ```html
 <span class="slds-badge">Default</span>
 ```
 
 ### Inverse (dark)
+
 ```html
 <span class="slds-badge slds-badge_inverse">Inverse</span>
 ```
 
 ### Lightest
+
 ```html
 <span class="slds-badge slds-badge_lightest">Lightest</span>
 ```
 
 ### With icon (left)
+
 ```html
 <span class="slds-badge slds-badge_lightest">
   <span class="slds-badge__icon slds-badge__icon_left slds-badge__icon_inverse">
-    <span class="slds-icon_container slds-icon-utility-moneybag slds-current-color">
+    <span
+      class="slds-icon_container slds-icon-utility-moneybag slds-current-color"
+    >
       <svg class="slds-icon slds-icon_xx-small" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#moneybag"></use>
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#moneybag"
+        ></use>
       </svg>
     </span>
   </span>
@@ -191,19 +229,29 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Alerts
 
 ### Info alert (banner)
+
 ```html
 <div class="slds-notify_container slds-is-relative">
   <div class="slds-notify slds-notify_alert slds-theme_info" role="alert">
     <span class="slds-assistive-text">Info</span>
-    <span class="slds-icon_container slds-icon-utility-info slds-m-right_x-small">
+    <span
+      class="slds-icon_container slds-icon-utility-info slds-m-right_x-small"
+    >
       <svg class="slds-icon slds-icon_x-small" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#info"></use>
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#info"
+        ></use>
       </svg>
     </span>
     <h2>This is an informational alert.</h2>
-    <button class="slds-button slds-button_icon slds-button_icon-inverse slds-notify__close" title="Close">
+    <button
+      class="slds-button slds-button_icon slds-button_icon-inverse slds-notify__close"
+      title="Close"
+    >
       <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+        ></use>
       </svg>
       <span class="slds-assistive-text">Close</span>
     </button>
@@ -212,14 +260,20 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Error alert
+
 ```html
 <div class="slds-notify_container slds-is-relative">
   <div class="slds-notify slds-notify_alert slds-theme_error" role="alert">
     <span class="slds-assistive-text">Error</span>
     <h2>Something went wrong. Please try again.</h2>
-    <button class="slds-button slds-button_icon slds-button_icon-inverse slds-notify__close" title="Close">
+    <button
+      class="slds-button slds-button_icon slds-button_icon-inverse slds-notify__close"
+      title="Close"
+    >
       <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+        ></use>
       </svg>
       <span class="slds-assistive-text">Close</span>
     </button>
@@ -232,22 +286,35 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Toast Notifications
 
 ### Success toast
+
 ```html
 <div class="slds-notify-container">
   <div class="slds-notify slds-notify_toast slds-theme_success" role="status">
     <span class="slds-assistive-text">Success</span>
-    <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top">
+    <span
+      class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top"
+    >
       <svg class="slds-icon slds-icon_small" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#success"></use>
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#success"
+        ></use>
       </svg>
     </span>
     <div class="slds-notify__content">
       <h2 class="slds-text-heading_small">Record saved successfully.</h2>
     </div>
     <div class="slds-notify__close">
-      <button class="slds-button slds-button_icon slds-button_icon-inverse slds-button_icon-small" title="Close">
-        <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-          <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+      <button
+        class="slds-button slds-button_icon slds-button_icon-inverse slds-button_icon-small"
+        title="Close"
+      >
+        <svg
+          class="slds-button__icon slds-button__icon_large"
+          aria-hidden="true"
+        >
+          <use
+            xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+          ></use>
         </svg>
         <span class="slds-assistive-text">Close</span>
       </button>
@@ -257,6 +324,7 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Error toast
+
 ```html
 <div class="slds-notify-container">
   <div class="slds-notify slds-notify_toast slds-theme_error" role="alert">
@@ -265,9 +333,17 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
       <h2 class="slds-text-heading_small">An error occurred.</h2>
     </div>
     <div class="slds-notify__close">
-      <button class="slds-button slds-button_icon slds-button_icon-inverse slds-button_icon-small" title="Close">
-        <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-          <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+      <button
+        class="slds-button slds-button_icon slds-button_icon-inverse slds-button_icon-small"
+        title="Close"
+      >
+        <svg
+          class="slds-button__icon slds-button__icon_large"
+          aria-hidden="true"
+        >
+          <use
+            xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+          ></use>
         </svg>
         <span class="slds-assistive-text">Close</span>
       </button>
@@ -281,42 +357,72 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Form Elements
 
 ### Text input
+
 ```html
 <div class="slds-form-element">
   <label class="slds-form-element__label" for="text-input-id">
     <abbr class="slds-required" title="required">*</abbr> First Name
   </label>
   <div class="slds-form-element__control">
-    <input type="text" id="text-input-id" placeholder="Jane" class="slds-input" required />
+    <input
+      type="text"
+      id="text-input-id"
+      placeholder="Jane"
+      class="slds-input"
+      required
+    />
   </div>
 </div>
 ```
 
 ### Text input with error
+
 ```html
 <div class="slds-form-element slds-has-error">
   <label class="slds-form-element__label" for="text-input-error">Email</label>
   <div class="slds-form-element__control">
-    <input type="email" id="text-input-error" class="slds-input" value="invalid" aria-describedby="error-msg" />
+    <input
+      type="email"
+      id="text-input-error"
+      class="slds-input"
+      value="invalid"
+      aria-describedby="error-msg"
+    />
   </div>
-  <p class="slds-form-element__help" id="error-msg" role="alert">Enter a valid email address.</p>
+  <p class="slds-form-element__help" id="error-msg" role="alert">
+    Enter a valid email address.
+  </p>
 </div>
 ```
 
 ### Input with left icon
+
 ```html
 <div class="slds-form-element">
   <label class="slds-form-element__label" for="search-input">Search</label>
-  <div class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left">
-    <svg class="slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default" aria-hidden="true">
-      <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#search"></use>
+  <div
+    class="slds-form-element__control slds-input-has-icon slds-input-has-icon_left"
+  >
+    <svg
+      class="slds-icon slds-input__icon slds-input__icon_left slds-icon-text-default"
+      aria-hidden="true"
+    >
+      <use
+        xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#search"
+      ></use>
     </svg>
-    <input type="search" id="search-input" class="slds-input" placeholder="Search..." />
+    <input
+      type="search"
+      id="search-input"
+      class="slds-input"
+      placeholder="Search..."
+    />
   </div>
 </div>
 ```
 
 ### Select
+
 ```html
 <div class="slds-form-element">
   <label class="slds-form-element__label" for="select-id">Status</label>
@@ -334,16 +440,22 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Textarea
+
 ```html
 <div class="slds-form-element">
   <label class="slds-form-element__label" for="textarea-id">Description</label>
   <div class="slds-form-element__control">
-    <textarea id="textarea-id" class="slds-textarea" placeholder="Add notes here..."></textarea>
+    <textarea
+      id="textarea-id"
+      class="slds-textarea"
+      placeholder="Add notes here..."
+    ></textarea>
   </div>
 </div>
 ```
 
 ### Checkbox
+
 ```html
 <div class="slds-form-element">
   <div class="slds-form-element__control">
@@ -359,11 +471,19 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Checkbox Toggle
+
 ```html
 <div class="slds-form-element">
   <label class="slds-checkbox_toggle slds-grid" for="toggle-id">
-    <span class="slds-form-element__label slds-m-bottom_none">Enable Feature</span>
-    <input type="checkbox" name="toggle" id="toggle-id" aria-describedby="toggle-id" />
+    <span class="slds-form-element__label slds-m-bottom_none"
+      >Enable Feature</span
+    >
+    <input
+      type="checkbox"
+      name="toggle"
+      id="toggle-id"
+      aria-describedby="toggle-id"
+    />
     <span class="slds-checkbox_faux_container" aria-live="assertive">
       <span class="slds-checkbox_faux"></span>
       <span class="slds-checkbox_on">Enabled</span>
@@ -374,9 +494,12 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Radio Group
+
 ```html
 <fieldset class="slds-form-element">
-  <legend class="slds-form-element__legend slds-form-element__label">Frequency</legend>
+  <legend class="slds-form-element__legend slds-form-element__label">
+    Frequency
+  </legend>
   <div class="slds-form-element__control">
     <span class="slds-radio">
       <input type="radio" name="frequency" id="radio-daily" value="daily" />
@@ -401,9 +524,13 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ## Spinners
 
 ### Medium spinner (default)
+
 ```html
 <div class="slds-spinner_container">
-  <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+  <div
+    role="status"
+    class="slds-spinner slds-spinner_medium slds-spinner_brand"
+  >
     <span class="slds-assistive-text">Loading</span>
     <div class="slds-spinner__dot-a"></div>
     <div class="slds-spinner__dot-b"></div>
@@ -412,6 +539,7 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Small inline spinner
+
 ```html
 <div role="status" class="slds-spinner slds-spinner_small slds-spinner_inline">
   <span class="slds-assistive-text">Loading</span>
@@ -421,12 +549,14 @@ Complete HTML blueprint examples for the most commonly used SLDS v1 components. 
 ```
 
 ### Spinner sizes
+
 ```
 slds-spinner_xx-small   slds-spinner_x-small   slds-spinner_small
 slds-spinner_medium     slds-spinner_large
 ```
 
 ### Spinner variants
+
 ```
 slds-spinner_brand      (blue)
 slds-spinner_inverse    (white, for dark backgrounds)
@@ -441,13 +571,27 @@ slds-spinner_inverse    (white, for dark backgrounds)
 <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
 
 <!-- Modal -->
-<section role="dialog" tabindex="-1" aria-modal="true" aria-label="Modal Title" class="slds-modal slds-fade-in-open">
+<section
+  role="dialog"
+  tabindex="-1"
+  aria-modal="true"
+  aria-label="Modal Title"
+  class="slds-modal slds-fade-in-open"
+>
   <div class="slds-modal__container">
     <!-- Header -->
     <header class="slds-modal__header">
-      <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close">
-        <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-          <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+      <button
+        class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+        title="Close"
+      >
+        <svg
+          class="slds-button__icon slds-button__icon_large"
+          aria-hidden="true"
+        >
+          <use
+            xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+          ></use>
         </svg>
         <span class="slds-assistive-text">Close</span>
       </button>
@@ -467,6 +611,7 @@ slds-spinner_inverse    (white, for dark backgrounds)
 ```
 
 ### Modal size variants
+
 ```
 slds-modal               default (small)
 slds-modal slds-modal_medium
@@ -479,8 +624,12 @@ slds-modal slds-modal_full   (full screen)
 ## Data Tables
 
 ### Basic table
+
 ```html
-<table class="slds-table slds-table_cell-buffer slds-table_bordered" role="grid">
+<table
+  class="slds-table slds-table_cell-buffer slds-table_bordered"
+  role="grid"
+>
   <thead>
     <tr class="slds-line-height_reset">
       <th scope="col">
@@ -513,6 +662,7 @@ slds-modal slds-modal_full   (full screen)
 ```
 
 ### Table modifier classes
+
 ```
 slds-table_fixed-layout    fixed column widths (requires th widths)
 slds-table_bordered        borders on all cells
@@ -526,6 +676,7 @@ slds-table_col-bordered    borders between columns only
 ## Avatars
 
 ### Image avatar
+
 ```html
 <span class="slds-avatar slds-avatar_medium">
   <img src="/path/to/avatar.jpg" alt="User Name" title="User Name" />
@@ -533,13 +684,19 @@ slds-table_col-bordered    borders between columns only
 ```
 
 ### Initials avatar
+
 ```html
 <span class="slds-avatar slds-avatar_medium slds-avatar_circle">
-  <abbr class="slds-avatar__initials slds-icon-standard-account" title="John Doe">JD</abbr>
+  <abbr
+    class="slds-avatar__initials slds-icon-standard-account"
+    title="John Doe"
+    >JD</abbr
+  >
 </span>
 ```
 
 ### Avatar sizes
+
 ```
 slds-avatar_x-small   (24px)
 slds-avatar_small     (32px)
@@ -552,14 +709,20 @@ slds-avatar_large     (48px)
 ## Pills
 
 ### Base pill
+
 ```html
 <span class="slds-pill">
   <a href="#" class="slds-pill__action" title="Pill Label">
     <span class="slds-pill__label">Pill Label</span>
   </a>
-  <button class="slds-button slds-button_icon slds-button_icon slds-pill__remove" title="Remove">
+  <button
+    class="slds-button slds-button_icon slds-button_icon slds-pill__remove"
+    title="Remove"
+  >
     <svg class="slds-button__icon slds-button__icon_hint" aria-hidden="true">
-      <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+      <use
+        xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+      ></use>
     </svg>
     <span class="slds-assistive-text">Remove Pill Label</span>
   </button>
@@ -567,15 +730,21 @@ slds-avatar_large     (48px)
 ```
 
 ### Pill container
+
 ```html
 <div class="slds-pill-container">
   <span class="slds-pill">
     <a href="#" class="slds-pill__action" title="Tag 1">
       <span class="slds-pill__label">Tag 1</span>
     </a>
-    <button class="slds-button slds-button_icon slds-pill__remove" title="Remove Tag 1">
+    <button
+      class="slds-button slds-button_icon slds-pill__remove"
+      title="Remove Tag 1"
+    >
       <svg class="slds-button__icon" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+        ></use>
       </svg>
       <span class="slds-assistive-text">Remove Tag 1</span>
     </button>
@@ -591,7 +760,10 @@ slds-avatar_large     (48px)
 <div class="slds-progress slds-progress_shade">
   <ol class="slds-progress__list">
     <li class="slds-progress__item slds-is-completed">
-      <button class="slds-button slds-progress__marker" title="Step 1 - Completed">
+      <button
+        class="slds-button slds-progress__marker"
+        title="Step 1 - Completed"
+      >
         <span class="slds-assistive-text">Step 1 - Completed</span>
       </button>
     </li>
@@ -606,7 +778,13 @@ slds-avatar_large     (48px)
       </button>
     </li>
   </ol>
-  <div class="slds-progress-bar slds-progress-bar_x-small" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" role="progressbar">
+  <div
+    class="slds-progress-bar slds-progress-bar_x-small"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="50"
+    role="progressbar"
+  >
     <span class="slds-progress-bar__value" style="width: 50%;">
       <span class="slds-assistive-text">Progress: 50%</span>
     </span>
@@ -619,11 +797,21 @@ slds-avatar_large     (48px)
 ## Scoped Notification
 
 ```html
-<div class="slds-scoped-notification slds-media slds-media_center slds-scoped-notification_light" role="status">
+<div
+  class="slds-scoped-notification slds-media slds-media_center slds-scoped-notification_light"
+  role="status"
+>
   <div class="slds-media__figure">
-    <span class="slds-icon_container slds-icon-utility-info slds-icon-utility-info slds-icon_container_circle slds-scoped-notification__icon">
-      <svg class="slds-icon slds-icon_small slds-icon-text-default" aria-hidden="true">
-        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#info"></use>
+    <span
+      class="slds-icon_container slds-icon-utility-info slds-icon-utility-info slds-icon_container_circle slds-scoped-notification__icon"
+    >
+      <svg
+        class="slds-icon slds-icon_small slds-icon-text-default"
+        aria-hidden="true"
+      >
+        <use
+          xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#info"
+        ></use>
       </svg>
     </span>
   </div>
@@ -661,16 +849,40 @@ slds-avatar_large     (48px)
 <div class="slds-tabs_default">
   <ul class="slds-tabs_default__nav" role="tablist">
     <li class="slds-tabs_default__item slds-is-active" role="presentation">
-      <a class="slds-tabs_default__link" role="tab" tabindex="0" id="tab-1" aria-controls="tab-1-panel">Tab One</a>
+      <a
+        class="slds-tabs_default__link"
+        role="tab"
+        tabindex="0"
+        id="tab-1"
+        aria-controls="tab-1-panel"
+        >Tab One</a
+      >
     </li>
     <li class="slds-tabs_default__item" role="presentation">
-      <a class="slds-tabs_default__link" role="tab" tabindex="-1" id="tab-2" aria-controls="tab-2-panel">Tab Two</a>
+      <a
+        class="slds-tabs_default__link"
+        role="tab"
+        tabindex="-1"
+        id="tab-2"
+        aria-controls="tab-2-panel"
+        >Tab Two</a
+      >
     </li>
   </ul>
-  <div id="tab-1-panel" class="slds-tabs_default__content slds-show" role="tabpanel" aria-labelledby="tab-1">
+  <div
+    id="tab-1-panel"
+    class="slds-tabs_default__content slds-show"
+    role="tabpanel"
+    aria-labelledby="tab-1"
+  >
     <p>Tab one content</p>
   </div>
-  <div id="tab-2-panel" class="slds-tabs_default__content slds-hide" role="tabpanel" aria-labelledby="tab-2">
+  <div
+    id="tab-2-panel"
+    class="slds-tabs_default__content slds-hide"
+    role="tabpanel"
+    aria-labelledby="tab-2"
+  >
     <p>Tab two content</p>
   </div>
 </div>
