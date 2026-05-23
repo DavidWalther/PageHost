@@ -1,5 +1,8 @@
 const { Environment } = require('./private/modules/environment.js');
 const express = require('express');
+const {
+  createCompressionMiddleware,
+} = require('./private/modules/httpCompression');
 
 const { Logging } = require('./private/modules/logging.js');
 const {
@@ -23,6 +26,7 @@ const environment = new Environment().getEnvironment();
 
 const app = express();
 app.use(express.json());
+app.use(createCompressionMiddleware(environment));
 app.set('trust proxy', true);
 const PORT = process.env.PORT || 3000;
 
