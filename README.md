@@ -8,6 +8,7 @@
 | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | APPLICATION_APPLICATION_KEY | Key to seperate different applications in cache and database                                                                                            |
 | LOGGING_SEVERITY_LEVEL      | Level of Debug messages to show. <br> Messages with the given severity and above are printed. <br><br>Possible values: INFO, DEBUG, FINE, FINER, FINEST |
+| COMPRESSION_THRESHOLD_BYTES | Minimum response size in bytes before HTTP compression is applied. Required value (in bytes).                                                           |
 
 ### Cache related Variables
 
