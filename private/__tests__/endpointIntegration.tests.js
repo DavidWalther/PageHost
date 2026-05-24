@@ -830,6 +830,7 @@ const ENV_WITH_LOGIN = {
   ...ENVIRONMENT,
   APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login']),
   AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
+  AUTH_CLOCK_SKEW_SECONDS: '5',
 };
 
 // Minimal fake id_token: header.payload.signature (base64url encoded)
@@ -898,6 +899,7 @@ describe('CodeExchangeEndpoint Integration', () => {
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
       setCodeVerifier: jest.fn().mockReturnThis(),
+      setClockSkew: jest.fn().mockReturnThis(),
       exchangeAuthorizationCode: mockExchangeAuthorizationCode,
     }));
   });
