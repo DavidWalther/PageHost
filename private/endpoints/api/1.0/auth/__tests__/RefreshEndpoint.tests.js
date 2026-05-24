@@ -83,6 +83,7 @@ describe('RefreshEndpoint', () => {
 
     DataFacade.mockImplementation(() => ({
       updateData: jest.fn().mockResolvedValue({}),
+      setSkipCache: jest.fn(),
     }));
 
     endpoint = new RefreshEndpoint();
@@ -164,6 +165,7 @@ describe('RefreshEndpoint', () => {
     const mockUpdateData = jest.fn().mockResolvedValue({});
     DataFacade.mockImplementation(() => ({
       updateData: mockUpdateData,
+      setSkipCache: jest.fn(),
     }));
 
     await endpoint.execute();
