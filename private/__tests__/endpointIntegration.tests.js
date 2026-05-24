@@ -829,6 +829,7 @@ const OpenIdConnectClient = require('../modules/oAuth2/OpenIdConnectClient');
 const ENV_WITH_LOGIN = {
   ...ENVIRONMENT,
   APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login']),
+  AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
 };
 
 // Minimal fake id_token: header.payload.signature (base64url encoded)
