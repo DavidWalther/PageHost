@@ -814,26 +814,8 @@ class CustomChapter extends LitElement {
 
   async _handleDeleteClick() {
     if (!confirm(this.labels.labelChapterDeleteConfirm)) return;
-    const authData = sessionStorage.getItem('code_exchange_response');
-    let token = '';
-    if (authData) {
-      try {
-        token =
-          JSON.parse(authData)?.authenticationResult?.access?.access_token;
-      } catch {}
-    }
-    if (!token) {
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: 'Nicht eingeloggt', variant: 'error' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      return;
-    }
     try {
-      await deleteChapter({ id: this.id, token });
+      await deleteChapter({ id: this.id });
       this.dispatchEvent(
         new CustomEvent('toast', {
           detail: {
