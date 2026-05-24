@@ -314,10 +314,6 @@ class CodeExchangeEndpoint {
     }
 
     // Store refresh token UUID in identity record
-    const refreshTokenId = RefreshTokenService.extractTokenId(
-      refreshTokenJwt,
-      this.environment.AUTH_SERVER_SECRET
-    );
     const refreshTokenPayload = RefreshTokenService.verifyRefreshToken(
       refreshTokenJwt,
       this.environment.AUTH_SERVER_SECRET
@@ -330,7 +326,7 @@ class CodeExchangeEndpoint {
         payload: {
           id: userWithAuthorization.id,
           refreshtoken: JSON.stringify({
-            token: refreshTokenId,
+            token: refreshTokenPayload.token,
             issuedAt: refreshTokenPayload.issuedAt,
             expiresAt: refreshTokenPayload.expiresAt,
           }),
