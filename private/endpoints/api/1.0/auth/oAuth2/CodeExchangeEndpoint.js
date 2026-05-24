@@ -324,6 +324,7 @@ class CodeExchangeEndpoint {
     );
 
     try {
+      dataFacade.setSkipCache(true);
       await dataFacade.updateData({
         object: 'identity',
         payload: {
