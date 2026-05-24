@@ -182,12 +182,33 @@ class CodeExchangeEndpoint {
     await cache.set(auth_code_cache_key, true);
     // ====== Check if the auth_code is already used - End =======
 
+    const clockSkewSeconds = parseInt(
+      this.environment.AUTH_CLOCK_SKEW_SECONDS,
+      10
+    );
+    if (
+      !this.environment.AUTH_CLOCK_SKEW_SECONDS ||
+      isNaN(clockSkewSeconds) ||
+      clockSkewSeconds < 0
+    ) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: 'AUTH_CLOCK_SKEW_SECONDS is not set or invalid',
+        location: LOCATION,
+      });
+      this.responseObject
+        .status(500)
+        .json({ error: 'Server configuration error' });
+      return;
+    }
+
     const oidcClient = new OpenIdConnectClient()
       .setRedirectUri(this.redirectUri)
       .setClientId(this.environment.GOOGLE_CLIENT_ID)
       .setClientSecret(this.environment.GOOGLE_CLIENT_SECRET)
       .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
-      .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
+      .setCodeVerifier(code_verifier)
+      .setClockSkew(clockSkewSeconds);
 
     let tokenResponse;
     try {
