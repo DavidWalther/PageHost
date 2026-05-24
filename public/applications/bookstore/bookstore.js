@@ -32,37 +32,11 @@ class Bookstore extends LitElement {
   // =========== Lifecycle methods ============
 
   connectedCallback() {
-    console.log('Bookstore connectedCallback called');
     super.connectedCallback();
-    console.log('After super.connectedCallback()');
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    console.log('After addGlobalStylesToShadowRoot');
-
-    console.log('Bookstore connected');
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
-    this.saveAuthParameterToStorage();
-
-    // Handle auth parameters
-    let authParams = sessionStorage.getItem('authParameters');
-    sessionStorage.removeItem('authParameters');
-
-    if (authParams) {
-      authParams = JSON.parse(authParams);
-      setTimeout(() => {
-        let oidcComponent = this.shadowRoot.querySelector('oidc-component');
-        if (oidcComponent) {
-          oidcComponent.setAttribute('auth-code', authParams.code);
-          oidcComponent.setAttribute('auth-state', authParams.state);
-          oidcComponent.startAuthCodeExchange();
-        }
-      }, 0);
-      // Don't clear URL parameters yet - wait for authentication to complete
-    } else {
-      // Only clear URL parameters if there are no auth parameters to process
-      this.clearUrlParameter();
-    }
 
     // get button to show login modal
     let buttonId = 'button-login';
@@ -313,26 +287,6 @@ class Bookstore extends LitElement {
   // =========== Hydration - End ============
 
   // =========== Authentication - Start =================
-
-  saveAuthParameterToStorage() {
-    let queryParameters = window.location.search
-      .substring(1)
-      .split('&')
-      .reduce((aggregate, current) => {
-        let temp = current.split('=');
-        aggregate[temp[0]] = temp[1];
-        return aggregate;
-      }, {});
-
-    if (!queryParameters.code && !queryParameters.state) {
-      return;
-    }
-    let authParameters = {
-      code: queryParameters.code,
-      state: queryParameters.state,
-    };
-    sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
-  }
 
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
