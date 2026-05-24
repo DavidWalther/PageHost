@@ -147,10 +147,6 @@ class RefreshEndpoint {
       refreshTokenLifetimeDays
     );
 
-    const newRefreshTokenId = RefreshTokenService.extractTokenId(
-      newRefreshTokenJwt,
-      this.environment.AUTH_SERVER_SECRET
-    );
     const newRefreshPayload = RefreshTokenService.verifyRefreshToken(
       newRefreshTokenJwt,
       this.environment.AUTH_SERVER_SECRET
@@ -164,7 +160,7 @@ class RefreshEndpoint {
         payload: {
           id: identityRecord.id,
           refreshtoken: JSON.stringify({
-            token: newRefreshTokenId,
+            token: newRefreshPayload.token,
             issuedAt: newRefreshPayload.issuedAt,
             expiresAt: newRefreshPayload.expiresAt,
           }),
