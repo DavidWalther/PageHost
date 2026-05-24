@@ -600,26 +600,8 @@ class CustomParagraph extends LitElement {
 
   async handleDeleteClick() {
     if (!confirm('Diesen Absatz wirklich löschen?')) return;
-    const authData = sessionStorage.getItem('code_exchange_response');
-    let token = '';
-    if (authData) {
-      try {
-        const parsedData = JSON.parse(authData);
-        token = parsedData?.authenticationResult?.access?.access_token;
-      } catch {}
-    }
-    if (!token) {
-      this.dispatchEvent(
-        new CustomEvent('toast', {
-          detail: { message: 'Nicht eingeloggt', variant: 'error' },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      return;
-    }
     try {
-      await deleteParagraph({ id: this.id, token });
+      await deleteParagraph({ id: this.id });
       this.dispatchEvent(
         new CustomEvent('toast', {
           detail: { message: 'Absatz gelöscht', variant: 'success' },
