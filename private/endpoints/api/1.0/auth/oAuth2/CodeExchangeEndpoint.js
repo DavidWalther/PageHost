@@ -6,6 +6,7 @@ const {
 const { DataFacade } = require('../../../../../database2/DataFacade.js');
 const crypto = require('crypto');
 const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
+const RefreshTokenService = require('../../../../../modules/oAuth2/RefreshTokenService.js');
 const { table } = require('console');
 
 const GOOGLE_ENDPOINT_WELLKNOWN =
@@ -253,6 +254,76 @@ class CodeExchangeEndpoint {
       message: `JWT created for scope ${scopes}`,
       location: LOCATION,
     });
+
+    // Generate refresh token
+    const refreshTokenLifetimeDays = parseInt(
+      this.environment.AUTH_REFRESH_TOKEN_LIFETIME_DAYS,
+      10
+    );
+    if (
+      !this.environment.AUTH_REFRESH_TOKEN_LIFETIME_DAYS ||
+      isNaN(refreshTokenLifetimeDays) ||
+      refreshTokenLifetimeDays <= 0
+    ) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: 'AUTH_REFRESH_TOKEN_LIFETIME_DAYS is not set or invalid',
+        location: LOCATION,
+      });
+      this.responseObject
+        .status(500)
+        .json({ error: 'Server configuration error' });
+      return;
+    }
+
+    let refreshTokenJwt;
+    try {
+      refreshTokenJwt = RefreshTokenService.createRefreshToken(
+        this.environment.AUTH_SERVER_SECRET,
+        refreshTokenLifetimeDays
+      );
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Error creating refresh token: ${error}`,
+        location: LOCATION,
+      });
+      this.responseObject.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    // Store refresh token UUID in identity record
+    const refreshTokenId = RefreshTokenService.extractTokenId(
+      refreshTokenJwt,
+      this.environment.AUTH_SERVER_SECRET
+    );
+    const refreshTokenPayload = RefreshTokenService.verifyRefreshToken(
+      refreshTokenJwt,
+      this.environment.AUTH_SERVER_SECRET
+    );
+
+    try {
+      await dataFacade.updateData({
+        object: 'identity',
+        payload: {
+          id: userWithAuthorization.id,
+          refreshtoken: JSON.stringify({
+            token: refreshTokenId,
+            issuedAt: refreshTokenPayload.issuedAt,
+            expiresAt: refreshTokenPayload.expiresAt,
+          }),
+        },
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Error storing refresh token: ${error}`,
+        location: LOCATION,
+      });
+      this.responseObject.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
     let user = {
       provider: 'google',
       first_name: tokenPayload.given_name,
@@ -267,6 +338,9 @@ class CodeExchangeEndpoint {
         access: {
           access_token: jwtToken,
           scopes,
+        },
+        refresh: {
+          refresh_token: refreshTokenJwt,
         },
       },
     };
