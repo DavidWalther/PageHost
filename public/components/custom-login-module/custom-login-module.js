@@ -43,25 +43,6 @@ class LoginComponent extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this._handleAuthCallback();
-  }
-
-  _handleAuthCallback() {
-    this.saveAuthParameterToStorage();
-    let authParams = sessionStorage.getItem('authParameters');
-    sessionStorage.removeItem('authParameters');
-
-    if (authParams) {
-      authParams = JSON.parse(authParams);
-      this.updateComplete.then(() => {
-        let oidcComponent = this.shadowRoot.querySelector('oidc-component');
-        if (oidcComponent) {
-          oidcComponent.setAttribute('auth-code', authParams.code);
-          oidcComponent.setAttribute('auth-state', authParams.state);
-          oidcComponent.startAuthCodeExchange();
-        }
-      });
-    }
   }
 
   render() {
@@ -136,26 +117,6 @@ class LoginComponent extends LitElement {
   }
 
   // =========== Authentication - Start =================
-
-  saveAuthParameterToStorage() {
-    let queryParameters = window.location.search
-      .substring(1)
-      .split('&')
-      .reduce((aggregate, current) => {
-        let temp = current.split('=');
-        aggregate[temp[0]] = temp[1];
-        return aggregate;
-      }, {});
-
-    if (!queryParameters.code && !queryParameters.state) {
-      return;
-    }
-    let authParameters = {
-      code: queryParameters.code,
-      state: queryParameters.state,
-    };
-    sessionStorage.setItem('authParameters', JSON.stringify(authParameters));
-  }
 
   async getGoogleAuthConfig() {
     return new Promise((resolve) => {
