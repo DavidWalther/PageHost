@@ -5,6 +5,7 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
+import { authenticatedFetch } from '/modules/authTokenManager.js';
 
 class LoginComponent extends LitElement {
   //===========================
@@ -178,16 +179,13 @@ class LoginComponent extends LitElement {
       return;
     }
 
-    accessToken = JSON.parse(accessToken);
-    const authHeader =
-      'Bearer ' + accessToken.authenticationResult.access.access_token;
-    await fetch('/api/1.0/auth/logout', {
+    await authenticatedFetch('/api/1.0/auth/logout', {
       method: 'GET',
       headers: {
-        Authorization: authHeader,
         'Content-Type': 'application/json',
       },
     }).then(() => {
+      localStorage.removeItem('refresh_token');
       this.fireToast(this.labels.logoutSuccessful, 'success');
       logoutCallback();
       this.requestUpdate();
