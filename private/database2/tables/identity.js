@@ -9,6 +9,7 @@ class TableIdentity {
       'createddate',
       'applicationincluded',
       'applicationexcluded',
+      'refreshtoken',
     ];
     this.tableKeyPrefix = '000i';
   }
