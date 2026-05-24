@@ -17,6 +17,7 @@ async function initializeApp() {
 
   bodyElem.appendChild(mainApp);
 }
+window.initializeApp = initializeApp;
 
 function attachToastEventListener(element) {
   element.addEventListener('toast', (toastEvent) => {
