@@ -158,6 +158,7 @@ class RefreshEndpoint {
 
     // Store new refresh token in DB (rotation)
     try {
+      dataFacade.setSkipCache(true);
       await dataFacade.updateData({
         object: 'identity',
         payload: {
