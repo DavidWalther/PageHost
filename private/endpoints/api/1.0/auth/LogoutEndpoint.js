@@ -66,6 +66,7 @@ class LogoutEndpoint {
       const identityRecord = await dataFacade.getData(userData);
 
       if (identityRecord && identityRecord.id) {
+        dataFacade.setSkipCache(true);
         await dataFacade.updateData({
           object: 'identity',
           payload: {
