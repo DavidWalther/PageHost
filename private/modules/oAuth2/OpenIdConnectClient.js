@@ -45,6 +45,11 @@ class OpenIdConnectClient {
     return this;
   }
 
+  setClockSkew(clockSkewSeconds) {
+    this._clockSkew = clockSkewSeconds;
+    return this;
+  }
+
   async executeCalloutWellKnownConfig() {
     return new Promise((resolve, reject) => {
       if (!this._wellKnownEndpoint) {
@@ -137,7 +142,7 @@ class OpenIdConnectClient {
 
     // Check if the id_token is expired
     const currentTime = Math.floor(Date.now() / 1000);
-    const clockSkew = 5; // Allow a 2 second clock skew
+    const clockSkew = this._clockSkew || 0;
     if (decodedIdToken.payload.exp + clockSkew < currentTime) {
       // Allow a 2 second clock skew
       throw new Error('ID token is expired');
