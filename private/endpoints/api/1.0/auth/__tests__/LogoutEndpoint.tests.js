@@ -47,6 +47,7 @@ describe('LogoutEndpoint', () => {
     DataFacade.mockImplementation(() => ({
       getData: mockGetData,
       updateData: mockUpdateData,
+      setSkipCache: jest.fn(),
     }));
 
     endpoint = new LogoutEndpoint();
