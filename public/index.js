@@ -38,7 +38,7 @@ function handleToastEvent(event) {
   event.preventDefault();
 
   const { message, variant } = event.detail;
-  this.showToast(message, variant);
+  showToast(message, variant);
 }
 
 function showToast(message, variant) {
