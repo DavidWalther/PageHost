@@ -240,6 +240,7 @@ describe('CodeExchangeEndpoint', () => {
           .fn()
           .mockResolvedValue({ id: 'user-id', email: 'legit.user@test.com' }),
         updateData: jest.fn().mockResolvedValue({}),
+        setSkipCache: jest.fn(),
       };
     });
 
