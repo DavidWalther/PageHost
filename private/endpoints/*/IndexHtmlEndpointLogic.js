@@ -50,7 +50,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
         '<link rel="stylesheet" type="text/css" href="/styles/darkmode.css"/>'
       );
 
-      headerEntries.push('<script src="index.js"></script>');
+      headerEntries.push('<script type="module" src="index.js"></script>');
 
       headerEntries.push(
         '<script type="module" src="components/global-header/global-header.js"></script>'
