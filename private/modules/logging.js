@@ -21,7 +21,7 @@ class Logging {
   static isSeverityLevel(severity) {
     let environment = new Environment().getEnvironment();
 
-    const severityLevels = ['DEBUG', 'INFO', 'FINE', 'FINER', 'FINEST'];
+    const severityLevels = ['ERROR', 'DEBUG', 'INFO', 'FINE', 'FINER', 'FINEST'];
 
     // create set of severity levels to print
     const severitySet = new Set(
