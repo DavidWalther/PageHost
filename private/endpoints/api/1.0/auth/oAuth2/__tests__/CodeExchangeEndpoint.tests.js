@@ -86,6 +86,7 @@ Environment.mockImplementation(() => {
     HOST: 'http://localhost',
     AUTH_SERVER_SECRET: 'secret',
     AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
+    AUTH_CLOCK_SKEW_SECONDS: '5',
   };
 });
 
@@ -113,6 +114,7 @@ describe('CodeExchangeEndpoint', () => {
       GOOGLE_CLIENT_SECRET: 'test-client-secret',
       GOOGLE_ENDPOINT_WELLKNOWN: 'test-wellknown',
       APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create']),
+      AUTH_CLOCK_SKEW_SECONDS: '5',
     };
     mockRequestObject = {
       protocol: 'http',
@@ -149,6 +151,7 @@ describe('CodeExchangeEndpoint', () => {
       setClientId: jest.fn().mockReturnThis(),
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
+      setClockSkew: jest.fn().mockReturnThis(),
       exchangeAuthorizationCode: jest.fn().mockResolvedValue({
         id_token: createMockJwt(
           mockJwtHeader,
@@ -193,6 +196,7 @@ describe('CodeExchangeEndpoint', () => {
       setClientId: jest.fn().mockReturnThis(),
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
+      setClockSkew: jest.fn().mockReturnThis(),
       exchangeAuthorizationCode: jest
         .fn()
         .mockRejectedValue(new Error('Invalid code')),
