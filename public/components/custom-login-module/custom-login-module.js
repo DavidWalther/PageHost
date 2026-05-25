@@ -5,7 +5,10 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
-import { authenticatedFetch } from '/modules/authTokenManager.js';
+import {
+  authenticatedFetch,
+  tryRestoreSession,
+} from '/modules/authTokenManager.js';
 
 class LoginComponent extends LitElement {
   //===========================
@@ -40,9 +43,13 @@ class LoginComponent extends LitElement {
     super();
   }
 
-  connectedCallback() {
+  async connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    const restored = await tryRestoreSession();
+    if (restored) {
+      this.requestUpdate();
+    }
   }
 
   render() {
