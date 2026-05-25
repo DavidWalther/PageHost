@@ -284,7 +284,7 @@ Invalidates the refresh token server-side and ends the session.
 
 ## Frontend Module: authTokenManager
 
-The `authTokenManager.js` module provides `authenticatedFetch` — a drop-in replacement for `fetch()` that automatically handles token refresh.
+The `authTokenManager.js` module provides `authenticatedFetch` and `tryRestoreSession` — a drop-in replacement for `fetch()` that automatically handles token refresh and session restoration.
 
 ### Behavior
 
@@ -304,6 +304,50 @@ const response = await authenticatedFetch('/api/1.0/data/change/', {
   body: JSON.stringify(payload),
 });
 ```
+
+### Automatic Session Restoration on Startup
+
+When the application starts, the `custom-login-module` component calls `tryRestoreSession()` to automatically re-establish a user session if a valid refresh token is stored in `localStorage`.
+
+```javascript
+import { tryRestoreSession } from '/modules/authTokenManager.js';
+
+// Attempts to restore previous session using stored refresh token
+const restored = await tryRestoreSession();
+if (restored) {
+  // Session restored successfully, update UI
+}
+```
+
+The flow:
+1. Checks if access token in sessionStorage is expired
+2. If expired, retrieves refresh token from localStorage
+3. Calls `/api/1.0/auth/refresh` with the refresh token
+4. If successful, updates both sessionStorage (access token) and localStorage (new refresh token)
+5. Returns `true` if session was restored, `false` otherwise
+
+This allows users to remain logged in across browser sessions as long as the refresh token has not expired or been revoked.
+
+## Frontend Module: custom-login-module
+
+The `custom-login-module` component extends the login functionality by automatically attempting to restore the session on startup.
+
+### Automatic Login
+
+The component's `connectedCallback()` invokes `tryRestoreSession()`:
+
+```javascript
+async connectedCallback() {
+  super.connectedCallback();
+  addGlobalStylesToShadowRoot(this.shadowRoot);
+  const restored = await tryRestoreSession();
+  if (restored) {
+    this.requestUpdate(); // Update UI to show logged-in state
+  }
+}
+```
+
+If a valid session is restored, the login button is hidden and the logout button is shown, giving the user a seamless experience without requiring manual re-authentication.
 
 ## Security Considerations
 
