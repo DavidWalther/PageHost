@@ -169,4 +169,21 @@ export async function authenticatedFetch(url, options = {}) {
   return response;
 }
 
+/**
+ * Attempts to restore a previous session using a stored refresh token.
+ * Returns true if a valid session is now available, false otherwise.
+ */
+export async function tryRestoreSession() {
+  if (!isAccessTokenExpired()) {
+    return true;
+  }
+
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    return false;
+  }
+
+  return await refreshAccessToken();
+}
+
 export { getAccessToken, isAccessTokenExpired, refreshAccessToken };
