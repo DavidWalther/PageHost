@@ -272,6 +272,7 @@ class OIDCComponent extends LitElement {
 
   logoutCallback() {
     sessionStorage.removeItem(this.sessionStorageKey);
+    localStorage.removeItem('refresh_token');
     this._showLogoutButton = false;
     this._showLoginButton = true;
     this.requestUpdate();
@@ -443,6 +444,13 @@ class OIDCComponent extends LitElement {
 
     let storageKey = this.sessionStorageKey;
     sessionStorage.setItem(storageKey, JSON.stringify(exchange_response));
+
+    // Store refresh token in localStorage
+    const refreshToken =
+      exchange_response?.authenticationResult?.refresh?.refresh_token;
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
 
     // Dispatch event with the storage key
     let eventPayload = {

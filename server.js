@@ -16,6 +16,7 @@ const {
 const CodeExchangeEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js');
 const RequestAuthStateEndpoint = require('./private/endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint.js');
 const LogoutEndpoint = require('./private/endpoints/api/1.0/auth/LogoutEndpoint.js');
+const RefreshEndpoint = require('./private/endpoints/api/1.0/auth/RefreshEndpoint.js');
 const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.js');
 const JwtService = require('./private/modules/oAuth2/JwtService.js');
 const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
@@ -272,6 +273,29 @@ app.get('/api/1.0/auth/logout', async (req, res) => {
       Logging.debugMessage({
         severity: 'FINER',
         message: `Logout Endpoint executed`,
+        location: LOCATION,
+      });
+    });
+});
+
+app.post('/api/1.0/auth/refresh', async (req, res) => {
+  const LOCATION = "Server.post('/api/1.0/auth/refresh')";
+  Logging.debugMessage({
+    severity: 'INFO',
+    message: 'Token refresh request received',
+    location: LOCATION,
+  });
+
+  const endpoint = new RefreshEndpoint();
+  endpoint
+    .setEnvironment(environment)
+    .setRequestObject(req)
+    .setResponseObject(res)
+    .execute()
+    .then(() => {
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: `Refresh Endpoint executed`,
         location: LOCATION,
       });
     });

@@ -1,11 +1,12 @@
 // Handles API calls for paragraph deletion
-export async function deleteParagraph({ id, token }) {
-  if (!id || !token) throw new Error('Missing id or token');
+import { authenticatedFetch } from '/modules/authTokenManager.js';
+
+export async function deleteParagraph({ id }) {
+  if (!id) throw new Error('Missing id');
   const url = `/api/1.0/data/delete?object=paragraph&id=${encodeURIComponent(id)}`;
-  const res = await fetch(url, {
+  const res = await authenticatedFetch(url, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${token}`,
       Accept: 'application/json',
     },
   });

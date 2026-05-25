@@ -1,3 +1,5 @@
+import { authenticatedFetch } from '/modules/authTokenManager.js';
+
 async function initializeApp() {
   const bodyElem = document.querySelector('body');
 
@@ -15,6 +17,7 @@ async function initializeApp() {
 
   bodyElem.appendChild(mainApp);
 }
+window.initializeApp = initializeApp;
 
 function attachToastEventListener(element) {
   element.addEventListener('toast', (toastEvent) => {
@@ -35,7 +38,7 @@ function handleToastEvent(event) {
   event.preventDefault();
 
   const { message, variant } = event.detail;
-  this.showToast(message, variant);
+  showToast(message, variant);
 }
 
 function showToast(message, variant) {
@@ -62,15 +65,11 @@ function showToast(message, variant) {
 function attachSaveEventListener(element) {
   element.addEventListener('save', (saveEvent) => {
     let callback = saveEvent.detail.callback;
-    let authData = accessSessionStorage('code_exchange_response', 'read');
-    authData = JSON.parse(authData);
-    let authBearer = authData.authenticationResult?.access?.access_token;
 
-    fetch('/api/1.0/data/change/', {
+    authenticatedFetch('/api/1.0/data/change/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${authBearer}`,
       },
       body: JSON.stringify(saveEvent.detail),
     })
@@ -152,21 +151,19 @@ function fetchDatabase(eventpayload) {
 
   let authData = accessSessionStorage('code_exchange_response', 'read');
   authData = JSON.parse(authData);
-  if (authData && authData.authenticationResult) {
-    let authBearer = authData.authenticationResult?.access?.access_token;
-    preparedHeaders.headers.Authorization = `Bearer ${authBearer}`;
-  }
+  let useAuthFetch = !!(authData && authData.authenticationResult);
+
+  const doFetch = (url, options) =>
+    useAuthFetch ? authenticatedFetch(url, options) : fetch(url, options);
 
   return new Promise((resolve, reject) => {
     switch (eventpayload.object) {
       case 'story': {
         let storyId = eventpayload.id;
         if (storyId) {
-          // a single story is requested
-          // the story and its chapters must be returned
           let fetchPromises = [];
           fetchPromises.push(
-            fetch(`/data/query/story?id=${storyId}`, preparedHeaders).then(
+            doFetch(`/data/query/story?id=${storyId}`, preparedHeaders).then(
               (storyResponse) => {
                 return storyResponse.json();
               }
@@ -183,8 +180,7 @@ function fetchDatabase(eventpayload) {
             }
           });
         } else {
-          // all stories are requested
-          fetch(`/data/query/story`, preparedHeaders)
+          doFetch(`/data/query/story`, preparedHeaders)
             .then((allStoriesResponse) => allStoriesResponse.json())
             .then((allStories) => {
               resolve(allStories);
@@ -196,7 +192,7 @@ function fetchDatabase(eventpayload) {
         let chapterId = eventpayload.id;
         let fetchPromises = [];
         fetchPromises.push(
-          fetch(`/data/query/chapter?id=${chapterId}`, preparedHeaders).then(
+          doFetch(`/data/query/chapter?id=${chapterId}`, preparedHeaders).then(
             (chapterResponse) => {
               return chapterResponse.json();
             }
@@ -211,7 +207,7 @@ function fetchDatabase(eventpayload) {
       }
       case 'paragraph': {
         let paragraphId = eventpayload.id;
-        fetch(`/data/query/paragraph?id=${paragraphId}`, preparedHeaders)
+        doFetch(`/data/query/paragraph?id=${paragraphId}`, preparedHeaders)
           .then((paragraphResponse) => paragraphResponse.json())
           .then((paragraph) => {
             if (!paragraph || paragraph.length === 0) {
@@ -244,15 +240,11 @@ function fetchDatabase(eventpayload) {
 function attachCreateEventListener(element) {
   element.addEventListener('create', (createEvent) => {
     let callback = createEvent.detail.callback;
-    let authData = accessSessionStorage('code_exchange_response', 'read');
-    authData = JSON.parse(authData);
-    let authBearer = authData.authenticationResult?.access?.access_token;
 
-    fetch('/api/1.0/data/change/', {
+    authenticatedFetch('/api/1.0/data/change/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${authBearer}`,
       },
       body: JSON.stringify(createEvent.detail),
     })
@@ -275,15 +267,11 @@ function attachCreateEventListener(element) {
 function attachPublishEventListener(element) {
   element.addEventListener('publish', (publishEvent) => {
     let callback = publishEvent.detail.callback;
-    let authData = accessSessionStorage('code_exchange_response', 'read');
-    authData = JSON.parse(authData);
-    let authBearer = authData.authenticationResult?.access?.access_token;
 
-    fetch('/api/1.0/actions/publish', {
+    authenticatedFetch('/api/1.0/actions/publish', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${authBearer}`,
       },
       body: JSON.stringify(publishEvent.detail.payload),
     })
@@ -306,15 +294,11 @@ function attachPublishEventListener(element) {
 function attachUnpublishEventListener(element) {
   element.addEventListener('unpublish', (unpublishEvent) => {
     let callback = unpublishEvent.detail.callback;
-    let authData = accessSessionStorage('code_exchange_response', 'read');
-    authData = JSON.parse(authData);
-    let authBearer = authData.authenticationResult?.access?.access_token;
 
-    fetch('/api/1.0/actions/unpublish', {
+    authenticatedFetch('/api/1.0/actions/unpublish', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${authBearer}`,
       },
       body: JSON.stringify(unpublishEvent.detail.payload),
     })

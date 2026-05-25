@@ -829,6 +829,8 @@ const OpenIdConnectClient = require('../modules/oAuth2/OpenIdConnectClient');
 const ENV_WITH_LOGIN = {
   ...ENVIRONMENT,
   APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login']),
+  AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
+  AUTH_CLOCK_SKEW_SECONDS: '5',
 };
 
 // Minimal fake id_token: header.payload.signature (base64url encoded)
@@ -897,6 +899,7 @@ describe('CodeExchangeEndpoint Integration', () => {
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
       setCodeVerifier: jest.fn().mockReturnThis(),
+      setClockSkew: jest.fn().mockReturnThis(),
       exchangeAuthorizationCode: mockExchangeAuthorizationCode,
     }));
   });
@@ -1037,7 +1040,21 @@ describe('CodeExchangeEndpoint Integration', () => {
 
 describe('LogoutEndpoint Integration', () => {
   it('should return 200 when a valid Bearer token is present', async () => {
-    const req = { headers: { authorization: 'Bearer some-valid-token' } };
+    const JwtService = require('../modules/oAuth2/JwtService.js');
+    const validJwt = JwtService.createJwt(
+      'user@test.com',
+      'google',
+      ['edit'],
+      ENVIRONMENT.AUTH_SERVER_SECRET,
+      900
+    );
+
+    mockQueryIdentityByKey.mockResolvedValue({
+      id: 'identity-001',
+      key: 'user@test.com',
+    });
+
+    const req = { headers: { authorization: `Bearer ${validJwt}` } };
     const res = createResMock();
 
     await new LogoutEndpoint()

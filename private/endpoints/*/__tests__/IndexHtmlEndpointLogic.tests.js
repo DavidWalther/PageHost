@@ -38,7 +38,7 @@ describe('IndexHtmlEndpointLogic', () => {
       )
     );
     expect(mockResponseObject.send).toHaveBeenCalledWith(
-      expect.stringContaining('<script src="index.js"></script>')
+      expect.stringContaining('<script type="module" src="index.js"></script>')
     );
     expect(mockResponseObject.send).toHaveBeenCalledWith(
       expect.stringContaining('<body onload="initializeApp()"></body>')
