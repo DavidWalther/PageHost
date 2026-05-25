@@ -114,6 +114,8 @@ async function _doRefresh() {
       const existing = JSON.parse(stored);
       existing.authenticationResult.access = data.authenticationResult.access;
       sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(existing));
+    } else {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(data));
     }
 
     // Update localStorage with new refresh token
