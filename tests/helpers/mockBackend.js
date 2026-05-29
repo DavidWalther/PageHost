@@ -38,7 +38,11 @@ async function setupDefaultMocks(page) {
   );
 
   await page.route('**/sw.js', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/javascript', body: '' })
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: '',
+    })
   );
 
   await page.route('https://accounts.google.com/**', (route) =>

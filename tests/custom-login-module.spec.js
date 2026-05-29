@@ -38,9 +38,7 @@ test.describe('custom-login-module', () => {
       ''
     );
     await expect(
-      page.locator(
-        'text=Neue Regisrierungen sind im Moment nicht möglich.'
-      )
+      page.locator('text=Neue Regisrierungen sind im Moment nicht möglich.')
     ).toBeVisible();
     await expect(page.locator('img[alt="Google G logo"]')).toBeVisible();
   });
