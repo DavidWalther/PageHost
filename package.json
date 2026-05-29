@@ -21,7 +21,9 @@
     "story:update": "node private/scripts/storyUpdate.js",
     "story:read": "node private/scripts/storyRead.js",
     "story:delete": "node private/scripts/storyDelete.js",
-    "test": "jest",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "jest",
+    "test:frontend": "playwright test",
     "test:watch": "jest --watch",
     "gitBranchMergedDelete": " git branch --merged | xargs -n1 -I{} git branch -d {}",
     "gitLogGraphOnlineAll": " git log --graph --oneline --all"
