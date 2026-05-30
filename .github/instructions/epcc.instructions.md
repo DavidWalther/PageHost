@@ -4,7 +4,8 @@
 
 - **Backend**: Node.js / Express, PostgreSQL (via `DataFacade` / `DataStorage`), Redis (via `DataCache`)
 - **Frontend**: Lit-Webkomponenten (CDN, kein Bundler), Salesforce Lightning Design System (SLDS v1)
-- **Tests**: Jest (`npm run test`), Testdateien: `*.tests.js` in `__tests__/`-Ordnern
+- **Tests (Backend)**: Jest (`npm run test:backend`), Testdateien: `*.tests.js` in `__tests__/`-Ordnern
+- **Tests (Frontend)**: Playwright (`npm run test:frontend`), Testdateien: `tests/*.spec.js`
 - **Formatter**: Prettier
 - **Backend-Quellcode**: `private/endpoints/`, `private/database2/`, `private/modules/`
 - **Frontend-Quellcode**: `public/components/`, `public/slds-components/`
@@ -46,15 +47,17 @@ das heißt:
 
 ### Arbeitsstruktur für Backend-Änderungen
 
-- **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test`)
+- **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test` — Backend + Frontend)
 - **Schritt 1 — Integrationstests**: Integrationstests für das neue Feature erstellen. So wenig Mocking wie möglich einsetzen.
 - **Schritt 2+ — Implementierung**: Implementierungsschritte mit eigenen Unit-Tests pro Schritt. Hier darf stark gemockt werden.
-- Nach Abschluss jedes Schrittes muss ein Testlauf eingeplant werden
+- Nach Abschluss jedes Schrittes muss ein vollständiger Testlauf eingeplant werden (`npm run test` — Backend + Frontend)
 
 ### Arbeitsstruktur für Frontend-Änderungen
 
-- Für Frontend-Entwicklung sind keine automatischen Tests vorgesehen
-- Schritt 0 (Baseline) entfällt bei reinen Frontend-Änderungen
+- **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test` — Backend + Frontend)
+- **Schritt 1 — Fixture & Spec**: HTML-Fixture in `tests/fixtures/` und Spec-Datei in `tests/` anlegen. Backend per `tests/helpers/mockBackend.js` mocken.
+- **Schritt 2+ — Implementierung**: Komponente implementieren, Tests nach jeder Änderung ausführen.
+- Nach Abschluss jedes Schrittes muss ein vollständiger Testlauf eingeplant werden (`npm run test` — Backend + Frontend)
 
 ### Branching pro Schritt
 
@@ -95,11 +98,14 @@ das heißt:
 
 7. Lit-Komponenten in `public/components/` — Skill `lit-web-components` nutzen
 8. SLDS-Klassen für Styling verwenden — Skill `slds-v1` nutzen
-9. Keine automatischen Tests erforderlich
+9. Playwright-Specs in `tests/*.spec.js` — ein Spec-File pro Komponente
+10. HTML-Fixtures für isoliertes Komponenten-Testing in `tests/fixtures/`
+11. Backend-Mocking über `tests/helpers/mockBackend.js` (`setupDefaultMocks(page)`)
+12. Tests nach jeder Änderung ausführen: `npm run test:frontend`
 
 ### Allgemein
 
-10. Nach Änderungen Prettier ausführen
+13. Nach Änderungen Prettier ausführen
 
 ## COMMIT Phase
 
