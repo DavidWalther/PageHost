@@ -1,0 +1,1 @@
+- [Bookstore navigation architecture & a11y issues](project_bookstore_nav.md) — story/chapter nav event flow, known critical issues, dead code, URL/focus/ARIA gaps found 2026-05-31
