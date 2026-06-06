@@ -14,37 +14,7 @@ class SldsBreadcrumbs extends LitElement {
     lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' }
   };
 
-  sizeMapping = {
-    small: {
-      spacingStart: '.8rem',
-      spacingEnd: '.5rem'
-    },
-    medium: {
-      spacingStart: '1rem',
-      spacingEnd: '.75rem'
-    },
-    large: {
-      spacingStart: '1.75rem',
-      spacingEnd: '1rem'
-    }
-  };
-
   static styles = css`
-    .slds-breadcrumb__overflow-indicator_small {
-      padding-left: .8rem;
-      padding-right: .5rem;
-    }
-
-    .slds-breadcrumb__overflow-indicator_medium {
-      padding-left: 1rem;
-      padding-right: .75rem;
-    }
-
-    .slds-breadcrumb__overflow-indicator_large {
-      padding-left: 1.75rem;
-      padding-right: 1rem;
-    }
-
     .slds-breadcrumb__item a {
       display: inline-block;
       max-width: clamp(4rem, 20vw, 12rem);
@@ -84,22 +54,13 @@ class SldsBreadcrumbs extends LitElement {
 
   get spacing() {
     if (this.isSizeSmall) {
-      return {
-        "start": this.sizeMapping.small.spacingStart,
-        "end": this.sizeMapping.small.spacingEnd
-      };
+      return SIZE_MAPPING.small;
     }
     if (this.isSizeLarge) {
-      return {
-        "start": this.sizeMapping.large.spacingStart,
-        "end": this.sizeMapping.large.spacingEnd
-      };
+      return SIZE_MAPPING.large;
     }
     // Default to medium spacing if size is not small or large
-    return {
-      "start": this.sizeMapping.medium.spacingStart,
-      "end": this.sizeMapping.medium.spacingEnd
-    };
+    return SIZE_MAPPING.medium;
   }
 
   get _visibleItems() {
@@ -112,10 +73,8 @@ class SldsBreadcrumbs extends LitElement {
 
   render() {
     const sizeClass = this.isSizeSmall ? 'slds-text-heading_small' : this.isSizeMedium ? 'slds-text-heading_medium' : this.isSizeLarge ? 'slds-text-heading_large' : '';
-    const spacingWidthStart = this.spacing.start;
-    const spacingWidthEnd = this.spacing.end;
-    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-start', spacingWidthStart);
-    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-end', spacingWidthEnd);
+    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-start', this.spacing.left);
+    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-end', this.spacing.right);
 
     const content = html`
       <nav role="navigation" slot="${this.isCardContainer ? 'header' : ''}" aria-label="${this.ariaLabel}">
@@ -136,15 +95,9 @@ class SldsBreadcrumbs extends LitElement {
   }
 
   _renderOverflowIndicator() {
-    let overflowClass = 'slds-breadcrumb__overflow-indicator_medium';
-    if(this.isSizeSmall) {
-      overflowClass = 'slds-breadcrumb__overflow-indicator_small';
-    }
-    if(this.isSizeLarge) {
-      overflowClass = 'slds-breadcrumb__overflow-indicator_large';
-    }
+    const spacing = this.spacing;
     return html`
-      <li class="slds-breadcrumb__item ${overflowClass}">
+      <li class="slds-breadcrumb__item" style="padding-left: ${spacing.left}; padding-right: ${spacing.right};">
         <span>…</span>
       </li>
     `;
@@ -152,7 +105,7 @@ class SldsBreadcrumbs extends LitElement {
 
   _renderItem(item, index, isLast = false) {
     const innerContent = (isLast && !this.lastItemAsLink)
-      ? html`<span style="padding-left: ${this.spacing.start}; " title="${item.label}">${item.label}</span>`
+      ? html`<span style="padding-left: ${this.spacing.left}; " title="${item.label}">${item.label}</span>`
       : html`<a
           href="${item.href ?? nothing}"
           title="${item.label}"
