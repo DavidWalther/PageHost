@@ -152,7 +152,7 @@ class SldsBreadcrumbs extends LitElement {
 
   _renderItem(item, index, isLast = false) {
     const innerContent = (isLast && !this.lastItemAsLink)
-      ? html`<span title="${item.label}">${item.label}</span>`
+      ? html`<span style="padding-left: ${this.spacing.start}; " title="${item.label}">${item.label}</span>`
       : html`<a
           href="${item.href ?? nothing}"
           title="${item.label}"
