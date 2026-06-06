@@ -12,52 +12,116 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
   async execute() {
     const LOCATION = 'Server.IndexEndpoint.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing index logic', location: LOCATION});
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'Executing index logic',
+      location: LOCATION,
+    });
 
     return new Promise((resolve) => {
-      Logging.debugMessage({severity:'INFO', message: `Request received - ${this.requestObject.url}`, location: LOCATION});
-      Logging.debugMessage({severity:'FINER', message: 'Executed index request', location: LOCATION});
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Request received - ${this.requestObject.url}`,
+        location: LOCATION,
+      });
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: 'Executed index request',
+        location: LOCATION,
+      });
 
-//      let indexPath = ABSOLUTE_FILE_PATH.replace(RELATIVE_FILE_PATH, '') + '/public/index.html';
-
-
-
+      //      let indexPath = ABSOLUTE_FILE_PATH.replace(RELATIVE_FILE_PATH, '') + '/public/index.html';
 
       //this.responseObject.sendFile(indexPath);
 
       let headerEntries = [];
       headerEntries.push('<meta charset="UTF-8">');
-      headerEntries.push('<meta name="viewport" content="width=device-width, initial-scale=1">');
-      headerEntries.push('<link rel="icon" type="image/x-icon" href="favicon.svg">');
+      headerEntries.push(
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+      );
+      headerEntries.push(
+        '<link rel="icon" type="image/x-icon" href="favicon.svg">'
+      );
       headerEntries.push('<link rel="manifest" href="manifest.json" />');
-      headerEntries.push('<link rel="stylesheet" type="text/css" href="/assets/styles/salesforce-lightning-design-system.min.css" />');
-      headerEntries.push('<link rel="stylesheet" type="text/css" href="/styles/darkmode.css"/>');
 
-      headerEntries.push('<script src="index.js"></script>');
+      headerEntries.push(
+        '<link rel="stylesheet" type="text/css" href="/assets/styles/salesforce-lightning-design-system.min.css" />'
+      );
+      headerEntries.push(
+        '<link rel="stylesheet" type="text/css" href="/styles/darkmode.css"/>'
+      );
 
-      headerEntries.push('<script type="module" src="components/global-header/global-header.js"></script>');
-      headerEntries.push('<script type="module" src="components/custom-paragraph/custom-paragraph.js"></script>');
-      headerEntries.push('<script type="module" src="components/custom-chapter/custom-chapter.js"></script>');
-      headerEntries.push('<script type="module" src="components/custom-story/custom-story.js"></script>');
-      headerEntries.push('<script type="module" src="components/custom-publishing/custom-publishing.js"></script>');
-      headerEntries.push('<script type="module" src="components/custom-login-module/custom-login-module.js"></script>');
-      headerEntries.push('<script type="module" src="components/custom-chapter-edit/custom-chapter-edit.js"></script>');
+      headerEntries.push('<script type="module" src="index.js"></script>');
 
-      headerEntries.push('<script type="module" src="slds-components/slds-toggle/toggle.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-input/slds-input.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-button-icon/slds-button-icon.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-card/slds-card.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-global-header/slds-global-header.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-panel/slds-panel.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-spinner/slds-spinner.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-toast/slds-toast.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-combobox/slds-combobox.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-modal/slds-modal.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-layout/slds-layout.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-layout/slds-layout-item.js"></script>');
-      headerEntries.push('<script type="module" src="slds-components/slds-breadcrumbs/slds-breadcrumbs.js"></script>');
+      headerEntries.push(
+        '<script type="module" src="components/global-header/global-header.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="components/custom-paragraph/custom-paragraph.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="components/custom-chapter/custom-chapter.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="components/custom-story/custom-story.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="components/custom-publishing/custom-publishing.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="components/custom-login-module/custom-login-module.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="components/custom-chapter-edit/custom-chapter-edit.js"></script>'
+      );
 
-      headerEntries.push('<script type="module" src="applications/bookstore/bookstore.js"></script>');
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-toggle/toggle.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-input/slds-input.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-button-icon/slds-button-icon.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-card/slds-card.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-global-header/slds-global-header.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-panel/slds-panel.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-spinner/slds-spinner.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-toast/slds-toast.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-combobox/slds-combobox.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-modal/slds-modal.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-layout/slds-layout.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-layout/slds-layout-item.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-progress-bar/slds-progress-bar.js"></script>'
+      );
+
+      headerEntries.push(
+        '<script type="module" src="applications/bookstore/bookstore.js"></script>'
+      );
+
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-breadcrumbs/slds-breadcrumbs.js"></script>'
+      );
 
       let headPlaceholder = '\n' + headerEntries.join('\n') + '\n';
 
@@ -77,4 +141,4 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
   }
 }
 
-module.exports = IndexHtmlEndpointLogic
+module.exports = IndexHtmlEndpointLogic;

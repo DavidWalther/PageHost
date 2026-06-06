@@ -1,12 +1,16 @@
 const { Logging } = require('../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../modules/oAuth2/OpenIdConnectClient.js');
-const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const {
+  DataCache2,
+} = require('../../../../../database2/DataCache/DataCache.js');
 const { DataFacade } = require('../../../../../database2/DataFacade.js');
 const crypto = require('crypto');
 const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
+const RefreshTokenService = require('../../../../../modules/oAuth2/RefreshTokenService.js');
 const { table } = require('console');
 
-const GOOGLE_ENDPOINT_WELLKNOWN = 'https://accounts.google.com/.well-known/openid-configuration';
+const GOOGLE_ENDPOINT_WELLKNOWN =
+  'https://accounts.google.com/.well-known/openid-configuration';
 
 class CodeExchangeEndpoint {
   constructor() {
@@ -44,19 +48,19 @@ class CodeExchangeEndpoint {
       port: this.requestObject.port,
       pathname: this.requestObject.path,
       query: this.requestObject.query,
-    }
+    };
 
     Logging.debugMessage({
       severity: 'FINE',
       message: `Request Object Address Parameters: ${JSON.stringify(requestObjectAdressParameters)}`,
-      location: LOCATION
+      location: LOCATION,
     });
 
     if (this.envVarAuthUrl) {
       Logging.debugMessage({
         severity: 'DEBUG',
         message: `AUTH_OIDC_REDIRECT_URI is set: ${this.envVarAuthUrl}`,
-        location: LOCATION
+        location: LOCATION,
       });
       return this.envVarAuthUrl;
     }
@@ -66,7 +70,7 @@ class CodeExchangeEndpoint {
     Logging.debugMessage({
       severity: 'DEBUG',
       message: `Redirect URI: ${redirectUri}`,
-      location: LOCATION
+      location: LOCATION,
     });
     return redirectUri;
   }
@@ -76,27 +80,45 @@ class CodeExchangeEndpoint {
     // Restrict access to login if not allowed
     const allowedActions = this.environment.APPLICATION_ACTIVE_ACTIONS || '[]';
     let allowed = [];
-    try { allowed = JSON.parse(allowedActions).map(a => a.toLowerCase()); } catch (e) {}
+    try {
+      allowed = JSON.parse(allowedActions).map((a) => a.toLowerCase());
+    } catch (e) {}
     // Only require 'login' to be present for code exchange
     if (!allowed.includes('login')) {
-      Logging.debugMessage({ severity: 'WARNING', message: 'Login not allowed by environment', location: LOCATION });
+      Logging.debugMessage({
+        severity: 'WARNING',
+        message: 'Login not allowed by environment',
+        location: LOCATION,
+      });
       this.responseObject.status(403).json({ error: 'Login not allowed' });
       return;
     }
 
-    Logging.debugMessage({ severity: 'INFO', message: `Executing code exchange`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Executing code exchange`,
+      location: LOCATION,
+    });
 
     const REDIRECT_URI = `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     const { state, auth_code, code_verifier } = this.requestObject.body;
 
     if (!auth_code) {
       this.responseObject.status(400).json({ error: 'Missing auth_code' });
-      Logging.debugMessage({ severity: 'INFO', message: `Missing auth_code`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Missing auth_code`,
+        location: LOCATION,
+      });
       return;
     }
     if (!state) {
       this.responseObject.status(400).json({ error: 'Missing auth_state' });
-      Logging.debugMessage({ severity: 'INFO', message: `Missing auth-state`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Missing auth-state`,
+        location: LOCATION,
+      });
       return;
     }
 
@@ -108,17 +130,31 @@ class CodeExchangeEndpoint {
 
     const isStateValid = await cache.get(auth_state_cache_key);
     if (!isStateValid) {
-      this.responseObject.status(400).json({ error: 'Invalid or expired state' });
-      Logging.debugMessage({ severity: 'INFO', message: 'Invalid or expired state', location: LOCATION });
+      this.responseObject
+        .status(400)
+        .json({ error: 'Invalid or expired state' });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: 'Invalid or expired state',
+        location: LOCATION,
+      });
       return;
     }
 
     await cache.del(auth_state_cache_key);
-    Logging.debugMessage({ severity: 'INFO', message: 'State validated and removed from cache', location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'State validated and removed from cache',
+      location: LOCATION,
+    });
 
     if (!code_verifier) {
       this.responseObject.status(400).json({ error: 'Invalid code' });
-      Logging.debugMessage({ severity: 'INFO', message: `Missing code verifier`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Missing code verifier`,
+        location: LOCATION,
+      });
       return;
     }
     // ======= Validate state - End ======
@@ -128,35 +164,70 @@ class CodeExchangeEndpoint {
      * Save the auth_code in the cache to prevent replay attacks.
      * The Cache stores 'used-auth-codes.*'-keys for 20 minutes.
      */
-    let auth_code_cache_key = PREFIX_FOR_SHORT_TERM_CACHE + '-used-auth-code-' + auth_code; // generate a unique cache key for the auth_code
+    let auth_code_cache_key =
+      PREFIX_FOR_SHORT_TERM_CACHE + '-used-auth-code-' + auth_code; // generate a unique cache key for the auth_code
     let ShortTermCacheKeyGenerator = await cache.get(auth_code_cache_key); // try to get the auth_code from the cache
-    if ( ShortTermCacheKeyGenerator ) {
+    if (ShortTermCacheKeyGenerator) {
       // If the auth_code was actually found in the cache, it means it was already used
-      this.responseObject.status(401).json({ error: 'Authentication code already used' });
-      Logging.debugMessage({ severity: 'INFO', message: `Authentication code already used`, location: LOCATION });
+      this.responseObject
+        .status(401)
+        .json({ error: 'Authentication code already used' });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Authentication code already used`,
+        location: LOCATION,
+      });
       return;
     }
     await cache.set(auth_code_cache_key, true);
     // ====== Check if the auth_code is already used - End =======
 
+    const clockSkewSeconds = parseInt(
+      this.environment.AUTH_CLOCK_SKEW_SECONDS,
+      10
+    );
+    if (
+      !this.environment.AUTH_CLOCK_SKEW_SECONDS ||
+      isNaN(clockSkewSeconds) ||
+      clockSkewSeconds < 0
+    ) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: 'AUTH_CLOCK_SKEW_SECONDS is not set or invalid',
+        location: LOCATION,
+      });
+      this.responseObject
+        .status(500)
+        .json({ error: 'Server configuration error' });
+      return;
+    }
 
     const oidcClient = new OpenIdConnectClient()
       .setRedirectUri(this.redirectUri)
       .setClientId(this.environment.GOOGLE_CLIENT_ID)
       .setClientSecret(this.environment.GOOGLE_CLIENT_SECRET)
       .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
-      .setCodeVerifier(code_verifier); // Set the code verifier for PKCE
+      .setCodeVerifier(code_verifier)
+      .setClockSkew(clockSkewSeconds);
 
     let tokenResponse;
     try {
       tokenResponse = await oidcClient.exchangeAuthorizationCode(auth_code);
     } catch (error) {
-      Logging.debugMessage({ severity: 'INFO', message: `Error during token exchange: ${error}`, location: LOCATION });
-      this.responseObject.status(400).json({ error: 'Authentication denied by provider' });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Error during token exchange: ${error}`,
+        location: LOCATION,
+      });
+      this.responseObject
+        .status(400)
+        .json({ error: 'Authentication denied by provider' });
       return;
     }
 
-    const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token.split('.').map(part => Buffer.from(part, 'base64').toString());
+    const [tokenHeader, tokenPayloadStr] = tokenResponse.id_token
+      .split('.')
+      .map((part) => Buffer.from(part, 'base64').toString());
     let tokenPayload = JSON.parse(tokenPayloadStr);
 
     /*
@@ -167,11 +238,15 @@ class CodeExchangeEndpoint {
     // The user checks and create on of the bearer token will eventually be moved to a separate module.
 
     let dataFacade = new DataFacade(this.environment);
-    let userData = {request : {table: 'identity', key: tokenPayload.email}};
+    let userData = { request: { table: 'identity', key: tokenPayload.email } };
     let userWithAuthorization = await dataFacade.getData(userData);
-    if(!userWithAuthorization || !userWithAuthorization.id ) {
+    if (!userWithAuthorization || !userWithAuthorization.id) {
       this.responseObject.status(401).json({ error: 'No new users allowed' });
-      Logging.debugMessage({ severity: 'INFO', message: `No new users allowed`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `No new users allowed`,
+        location: LOCATION,
+      });
       return;
     }
 
@@ -186,33 +261,115 @@ class CodeExchangeEndpoint {
     try {
       jwtToken = accessTokenService.createJwt(tokenPayload, scopes);
     } catch (error) {
-      Logging.debugMessage({ severity: 'INFO', message: `Error creating JWT: ${error}`, location: LOCATION });
+      Logging.debugMessage({
+        severity: 'INFO',
+        message: `Error creating JWT: ${error}`,
+        location: LOCATION,
+      });
       this.responseObject.status(400).json({ error: 'Bad Request' });
       return;
     }
 
-    Logging.debugMessage({ severity: 'INFO', message: `JWT created for scope ${scopes}`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `JWT created for scope ${scopes}`,
+      location: LOCATION,
+    });
+
+    // Generate refresh token
+    const refreshTokenLifetimeDays = parseInt(
+      this.environment.AUTH_REFRESH_TOKEN_LIFETIME_DAYS,
+      10
+    );
+    if (
+      !this.environment.AUTH_REFRESH_TOKEN_LIFETIME_DAYS ||
+      isNaN(refreshTokenLifetimeDays) ||
+      refreshTokenLifetimeDays <= 0
+    ) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: 'AUTH_REFRESH_TOKEN_LIFETIME_DAYS is not set or invalid',
+        location: LOCATION,
+      });
+      this.responseObject
+        .status(500)
+        .json({ error: 'Server configuration error' });
+      return;
+    }
+
+    let refreshTokenJwt;
+    try {
+      refreshTokenJwt = RefreshTokenService.createRefreshToken(
+        this.environment.AUTH_SERVER_SECRET,
+        refreshTokenLifetimeDays
+      );
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Error creating refresh token: ${error}`,
+        location: LOCATION,
+      });
+      this.responseObject.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    // Store refresh token UUID in identity record
+    const refreshTokenPayload = RefreshTokenService.verifyRefreshToken(
+      refreshTokenJwt,
+      this.environment.AUTH_SERVER_SECRET
+    );
+
+    try {
+      dataFacade.setSkipCache(true);
+      await dataFacade.updateData({
+        object: 'identity',
+        payload: {
+          id: userWithAuthorization.id,
+          refreshtoken: JSON.stringify({
+            token: refreshTokenPayload.token,
+            issuedAt: refreshTokenPayload.issuedAt,
+            expiresAt: refreshTokenPayload.expiresAt,
+          }),
+        },
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Error storing refresh token: ${error}`,
+        location: LOCATION,
+      });
+      this.responseObject.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
     let user = {
       provider: 'google',
       first_name: tokenPayload.given_name,
       last_name: tokenPayload.family_name,
       picture: tokenPayload.picture,
       display_name: tokenPayload.name,
-      email: tokenPayload.email
+      email: tokenPayload.email,
     };
     const auth_response = {
       authenticationResult: {
         user,
         access: {
           access_token: jwtToken,
-          scopes
-        }
-      }
+          scopes,
+        },
+        refresh: {
+          refresh_token: refreshTokenJwt,
+        },
+      },
     };
 
     this.responseObject.json(auth_response);
 
-    Logging.debugMessage({ severity: 'INFO', message: `Code exchange completed`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Code exchange completed`,
+      location: LOCATION,
+    });
     return this.responseObject;
   }
 }

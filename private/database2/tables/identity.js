@@ -1,7 +1,16 @@
 class TableIdentity {
   constructor() {
     this.tableName = 'identity';
-    this.tableFields = ['id', 'recordnumber', 'key', 'active', 'createddate', 'applicationincluded', 'applicationexcluded'];
+    this.tableFields = [
+      'id',
+      'recordnumber',
+      'key',
+      'active',
+      'createddate',
+      'applicationincluded',
+      'applicationexcluded',
+      'refreshtoken',
+    ];
     this.tableKeyPrefix = '000i';
   }
 
@@ -10,7 +19,7 @@ class TableIdentity {
   }
 
   getTableFields() {
-    return () => [... this.tableFields];
+    return () => [...this.tableFields];
   }
 
   getTableKeyPrefix() {
@@ -19,4 +28,3 @@ class TableIdentity {
 }
 
 module.exports = { TableIdentity };
-

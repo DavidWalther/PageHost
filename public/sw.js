@@ -12,6 +12,7 @@ const STATIC_FILES = [
   // Modules
   '/modules/global-styles.mjs',
   '/modules/oIdcComponent.js',
+  '/modules/authTokenManager.js',
 
   // Styles
   '/styles/darkmode.css',
@@ -27,6 +28,7 @@ const STATIC_FILES = [
   '/components/custom-publishing/custom-publishing.js',
   '/components/global-header/global-header.js',
   '/components/custom-chapter/custom-chapter.js',
+  '/components/custom-chapter/delete-chapter.api.js',
   '/components/custom-chapter/inValidTests/chapter.tests.js',
   '/components/custom-chapter-edit/custom-chapter-edit.js',
   '/components/custom-login-module/custom-login-module.js',
@@ -45,6 +47,7 @@ const STATIC_FILES = [
   '/slds-components/slds-layout/slds-layout.js',
   '/slds-components/slds-layout/slds-layout-item.js',
   '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
+  '/slds-components/slds-progress-bar/slds-progress-bar.js',
 
   // SLDS Components - HTML Templates
   '/slds-components/slds-combobox/slds-combobox.html',
@@ -60,7 +63,7 @@ const STATIC_FILES = [
   '/assets/styles/salesforce-lightning-design-system.min.css',
 
   // PWA essentials
-  '/manifest.json'
+  '/manifest.json',
 ];
 
 // Install Event - Cache all static files
@@ -68,7 +71,8 @@ self.addEventListener('install', (event) => {
   console.log(`Service Worker v${APP_VERSION} installing...`);
 
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches
+      .open(CACHE_NAME)
       .then((cache) => {
         console.log(`Caching ${STATIC_FILES.length} static files...`);
         return cache.addAll(STATIC_FILES);
@@ -89,7 +93,8 @@ self.addEventListener('activate', (event) => {
   console.log(`Service Worker v${APP_VERSION} activating...`);
 
   event.waitUntil(
-    caches.keys()
+    caches
+      .keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
@@ -112,16 +117,19 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Never cache dynamic content (always go to network)
-  if (url.pathname.startsWith('/api/') ||
-      url.pathname.startsWith('/data/') ||
-      url.pathname === '/metadata') {
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/data/') ||
+    url.pathname === '/metadata'
+  ) {
     // Let browser handle normally - no interception
     return;
   }
 
   // Cache-first strategy for all application resources
   event.respondWith(
-    caches.match(event.request)
+    caches
+      .match(event.request)
       .then((cachedResponse) => {
         if (cachedResponse) {
           // Return cached version if available
@@ -129,12 +137,11 @@ self.addEventListener('fetch', (event) => {
         }
 
         // Fall back to network if not in cache
-        return fetch(event.request)
-          .then((networkResponse) => {
-            // Don't cache the response, just return it
-            // (only pre-defined STATIC_FILES get cached during install)
-            return networkResponse;
-          });
+        return fetch(event.request).then((networkResponse) => {
+          // Don't cache the response, just return it
+          // (only pre-defined STATIC_FILES get cached during install)
+          return networkResponse;
+        });
       })
       .catch((error) => {
         console.error('Fetch failed for:', event.request.url, error);

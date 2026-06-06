@@ -23,8 +23,8 @@ describe('SingleStoryEndpoint', () => {
       title: 'Test Story',
       chapters: [
         { id: 'c1', name: 'Chapter 1' },
-        { id: 'c2', name: 'Chapter 2' }
-      ]
+        { id: 'c2', name: 'Chapter 2' },
+      ],
     });
     mockFacadeSetSkipCache = jest.fn().mockReturnThis();
     mockFacadeSetScopes = jest.fn().mockReturnThis();
@@ -46,7 +46,7 @@ describe('SingleStoryEndpoint', () => {
     const mockStory = {
       id: '123',
       title: 'Test Story',
-      chapters: [{ id: 'c1', name: 'Chapter 1' }]
+      chapters: [{ id: 'c1', name: 'Chapter 1' }],
     };
     DataFacade.mockImplementation(() => ({
       getData: mockFacadeGetData.mockResolvedValue(mockStory),
@@ -68,8 +68,8 @@ describe('SingleStoryEndpoint', () => {
       title: 'Test Story',
       chapters: [
         { id: 'c1', name: 'Published Chapter', publishDate: '2026-01-01' },
-        { id: 'c2', name: 'Future Chapter', publishDate: '2026-12-01' }
-      ]
+        { id: 'c2', name: 'Future Chapter', publishDate: '2026-12-01' },
+      ],
     };
     DataFacade.mockImplementation(() => ({
       setSkipCache: mockFacadeSetSkipCache,
@@ -93,7 +93,9 @@ describe('SingleStoryEndpoint', () => {
     const mockStory = {
       id: '123',
       title: 'Test Story',
-      chapters: [{ id: 'c1', name: 'Published Chapter', publishDate: '2026-01-01' }]
+      chapters: [
+        { id: 'c1', name: 'Published Chapter', publishDate: '2026-01-01' },
+      ],
     };
     DataFacade.mockImplementation(() => ({
       setSkipCache: mockFacadeSetSkipCache,
@@ -116,7 +118,7 @@ describe('SingleStoryEndpoint', () => {
     const mockStory = {
       id: '123',
       title: 'Test Story',
-      chapters: [{ id: 'c1', name: 'Published Chapter' }]
+      chapters: [{ id: 'c1', name: 'Published Chapter' }],
     };
     DataFacade.mockImplementation(() => ({
       setSkipCache: mockFacadeSetSkipCache,

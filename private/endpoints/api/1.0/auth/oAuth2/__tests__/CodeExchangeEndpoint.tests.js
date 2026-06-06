@@ -2,20 +2,31 @@ const CodeExchangeEndpoint = require('../CodeExchangeEndpoint');
 const { Logging } = require('../../../../../../modules/logging.js');
 const OpenIdConnectClient = require('../../../../../../modules/oAuth2/OpenIdConnectClient.js');
 const { json } = require('stream/consumers');
-const { DataCache2 } = require('../../../../../../database2/DataCache/DataCache.js');
+const {
+  DataCache2,
+} = require('../../../../../../database2/DataCache/DataCache.js');
 const { DataFacade } = require('../../../../../../database2/DataFacade.js');
-const {Environment}= require('../../../../../../modules/environment.js');
+const { Environment } = require('../../../../../../modules/environment.js');
 const AccessTokenService = require('../../../../../../modules/oAuth2/AccessTokenService.js');
+const RefreshTokenService = require('../../../../../../modules/oAuth2/RefreshTokenService.js');
 
 jest.mock('../../../../../../modules/oAuth2/AccessTokenService');
+jest.mock('../../../../../../modules/oAuth2/RefreshTokenService');
 jest.mock('../../../../../../modules/environment.js');
 jest.mock('../../../../../../modules/logging');
 jest.mock('../../../../../../modules/oAuth2/OpenIdConnectClient');
 jest.mock('../../../../../../database2/DataCache/DataCache.js');
 jest.mock('../../../../../../database2/DataFacade.js');
 
-const mockJwtHeader = { "test": "abc"};
-const mockJwtPayload = { "email": "legit.user@test.com", "aud": "test-client-id", "exp": 1234567890, "iat": 1234567890, "iss": "https://accounts.google.com", "sub": "test-subject" };
+const mockJwtHeader = { test: 'abc' };
+const mockJwtPayload = {
+  email: 'legit.user@test.com',
+  aud: 'test-client-id',
+  exp: 1234567890,
+  iat: 1234567890,
+  iss: 'https://accounts.google.com',
+  sub: 'test-subject',
+};
 const mockJwtSignature = '';
 
 function createMockJwt(header, payload, signature) {
@@ -49,8 +60,20 @@ AccessTokenService.mockImplementation(() => {
     setEnvironment: jest.fn().mockReturnThis(),
     getUserScopes: jest.fn().mockReturnValue(['edit']),
     createJwt: mockActionCreateJwt,
-    getBearerCacheKey: jest.fn().mockReturnValue('test-bearer-cache-key')
+    getBearerCacheKey: jest.fn().mockReturnValue('test-bearer-cache-key'),
   };
+});
+
+RefreshTokenService.createRefreshToken = jest
+  .fn()
+  .mockReturnValue('mock-refresh-token-jwt');
+RefreshTokenService.extractTokenId = jest
+  .fn()
+  .mockReturnValue('mock-refresh-uuid');
+RefreshTokenService.verifyRefreshToken = jest.fn().mockReturnValue({
+  token: 'mock-refresh-uuid',
+  issuedAt: '2026-01-01T00:00:00.000Z',
+  expiresAt: '2026-01-08T00:00:00.000Z',
 });
 
 Environment.mockImplementation(() => {
@@ -58,17 +81,22 @@ Environment.mockImplementation(() => {
     GOOGLE_CLIENT_ID: 'test-client-id',
     GOOGLE_CLIENT_SECRET: 'test-client-secret',
     APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create']),
-    GOOGLE_ENDPOINT_WELLKNOWN: 'https://accounts.google.com/.well-known/openid-configuration',
+    GOOGLE_ENDPOINT_WELLKNOWN:
+      'https://accounts.google.com/.well-known/openid-configuration',
     HOST: 'http://localhost',
-    AUTH_SERVER_SECRET: 'secret'
+    AUTH_SERVER_SECRET: 'secret',
+    AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
+    AUTH_CLOCK_SKEW_SECONDS: '5',
   };
 });
 
 const encode64 = (str) => Buffer.from(str).toString('base64');
 const mockIdToken = [
   encode64('test-header'),
-  encode64(JSON.stringify({ sub: 'test-subject', exp: 1234567890, iat: 1234567890 })),
-  encode64('test-signature')
+  encode64(
+    JSON.stringify({ sub: 'test-subject', exp: 1234567890, iat: 1234567890 })
+  ),
+  encode64('test-signature'),
 ].join('.');
 
 let mockCacheGet = jest.fn().mockResolvedValue(true);
@@ -80,22 +108,40 @@ describe('CodeExchangeEndpoint', () => {
   let mockEnvironment;
 
   beforeEach(() => {
-    mockEnvironment = { HOST: 'http://localhost', GOOGLE_CLIENT_ID: 'test-client-id', GOOGLE_CLIENT_SECRET: 'test-client-secret', GOOGLE_ENDPOINT_WELLKNOWN: 'test-wellknown', APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create']) };
-    mockRequestObject = { protocol: 'http', get: jest.fn().mockReturnValue('localhost'), body: { auth_code: 'test-auth-code', state : 'test-state', code_verifier: 'test-code-verifier'} };
+    mockEnvironment = {
+      HOST: 'http://localhost',
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-client-secret',
+      GOOGLE_ENDPOINT_WELLKNOWN: 'test-wellknown',
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create']),
+      AUTH_CLOCK_SKEW_SECONDS: '5',
+    };
+    mockRequestObject = {
+      protocol: 'http',
+      get: jest.fn().mockReturnValue('localhost'),
+      body: {
+        auth_code: 'test-auth-code',
+        state: 'test-state',
+        code_verifier: 'test-code-verifier',
+      },
+    };
     mockResponseObject = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
 
     endpoint = new CodeExchangeEndpoint();
-    endpoint.setEnvironment(mockEnvironment).setRequestObject(mockRequestObject).setResponseObject(mockResponseObject);
+    endpoint
+      .setEnvironment(mockEnvironment)
+      .setRequestObject(mockRequestObject)
+      .setResponseObject(mockResponseObject);
 
     DataCache2.mockImplementation(() => {
       return {
         get: mockCacheGet,
         set: jest.fn().mockResolvedValue(true),
-        del: jest.fn().mockResolvedValue(true)
-      }
+        del: jest.fn().mockResolvedValue(true),
+      };
     });
   });
 
@@ -105,7 +151,14 @@ describe('CodeExchangeEndpoint', () => {
       setClientId: jest.fn().mockReturnThis(),
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
-      exchangeAuthorizationCode: jest.fn().mockResolvedValue({ id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature) }),
+      setClockSkew: jest.fn().mockReturnThis(),
+      exchangeAuthorizationCode: jest.fn().mockResolvedValue({
+        id_token: createMockJwt(
+          mockJwtHeader,
+          mockJwtPayload,
+          mockJwtSignature
+        ),
+      }),
       setCodeVerifier: jest.fn().mockReturnThis(),
     }));
 
@@ -117,7 +170,9 @@ describe('CodeExchangeEndpoint', () => {
     await endpoint.execute();
 
     expect(mockResponseObject.status).toHaveBeenCalledWith(400);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Missing auth_state' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({
+      error: 'Missing auth_state',
+    });
   });
 
   it('should return 400 if auth_code is missing', async () => {
@@ -125,11 +180,14 @@ describe('CodeExchangeEndpoint', () => {
     await endpoint.execute();
 
     expect(mockResponseObject.status).toHaveBeenCalledWith(400);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Missing auth_code' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({
+      error: 'Missing auth_code',
+    });
   });
 
   it('should return 401 if authentication is denied by provider', async () => {
-    mockCacheGet = jest.fn()
+    mockCacheGet = jest
+      .fn()
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
 
@@ -138,29 +196,53 @@ describe('CodeExchangeEndpoint', () => {
       setClientId: jest.fn().mockReturnThis(),
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
-      exchangeAuthorizationCode: jest.fn().mockRejectedValue(new Error('Invalid code')),
+      setClockSkew: jest.fn().mockReturnThis(),
+      exchangeAuthorizationCode: jest
+        .fn()
+        .mockRejectedValue(new Error('Invalid code')),
       setCodeVerifier: jest.fn().mockReturnThis(),
     }));
 
     DataFacade.mockImplementation(() => {
       return {
-        getData: jest.fn().mockResolvedValue({ id: 'user-id', email: 'user@example.com' })
+        getData: jest
+          .fn()
+          .mockResolvedValue({ id: 'user-id', email: 'user@example.com' }),
       };
     });
 
     await endpoint.execute();
 
-    expect(mockCacheGet).toHaveBeenNthCalledWith(1, 'short-term-auth-state-test-state');
-    expect(mockCacheGet).toHaveBeenNthCalledWith(2, 'short-term-used-auth-code-test-auth-code');
+    expect(mockCacheGet).toHaveBeenNthCalledWith(
+      1,
+      'short-term-auth-state-test-state'
+    );
+    expect(mockCacheGet).toHaveBeenNthCalledWith(
+      2,
+      'short-term-used-auth-code-test-auth-code'
+    );
     expect(mockCacheGet).toHaveBeenCalledTimes(2);
     expect(mockResponseObject.status).toHaveBeenCalledWith(400);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Authentication denied by provider' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({
+      error: 'Authentication denied by provider',
+    });
   });
 
   it('should return a valid response on successful token exchange', async () => {
-    mockCacheGet = jest.fn()
+    mockCacheGet = jest
+      .fn()
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
+
+    DataFacade.mockImplementation(() => {
+      return {
+        getData: jest
+          .fn()
+          .mockResolvedValue({ id: 'user-id', email: 'legit.user@test.com' }),
+        updateData: jest.fn().mockResolvedValue({}),
+        setSkipCache: jest.fn(),
+      };
+    });
 
     let environment = new Environment();
     await endpoint.setEnvironment(environment).execute();
@@ -169,10 +251,13 @@ describe('CodeExchangeEndpoint', () => {
       authenticationResult: {
         access: {
           access_token: expect.any(String),
-          scopes: expect.any(Array)
+          scopes: expect.any(Array),
         },
-        user: expect.any(Object)
-      }
+        user: expect.any(Object),
+        refresh: {
+          refresh_token: expect.any(String),
+        },
+      },
     });
   });
 
@@ -181,18 +266,20 @@ describe('CodeExchangeEndpoint', () => {
     await endpoint.setEnvironment(mockEnvironment).execute();
 
     expect(mockResponseObject.status).toHaveBeenCalledWith(403);
-    expect(mockResponseObject.json).toHaveBeenCalledWith({ error: 'Login not allowed' });
+    expect(mockResponseObject.json).toHaveBeenCalledWith({
+      error: 'Login not allowed',
+    });
   });
 
   it('should not create a JWT if user was not found', async () => {
-    mockCacheGet = jest.fn()
+    mockCacheGet = jest
+      .fn()
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
 
-
     DataFacade.mockImplementation(() => {
       return {
-        getData: jest.fn().mockResolvedValue({}) // no user found
+        getData: jest.fn().mockResolvedValue({}), // no user found
       };
     });
 

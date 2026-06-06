@@ -1,12 +1,13 @@
 // Handles API calls for chapter deletion
-export async function deleteChapter({ id, token }) {
-  if (!id || !token) throw new Error('Missing id or token');
+import { authenticatedFetch } from '/modules/authTokenManager.js';
+
+export async function deleteChapter({ id }) {
+  if (!id) throw new Error('Missing id');
   const url = `/api/1.0/data/delete?object=chapter&id=${encodeURIComponent(id)}`;
-  const res = await fetch(url, {
+  const res = await authenticatedFetch(url, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
+      Accept: 'application/json',
     },
   });
   if (!res.ok) {

@@ -4,3 +4,14 @@ node_modules
 **/*.swp
 
 files/temp
+
+#AI-Tools
+
+## config files potentially containing secrets
+
+.claude/settings.json
+
+## Files created in epcc workflow
+
+epcc*
+

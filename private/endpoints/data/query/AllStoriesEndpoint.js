@@ -11,19 +11,27 @@ class AllStoriesEndpoint extends EndpointLogic {
   async execute() {
     const LOCATION = 'Server.AllStoriesEndpoint.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing all stories query', location: LOCATION});
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'Executing all stories query',
+      location: LOCATION,
+    });
 
     let parameterObject = {};
     parameterObject.returnPromise = true;
     parameterObject.request = {
       table: 'story',
-      id: null
+      id: null,
     };
 
     let dataFacade = new DataFacade(this.environment);
-    return dataFacade.getData(parameterObject).then(stories => {
-      Logging.debugMessage({severity:'FINER', message: `Stories returned`, location: LOCATION});
-      
+    return dataFacade.getData(parameterObject).then((stories) => {
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: `Stories returned`,
+        location: LOCATION,
+      });
+
       let dataCleaner = new DataCleaner();
       dataCleaner.removeApplicationKeys(stories); // Clean data here
 
@@ -32,4 +40,4 @@ class AllStoriesEndpoint extends EndpointLogic {
   }
 }
 
-module.exports = {AllStoriesEndpoint};
+module.exports = { AllStoriesEndpoint };

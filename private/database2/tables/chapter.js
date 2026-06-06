@@ -1,7 +1,17 @@
 class TableChapter {
   constructor() {
     this.tableName = 'Chapter';
-    this.tableFields = ['Id', 'StoryId', 'Name', 'LastUpdate', 'SortNumber', 'reversed', 'PublishDate', 'applicationincluded', 'applicationexcluded'];
+    this.tableFields = [
+      'Id',
+      'StoryId',
+      'Name',
+      'LastUpdate',
+      'SortNumber',
+      'reversed',
+      'PublishDate',
+      'applicationincluded',
+      'applicationexcluded',
+    ];
     this.tablHeadDataFields = ['Id', 'StoryId', 'Name', 'SortNumber'];
     this.tableKeyPrefix = '000c';
   }
@@ -11,11 +21,11 @@ class TableChapter {
   }
 
   getTableFields() {
-    return () => [... this.tableFields];
+    return () => [...this.tableFields];
   }
 
   getTableHeadDataFields() {
-    return () => [... this.tablHeadDataFields];
+    return () => [...this.tablHeadDataFields];
   }
 
   getTableKeyPrefix() {

@@ -39,14 +39,16 @@ html.dark-mode {
    */
   --slds-c-button-neutral-color-background: var(--dark-mode-color-base_40);
   --slds-c-button-text-color: var(--dark-mode-color-base_100);
-  --slds-c-button-neutral-color-background-hover: var(--dark-mode-color-base_50);
+  --slds-c-button-neutral-color-background-hover: var(
+    --dark-mode-color-base_50
+  );
 
   /**
     * Icon-Button styles
     */
-   --slds-c-icon-button-color-background: var(--dark-mode-color-base_40);
-   --slds-c-icon-button-color-background-hover: var(--dark-mode-color-base_50);
-   --slds-c-icon-button-color-text: var(--dark-mode-color-base_100);
+  --slds-c-icon-button-color-background: var(--dark-mode-color-base_40);
+  --slds-c-icon-button-color-background-hover: var(--dark-mode-color-base_50);
+  --slds-c-icon-button-color-text: var(--dark-mode-color-base_100);
 
   /**
    * Panel styles
@@ -59,7 +61,9 @@ html.dark-mode {
    * Listbox styles
    */
   --slds-c-listbox-option-color-background: var(--dark-mode-color-base_30);
-  --slds-c-listbox-option-color-background-hover: var(--dark-mode-color-base_40);
+  --slds-c-listbox-option-color-background-hover: var(
+    --dark-mode-color-base_40
+  );
   --slds-c-listbox-option-color-text: var(--dark-mode-color-base_100);
   --slds-c-listbox-option-text-color: var(--dark-mode-color-base_100);
   --slds-c-listbox-color-text: var(--dark-mode-color-base_100);

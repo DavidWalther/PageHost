@@ -15,7 +15,11 @@ The `SLDSButtonIcon` component is a custom web component that creates a Salesfor
 To use the `SLDSButtonIcon` component, you need to define the element in your HTML and set any desired attributes. Here's an example of how to use it:
 
 ```html
-<slds-button-icon icon="utility:settings" size="large" variant="icon-only"></slds-button-icon>
+<slds-button-icon
+  icon="utility:settings"
+  size="large"
+  variant="icon-only"
+></slds-button-icon>
 ```
 
 ### Events
@@ -29,7 +33,11 @@ To use the `SLDSButtonIcon` component, you need to define the element in your HT
 <slds-button-icon icon="utility:settings" size="large"></slds-button-icon>
 
 <!-- SLDS Button Icon as a filled container with a disabled state -->
-<slds-button-icon icon="utility:download" variant="container-filled" disabled></slds-button-icon>
+<slds-button-icon
+  icon="utility:download"
+  variant="container-filled"
+  disabled
+></slds-button-icon>
 ```
 
 ### Importing the Component

@@ -1,4 +1,4 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const templatePath = '/slds-components/slds-spinner/slds-spinner.html';
 let templatePromise = null;
@@ -13,15 +13,14 @@ const SIZE_STYLE_MAP = new Map([
   ['x-small', 'slds-spinner_x-small'],
   ['small', 'slds-spinner_small'],
   ['medium', 'slds-spinner_medium'],
-  ['large', 'slds-spinner_large']
+  ['large', 'slds-spinner_large'],
 ]);
 
 class SldsSpinner extends HTMLElement {
-
   constructor() {
     super();
     const shadowRoot = this.attachShadow({ mode: 'open' });
-    this.applyGlobalStyles();;
+    this.applyGlobalStyles();
   }
 
   applyGlobalStyles() {
@@ -35,7 +34,7 @@ class SldsSpinner extends HTMLElement {
       'container', // is only checked for existence
       'debug', // is only checked for existence
       'hidden', // is only checked for existence
-      'size' // valid sizes: xx-small, x-small, small, medium, large
+      'size', // valid sizes: xx-small, x-small, small, medium, large
     ];
   }
 
@@ -48,7 +47,7 @@ class SldsSpinner extends HTMLElement {
 
     switch (name) {
       case 'container':
-        this.setContainerTemplate
+        this.setContainerTemplate;
         break;
       case 'size':
         this.setSpinnerSize();
@@ -64,7 +63,7 @@ class SldsSpinner extends HTMLElement {
   // ------------------ getter methods ------------------
 
   get isHidden() {
-    let falsyValues = ['null', 'undefined', '' , undefined];
+    let falsyValues = ['null', 'undefined', '', undefined];
     let hidden = this.getAttribute('hidden');
     if (falsyValues.includes(hidden)) {
       return true;
@@ -87,7 +86,8 @@ class SldsSpinner extends HTMLElement {
       loadedMarkUp = await this.loadHtmlMarkup();
     }
 
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
+    const mainTemplateContent =
+      loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
     this.setContainerTemplate();
@@ -99,8 +99,8 @@ class SldsSpinner extends HTMLElement {
   async loadHtmlMarkup() {
     if (!templatePromise) {
       templatePromise = fetch(templatePath)
-        .then(response => response.text())
-        .then(html => {
+        .then((response) => response.text())
+        .then((html) => {
           return new DOMParser().parseFromString(html, 'text/html');
         });
     }
@@ -108,7 +108,7 @@ class SldsSpinner extends HTMLElement {
   }
 
   setSpinnerVisibility() {
-    if(! this.isHidden) {
+    if (!this.isHidden) {
       this.show();
     } else {
       this.hide();
@@ -117,7 +117,7 @@ class SldsSpinner extends HTMLElement {
 
   show() {
     const placeholderElement = this.getPlaceholderElement();
-    if(!placeholderElement) {
+    if (!placeholderElement) {
       return;
     }
     placeholderElement.style.display = 'block';
@@ -125,7 +125,7 @@ class SldsSpinner extends HTMLElement {
 
   hide() {
     const placeholderElement = this.getPlaceholderElement();
-    if(!placeholderElement) {
+    if (!placeholderElement) {
       return;
     }
     placeholderElement.style.display = 'none';
@@ -136,7 +136,7 @@ class SldsSpinner extends HTMLElement {
    */
   setSpinnerSize() {
     const placeholderElement = this.getPlaceholderElement();
-    if(!placeholderElement) {
+    if (!placeholderElement) {
       return;
     }
     const spinnerElement = placeholderElement.querySelector('.slds-spinner');
@@ -161,7 +161,9 @@ class SldsSpinner extends HTMLElement {
   }
 
   getContainerToLoad() {
-    return this.isContainer === true ? TEMPLATEID_WITH_CONTAINER : TEMPLATEID_WITHOUT_CONTAINER;
+    return this.isContainer === true
+      ? TEMPLATEID_WITH_CONTAINER
+      : TEMPLATEID_WITHOUT_CONTAINER;
   }
 
   addTemplateToElement(templateElementId) {

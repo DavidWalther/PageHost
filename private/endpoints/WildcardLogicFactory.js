@@ -11,9 +11,21 @@ class WildcardLogicFactory {
   static getProduct(requestObject) {
     const LOCATION = 'Server.WildcardLogicFactory.getProduct';
     const url = requestObject.url;
-    Logging.debugMessage({severity:'INFO', message: `Url: ${url}`, location: LOCATION });
-    Logging.debugMessage({severity:'FINE', message: `Params: ${JSON.stringify(requestObject.params)}`, location: LOCATION });
-    Logging.debugMessage({severity:'FINE', message: `Query: ${JSON.stringify(requestObject.query)}`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Url: ${url}`,
+      location: LOCATION,
+    });
+    Logging.debugMessage({
+      severity: 'FINE',
+      message: `Params: ${JSON.stringify(requestObject.params)}`,
+      location: LOCATION,
+    });
+    Logging.debugMessage({
+      severity: 'FINE',
+      message: `Query: ${JSON.stringify(requestObject.query)}`,
+      location: LOCATION,
+    });
     let query = requestObject.params[0];
     query = query.toLowerCase();
 

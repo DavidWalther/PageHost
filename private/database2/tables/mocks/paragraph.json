@@ -510,7 +510,7 @@
     "id": "000p00000000000039",
     "chapterid": "000c00000000000012",
     "storyid": "000s00000000000004",
-    "name": "Paragraph with groups, lists and nested sub-lists", 
+    "name": "Paragraph with groups, lists and nested sub-lists",
     "lastupdate": "2022-01-01 00:00:00",
     "content": null,
     "htmlcontent": "<slds-card no-footer><span slot=\"header\" >Container with groups, lists and nested sub-lists</span><div><ul><li>Vertical List with nested vertical lists</li><li>List Item</li><li><ul class=\"slds-is-nested\"><li>Nested Vertical List</li><li>List Item</li><li><ul class=\"slds-is-nested slds-list_dotted\"><li>Nested Vertical List</li><li>List Item</li><li>List Item</li></ul></li></ul></li></ul></div></slds-card>",

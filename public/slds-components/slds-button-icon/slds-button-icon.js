@@ -1,4 +1,4 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const templatePath = '/slds-components/slds-button-icon/slds-button-icon.html';
 let templatePromise = null;
@@ -7,7 +7,7 @@ let loadedMarkup = null;
 class SLDSButtonIcon extends HTMLElement {
   constructor() {
     super();
-    const shadowRoot =  this.attachShadow({ mode: 'open' });
+    const shadowRoot = this.attachShadow({ mode: 'open' });
 
     this.loadHtmlMarkup();
     this.applyGlobalStyles();
@@ -37,38 +37,44 @@ class SLDSButtonIcon extends HTMLElement {
         break;
     }
   }
-  
-  connectedCallback() {
-  }
 
-  disconnectedCallback() {
-  }
+  connectedCallback() {}
+
+  disconnectedCallback() {}
 
   async loadHtmlMarkup() {
     if (!loadedMarkup) {
       loadedMarkup = await fetch(templatePath)
-        .then(response => response.text())
-        .then(html => new DOMParser().parseFromString(html, 'text/html'));
+        .then((response) => response.text())
+        .then((html) => new DOMParser().parseFromString(html, 'text/html'));
     }
 
-    const templateContent = loadedMarkup.querySelector('#template-main').content;
+    const templateContent =
+      loadedMarkup.querySelector('#template-main').content;
     this.shadowRoot.appendChild(templateContent.cloneNode(true));
 
     // Initialize attributes
     this.updateIcon(this.getAttribute('icon'));
     this.updateDisabled(this.getAttribute('disabled'));
     this.updateSize(this.getAttribute('size'));
-    this.updateVariant(this.getAttribute('variant') === null ? 'container-filled' : this.getAttribute('variant'));
+    this.updateVariant(
+      this.getAttribute('variant') === null
+        ? 'container-filled'
+        : this.getAttribute('variant')
+    );
   }
 
   updateIcon(iconValue) {
     if (!iconValue) return;
     const [type, name] = iconValue.split(':');
-    
+
     const useElement = this.shadowRoot.querySelector('use');
     if (!useElement) return;
-    
-    useElement.setAttribute('xlink:href', `/assets/icons/${type}-sprite/svg/symbols.svg#${name}`);
+
+    useElement.setAttribute(
+      'xlink:href',
+      `/assets/icons/${type}-sprite/svg/symbols.svg#${name}`
+    );
     const spanElement = this.shadowRoot.querySelector('.slds-assistive-text');
     spanElement.textContent = name.charAt(0).toUpperCase() + name.slice(1);
   }
@@ -90,7 +96,9 @@ class SLDSButtonIcon extends HTMLElement {
     const sizes = ['large', 'small', 'x-small', 'xx-small'];
 
     // Remove all size classes
-    sizes.forEach(size => buttonElement.classList.remove(`slds-button_icon-${size}`));
+    sizes.forEach((size) =>
+      buttonElement.classList.remove(`slds-button_icon-${size}`)
+    );
 
     // Add the new size class if it's valid
     if (sizes.includes(sizeValue)) {
@@ -104,11 +112,13 @@ class SLDSButtonIcon extends HTMLElement {
     const variants = {
       'icon-only': 'slds-button_icon-container',
       'container-transparent': 'slds-button_icon-border',
-      'container-filled': 'slds-button_icon-border-filled'
+      'container-filled': 'slds-button_icon-border-filled',
     };
 
     // Remove all variant classes
-    Object.values(variants).forEach(variantClass => buttonElement.classList.remove(variantClass));
+    Object.values(variants).forEach((variantClass) =>
+      buttonElement.classList.remove(variantClass)
+    );
 
     // Add the new variant class if it's valid
     if (variants[variantValue]) {

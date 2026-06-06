@@ -17,19 +17,26 @@ For design token values, see `examples/tokens.md`.
 ## 1. Loading the Stylesheet
 
 ### CDN (no build step)
+
 ```html
-<link rel="stylesheet"
-  href="https://v1.lightningdesignsystem.com/assets/styles/salesforce-lightning-design-system.css" />
+<link
+  rel="stylesheet"
+  href="https://v1.lightningdesignsystem.com/assets/styles/salesforce-lightning-design-system.css"
+/>
 ```
 
 ### npm package (already installed in this project)
+
 ```html
 <!-- Served from node_modules or copied to public/assets -->
-<link rel="stylesheet"
-  href="/assets/styles/salesforce-lightning-design-system.css" />
+<link
+  rel="stylesheet"
+  href="/assets/styles/salesforce-lightning-design-system.css"
+/>
 ```
 
 The npm package `@salesforce-ux/design-system` is available at:
+
 ```
 node_modules/@salesforce-ux/design-system/assets/styles/salesforce-lightning-design-system.css
 ```
@@ -40,12 +47,12 @@ node_modules/@salesforce-ux/design-system/assets/styles/salesforce-lightning-des
 
 SLDS uses a BEM-derived convention with the `slds-` prefix:
 
-| Pattern | Meaning | Example |
-|---|---|---|
-| `slds-[component]` | Root element | `slds-button` |
-| `slds-[component]__[element]` | Child element (double underscore) | `slds-card__header` |
+| Pattern                       | Meaning                                | Example             |
+| ----------------------------- | -------------------------------------- | ------------------- |
+| `slds-[component]`            | Root element                           | `slds-button`       |
+| `slds-[component]__[element]` | Child element (double underscore)      | `slds-card__header` |
 | `slds-[component]_[modifier]` | Modifier / variant (single underscore) | `slds-button_brand` |
-| `slds-[utility]` | Utility class (spacing, layout, etc.) | `slds-m-top_small` |
+| `slds-[utility]`              | Utility class (spacing, layout, etc.)  | `slds-m-top_small`  |
 
 **Legacy note:** Older SLDS markup sometimes uses double-hyphen (`slds-button--brand`). Both forms may appear; prefer the single-underscore form.
 
@@ -55,18 +62,21 @@ SLDS uses a BEM-derived convention with the `slds-` prefix:
 
 SLDS uses SVG sprite sheets. Icons live in four sprite sets:
 
-| Sprite | Path | Use for |
-|---|---|---|
-| `utility` | `/assets/icons/utility-sprite/svg/symbols.svg` | General UI icons (most common) |
-| `standard` | `/assets/icons/standard-sprite/svg/symbols.svg` | Object icons (account, contact…) |
-| `action` | `/assets/icons/action-sprite/svg/symbols.svg` | Action icons (new, edit, delete…) |
-| `doctype` | `/assets/icons/doctype-sprite/svg/symbols.svg` | File-type icons |
+| Sprite     | Path                                            | Use for                           |
+| ---------- | ----------------------------------------------- | --------------------------------- |
+| `utility`  | `/assets/icons/utility-sprite/svg/symbols.svg`  | General UI icons (most common)    |
+| `standard` | `/assets/icons/standard-sprite/svg/symbols.svg` | Object icons (account, contact…)  |
+| `action`   | `/assets/icons/action-sprite/svg/symbols.svg`   | Action icons (new, edit, delete…) |
+| `doctype`  | `/assets/icons/doctype-sprite/svg/symbols.svg`  | File-type icons                   |
 
 ### Icon markup pattern
+
 ```html
 <span class="slds-icon_container slds-icon-utility-settings">
   <svg class="slds-icon slds-icon_small" aria-hidden="true">
-    <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#settings"></use>
+    <use
+      xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#settings"
+    ></use>
   </svg>
   <span class="slds-assistive-text">Settings</span>
 </span>
@@ -79,6 +89,7 @@ Icon size modifiers: `slds-icon_xx-small`, `slds-icon_x-small`, `slds-icon_small
 ## 4. Layout Utilities
 
 ### Grid System
+
 SLDS uses a 12-column flexbox grid:
 
 ```html
@@ -89,6 +100,7 @@ SLDS uses a 12-column flexbox grid:
 ```
 
 Key grid classes:
+
 - `slds-grid` — flex container (horizontal)
 - `slds-grid_vertical` — flex container (vertical)
 - `slds-grid_align-center` / `_align-spread` / `_align-end`
@@ -98,6 +110,7 @@ Key grid classes:
 - `slds-wrap` — allow wrapping
 
 ### Sizing
+
 ```
 slds-size_1-of-1   slds-size_1-of-2   slds-size_1-of-3
 slds-size_2-of-3   slds-size_1-of-4   slds-size_3-of-4
@@ -164,6 +177,7 @@ slds-transition-hide / slds-transition-show
 ## 8. Common Component Patterns (quick reference)
 
 ### Button variants
+
 ```
 slds-button                      base (unstyled)
 slds-button + slds-button_neutral   neutral (bordered)
@@ -175,7 +189,9 @@ slds-button + slds-button_icon      icon-only button
 ```
 
 ### Form element wrapper
+
 Every form field is wrapped in `.slds-form-element`:
+
 ```html
 <div class="slds-form-element [slds-has-error]">
   <label class="slds-form-element__label" for="field-id">Label</label>
@@ -188,7 +204,9 @@ Every form field is wrapped in `.slds-form-element`:
 ```
 
 ### Scoped component
+
 Wrap SLDS HTML in a container with the `slds-scope` class to avoid bleeding into non-SLDS areas:
+
 ```html
 <div class="slds-scope">
   <!-- SLDS components here -->

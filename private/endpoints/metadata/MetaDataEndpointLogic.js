@@ -11,22 +11,30 @@ class MetaDataEndpointLogic extends EndpointLogic {
   async execute() {
     const LOCATION = 'Server.MetaDataEndpoint.execute';
 
-    Logging.debugMessage({severity:'INFO', message: 'Executing metadata query', location: LOCATION});
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: 'Executing metadata query',
+      location: LOCATION,
+    });
 
     let parameterObject = {};
     parameterObject.returnPromise = true;
     parameterObject.request = {
-      table: 'configuration'
+      table: 'configuration',
     };
 
     let dataFacade = new DataFacade(this.environment);
     return new Promise((resolve) => {
-      dataFacade.getData(parameterObject).then(metadata => {
-        Logging.debugMessage({severity:'FINER', message: `Metadata returned`, location: LOCATION});
+      dataFacade.getData(parameterObject).then((metadata) => {
+        Logging.debugMessage({
+          severity: 'FINER',
+          message: `Metadata returned`,
+          location: LOCATION,
+        });
 
         let dataCleaner = new DataCleaner();
         dataCleaner.removeApplicationKeys(metadata); // Clean data here
-        delete(metadata.icon);
+        delete metadata.icon;
 
         this.responseObject.json(metadata);
         resolve();

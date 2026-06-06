@@ -14,22 +14,20 @@ const MOCK_CONFIGURATION = {
     start_url: '/test',
     display: 'fullscreen',
     background_color: '#123456',
-    theme_color: '#654321'
+    theme_color: '#654321',
   },
   some_other_key: 'some_other_value',
   some_other_nested_object: {
     key1: 'value1',
-    key2: 'value2'
-  }
+    key2: 'value2',
+  },
 };
-
-
 
 let mockFacadeGetData = jest.fn().mockResolvedValue(MOCK_CONFIGURATION);
 
 DataFacade.mockImplementation(() => {
   return {
-    getData: mockFacadeGetData
+    getData: mockFacadeGetData,
   };
 });
 
@@ -41,10 +39,12 @@ describe('ManifestEndpointLogic', () => {
   beforeEach(() => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = {
-      json: jest.fn()
+      json: jest.fn(),
     };
     manifestEndpointLogic = new ManifestEndpointLogic();
-    manifestEndpointLogic.setEnvironment(mockEnvironment).setResponseObject(mockResponseObject);
+    manifestEndpointLogic
+      .setEnvironment(mockEnvironment)
+      .setResponseObject(mockResponseObject);
   });
 
   afterEach(() => {
@@ -56,7 +56,9 @@ describe('ManifestEndpointLogic', () => {
 
     await manifestEndpointLogic.execute();
 
-    expect(mockFacadeGetData).toHaveBeenCalledWith({ request: { table: 'configuration' } });
+    expect(mockFacadeGetData).toHaveBeenCalledWith({
+      request: { table: 'configuration' },
+    });
     expect(mockResponseObject.json).toHaveBeenCalledWith({
       name: 'Test App',
       short_name: 'Test',
@@ -64,7 +66,7 @@ describe('ManifestEndpointLogic', () => {
       start_url: '/test',
       display: 'fullscreen',
       background_color: '#123456',
-      theme_color: '#654321'
+      theme_color: '#654321',
     });
   });
 });

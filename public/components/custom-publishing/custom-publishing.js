@@ -1,5 +1,9 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 class CustomPublishing extends LitElement {
   static properties = {
@@ -36,7 +40,8 @@ class CustomPublishing extends LitElement {
   render() {
     const canPublish = this.checkPublishPermission();
     const isPublished = this.publishDate ? true : false;
-    const isToggleDisabled = (!this.noSafety && this.safetyEnabled) || !canPublish || this.disabled;
+    const isToggleDisabled =
+      (!this.noSafety && this.safetyEnabled) || !canPublish || this.disabled;
 
     return html`
       <div class="publish-container">
@@ -48,29 +53,33 @@ class CustomPublishing extends LitElement {
               </span>
             </div>
           </div>
-          ${!this.noSafety ? html`
-          <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
-            <div class="slds-form-element">
-              <div class="slds-form-element__control">
-                <slds-toggle
-                  label="Safety Lock"
-                  enabled-label="Safety On"
-                  disabled-label="Safety Off"
-                  name="safety-toggle"
-                  ?checked=${this.safetyEnabled}
-                  @toggle=${this.handleSafetyToggleChange}
-                ></slds-toggle>
-              </div>
-            </div>
-          </div>
-          ` : html``}
+          ${!this.noSafety
+            ? html`
+                <div
+                  class="slds-col slds-size_1-of-3 slds-align_absolute-center"
+                >
+                  <div class="slds-form-element">
+                    <div class="slds-form-element__control">
+                      <slds-toggle
+                        label="Safety Lock"
+                        enabled-label="Safety On"
+                        disabled-label="Safety Off"
+                        name="safety-toggle"
+                        ?checked=${this.safetyEnabled}
+                        @toggle=${this.handleSafetyToggleChange}
+                      ></slds-toggle>
+                    </div>
+                  </div>
+                </div>
+              `
+            : html``}
           <div class="slds-col slds-size_1-of-3 slds-align_absolute-center">
             <div class="slds-form-element__control">
               <slds-toggle
                 label="Publish Status"
                 enabled-label="Published"
                 disabled-label="Unpublished"
-                name="publish-toggle" 
+                name="publish-toggle"
                 ?checked=${isPublished}
                 ?disabled=${isToggleDisabled}
                 @toggle=${this.handlePublishToggleChange}
@@ -106,11 +115,16 @@ class CustomPublishing extends LitElement {
     // Check permissions again at action time
     if (!this.checkPublishPermission()) {
       this.requestUpdate();
-      this.dispatchEvent(new CustomEvent('toast', {
-        detail: { message: 'Not authenticated or insufficient permissions', variant: 'error' },
-        bubbles: true,
-        composed: true
-      }));
+      this.dispatchEvent(
+        new CustomEvent('toast', {
+          detail: {
+            message: 'Not authenticated or insufficient permissions',
+            variant: 'error',
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
       return;
     }
 
@@ -129,7 +143,7 @@ class CustomPublishing extends LitElement {
 
     const payload = {
       id: this.recordId,
-      object: this.objectName
+      object: this.objectName,
     };
     let eventDetail = {
       object: this.objectName,
@@ -168,9 +182,9 @@ class CustomPublishing extends LitElement {
       // Fire published event to notify parent components
       this.dispatchEvent(
         new CustomEvent('published', {
-          detail: { 
-            recordId: this.recordId, 
-            objectName: this.objectName 
+          detail: {
+            recordId: this.recordId,
+            objectName: this.objectName,
           },
           bubbles: true,
           composed: true,
@@ -185,7 +199,7 @@ class CustomPublishing extends LitElement {
 
     const payload = {
       id: this.recordId,
-      object: this.objectName
+      object: this.objectName,
     };
     let eventDetail = {
       object: this.objectName,
@@ -224,9 +238,9 @@ class CustomPublishing extends LitElement {
       // Fire unpublished event to notify parent components
       this.dispatchEvent(
         new CustomEvent('unpublished', {
-          detail: { 
-            recordId: this.recordId, 
-            objectName: this.objectName 
+          detail: {
+            recordId: this.recordId,
+            objectName: this.objectName,
           },
           bubbles: true,
           composed: true,

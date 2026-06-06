@@ -17,7 +17,9 @@ describe('ChapterEndpoint', () => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = { json: jest.fn() };
     mockRequestObject = { query: { id: '123' } };
-    mockFacadeGetData = jest.fn().mockResolvedValue({ id: '123', title: 'Test Chapter' });
+    mockFacadeGetData = jest
+      .fn()
+      .mockResolvedValue({ id: '123', title: 'Test Chapter' });
     mockFacadeSetSkipCache = jest.fn().mockReturnThis();
 
     chapterEndpoint = new ChapterEndpoint();

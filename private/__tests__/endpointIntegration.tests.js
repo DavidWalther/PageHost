@@ -19,7 +19,13 @@ jest.mock('../modules/logging');
 
 const ENVIRONMENT = Object.freeze({
   APPLICATION_APPLICATION_KEY: 'test-key',
-  APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login', 'create', 'edit', 'delete', 'publish']),
+  APPLICATION_ACTIVE_ACTIONS: JSON.stringify([
+    'login',
+    'create',
+    'edit',
+    'delete',
+    'publish',
+  ]),
   MOCK_DATA_ENABLE: 'false',
   CACHE_KEY_PREFIX: 'TEST',
   CACHE_DATA_INCREMENT: '1',
@@ -30,7 +36,11 @@ const ENVIRONMENT = Object.freeze({
 });
 
 function createResMock() {
-  return { json: jest.fn(), status: jest.fn().mockReturnThis(), send: jest.fn() };
+  return {
+    json: jest.fn(),
+    status: jest.fn().mockReturnThis(),
+    send: jest.fn(),
+  };
 }
 
 let mockCacheGet;
@@ -90,10 +100,16 @@ beforeEach(() => {
 
 // ─── Step 1: Data Query Endpoints ───────────────────────────────────────────
 
-const { AllStoriesEndpoint } = require('../endpoints/data/query/AllStoriesEndpoint');
-const { SingleStoryEndpoint } = require('../endpoints/data/query/SingleStoryEndpoint');
+const {
+  AllStoriesEndpoint,
+} = require('../endpoints/data/query/AllStoriesEndpoint');
+const {
+  SingleStoryEndpoint,
+} = require('../endpoints/data/query/SingleStoryEndpoint');
 const { ChapterEndpoint } = require('../endpoints/data/query/ChapterEndpoint');
-const { ParagraphEndpoint } = require('../endpoints/data/query/ParagraphEndpoint');
+const {
+  ParagraphEndpoint,
+} = require('../endpoints/data/query/ParagraphEndpoint');
 
 describe('AllStoriesEndpoint Integration', () => {
   it('should fetch stories from DataStorage on a cache miss', async () => {
@@ -163,7 +179,11 @@ describe('SingleStoryEndpoint Integration', () => {
   });
 
   it('should bypass the cache and query DataStorage directly when the edit scope is present', async () => {
-    const mockStory = { id: '000s001', title: 'Unpublished Story', chapters: [] };
+    const mockStory = {
+      id: '000s001',
+      title: 'Unpublished Story',
+      chapters: [],
+    };
     mockQueryStory.mockResolvedValue(mockStory);
 
     const res = createResMock();
@@ -291,7 +311,10 @@ const UpsertEndpoint = require('../endpoints/api/1.0/data/upsertEndpoint');
 const DeleteEndpoint = require('../endpoints/api/1.0/data/deleteEndpoint');
 
 describe('UpsertEndpoint Integration — create', () => {
-  const ENV_WITH_CREATE = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create', 'edit']) };
+  const ENV_WITH_CREATE = {
+    ...ENVIRONMENT,
+    APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create', 'edit']),
+  };
 
   it('should create a record and return 200 with the result', async () => {
     const createdRecord = { id: 'new-p001', content: 'New paragraph' };
@@ -311,7 +334,10 @@ describe('UpsertEndpoint Integration — create', () => {
 
     expect(mockCreateRecord).toHaveBeenCalledTimes(1);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ success: true, result: createdRecord });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      result: createdRecord,
+    });
   });
 
   it('should set applicationIncluded on the payload before creating', async () => {
@@ -330,11 +356,17 @@ describe('UpsertEndpoint Integration — create', () => {
       .execute();
 
     const callArgs = mockCreateRecord.mock.calls[0][1];
-    expect(callArgs).toHaveProperty('applicationIncluded', ENVIRONMENT.APPLICATION_APPLICATION_KEY);
+    expect(callArgs).toHaveProperty(
+      'applicationIncluded',
+      ENVIRONMENT.APPLICATION_APPLICATION_KEY
+    );
   });
 
   it('should return 403 when create is not in allowed actions', async () => {
-    const envWithoutCreate = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+    const envWithoutCreate = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']),
+    };
 
     const req = {
       url: '/api/1.0/data/change/paragraph',
@@ -349,13 +381,19 @@ describe('UpsertEndpoint Integration — create', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Permission denied',
+    });
     expect(mockCreateRecord).not.toHaveBeenCalled();
   });
 });
 
 describe('UpsertEndpoint Integration — update', () => {
-  const ENV_WITH_EDIT = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create', 'edit']) };
+  const ENV_WITH_EDIT = {
+    ...ENVIRONMENT,
+    APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create', 'edit']),
+  };
 
   it('should update a record and return 200 with the result', async () => {
     const updatedRecord = { id: '000s001', title: 'Updated Title' };
@@ -363,7 +401,10 @@ describe('UpsertEndpoint Integration — update', () => {
 
     const req = {
       url: '/api/1.0/data/change/story',
-      body: { object: 'story', payload: { id: '000s001', title: 'Updated Title' } },
+      body: {
+        object: 'story',
+        payload: { id: '000s001', title: 'Updated Title' },
+      },
     };
     const res = createResMock();
 
@@ -375,15 +416,24 @@ describe('UpsertEndpoint Integration — update', () => {
 
     expect(mockUpdateData).toHaveBeenCalledTimes(1);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ success: true, result: updatedRecord });
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      result: updatedRecord,
+    });
   });
 
   it('should return 403 when edit is not in allowed actions', async () => {
-    const envWithoutEdit = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create']) };
+    const envWithoutEdit = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['create']),
+    };
 
     const req = {
       url: '/api/1.0/data/change/story',
-      body: { object: 'story', payload: { id: '000s001', title: 'Updated Title' } },
+      body: {
+        object: 'story',
+        payload: { id: '000s001', title: 'Updated Title' },
+      },
     };
     const res = createResMock();
 
@@ -394,7 +444,10 @@ describe('UpsertEndpoint Integration — update', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Permission denied',
+    });
     expect(mockUpdateData).not.toHaveBeenCalled();
   });
 
@@ -412,12 +465,18 @@ describe('UpsertEndpoint Integration — update', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Invalid request data',
+    });
   });
 });
 
 describe('DeleteEndpoint Integration', () => {
-  const ENV_WITH_DELETE = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['delete']) };
+  const ENV_WITH_DELETE = {
+    ...ENVIRONMENT,
+    APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['delete']),
+  };
 
   it('should delete a record and return 200', async () => {
     mockDeleteData.mockResolvedValue(undefined);
@@ -450,7 +509,10 @@ describe('DeleteEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Missing object or id' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Missing object or id',
+    });
   });
 
   it('should return 400 when id is missing', async () => {
@@ -464,11 +526,17 @@ describe('DeleteEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Missing object or id' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Missing object or id',
+    });
   });
 
   it('should return 403 when delete is not in allowed actions', async () => {
-    const envWithoutDelete = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+    const envWithoutDelete = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']),
+    };
 
     const req = {
       url: '/api/1.0/data/delete',
@@ -483,7 +551,10 @@ describe('DeleteEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Permission denied',
+    });
     expect(mockDeleteData).not.toHaveBeenCalled();
   });
 });
@@ -494,11 +565,18 @@ const PublishEndpoint = require('../endpoints/api/1.0/action/publishEndpoint');
 const UnpublishEndpoint = require('../endpoints/api/1.0/action/unpublishEndpoint');
 
 describe('PublishEndpoint Integration', () => {
-  const ENV_WITH_PUBLISH = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['publish', 'edit']) };
+  const ENV_WITH_PUBLISH = {
+    ...ENVIRONMENT,
+    APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['publish', 'edit']),
+  };
 
   it('should publish a record and return 200', async () => {
     const existingRecord = { id: '000s001', title: 'Story One' }; // no publishDate
-    const updatedRecord = { id: '000s001', title: 'Story One', publishDate: '2026-01-01T00:00:00.000Z' };
+    const updatedRecord = {
+      id: '000s001',
+      title: 'Story One',
+      publishDate: '2026-01-01T00:00:00.000Z',
+    };
     mockQueryStory.mockResolvedValue(existingRecord);
     mockUpdateData.mockResolvedValue(updatedRecord);
 
@@ -520,7 +598,10 @@ describe('PublishEndpoint Integration', () => {
   });
 
   it('should return 403 when publish is not in allowed actions', async () => {
-    const envWithoutPublish = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+    const envWithoutPublish = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']),
+    };
 
     const req = {
       url: '/api/1.0/actions/publish',
@@ -535,7 +616,10 @@ describe('PublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Permission denied',
+    });
     expect(mockUpdateData).not.toHaveBeenCalled();
   });
 
@@ -553,7 +637,10 @@ describe('PublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Invalid request data',
+    });
   });
 
   it('should return 404 when record does not exist', async () => {
@@ -572,11 +659,17 @@ describe('PublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record not found' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Record not found',
+    });
   });
 
   it('should return 400 when the record is already published', async () => {
-    mockQueryStory.mockResolvedValue({ id: '000s001', publishDate: '2025-01-01' });
+    mockQueryStory.mockResolvedValue({
+      id: '000s001',
+      publishDate: '2025-01-01',
+    });
 
     const req = {
       url: '/api/1.0/actions/publish',
@@ -591,13 +684,19 @@ describe('PublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record is already published' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Record is already published',
+    });
     expect(mockUpdateData).not.toHaveBeenCalled();
   });
 });
 
 describe('UnpublishEndpoint Integration', () => {
-  const ENV_WITH_PUBLISH = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['publish', 'edit']) };
+  const ENV_WITH_PUBLISH = {
+    ...ENVIRONMENT,
+    APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['publish', 'edit']),
+  };
 
   it('should unpublish a record and return 200', async () => {
     const existingRecord = { id: '000s001', publishdate: '2025-01-01' };
@@ -623,7 +722,10 @@ describe('UnpublishEndpoint Integration', () => {
   });
 
   it('should return 403 when publish is not in allowed actions', async () => {
-    const envWithoutPublish = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+    const envWithoutPublish = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']),
+    };
 
     const req = {
       url: '/api/1.0/actions/unpublish',
@@ -638,7 +740,10 @@ describe('UnpublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Permission denied' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Permission denied',
+    });
     expect(mockUpdateData).not.toHaveBeenCalled();
   });
 
@@ -656,7 +761,10 @@ describe('UnpublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Invalid request data' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Invalid request data',
+    });
   });
 
   it('should return 404 when the record does not exist', async () => {
@@ -675,7 +783,10 @@ describe('UnpublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record not found' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Record not found',
+    });
   });
 
   it('should return 400 when the record is already unpublished', async () => {
@@ -694,7 +805,10 @@ describe('UnpublishEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Record is already unpublished' });
+    expect(res.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Record is already unpublished',
+    });
     expect(mockUpdateData).not.toHaveBeenCalled();
   });
 });
@@ -704,13 +818,20 @@ describe('UnpublishEndpoint Integration', () => {
 const RequestAuthStateEndpoint = require('../endpoints/api/1.0/auth/oAuth2/requestAuthStateEndpoint');
 const CodeExchangeEndpoint = require('../endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint');
 const LogoutEndpoint = require('../endpoints/api/1.0/auth/LogoutEndpoint');
-const { EnvironmentVariablesEndpoint } = require('../endpoints/api/1.0/environmetVariables');
+const {
+  EnvironmentVariablesEndpoint,
+} = require('../endpoints/api/1.0/environmetVariables');
 
 // OpenIdConnectClient is mocked to prevent real HTTP calls to Google
 jest.mock('../modules/oAuth2/OpenIdConnectClient');
 const OpenIdConnectClient = require('../modules/oAuth2/OpenIdConnectClient');
 
-const ENV_WITH_LOGIN = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login']) };
+const ENV_WITH_LOGIN = {
+  ...ENVIRONMENT,
+  APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login']),
+  AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
+  AUTH_CLOCK_SKEW_SECONDS: '5',
+};
 
 // Minimal fake id_token: header.payload.signature (base64url encoded)
 const FAKE_TOKEN_PAYLOAD = {
@@ -747,7 +868,10 @@ describe('RequestAuthStateEndpoint Integration', () => {
   });
 
   it('should return 403 when login is not in allowed actions', async () => {
-    const envWithoutLogin = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+    const envWithoutLogin = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']),
+    };
 
     const res = createResMock();
     await new RequestAuthStateEndpoint()
@@ -766,13 +890,16 @@ describe('CodeExchangeEndpoint Integration', () => {
   let mockExchangeAuthorizationCode;
 
   beforeEach(() => {
-    mockExchangeAuthorizationCode = jest.fn().mockResolvedValue({ id_token: fakeIdToken });
+    mockExchangeAuthorizationCode = jest
+      .fn()
+      .mockResolvedValue({ id_token: fakeIdToken });
     OpenIdConnectClient.mockImplementation(() => ({
       setRedirectUri: jest.fn().mockReturnThis(),
       setClientId: jest.fn().mockReturnThis(),
       setClientSecret: jest.fn().mockReturnThis(),
       setWellKnownEndpoint: jest.fn().mockReturnThis(),
       setCodeVerifier: jest.fn().mockReturnThis(),
+      setClockSkew: jest.fn().mockReturnThis(),
       exchangeAuthorizationCode: mockExchangeAuthorizationCode,
     }));
   });
@@ -795,13 +922,15 @@ describe('CodeExchangeEndpoint Integration', () => {
   }
 
   it('should complete code exchange and return auth response with JWT', async () => {
-    const existingUser = { id: 'user-001', key: 'test@example.com', scopes: 'edit,create' };
+    const existingUser = {
+      id: 'user-001',
+      key: 'test@example.com',
+      scopes: 'edit,create',
+    };
     mockQueryIdentityByKey.mockResolvedValue(existingUser);
 
     // Cache: state is valid (first call), auth code not used (second call)
-    mockCacheGet
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(null);
+    mockCacheGet.mockResolvedValueOnce(true).mockResolvedValueOnce(null);
 
     const req = makeCodeExchangeReq();
     const res = createResMock();
@@ -812,16 +941,25 @@ describe('CodeExchangeEndpoint Integration', () => {
       .setResponseObject(res)
       .execute();
 
-    expect(mockExchangeAuthorizationCode).toHaveBeenCalledWith('valid-auth-code');
+    expect(mockExchangeAuthorizationCode).toHaveBeenCalledWith(
+      'valid-auth-code'
+    );
     const responseData = res.json.mock.calls[0][0];
     expect(responseData).toHaveProperty('authenticationResult');
     expect(responseData.authenticationResult).toHaveProperty('access');
-    expect(responseData.authenticationResult.access).toHaveProperty('access_token');
-    expect(responseData.authenticationResult.user.email).toBe('test@example.com');
+    expect(responseData.authenticationResult.access).toHaveProperty(
+      'access_token'
+    );
+    expect(responseData.authenticationResult.user.email).toBe(
+      'test@example.com'
+    );
   });
 
   it('should return 403 when login is not in allowed actions', async () => {
-    const envWithoutLogin = { ...ENVIRONMENT, APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']) };
+    const envWithoutLogin = {
+      ...ENVIRONMENT,
+      APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit']),
+    };
 
     const req = makeCodeExchangeReq();
     const res = createResMock();
@@ -877,14 +1015,14 @@ describe('CodeExchangeEndpoint Integration', () => {
       .execute();
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid or expired state' });
+    expect(res.json).toHaveBeenCalledWith({
+      error: 'Invalid or expired state',
+    });
   });
 
   it('should return 401 when user is not found in the identity table', async () => {
     mockQueryIdentityByKey.mockResolvedValue({}); // no id → user not found
-    mockCacheGet
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(null);
+    mockCacheGet.mockResolvedValueOnce(true).mockResolvedValueOnce(null);
 
     const req = makeCodeExchangeReq();
     const res = createResMock();
@@ -902,7 +1040,21 @@ describe('CodeExchangeEndpoint Integration', () => {
 
 describe('LogoutEndpoint Integration', () => {
   it('should return 200 when a valid Bearer token is present', async () => {
-    const req = { headers: { authorization: 'Bearer some-valid-token' } };
+    const JwtService = require('../modules/oAuth2/JwtService.js');
+    const validJwt = JwtService.createJwt(
+      'user@test.com',
+      'google',
+      ['edit'],
+      ENVIRONMENT.AUTH_SERVER_SECRET,
+      900
+    );
+
+    mockQueryIdentityByKey.mockResolvedValue({
+      id: 'identity-001',
+      key: 'user@test.com',
+    });
+
+    const req = { headers: { authorization: `Bearer ${validJwt}` } };
     const res = createResMock();
 
     await new LogoutEndpoint()
@@ -946,7 +1098,11 @@ describe('LogoutEndpoint Integration', () => {
 
 describe('EnvironmentVariablesEndpoint Integration', () => {
   it('should return public environment variables', async () => {
-    const env = { ...ENVIRONMENT, MOCK_DATA_ENABLE: 'false', GOOGLE_CLIENT_ID: 'my-client-id' };
+    const env = {
+      ...ENVIRONMENT,
+      MOCK_DATA_ENABLE: 'false',
+      GOOGLE_CLIENT_ID: 'my-client-id',
+    };
     const req = {
       protocol: 'https',
       get: jest.fn().mockReturnValue('example.com'),
@@ -966,7 +1122,10 @@ describe('EnvironmentVariablesEndpoint Integration', () => {
   });
 
   it('should use AUTH_OIDC_REDIRECT_URI when set', async () => {
-    const env = { ...ENVIRONMENT, AUTH_OIDC_REDIRECT_URI: 'https://custom-redirect.example.com' };
+    const env = {
+      ...ENVIRONMENT,
+      AUTH_OIDC_REDIRECT_URI: 'https://custom-redirect.example.com',
+    };
     const req = {
       protocol: 'https',
       get: jest.fn().mockReturnValue('example.com'),
@@ -980,7 +1139,9 @@ describe('EnvironmentVariablesEndpoint Integration', () => {
       .execute();
 
     const responseData = res.json.mock.calls[0][0];
-    expect(responseData.auth.google.redirect_uri).toBe('https://custom-redirect.example.com');
+    expect(responseData.auth.google.redirect_uri).toBe(
+      'https://custom-redirect.example.com'
+    );
   });
 
   it('should construct redirect_uri from request when AUTH_OIDC_REDIRECT_URI is not set', async () => {

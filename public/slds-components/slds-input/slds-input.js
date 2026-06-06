@@ -1,4 +1,4 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const templatePath = 'slds-components/slds-input/slds-input.html';
 let templatePromise = null;
@@ -24,15 +24,18 @@ class SldsInput extends HTMLElement {
       loadedMarkUp = await this.loadHtmlMarkup();
     }
 
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
+    const mainTemplateContent =
+      loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
     this.handleAttributeTypeChange(this.getAttribute('type'));
     this.handleAttributeValueChange(this.getAttribute('value'));
     this.handleAttributeLabelChange(this.getAttribute('label'));
 
-    this.shadowRoot.querySelectorAll('input.input-element').forEach(element => {
-      element.addEventListener('change', this.handleChangeInput.bind(this));
-    });
+    this.shadowRoot
+      .querySelectorAll('input.input-element')
+      .forEach((element) => {
+        element.addEventListener('change', this.handleChangeInput.bind(this));
+      });
     this._initialized = true;
   }
 
@@ -45,7 +48,9 @@ class SldsInput extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if(!this._initialized) {return;}
+    if (!this._initialized) {
+      return;
+    }
     switch (name) {
       case 'value':
         this.handleAttributeValueChange(newValue);
@@ -64,29 +69,41 @@ class SldsInput extends HTMLElement {
   handleAttributeValueChange(newValue) {
     // Handle value attribute change
 
-    this.shadowRoot.querySelectorAll('div.slds-form-element > div.slds-form-element__control > .input-element').forEach(element => {
-      element.value = newValue;
-    });
+    this.shadowRoot
+      .querySelectorAll(
+        'div.slds-form-element > div.slds-form-element__control > .input-element'
+      )
+      .forEach((element) => {
+        element.value = newValue;
+      });
   }
 
   handleAttributeLabelChange(newValue) {
     // Handle label attribute change
-    this.shadowRoot.querySelector('label.slds-form-element__label').textContent = newValue;
+    this.shadowRoot.querySelector(
+      'label.slds-form-element__label'
+    ).textContent = newValue;
   }
 
   handleAttributeTypeChange(newValue) {
     // Handle type attribute change
 
-    if(! loadedMarkUp) {
+    if (!loadedMarkUp) {
       return;
     }
 
     switch (newValue) {
       case 'date':
-        this.replaceSlotWithTemplate('placeholder-input', '#template-type-date');
+        this.replaceSlotWithTemplate(
+          'placeholder-input',
+          '#template-type-date'
+        );
         break;
       default:
-        this.replaceSlotWithTemplate('placeholder-input', '#template-type-text');
+        this.replaceSlotWithTemplate(
+          'placeholder-input',
+          '#template-type-text'
+        );
         break;
     }
   }
@@ -102,21 +119,21 @@ class SldsInput extends HTMLElement {
       bubbles: true,
       detail: {
         type: event.target.type,
-        value: event.target.value
+        value: event.target.value,
       },
     });
     this.dispatchEvent(eventChange);
   }
 
-//-------------------
-// Helpers
-//-------------------
+  //-------------------
+  // Helpers
+  //-------------------
 
   async loadHtmlMarkup() {
     if (!templatePromise) {
       templatePromise = fetch(templatePath)
-        .then(response => response.text())
-        .then(html => {
+        .then((response) => response.text())
+        .then((html) => {
           return new DOMParser().parseFromString(html, 'text/html');
         });
     }

@@ -4,14 +4,20 @@ const rsaPemFromModExp = require('rsa-pem-from-mod-exp');
 
 jest.mock('rsa-pem-from-mod-exp');
 jest.mock('jsonwebtoken', () => ({
-  verify: jest.fn().mockImplementation((token, publicKey, options, callback) => {
-    return true;
-  })
+  verify: jest
+    .fn()
+    .mockImplementation((token, publicKey, options, callback) => {
+      return true;
+    }),
 }));
 
-
-const mockJwtHeader = { "kid": "mockKid", "test": "abc"};
-const mockJwtPayload = { "email": "test@email.com", "aud": "test-client-id", "exp": 2000000000, "iat": 170000000  };
+const mockJwtHeader = { kid: 'mockKid', test: 'abc' };
+const mockJwtPayload = {
+  email: 'test@email.com',
+  aud: 'test-client-id',
+  exp: 2000000000,
+  iat: 170000000,
+};
 const mockJwtSignature = '';
 
 const mockJwksResponse = {
@@ -22,9 +28,9 @@ const mockJwksResponse = {
       e: 'AQAB',
       kty: 'RSA',
       alg: 'RS256',
-      use: 'sig'
-    }
-  ]
+      use: 'sig',
+    },
+  ],
 };
 
 function createMockJwt(header, payload, signature) {
@@ -68,13 +74,16 @@ describe('OpenIdConnectClient', () => {
   });
 
   beforeEach(() => {
-
     // Default mock implementations
     mockTokenEndpoint = jest.fn(() =>
       Promise.resolve({
         json: jest.fn().mockResolvedValue({
           access_token: 'test-access-token',
-          id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature),
+          id_token: createMockJwt(
+            mockJwtHeader,
+            mockJwtPayload,
+            mockJwtSignature
+          ),
         }),
       })
     );
@@ -119,7 +128,11 @@ describe('OpenIdConnectClient', () => {
       const authCode = 'test-auth-code';
       const tokenResponse = {
         access_token: 'test-access-token',
-        id_token: createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature),
+        id_token: createMockJwt(
+          mockJwtHeader,
+          mockJwtPayload,
+          mockJwtSignature
+        ),
       };
       oidcClient.setCodeVerifier('test-code-verifier');
       oidcClient.exchangeAuthorizationCode(authCode).then((response) => {
@@ -127,8 +140,15 @@ describe('OpenIdConnectClient', () => {
         expect(global.fetch).toHaveBeenCalledTimes(3); // 1. openId config, 2. token endpoint, 3. JWKS endpoint
 
         // Check the order of calls
-        expect(global.fetch).toHaveBeenNthCalledWith(1, 'test-well-known-endpoint');
-        expect(global.fetch).toHaveBeenNthCalledWith(2, 'test-token-endpoint', expect.any(Object));
+        expect(global.fetch).toHaveBeenNthCalledWith(
+          1,
+          'test-well-known-endpoint'
+        );
+        expect(global.fetch).toHaveBeenNthCalledWith(
+          2,
+          'test-token-endpoint',
+          expect.any(Object)
+        );
         expect(global.fetch).toHaveBeenNthCalledWith(3, 'test-jwks-uri');
       });
     });
@@ -136,7 +156,11 @@ describe('OpenIdConnectClient', () => {
 
   describe('ID Token Decoding', () => {
     it('should decode ID token', () => {
-      const mockJwt = createMockJwt(mockJwtHeader, mockJwtPayload, mockJwtSignature);
+      const mockJwt = createMockJwt(
+        mockJwtHeader,
+        mockJwtPayload,
+        mockJwtSignature
+      );
       const decodedToken = oidcClient.decodeIdToken(mockJwt);
       expect(decodedToken).toEqual({
         header: mockJwtHeader,
@@ -157,7 +181,9 @@ describe('OpenIdConnectClient', () => {
         })
       );
 
-      await expect(oidcClient.exchangeAuthorizationCode(authCode)).rejects.toThrow('No keys found in the JWKs response');
+      await expect(
+        oidcClient.exchangeAuthorizationCode(authCode)
+      ).rejects.toThrow('No keys found in the JWKs response');
     });
 
     it('should throw an error if JWKS endpoint delivers three keys but none matches', async () => {
@@ -168,15 +194,38 @@ describe('OpenIdConnectClient', () => {
         Promise.resolve({
           json: jest.fn().mockResolvedValue({
             keys: [
-              { kid: 'nonMatchingKid1', n: 'modulus1', e: 'AQAB', kty: 'RSA', alg: 'RS256', use: 'sig' },
-              { kid: 'nonMatchingKid2', n: 'modulus2', e: 'AQAB', kty: 'RSA', alg: 'RS256', use: 'sig' },
-              { kid: 'nonMatchingKid3', n: 'modulus3', e: 'AQAB', kty: 'RSA', alg: 'RS256', use: 'sig' },
+              {
+                kid: 'nonMatchingKid1',
+                n: 'modulus1',
+                e: 'AQAB',
+                kty: 'RSA',
+                alg: 'RS256',
+                use: 'sig',
+              },
+              {
+                kid: 'nonMatchingKid2',
+                n: 'modulus2',
+                e: 'AQAB',
+                kty: 'RSA',
+                alg: 'RS256',
+                use: 'sig',
+              },
+              {
+                kid: 'nonMatchingKid3',
+                n: 'modulus3',
+                e: 'AQAB',
+                kty: 'RSA',
+                alg: 'RS256',
+                use: 'sig',
+              },
             ],
           }),
         })
       );
 
-      await expect(oidcClient.exchangeAuthorizationCode(authCode)).rejects.toThrow('No matching JWKs key found for the given kid');
+      await expect(
+        oidcClient.exchangeAuthorizationCode(authCode)
+      ).rejects.toThrow('No matching JWKs key found for the given kid');
     });
   });
 });

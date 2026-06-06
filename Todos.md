@@ -1,5 +1,5 @@
-- create icons. (referenced in manifest.json) 
-  
+- create icons. (referenced in manifest.json)
+
   also removed from manifest.json:
 
       "icons": [

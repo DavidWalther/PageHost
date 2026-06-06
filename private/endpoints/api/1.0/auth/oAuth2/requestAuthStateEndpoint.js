@@ -1,5 +1,7 @@
 const { Logging } = require('../../../../../modules/logging');
-const { DataCache2 } = require('../../../../../database2/DataCache/DataCache.js');
+const {
+  DataCache2,
+} = require('../../../../../database2/DataCache/DataCache.js');
 const crypto = require('crypto');
 
 class RequestAuthStateEndpoint {
@@ -33,14 +35,24 @@ class RequestAuthStateEndpoint {
     // Restrict access to login if not allowed
     const allowedActions = this.environment.APPLICATION_ACTIVE_ACTIONS || '[]';
     let allowed = [];
-    try { allowed = JSON.parse(allowedActions).map(a => a.toLowerCase()); } catch (e) {}
+    try {
+      allowed = JSON.parse(allowedActions).map((a) => a.toLowerCase());
+    } catch (e) {}
     if (!allowed.includes('login')) {
-      Logging.debugMessage({ severity: 'WARNING', message: 'Login not allowed by environment', location: LOCATION });
+      Logging.debugMessage({
+        severity: 'WARNING',
+        message: 'Login not allowed by environment',
+        location: LOCATION,
+      });
       this.responseObject.status(403).json({ error: 'Login not allowed' });
       return;
     }
 
-    Logging.debugMessage({ severity: 'INFO', message: `Executing requestAuthState`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `Executing requestAuthState`,
+      location: LOCATION,
+    });
 
     const state = this.generateRandomState();
     const PREFIX_FOR_SHORT_TERM_CACHE = 'short-term';
@@ -50,7 +62,11 @@ class RequestAuthStateEndpoint {
     await cache.set(auth_state_cache_key, true);
 
     this.responseObject.json(state);
-    Logging.debugMessage({ severity: 'INFO', message: `State generated and sent`, location: LOCATION });
+    Logging.debugMessage({
+      severity: 'INFO',
+      message: `State generated and sent`,
+      location: LOCATION,
+    });
   }
 }
 

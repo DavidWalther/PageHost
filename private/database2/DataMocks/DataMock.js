@@ -1,5 +1,5 @@
-const { DataMockBuilder } = require("./DataMockBuilder");
-const { Environment } = require("../../modules/environment");
+const { DataMockBuilder } = require('./DataMockBuilder');
+const { Environment } = require('../../modules/environment');
 const fs = require('fs');
 const path = require('path');
 
@@ -10,12 +10,12 @@ const LOREM_IPSUM_ARRAY = [
   'Incididunt voluptate cillum ipsum mollit consectetur veniam. Reprehenderit voluptate duis dolore qui est. Nisi amet est tempor culpa veniam minim. Voluptate culpa exercitation minim dolore non incididunt. Adipisicing cillum culpa ea officia proident quis laborum consectetur eu pariatur eiusmod aliquip anim.',
   'Enim sunt voluptate tempor irure sunt mollit do eiusmod ex eiusmod. Labore eiusmod nulla nostrud adipisicing sunt. Enim culpa adipisicing id qui proident. Labore amet incididunt do labore aliquip. Irure mollit adipisicing qui tempor excepteur quis.',
   'Ea nisi ex excepteur culpa nisi adipisicing non Lorem pariatur exercitation tempor qui exercitation. Veniam velit fugiat sint ad id incididunt voluptate quis. Proident reprehenderit laborum esse labore deserunt eu.',
-]
+];
 
 const MOCK_CONFIGURATION_MAP = new Map([
   ['metaTitle', 'Mock Tabtitle'],
   ['pageHeaderHeadline', 'Mock Headline'],
-  ['pageSidebarTitle', 'Mock Contents']
+  ['pageSidebarTitle', 'Mock Contents'],
 ]);
 
 class DataMock {
@@ -24,16 +24,22 @@ class DataMock {
   createConfiguration() {
     const LOCATION = 'DataMock.createMockConfiguration';
     return new Promise((resolve, reject) => {
-      const filePath = path.join(__dirname, '../tables/mocks/configuration.json');
+      const filePath = path.join(
+        __dirname,
+        '../tables/mocks/configuration.json'
+      );
       fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
           reject(err);
         } else {
           let loadedConfiguration = JSON.parse(data);
-          let collapsedConfiguration = loadedConfiguration.reduce((acc, config) => {
-            acc[config.key] = config.value;
-            return acc;
-          }, {});
+          let collapsedConfiguration = loadedConfiguration.reduce(
+            (acc, config) => {
+              acc[config.key] = config.value;
+              return acc;
+            },
+            {}
+          );
           resolve(collapsedConfiguration);
         }
       });
@@ -61,7 +67,7 @@ class DataMock {
           reject(err);
         } else {
           const stories = JSON.parse(data);
-          const story = stories.find(story => story.id === storyId);
+          const story = stories.find((story) => story.id === storyId);
           if (story) {
             resolve(story);
           } else {
@@ -80,7 +86,7 @@ class DataMock {
           reject(err);
         } else {
           const chapters = JSON.parse(data);
-          const chapter = chapters.find(chapter => chapter.id === chapterId);
+          const chapter = chapters.find((chapter) => chapter.id === chapterId);
           if (chapter) {
             resolve(chapter);
           } else {
@@ -99,7 +105,9 @@ class DataMock {
           reject(err);
         } else {
           const paragraphs = JSON.parse(data);
-          const paragraph = paragraphs.find(paragraph => paragraph.id === paragraphId);
+          const paragraph = paragraphs.find(
+            (paragraph) => paragraph.id === paragraphId
+          );
           if (paragraph) {
             resolve(paragraph);
           } else {

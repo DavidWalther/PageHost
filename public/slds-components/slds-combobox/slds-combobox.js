@@ -1,14 +1,13 @@
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const templatePath = 'slds-components/slds-combobox/slds-combobox.html';
 let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
 let loadedMarkUp = null;
 
 class Combobox extends HTMLElement {
-
   constructor() {
     super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });  // Attach a shadow root
+    const shadowRoot = this.attachShadow({ mode: 'open' }); // Attach a shadow root
 
     this.applyGlobalStyles();
   }
@@ -20,10 +19,10 @@ class Combobox extends HTMLElement {
   async loadHtmlMarkup() {
     if (!templatePromise) {
       templatePromise = fetch(templatePath)
-      .then(response => response.text())
-      .then(html => {
-        return new DOMParser().parseFromString(html, 'text/html');
-      });
+        .then((response) => response.text())
+        .then((html) => {
+          return new DOMParser().parseFromString(html, 'text/html');
+        });
     }
     return templatePromise;
   }
@@ -36,10 +35,13 @@ class Combobox extends HTMLElement {
     }
 
     // Append the main template
-    const mainTemplateContent = loadedMarkUp.querySelector('#template-main').content;
+    const mainTemplateContent =
+      loadedMarkUp.querySelector('#template-main').content;
     this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
 
-    this.shadowRoot.querySelector('.slds-combobox').addEventListener('click', this.handleComboboxClick.bind(this));
+    this.shadowRoot
+      .querySelector('.slds-combobox')
+      .addEventListener('click', this.handleComboboxClick.bind(this));
     this.inputElem.addEventListener('blur', this.handleComboboxBlur.bind(this));
     this.inputElem.addEventListener('keyup', this.handleInputKeyUp.bind(this));
 
@@ -55,18 +57,21 @@ class Combobox extends HTMLElement {
 
   static get observedAttributes() {
     return [
-      'label', 'placeholder',
+      'label',
+      'placeholder',
       'options', // JSON array string [{value, label, title}]
       'value',
       'disabled',
-      'filterable'
+      'filterable',
     ];
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
-    if(oldValue === newValue) { return; }
+    if (oldValue === newValue) {
+      return;
+    }
 
-    switch(name) {
+    switch (name) {
       case 'label': {
         this.setComboboxLabel(newValue);
         break;
@@ -118,7 +123,7 @@ class Combobox extends HTMLElement {
   }
 
   get filterable() {
-    let truthyValus = [true, '' ];
+    let truthyValus = [true, ''];
     let filterableAttribute = this.getAttribute('filterable');
     let filterable = new Set(truthyValus).has(filterableAttribute);
 
@@ -159,12 +164,16 @@ class Combobox extends HTMLElement {
 
   // ------------------ Actions ------------------
 
-  setEditable(editable ) {
-    if (editable === undefined) { return; }
+  setEditable(editable) {
+    if (editable === undefined) {
+      return;
+    }
 
     let inputElem = this.inputElem;
-    if(!inputElem) { return; }
-    if(editable) {
+    if (!inputElem) {
+      return;
+    }
+    if (editable) {
       inputElem.removeAttribute('readonly');
     } else {
       inputElem.setAttribute('readonly', '');
@@ -172,7 +181,9 @@ class Combobox extends HTMLElement {
   }
 
   filterOptions(enteredValue) {
-    if(!this.filterable ) { return; }
+    if (!this.filterable) {
+      return;
+    }
     let filteredOptions = this.options.filter((entry) => {
       return entry.label.toLowerCase().includes(enteredValue.toLowerCase());
     });
@@ -182,7 +193,9 @@ class Combobox extends HTMLElement {
   }
 
   setInputDisabled(disabled) {
-    if (!this.inputElem) { return; }
+    if (!this.inputElem) {
+      return;
+    }
     this.inputElem.disabled = disabled;
   }
 
@@ -192,21 +205,33 @@ class Combobox extends HTMLElement {
   }
 
   setComboboxLabel(label) {
-    if (!this.labelElem) { return; }
+    if (!this.labelElem) {
+      return;
+    }
     this.labelElem.textContent = label;
   }
 
   setComboboxPlaceholder(placeholder) {
-    if (!this.inputElem) { return; }
+    if (!this.inputElem) {
+      return;
+    }
     let placeholderValue = !placeholder ? '' : placeholder;
     this.inputElem.setAttribute('placeholder', placeholderValue);
   }
 
   setInputLabel(selectedValue) {
-    if (!this.inputElem) { return; }
-    if (!this.options) { return; }
-    if(!selectedValue) { return; }
-    let selectedEntry = this.options.find((entry) => entry.value === selectedValue);
+    if (!this.inputElem) {
+      return;
+    }
+    if (!this.options) {
+      return;
+    }
+    if (!selectedValue) {
+      return;
+    }
+    let selectedEntry = this.options.find(
+      (entry) => entry.value === selectedValue
+    );
     this.inputElem.value = !selectedEntry ? null : selectedEntry.label;
   }
 
@@ -223,11 +248,15 @@ class Combobox extends HTMLElement {
   }
 
   fireSelectEvent(selectedValue, options) {
-    let eventDetail = { value: selectedValue};
+    let eventDetail = { value: selectedValue };
     let composed = options && options.composed;
     let bubbles = options && options.bubbles;
 
-    const event = new CustomEvent('select', { detail: eventDetail, composed: composed, bubbles: bubbles});
+    const event = new CustomEvent('select', {
+      detail: eventDetail,
+      composed: composed,
+      bubbles: bubbles,
+    });
 
     this.dispatchEvent(event);
   }
@@ -240,7 +269,9 @@ class Combobox extends HTMLElement {
    */
   markSelectedItem(selectedValue) {
     const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) { return; }
+    if (!ulElem) {
+      return;
+    }
 
     this.unmarkAllItems();
 
@@ -253,7 +284,7 @@ class Combobox extends HTMLElement {
     });
   }
 
-   /**
+  /**
    * Description:
    * removes the hightlightning of all items
    * loops over all list items and
@@ -262,7 +293,9 @@ class Combobox extends HTMLElement {
    */
   unmarkAllItems() {
     const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) { return; }
+    if (!ulElem) {
+      return;
+    }
 
     const liElems = ulElem.querySelectorAll('li');
     liElems.forEach((liElem) => {
@@ -276,7 +309,9 @@ class Combobox extends HTMLElement {
     innerDivElem.classList.remove('slds-has-focus');
     innerDivElem.removeAttribute('aria-selected');
     innerDivElem.removeAttribute('aria-checked');
-    const iconSpan = innerDivElem.querySelector('span.slds-listbox__option-icon');
+    const iconSpan = innerDivElem.querySelector(
+      'span.slds-listbox__option-icon'
+    );
     iconSpan.innerHTML = '';
   }
 
@@ -295,7 +330,9 @@ class Combobox extends HTMLElement {
     //selet template 'template-selected-icon'
     const iconTemplate = loadedMarkUp.querySelector('#template-selected-icon');
     const iconContent = iconTemplate.content.cloneNode(true);
-    const iconSpan = innerDivElem.querySelector('span.slds-listbox__option-icon');
+    const iconSpan = innerDivElem.querySelector(
+      'span.slds-listbox__option-icon'
+    );
     iconSpan.appendChild(iconContent);
   }
 
@@ -305,7 +342,9 @@ class Combobox extends HTMLElement {
    */
   clearComboboxEntries() {
     const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) { return; }
+    if (!ulElem) {
+      return;
+    }
     while (ulElem.firstChild) {
       ulElem.removeChild(ulElem.firstChild);
     }
@@ -317,7 +356,9 @@ class Combobox extends HTMLElement {
    */
   createComboboxEntries(options) {
     const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) { return; }
+    if (!ulElem) {
+      return;
+    }
     options.forEach((valueEntry) => {
       const content = this.createComboboxEntry(valueEntry);
       ulElem.appendChild(content);
@@ -329,7 +370,9 @@ class Combobox extends HTMLElement {
    * creates a list entry for the combobox dropdown
    */
   createComboboxEntry(valueEntry) {
-    const templateContent = loadedMarkUp.querySelector('#template-list-item').content;
+    const templateContent = loadedMarkUp.querySelector(
+      '#template-list-item'
+    ).content;
     const content = templateContent.cloneNode(true);
     const divElem = content.querySelector('div');
     divElem.id = valueEntry.value;
@@ -340,7 +383,7 @@ class Combobox extends HTMLElement {
     spanElem.style.color = 'var(--custom-combobox-option-color)';
 
     let liElement = content.querySelector('li');
-    liElement.addEventListener('click', event => {
+    liElement.addEventListener('click', (event) => {
       event.stopPropagation();
       const value = event.currentTarget.querySelector('div').dataset.value;
       this.inputElem.setAttribute('aria-activedescendant', value);

@@ -1,5 +1,9 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-publishing/custom-publishing.js';
 
 class CustomChapterEdit extends LitElement {
@@ -80,7 +84,7 @@ class CustomChapterEdit extends LitElement {
         sortNumber: 1,
         reversed: false,
         publishDate: null,
-        storyId: this.storyId
+        storyId: this.storyId,
       };
     }
   }
@@ -96,47 +100,57 @@ class CustomChapterEdit extends LitElement {
   render() {
     const canCreate = this.checkCreatePermission();
     const canEdit = this._isEditMode && this.checkEditPermission();
-    const modalTitle = this._isEditMode ? this.labels.modalTitleEdit : this.labels.modalTitle;
-    const confirmLabel = this._isEditMode ? this.labels.saveButton : this.labels.createButton;
+    const modalTitle = this._isEditMode
+      ? this.labels.modalTitleEdit
+      : this.labels.modalTitle;
+    const confirmLabel = this._isEditMode
+      ? this.labels.saveButton
+      : this.labels.createButton;
 
     return html`
       <!-- Edit Chapter Button -->
-      ${canEdit ? html`
-        <slds-button-icon
-          icon="utility:edit"
-          variant="container-filled"
-          title="${this.labels.labelEditChapter}"
-          @click=${this._handleEditButtonClick}
-        ></slds-button-icon>`
-        : ''
-      }
+      ${canEdit
+        ? html` <slds-button-icon
+            icon="utility:edit"
+            variant="container-filled"
+            title="${this.labels.labelEditChapter}"
+            @click=${this._handleEditButtonClick}
+          ></slds-button-icon>`
+        : ''}
 
       <!-- Create Chapter Button -->
-      ${!this._isEditMode && canCreate ? html`
-        <slds-button-icon
-          icon="utility:add"
-          variant="container-filled"
-          title="${this.labels.labelCreateChapter}"
-          @click=${this._handleCreateButtonClick}
-        ></slds-button-icon>`
-        : ''
-      }
+      ${!this._isEditMode && canCreate
+        ? html` <slds-button-icon
+            icon="utility:add"
+            variant="container-filled"
+            title="${this.labels.labelCreateChapter}"
+            @click=${this._handleCreateButtonClick}
+          ></slds-button-icon>`
+        : ''}
 
       <!-- Modal -->
       <slds-modal title="${modalTitle}" @close=${this._handleModalClose}>
         <!-- Modal Content -->
-          ${this.renderTabs()}
+        ${this.renderTabs()}
 
         <!-- Modal Footer -->
         <div slot="footer">
-          <button class="slds-button slds-button_neutral" @click=${this._handleCancel}>
+          <button
+            class="slds-button slds-button_neutral"
+            @click=${this._handleCancel}
+          >
             ${this.labels.cancelButton}
           </button>
-          ${this._activeTab === 'edit' ? html`
-            <button class="slds-button slds-button_brand" @click=${this._handleConfirm}>
-              ${confirmLabel}
-            </button>
-          ` : ''}
+          ${this._activeTab === 'edit'
+            ? html`
+                <button
+                  class="slds-button slds-button_brand"
+                  @click=${this._handleConfirm}
+                >
+                  ${confirmLabel}
+                </button>
+              `
+            : ''}
         </div>
       </slds-modal>
     `;
@@ -151,42 +165,70 @@ class CustomChapterEdit extends LitElement {
     let tabPanels = [];
 
     // Edit Tab
-    tabHeads.push(html`
-      <li class="slds-tabs_default__item ${this._activeTab === 'edit' ? 'slds-is-active' : ''}" role="presentation">
-        <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('edit')}>${this.labels.TabEdit}</a>
+    tabHeads.push(
+      html` <li
+        class="slds-tabs_default__item ${this._activeTab === 'edit'
+          ? 'slds-is-active'
+          : ''}"
+        role="presentation"
+      >
+        <a
+          class="slds-tabs_default__link"
+          role="tab"
+          @click=${() => this._setTab('edit')}
+          >${this.labels.TabEdit}</a
+        >
       </li>`
     );
-    tabPanels.push(html`
-      <div class="slds-tabs_default__content ${this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'}">
+    tabPanels.push(
+      html` <div
+        class="slds-tabs_default__content ${this._activeTab === 'edit'
+          ? 'slds-show'
+          : 'slds-hide'}"
+      >
         ${this.renderEditTab()}
       </div>`
     );
 
     if (this._isEditMode) {
       // Publish Tab
-      tabHeads.push(html`
-        <li class="slds-tabs_default__item ${this._activeTab === 'publish' ? 'slds-is-active' : ''}" role="presentation">
-          <a class="slds-tabs_default__link" role="tab" @click=${() => this._setTab('publish')}>${this.labels.TabPublish}</a>
+      tabHeads.push(
+        html` <li
+          class="slds-tabs_default__item ${this._activeTab === 'publish'
+            ? 'slds-is-active'
+            : ''}"
+          role="presentation"
+        >
+          <a
+            class="slds-tabs_default__link"
+            role="tab"
+            @click=${() => this._setTab('publish')}
+            >${this.labels.TabPublish}</a
+          >
         </li>`
       );
-      tabPanels.push(html`
-        <div class="slds-tabs_default__content ${this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'}">
+      tabPanels.push(
+        html` <div
+          class="slds-tabs_default__content ${this._activeTab === 'publish'
+            ? 'slds-show'
+            : 'slds-hide'}"
+        >
           ${this.renderPublishTab()}
         </div>`
       );
     }
 
-   return html`
-    <!-- Tabs Navigation -->
-    <div class="slds-tabs_default" role="tablist">
-      <!-- Tabs Headers -->
-      <ul class="slds-tabs_default__nav" role="tablist">
-        ${tabHeads}
-      </ul>
+    return html`
+      <!-- Tabs Navigation -->
+      <div class="slds-tabs_default" role="tablist">
+        <!-- Tabs Headers -->
+        <ul class="slds-tabs_default__nav" role="tablist">
+          ${tabHeads}
+        </ul>
 
-      <!-- Tabs Content -->
-      ${tabPanels}
-    </div>
+        <!-- Tabs Content -->
+        ${tabPanels}
+      </div>
     `;
   }
 
@@ -206,7 +248,7 @@ class CustomChapterEdit extends LitElement {
         </div>
 
         <div class="slds-col slds-size_1-of-4">
-           <slds-input
+          <slds-input
             type="number"
             label="${this.labels.sortNumber}"
             placeholder="${this.labels.sortNumberPlaceholder}"
@@ -273,9 +315,15 @@ class CustomChapterEdit extends LitElement {
     if (!authData) return false;
     try {
       const parsedData = JSON.parse(authData);
-      return parsedData?.authenticationResult.access?.scopes?.includes('create') || false;
+      return (
+        parsedData?.authenticationResult.access?.scopes?.includes('create') ||
+        false
+      );
     } catch (e) {
-      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      console.error(
+        'Failed to parse authenticationResult from sessionStorage:',
+        e
+      );
       return false;
     }
   }
@@ -285,9 +333,15 @@ class CustomChapterEdit extends LitElement {
     if (!authData) return false;
     try {
       const parsedData = JSON.parse(authData);
-      return parsedData?.authenticationResult.access?.scopes?.includes('edit') || false;
+      return (
+        parsedData?.authenticationResult.access?.scopes?.includes('edit') ||
+        false
+      );
     } catch (e) {
-      console.error('Failed to parse authenticationResult from sessionStorage:', e);
+      console.error(
+        'Failed to parse authenticationResult from sessionStorage:',
+        e
+      );
       return false;
     }
   }
@@ -300,7 +354,9 @@ class CustomChapterEdit extends LitElement {
     // Calculate next sort number
     let nextSortNumber = 1;
     if (this.chapters && this.chapters.length > 0) {
-      const maxSortNumber = Math.max(...this.chapters.map(ch => ch.sortnumber || 0));
+      const maxSortNumber = Math.max(
+        ...this.chapters.map((ch) => ch.sortnumber || 0)
+      );
       nextSortNumber = maxSortNumber + 1;
     }
 
@@ -310,17 +366,17 @@ class CustomChapterEdit extends LitElement {
       sortNumber: nextSortNumber,
       reversed: false,
       publishDate: null,
-      storyId: this.storyId
+      storyId: this.storyId,
     });
 
     this.show();
   }
 
   _handleNameChange(event) {
-    const input =  event.detail.value || event.target.value;
+    const input = event.detail.value || event.target.value;
     this.chapterData = {
       ...this.chapterData,
-      name: input
+      name: input,
     };
   }
 
@@ -328,7 +384,7 @@ class CustomChapterEdit extends LitElement {
     const input = event.detail;
     this.chapterData = {
       ...this.chapterData,
-      sortNumber: parseInt(input.value) || 1
+      sortNumber: parseInt(input.value) || 1,
     };
   }
 
@@ -336,14 +392,14 @@ class CustomChapterEdit extends LitElement {
     const input = event.detail;
     this.chapterData = {
       ...this.chapterData,
-      publishDate: input.value || null
+      publishDate: input.value || null,
     };
   }
 
   _handleReversedChange(event) {
     this.chapterData = {
       ...this.chapterData,
-      reversed: event.target.checked
+      reversed: event.target.checked,
     };
   }
 
@@ -415,9 +471,9 @@ class CustomChapterEdit extends LitElement {
         name: this.chapterData.name,
         sortNumber: this.chapterData.sortNumber,
         reversed: this.chapterData.reversed || false,
-        publishDate: this.chapterData.publishDate || null
+        publishDate: this.chapterData.publishDate || null,
       },
-      callback: this._createEventCallback.bind(this)
+      callback: this._createEventCallback.bind(this),
     };
 
     this.dispatchEvent(
@@ -455,7 +511,7 @@ class CustomChapterEdit extends LitElement {
         reversed: this.chapterData.reversed || false,
         publishDate: this.chapterData.publishDate || null,
       },
-      callback: this._updateEventCallback.bind(this)
+      callback: this._updateEventCallback.bind(this),
     };
 
     this.dispatchEvent(
@@ -499,34 +555,42 @@ class CustomChapterEdit extends LitElement {
   }
 
   _dispatchToast(message, variant) {
-    this.dispatchEvent(new CustomEvent('toast', {
-      detail: { message, variant },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('toast', {
+        detail: { message, variant },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _dispatchChapterCreated(chapterData) {
-    this.dispatchEvent(new CustomEvent('chapter-created', {
-      detail: { chapterData },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('chapter-created', {
+        detail: { chapterData },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _dispatchChapterUpdated(chapterData) {
-    this.dispatchEvent(new CustomEvent('chapter-updated', {
-      detail: { chapterData },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('chapter-updated', {
+        detail: { chapterData },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _dispatchCancelEvent() {
-    this.dispatchEvent(new CustomEvent('chapter-edit-cancel', {
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('chapter-edit-cancel', {
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }
 

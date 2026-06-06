@@ -27,9 +27,9 @@ If you use SCSS with the `@salesforce-ux/design-system` npm package:
 @import '~@salesforce-ux/design-system/scss/index.scss';
 
 .my-component {
-  background-color: $brand-accessible;     // #0176d3
-  color: $color-text-default;              // #080707
-  border: 1px solid $color-border;        // #dddbda
+  background-color: $brand-accessible; // #0176d3
+  color: $color-text-default; // #080707
+  border: 1px solid $color-border; // #dddbda
 }
 ```
 
@@ -47,57 +47,75 @@ If you use SCSS with the `@salesforce-ux/design-system` npm package:
 
 ### Brand Colors
 
-| Token | Hex | Usage |
-|---|---|---|
+| Token                          | Hex       | Usage                          |
+| ------------------------------ | --------- | ------------------------------ |
 | `--slds-g-color-brand-base-60` | `#1b96ff` | Primary brand (buttons, links) |
-| `--slds-g-color-brand-base-50` | `#0176d3` | Active/hover brand |
-| `--slds-g-color-brand-base-40` | `#0b5cab` | Dark brand |
-| `--slds-g-color-brand-base-30` | `#014486` | Darker brand |
-| `--slds-g-color-brand-base-20` | `#032d60` | Darkest brand |
-| `--slds-g-color-brand-base-80` | `#aacbff` | Light brand |
-| `--slds-g-color-brand-base-90` | `#d8e6fe` | Lightest brand bg |
-| `--slds-g-color-brand-base-95` | `#eef4ff` | Near-white brand bg |
+| `--slds-g-color-brand-base-50` | `#0176d3` | Active/hover brand             |
+| `--slds-g-color-brand-base-40` | `#0b5cab` | Dark brand                     |
+| `--slds-g-color-brand-base-30` | `#014486` | Darker brand                   |
+| `--slds-g-color-brand-base-20` | `#032d60` | Darkest brand                  |
+| `--slds-g-color-brand-base-80` | `#aacbff` | Light brand                    |
+| `--slds-g-color-brand-base-90` | `#d8e6fe` | Lightest brand bg              |
+| `--slds-g-color-brand-base-95` | `#eef4ff` | Near-white brand bg            |
 
 **Usage:**
+
 ```css
 /* Primary action / interactive element */
-.my-button { background-color: var(--slds-g-color-brand-base-60); }
+.my-button {
+  background-color: var(--slds-g-color-brand-base-60);
+}
 /* Hover state */
-.my-button:hover { background-color: var(--slds-g-color-brand-base-50); }
+.my-button:hover {
+  background-color: var(--slds-g-color-brand-base-50);
+}
 /* Brand tinted background */
-.my-header { background-color: var(--slds-g-color-brand-base-95); }
+.my-header {
+  background-color: var(--slds-g-color-brand-base-95);
+}
 ```
 
 ---
 
 ### Neutral / Gray Colors
 
-| Token | Hex | Usage |
-|---|---|---|
-| `--slds-g-color-neutral-base-10` | `#181818` | Near-black text |
-| `--slds-g-color-neutral-base-20` | `#2e2e2e` | Dark text |
-| `--slds-g-color-neutral-base-30` | `#444444` | Secondary text |
-| `--slds-g-color-neutral-base-40` | `#5c5c5c` | Muted text |
-| `--slds-g-color-neutral-base-50` | `#747474` | Placeholder text |
-| `--slds-g-color-neutral-base-60` | `#939393` | Disabled text |
-| `--slds-g-color-neutral-base-70` | `#aeaeae` | Light gray |
-| `--slds-g-color-neutral-base-80` | `#c9c9c9` | Borders |
-| `--slds-g-color-neutral-base-90` | `#e5e5e5` | Subtle borders |
-| `--slds-g-color-neutral-base-95` | `#f3f3f3` | Light background |
-| `--slds-g-color-neutral-base-100` | `#ffffff` | White |
+| Token                             | Hex       | Usage            |
+| --------------------------------- | --------- | ---------------- |
+| `--slds-g-color-neutral-base-10`  | `#181818` | Near-black text  |
+| `--slds-g-color-neutral-base-20`  | `#2e2e2e` | Dark text        |
+| `--slds-g-color-neutral-base-30`  | `#444444` | Secondary text   |
+| `--slds-g-color-neutral-base-40`  | `#5c5c5c` | Muted text       |
+| `--slds-g-color-neutral-base-50`  | `#747474` | Placeholder text |
+| `--slds-g-color-neutral-base-60`  | `#939393` | Disabled text    |
+| `--slds-g-color-neutral-base-70`  | `#aeaeae` | Light gray       |
+| `--slds-g-color-neutral-base-80`  | `#c9c9c9` | Borders          |
+| `--slds-g-color-neutral-base-90`  | `#e5e5e5` | Subtle borders   |
+| `--slds-g-color-neutral-base-95`  | `#f3f3f3` | Light background |
+| `--slds-g-color-neutral-base-100` | `#ffffff` | White            |
 
 **Usage:**
+
 ```css
 /* Body text */
-.my-text { color: var(--slds-g-color-neutral-base-10); }
+.my-text {
+  color: var(--slds-g-color-neutral-base-10);
+}
 /* Muted/helper text */
-.my-meta { color: var(--slds-g-color-neutral-base-50); }
+.my-meta {
+  color: var(--slds-g-color-neutral-base-50);
+}
 /* Card background */
-.my-card { background-color: var(--slds-g-color-neutral-base-100); }
+.my-card {
+  background-color: var(--slds-g-color-neutral-base-100);
+}
 /* Subtle section background */
-.my-section { background-color: var(--slds-g-color-neutral-base-95); }
+.my-section {
+  background-color: var(--slds-g-color-neutral-base-95);
+}
 /* Default border */
-.my-input { border-color: var(--slds-g-color-neutral-base-80); }
+.my-input {
+  border-color: var(--slds-g-color-neutral-base-80);
+}
 ```
 
 ---
@@ -106,61 +124,73 @@ If you use SCSS with the `@salesforce-ux/design-system` npm package:
 
 #### Error
 
-| Token | Hex | Usage |
-|---|---|---|
-| `--slds-g-color-error-base-50` | `#ea001e` | Error text / icons |
-| `--slds-g-color-error-base-40` | `#ba0517` | Dark error |
-| `--slds-g-color-error-base-60` | `#fe5c4c` | Bright error |
-| `--slds-g-color-error-base-80` | `#feb8ab` | Light error |
+| Token                          | Hex       | Usage                 |
+| ------------------------------ | --------- | --------------------- |
+| `--slds-g-color-error-base-50` | `#ea001e` | Error text / icons    |
+| `--slds-g-color-error-base-40` | `#ba0517` | Dark error            |
+| `--slds-g-color-error-base-60` | `#fe5c4c` | Bright error          |
+| `--slds-g-color-error-base-80` | `#feb8ab` | Light error           |
 | `--slds-g-color-error-base-90` | `#feded8` | Error background tint |
 
 ```css
-.my-error-text { color: var(--slds-g-color-error-base-50); }
-.my-error-bg   { background-color: var(--slds-g-color-error-base-90); }
+.my-error-text {
+  color: var(--slds-g-color-error-base-50);
+}
+.my-error-bg {
+  background-color: var(--slds-g-color-error-base-90);
+}
 ```
 
 #### Warning
 
-| Token | Hex | Usage |
-|---|---|---|
-| `--slds-g-color-warning-base-50` | `#a96404` | Warning text |
-| `--slds-g-color-warning-base-60` | `#dd7a01` | Warning icons |
-| `--slds-g-color-warning-base-70` | `#fe9339` | Bright warning |
-| `--slds-g-color-warning-base-80` | `#ffba90` | Light warning |
+| Token                            | Hex       | Usage                   |
+| -------------------------------- | --------- | ----------------------- |
+| `--slds-g-color-warning-base-50` | `#a96404` | Warning text            |
+| `--slds-g-color-warning-base-60` | `#dd7a01` | Warning icons           |
+| `--slds-g-color-warning-base-70` | `#fe9339` | Bright warning          |
+| `--slds-g-color-warning-base-80` | `#ffba90` | Light warning           |
 | `--slds-g-color-warning-base-90` | `#fedfd0` | Warning background tint |
 
 ```css
-.my-warning-text { color: var(--slds-g-color-warning-base-50); }
-.my-warning-bg   { background-color: var(--slds-g-color-warning-base-90); }
+.my-warning-text {
+  color: var(--slds-g-color-warning-base-50);
+}
+.my-warning-bg {
+  background-color: var(--slds-g-color-warning-base-90);
+}
 ```
 
 #### Success
 
-| Token | Hex | Usage |
-|---|---|---|
-| `--slds-g-color-success-base-50` | `#2e844a` | Success text |
-| `--slds-g-color-success-base-60` | `#3ba755` | Success icons |
-| `--slds-g-color-success-base-70` | `#45c65a` | Bright success |
-| `--slds-g-color-success-base-80` | `#91db8b` | Light success |
+| Token                            | Hex       | Usage                   |
+| -------------------------------- | --------- | ----------------------- |
+| `--slds-g-color-success-base-50` | `#2e844a` | Success text            |
+| `--slds-g-color-success-base-60` | `#3ba755` | Success icons           |
+| `--slds-g-color-success-base-70` | `#45c65a` | Bright success          |
+| `--slds-g-color-success-base-80` | `#91db8b` | Light success           |
 | `--slds-g-color-success-base-90` | `#cdefc4` | Success background tint |
 
 ```css
-.my-success-text { color: var(--slds-g-color-success-base-50); }
-.my-success-bg   { background-color: var(--slds-g-color-success-base-90); }
+.my-success-text {
+  color: var(--slds-g-color-success-base-50);
+}
+.my-success-bg {
+  background-color: var(--slds-g-color-success-base-90);
+}
 ```
 
 ---
 
 ### Border Colors
 
-| Token | Hex | Usage |
-|---|---|---|
-| `--slds-g-color-border-base-1` | `#c9c9c9` | Default border (lightest) |
-| `--slds-g-color-border-base-2` | `#aeaeae` | Medium border |
-| `--slds-g-color-border-base-3` | `#939393` | Stronger border |
-| `--slds-g-color-border-base-4` | `#747474` | Strong/focus border |
-| `--slds-g-color-border-brand-1` | `#78b0fd` | Brand border (light) |
-| `--slds-g-color-border-brand-2` | `#1b96ff` | Brand border |
+| Token                           | Hex       | Usage                     |
+| ------------------------------- | --------- | ------------------------- |
+| `--slds-g-color-border-base-1`  | `#c9c9c9` | Default border (lightest) |
+| `--slds-g-color-border-base-2`  | `#aeaeae` | Medium border             |
+| `--slds-g-color-border-base-3`  | `#939393` | Stronger border           |
+| `--slds-g-color-border-base-4`  | `#747474` | Strong/focus border       |
+| `--slds-g-color-border-brand-1` | `#78b0fd` | Brand border (light)      |
+| `--slds-g-color-border-brand-2` | `#1b96ff` | Brand border              |
 
 ```css
 /* Default input border */
@@ -179,10 +209,18 @@ If you use SCSS with the `@salesforce-ux/design-system` npm package:
 ### Link Colors
 
 ```css
-a { color: var(--slds-g-link-color); }             /* #0b5cab */
-a:hover { color: var(--slds-g-link-color-hover); } /* #014486 */
-a:focus { color: var(--slds-g-link-color-focus); } /* #014486 */
-a:active { color: var(--slds-g-link-color-active); } /* #032d60 */
+a {
+  color: var(--slds-g-link-color);
+} /* #0b5cab */
+a:hover {
+  color: var(--slds-g-link-color-hover);
+} /* #014486 */
+a:focus {
+  color: var(--slds-g-link-color-focus);
+} /* #014486 */
+a:active {
+  color: var(--slds-g-link-color-active);
+} /* #032d60 */
 ```
 
 ---
@@ -191,23 +229,23 @@ a:active { color: var(--slds-g-link-color-active); } /* #032d60 */
 
 SLDS uses a consistent spacing scale. The utility classes (`slds-m-*`, `slds-p-*`) are the preferred way to apply spacing, but you can use the values directly in custom CSS:
 
-| Utility suffix | rem | px |
-|---|---|---|
-| `xxx-small` | 0.125rem | 2px |
-| `xx-small` | 0.25rem | 4px |
-| `x-small` | 0.5rem | 8px |
-| `small` | 0.75rem | 12px |
-| `medium` | 1rem | 16px |
-| `large` | 1.5rem | 24px |
-| `x-large` | 2rem | 32px |
-| `xx-large` | 3rem | 48px |
+| Utility suffix | rem      | px   |
+| -------------- | -------- | ---- |
+| `xxx-small`    | 0.125rem | 2px  |
+| `xx-small`     | 0.25rem  | 4px  |
+| `x-small`      | 0.5rem   | 8px  |
+| `small`        | 0.75rem  | 12px |
+| `medium`       | 1rem     | 16px |
+| `large`        | 1.5rem   | 24px |
+| `x-large`      | 2rem     | 32px |
+| `xx-large`     | 3rem     | 48px |
 
 ```css
 /* Using spacing values directly */
 .my-component {
-  padding: 1rem;          /* medium */
-  margin-bottom: 1.5rem;  /* large */
-  gap: 0.5rem;            /* x-small */
+  padding: 1rem; /* medium */
+  margin-bottom: 1.5rem; /* large */
+  gap: 0.5rem; /* x-small */
 }
 ```
 
@@ -215,15 +253,15 @@ SLDS uses a consistent spacing scale. The utility classes (`slds-m-*`, `slds-p-*
 
 ## Typography Scale
 
-| SLDS class | Font size | Weight | Usage |
-|---|---|---|---|
-| `slds-text-heading_large` | 1.75rem (28px) | 300 | Page-level headings |
-| `slds-text-heading_medium` | 1.25rem (20px) | 300 | Section headings |
-| `slds-text-heading_small` | 1rem (16px) | 700 | Component headings |
-| `slds-text-title` | 0.875rem (14px) | 700 | Titles |
-| `slds-text-title_caps` | 0.75rem (12px) | 700 uppercase | Category labels |
-| `slds-text-body_regular` | 0.8125rem (13px) | 400 | Default body text |
-| `slds-text-body_small` | 0.75rem (12px) | 400 | Small body / meta text |
+| SLDS class                 | Font size        | Weight        | Usage                  |
+| -------------------------- | ---------------- | ------------- | ---------------------- |
+| `slds-text-heading_large`  | 1.75rem (28px)   | 300           | Page-level headings    |
+| `slds-text-heading_medium` | 1.25rem (20px)   | 300           | Section headings       |
+| `slds-text-heading_small`  | 1rem (16px)      | 700           | Component headings     |
+| `slds-text-title`          | 0.875rem (14px)  | 700           | Titles                 |
+| `slds-text-title_caps`     | 0.75rem (12px)   | 700 uppercase | Category labels        |
+| `slds-text-body_regular`   | 0.8125rem (13px) | 400           | Default body text      |
+| `slds-text-body_small`     | 0.75rem (12px)   | 400           | Small body / meta text |
 
 ```html
 <h1 class="slds-text-heading_large">Page Title</h1>

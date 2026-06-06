@@ -9,6 +9,7 @@ when_to_use: Triggered by requests like "create a Lit component", "add a propert
 Lit is a lightweight library (~5kB) for building fast, standards-based web components. Every Lit component is a native [Custom Element](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_custom_elements) that works in any HTML environment, with any framework or none at all.
 
 For supporting files, see:
+
 - `REFERENCE.md` — Property options table, template expressions, directives, lifecycle order
 - `examples/basic-component.md` — A minimal working counter component
 - `examples/advanced-patterns.md` — Events, internal state, repeat directive, slots
@@ -22,16 +23,29 @@ For supporting files, see:
 The simplest way to use Lit. Import directly in a `<script type="module">` or a `.js` module file.
 
 **Core bundle** (LitElement + html + css + reactive properties):
+
 ```js
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 ```
 
 **Full bundle** (core + all directives + decorators):
+
 ```js
-import { LitElement, html, css, repeat, classMap } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
+import {
+  LitElement,
+  html,
+  css,
+  repeat,
+  classMap,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 ```
 
 **Alternative CDN mirrors** (same content, different providers):
+
 ```js
 // unpkg
 import { LitElement, html, css } from 'https://unpkg.com/lit@3/index.js?module';
@@ -61,6 +75,7 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 ```
 
 **TypeScript config** (`tsconfig.json`) for decorators:
+
 ```json
 {
   "compilerOptions": {
@@ -82,8 +97,12 @@ import { ifDefined } from 'lit/directives/if-defined.js';
 A Lit component is a class extending `LitElement`, registered as a custom element.
 
 ### JavaScript (no decorators)
+
 ```js
-import { LitElement, html } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import {
+  LitElement,
+  html,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 class MyGreeting extends LitElement {
   render() {
@@ -98,6 +117,7 @@ customElements.define('my-greeting', MyGreeting);
 ```
 
 ### TypeScript (with decorators)
+
 ```ts
 import { LitElement, html } from 'lit';
 import { customElement } from 'lit/decorators.js';
@@ -119,6 +139,7 @@ export class MyGreeting extends LitElement {
 Reactive properties trigger a re-render whenever their value changes.
 
 ### JavaScript — `static properties`
+
 ```js
 class MyElement extends LitElement {
   static properties = {
@@ -142,6 +163,7 @@ class MyElement extends LitElement {
 ```
 
 ### TypeScript — `@property` decorator
+
 ```ts
 import { property } from 'lit/decorators.js';
 
@@ -173,6 +195,7 @@ import { state } from 'lit/decorators.js';
 ### Important: JS class fields vs reactive properties
 
 In plain JavaScript, **never declare reactive properties as class fields** — use the constructor instead:
+
 ```js
 // ❌ WRONG — class field hides the reactive accessor
 class Bad extends LitElement {
@@ -183,9 +206,13 @@ class Bad extends LitElement {
 // ✅ CORRECT
 class Good extends LitElement {
   static properties = { name: { type: String } };
-  constructor() { super(); this.name = 'World'; }
+  constructor() {
+    super();
+    this.name = 'World';
+  }
 }
 ```
+
 TypeScript is exempt from this rule when using decorators.
 
 ---
@@ -205,15 +232,16 @@ render() {
 
 ### Expressions
 
-| Expression type | Syntax | Example |
-|---|---|---|
-| Child content | `${value}` | `html\`<p>${this.msg}</p>\`` |
-| Attribute | `attr="${value}"` | `html\`<div class="${this.cls}"></div>\`` |
-| Boolean attribute | `?attr="${bool}"` | `html\`<button ?disabled="${this.off}"></button>\`` |
-| Property | `.prop="${value}"` | `html\`<input .value="${this.val}">\`` |
-| Event listener | `@event="${handler}"` | `html\`<button @click="${this._onClick}"></button>\`` |
+| Expression type   | Syntax                | Example                                                |
+| ----------------- | --------------------- | ------------------------------------------------------ |
+| Child content     | `${value}`            | `html\`<p>${this.msg}</p>\``                           |
+| Attribute         | `attr="${value}"`     | `html\`<div class="${this.cls}"></div>\``              |
+| Boolean attribute | `?attr="${bool}"`     | `html\`<button ?disabled="${this.off}"></button>\``    |
+| Property          | `.prop="${value}"`    | `html\`<input .value="${this.val}">\``                 |
+| Event listener    | `@event="${handler}"` | `html\`<button @click="${this.\_onClick}"></button>\`` |
 
 ### Conditionals
+
 ```js
 render() {
   return html`
@@ -226,6 +254,7 @@ render() {
 ```
 
 ### Lists
+
 ```js
 render() {
   return html`
@@ -264,6 +293,7 @@ static styles = css`
 ```
 
 ### Multiple style sheets
+
 ```js
 static styles = [
   baseStyles,       // imported css`` from another module
@@ -276,6 +306,7 @@ static styles = [
 ### CSS custom properties for theming
 
 Use CSS custom properties (variables) to allow external styling:
+
 ```js
 static styles = css`
   :host {
@@ -310,6 +341,7 @@ disconnectedCallback() {
 ```
 
 ### Checking which properties changed
+
 ```js
 updated(changedProperties) {
   if (changedProperties.has('userId')) {
@@ -319,6 +351,7 @@ updated(changedProperties) {
 ```
 
 ### Requesting a manual update
+
 ```js
 this.requestUpdate(); // triggers re-render even without a property change
 await this.updateComplete; // promise that resolves after the next render
@@ -329,6 +362,7 @@ await this.updateComplete; // promise that resolves after the next render
 ## 7. Events
 
 ### Dispatching custom events
+
 ```js
 _handleClick() {
   this.dispatchEvent(new CustomEvent('my-event', {
@@ -340,6 +374,7 @@ _handleClick() {
 ```
 
 ### Listening to events in templates
+
 ```js
 render() {
   return html`
@@ -350,6 +385,7 @@ render() {
 ```
 
 ### Listening to events on the component from outside
+
 ```html
 <my-counter @count-changed="${handleCountChanged}"></my-counter>
 ```
@@ -361,6 +397,7 @@ render() {
 Directives extend the template system. Import from the full CDN bundle or from `lit/directives/` (npm).
 
 ### `repeat` — efficient list rendering with keyed diffing
+
 ```js
 import { repeat } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 
@@ -378,6 +415,7 @@ render() {
 ```
 
 ### `classMap` — conditionally apply CSS classes
+
 ```js
 import { classMap } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 
@@ -393,6 +431,7 @@ render() {
 ```
 
 ### `styleMap` — conditionally apply inline styles
+
 ```js
 import { styleMap } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 
@@ -407,6 +446,7 @@ render() {
 ```
 
 ### `when` — conditional rendering (cleaner than ternary)
+
 ```js
 import { when } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 
@@ -421,6 +461,7 @@ render() {
 ```
 
 ### `ifDefined` — only render attribute if value is defined
+
 ```js
 import { ifDefined } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
 
@@ -434,6 +475,7 @@ render() {
 ## 9. Shadow DOM & Slots
 
 ### Accessing the shadow root
+
 ```js
 firstUpdated() {
   const input = this.shadowRoot.querySelector('input');
@@ -442,6 +484,7 @@ firstUpdated() {
 ```
 
 ### Slots — composing content from outside
+
 ```js
 render() {
   return html`
@@ -466,6 +509,7 @@ render() {
 ```
 
 ### Querying slotted elements
+
 ```js
 const slotted = this.shadowRoot
   .querySelector('slot')

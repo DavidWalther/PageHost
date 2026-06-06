@@ -23,7 +23,7 @@ class EndpointLogic {
 
   execute() {
     return new Promise((resolve, reject) => {
-      reject(new Error('Method \'execute\' must be implemented'));
+      reject(new Error("Method 'execute' must be implemented"));
     });
   }
 

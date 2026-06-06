@@ -11,29 +11,29 @@ const MOCK_ENVIRONMENT = {
   CACHE_CONTAINER_EXPIRATION_SECONDS: '3600',
   REDIS_PASSWORD: 'test-password',
   REDIS_HOST: 'test-host',
-  REDIS_PORT: 'test-port'
+  REDIS_PORT: 'test-port',
 };
 //const mockConnect =  () => { return new Promise((resolve) => {resolve()}) };
 
-let MOCK_GET_VALUE = {key: 'value'};
+let MOCK_GET_VALUE = { key: 'value' };
 let mockConnect = jest.fn().mockImplementation(() => {
   return new Promise((resolve, reject) => {
-      if(valueIsReady) {
-        reject('Already connected');
-      }
-      valueIsReady = true;
-      resolve()
-    })
+    if (valueIsReady) {
+      reject('Already connected');
+    }
+    valueIsReady = true;
+    resolve();
   });
+});
 
 let mockDisconnect = jest.fn().mockImplementation(() => {
   return new Promise((resolve, reject) => {
-    if(!valueIsReady) {
+    if (!valueIsReady) {
       reject('Not connected');
     }
     valueIsReady = false;
-    resolve()
-  })
+    resolve();
+  });
 });
 let mockGet = jest.fn().mockResolvedValue(JSON.stringify(MOCK_GET_VALUE));
 let mockSetEx = jest.fn().mockResolvedValue();
@@ -49,7 +49,7 @@ RedisConnector.mockImplementation(() => {
     setEx: mockSetEx,
     del: mockDel,
     isReady: mockIsReady,
-    isOpen: mockIsOpen
+    isOpen: mockIsOpen,
   };
 });
 
@@ -72,7 +72,7 @@ describe('Basics', () => {
     expect(RedisConnector).toHaveBeenCalled();
   });
 
-  it('the connection should be opened implicitly when calling \'get()\'', async () => {
+  it("the connection should be opened implicitly when calling 'get()'", async () => {
     expect(RedisConnector).not.toHaveBeenCalled();
     expect(mockConnect).not.toHaveBeenCalled();
 
@@ -83,7 +83,7 @@ describe('Basics', () => {
     expect(mockConnect).toHaveBeenCalled();
   });
 
-  it('the connection should be closed implicitly when calling \'get()\'', async () => {
+  it("the connection should be closed implicitly when calling 'get()'", async () => {
     expect(RedisConnector).not.toHaveBeenCalled();
     expect(mockConnect).not.toHaveBeenCalled();
 
@@ -136,7 +136,7 @@ describe('Cache Keys', () => {
     const dataCache = new DataCache2(MOCK_ENVIRONMENT);
 
     const key = 'metadata';
-    const value = {key: 'value'};
+    const value = { key: 'value' };
     const expectedKey = `${MOCK_ENVIRONMENT.CACHE_KEY_PREFIX}-${MOCK_ENVIRONMENT.APPLICATION_APPLICATION_KEY}-${MOCK_ENVIRONMENT.CACHE_DATA_INCREMENT}-metadata`;
 
     let setPromise = dataCache.set(key, value);
@@ -144,7 +144,11 @@ describe('Cache Keys', () => {
 
     await setPromise;
     expect(mockSetEx).toHaveBeenCalled();
-    expect(mockSetEx).toHaveBeenCalledWith(expectedKey, MOCK_ENVIRONMENT.CACHE_CONTAINER_EXPIRATION_SECONDS, JSON.stringify(value));
+    expect(mockSetEx).toHaveBeenCalledWith(
+      expectedKey,
+      MOCK_ENVIRONMENT.CACHE_CONTAINER_EXPIRATION_SECONDS,
+      JSON.stringify(value)
+    );
   });
 });
 

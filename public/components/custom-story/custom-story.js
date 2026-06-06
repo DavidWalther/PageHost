@@ -1,5 +1,9 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 class CustomStory extends LitElement {
   labels = {
@@ -7,8 +11,11 @@ class CustomStory extends LitElement {
   };
 
   static properties = {
-    id: { type: String},
-    chapterButtonsNumberMax: { type: Number, attribute: 'chapter-buttons_number-max' },
+    id: { type: String },
+    chapterButtonsNumberMax: {
+      type: Number,
+      attribute: 'chapter-buttons_number-max',
+    },
     selectedChapter: { type: String },
     _bookData: { state: true },
   };
@@ -30,7 +37,7 @@ class CustomStory extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot);
-    this.fireQueryEvent(this.id , this.storyChangeCallback.bind(this));
+    this.fireQueryEvent(this.id, this.storyChangeCallback.bind(this));
   }
 
   updated(changedProperties) {
@@ -45,10 +52,16 @@ class CustomStory extends LitElement {
   render() {
     return html`
       <slds-spinner size="large" ?hidden=${!!this._bookData}></slds-spinner>
-      <div id="content" class="slds-grid slds-wrap ${!this._bookData ? 'slds-hide' : ''}">
+      <div
+        id="content"
+        class="slds-grid slds-wrap ${!this._bookData ? 'slds-hide' : ''}"
+      >
         <div class="slds-col slds-size_1-of-1">
           <slds-card no-footer>
-            <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
+            <div
+              slot="actions"
+              class="slds-grid slds-wrap slds-gutters_xxx-small"
+            >
               <div class="slds-col slds-grow-none slds-align_absolute-center">
                 <!-- Chapter Edit Component Button will appear here -->
                 <custom-chapter-edit
@@ -66,7 +79,9 @@ class CustomStory extends LitElement {
                 ></slds-button-icon>
               </div>
             </div>
-            <span id="span-chapter-title" slot="header">${this._bookData?.name || ''}</span>
+            <span id="span-chapter-title" slot="header"
+              >${this._bookData?.name || ''}</span
+            >
             <div id="chapter-list" class="slds-grid slds-gutters slds-wrap">
               ${this._renderChapters()}
             </div>
@@ -79,7 +94,10 @@ class CustomStory extends LitElement {
   _renderChapters() {
     if (!this._bookData || !this._bookData.chapters) return '';
     const chapters = this._bookData.chapters;
-    if (this.chapterButtonsNumberMax && chapters.length > this.chapterButtonsNumberMax) {
+    if (
+      this.chapterButtonsNumberMax &&
+      chapters.length > this.chapterButtonsNumberMax
+    ) {
       return this._renderCombobox(chapters);
     }
     return chapters.map((chapter) => this._renderChapterButton(chapter));
@@ -90,7 +108,10 @@ class CustomStory extends LitElement {
     return html`
       <div class="slds-col slds-grow-none">
         <button
-          class="slds-button slds-button_neutral ${this.selectedChapter === chapter.id ? 'slds-button_brand' : ''}"
+          class="slds-button slds-button_neutral ${this.selectedChapter ===
+          chapter.id
+            ? 'slds-button_brand'
+            : ''}"
           data-chapter-id=${chapter.id}
           @click=${() => this.changeChapter(chapter.id)}
           ?disabled=${isSelected}
@@ -137,7 +158,10 @@ class CustomStory extends LitElement {
     navigator.clipboard.writeText(shareUrl).then(() => {
       this.dispatchEvent(
         new CustomEvent('toast', {
-          detail: { message: this.labels.labelNotificationLinkCopied, variant: 'success' },
+          detail: {
+            message: this.labels.labelNotificationLinkCopied,
+            variant: 'success',
+          },
           bubbles: true,
           composed: true,
         })
@@ -157,7 +181,7 @@ class CustomStory extends LitElement {
   handleChapterUpdated(chapterData) {
     if (!this._bookData?.chapters || !chapterData?.id) return;
     const updated = this._bookData.chapters
-      .map(ch => ch.id === chapterData.id ? { ...ch, ...chapterData } : ch)
+      .map((ch) => (ch.id === chapterData.id ? { ...ch, ...chapterData } : ch))
       .sort((a, b) => (a.sortnumber ?? 0) - (b.sortnumber ?? 0));
     this._bookData = { ...this._bookData, chapters: updated };
     this.requestUpdate();
@@ -167,12 +191,14 @@ class CustomStory extends LitElement {
     if (!this._bookData?.chapters || !chapterId) return;
     this._bookData = {
       ...this._bookData,
-      chapters: this._bookData.chapters.filter(ch => ch.id !== chapterId),
+      chapters: this._bookData.chapters.filter((ch) => ch.id !== chapterId),
     };
     this.requestUpdate();
   }
   storyChangeCallback(error, data) {
-    if(Array.isArray(data)) { return; }
+    if (Array.isArray(data)) {
+      return;
+    }
 
     if (error) {
       console.error(error);

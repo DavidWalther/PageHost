@@ -1,4 +1,4 @@
-const MetaDataEndpointLogic  = require('../MetaDataEndpointLogic');
+const MetaDataEndpointLogic = require('../MetaDataEndpointLogic');
 const { DataFacade } = require('../../../database2/DataFacade');
 const { Logging } = require('../../../modules/logging');
 
@@ -14,11 +14,13 @@ describe('MetaDataEndpointLogic', () => {
   beforeEach(() => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = {
-      json: jest.fn()
+      json: jest.fn(),
     };
 
     metaDataEndpointLogic = new MetaDataEndpointLogic();
-    metaDataEndpointLogic.setEnvironment(mockEnvironment).setResponseObject(mockResponseObject);
+    metaDataEndpointLogic
+      .setEnvironment(mockEnvironment)
+      .setResponseObject(mockResponseObject);
   });
 
   afterEach(() => {
@@ -29,11 +31,11 @@ describe('MetaDataEndpointLogic', () => {
     const mockConfiguration = {
       key1: 'value1',
       key2: 'value2',
-      applicationIncluded: true
+      applicationIncluded: true,
     };
 
     DataFacade.mockImplementation(() => ({
-      getData: jest.fn().mockResolvedValue(mockConfiguration)
+      getData: jest.fn().mockResolvedValue(mockConfiguration),
     }));
 
     await metaDataEndpointLogic.execute();
@@ -45,18 +47,18 @@ describe('MetaDataEndpointLogic', () => {
     const mockConfiguration = {
       key1: 'value1',
       key2: 'value2',
-      applicationIncluded: true
+      applicationIncluded: true,
     };
 
     DataFacade.mockImplementation(() => ({
-      getData: jest.fn().mockResolvedValue(mockConfiguration)
+      getData: jest.fn().mockResolvedValue(mockConfiguration),
     }));
 
     await metaDataEndpointLogic.execute();
 
     expect(mockResponseObject.json).toHaveBeenCalledWith({
       key1: 'value1',
-      key2: 'value2'
+      key2: 'value2',
     });
   });
 });

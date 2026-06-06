@@ -63,7 +63,7 @@ The frontend uses an `oidc-component` with Google-specific configuration:
   server-endpoint-auth-code-exchange="/api/1.0/oAuth2/codeexchange"
   server-endpoint-auth-state-request="/api/1.0/oAuth2/requestAuthState"
   button-label="Login with Google"
->
+></oidc-component>
 ```
 
 ### Event Handling
@@ -72,9 +72,13 @@ The main application handles authentication events:
 
 ```javascript
 // From bookstore.js
-oidcComponent.addEventListener('authenticated', (event) => this.handleOIDCAuthenticated(event));
+oidcComponent.addEventListener('authenticated', (event) =>
+  this.handleOIDCAuthenticated(event)
+);
 oidcComponent.addEventListener('logout', (event) => this.handleLogout(event));
-oidcComponent.addEventListener('rejected', (event) => this.handleAuthenticationRejection(event));
+oidcComponent.addEventListener('rejected', (event) =>
+  this.handleAuthenticationRejection(event)
+);
 ```
 
 ### Configuration Retrieval
@@ -107,10 +111,10 @@ fetch('/api/1.0/actions/publish', {
   method: 'PATCH',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authBearer}`
+    Authorization: `Bearer ${authBearer}`,
   },
-  body: JSON.stringify(payload)
-})
+  body: JSON.stringify(payload),
+});
 ```
 
 ### PKCE Implementation
@@ -133,7 +137,7 @@ const parameters = {
   response_type,
   state,
   code_challenge: codeChallenge,
-  code_challenge_method: 'S256'
+  code_challenge_method: 'S256',
 };
 ```
 
@@ -150,11 +154,16 @@ Generates and caches a random state value for CSRF protection:
 ```javascript
 app.get('/api/1.0/oAuth2/requestAuthState', async (req, res) => {
   const endpoint = new RequestAuthStateEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute();
+  endpoint
+    .setEnvironment(environment)
+    .setRequestObject(req)
+    .setResponseObject(res)
+    .execute();
 });
 ```
 
 **Implementation Details:**
+
 - Generates 32-byte random state using `crypto.randomBytes()`
 - Stores state in cache with `short-term-auth-state-{state}` key
 - Returns state to client for inclusion in OAuth request
@@ -166,7 +175,11 @@ Exchanges authorization code for tokens and creates bearer token:
 ```javascript
 app.post('/api/1.0/oAuth2/codeexchange', async (req, res) => {
   const endpoint = new CodeExchangeEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute();
+  endpoint
+    .setEnvironment(environment)
+    .setRequestObject(req)
+    .setResponseObject(res)
+    .execute();
 });
 ```
 
@@ -177,7 +190,11 @@ Invalidates bearer tokens:
 ```javascript
 app.get('/api/1.0/auth/logout', async (req, res) => {
   const endpoint = new LogoutEndpoint();
-  endpoint.setEnvironment(environment).setRequestObject(req).setResponseObject(res).execute();
+  endpoint
+    .setEnvironment(environment)
+    .setRequestObject(req)
+    .setResponseObject(res)
+    .execute();
 });
 ```
 
@@ -186,6 +203,7 @@ app.get('/api/1.0/auth/logout', async (req, res) => {
 The [`CodeExchangeEndpoint`](../../private/endpoints/api/1.0/auth/oAuth2/CodeExchangeEndpoint.js) handles the complete OAuth flow:
 
 1. **State Validation**
+
 ```javascript
 const auth_state_cache_key = `${PREFIX_FOR_SHORT_TERM_CACHE}-auth-state-${state}`;
 const cache = new DataCache2(this.environment);
@@ -197,17 +215,22 @@ if (!isStateValid) {
 ```
 
 2. **Replay Attack Prevention**
+
 ```javascript
-let auth_code_cache_key = PREFIX_FOR_SHORT_TERM_CACHE + '-used-auth-code-' + auth_code;
+let auth_code_cache_key =
+  PREFIX_FOR_SHORT_TERM_CACHE + '-used-auth-code-' + auth_code;
 let ShortTermCacheKeyGenerator = await cache.get(auth_code_cache_key);
 if (ShortTermCacheKeyGenerator) {
-  this.responseObject.status(401).json({ error: 'Authentication code already used' });
+  this.responseObject
+    .status(401)
+    .json({ error: 'Authentication code already used' });
   return;
 }
 await cache.set(auth_code_cache_key, true);
 ```
 
 3. **Token Exchange with Google**
+
 ```javascript
 const oidcClient = new OpenIdConnectClient()
   .setRedirectUri(this.redirectUri)
@@ -216,22 +239,22 @@ const oidcClient = new OpenIdConnectClient()
   .setWellKnownEndpoint(GOOGLE_ENDPOINT_WELLKNOWN)
   .setCodeVerifier(code_verifier);
 
-await oidcClient.exchangeAuthorizationCode(auth_code)
+await oidcClient.exchangeAuthorizationCode(auth_code);
 ```
 
 4. **User Validation and Bearer Creation**
+
 ```javascript
 let accessTokenService = new AccessTokenService();
 accessTokenService.setEnvironment(this.environment);
 
-if(!accessTokenService.isUserValid(tokenPayload)) {
+if (!accessTokenService.isUserValid(tokenPayload)) {
   this.responseObject.status(401).json({ error: 'No new users allowed' });
   return;
 }
 
 let scopes = accessTokenService.getUserScopes(tokenPayload);
-accessTokenService.createBearer(tokenPayload)
-.then(bearerToken => {
+accessTokenService.createBearer(tokenPayload).then((bearerToken) => {
   // Return auth response to client
 });
 ```
@@ -245,12 +268,14 @@ Protected endpoints use bearer token validation with scope checking:
 app.patch('/api/1.0/actions/publish', async (req, res) => {
   let bearerToken = req.headers['authorization']?.split(' ')[1];
   let accessTokenService = new AccessTokenService().setEnvironment(environment);
-  
-  if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
+
+  if (
+    !accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])
+  ) {
     res.status(401).send('Unauthorized');
     return;
   }
-  
+
   // Execute endpoint
 });
 ```
@@ -260,7 +285,7 @@ app.patch('/api/1.0/actions/publish', async (req, res) => {
 Different endpoints require different scopes:
 
 - **Edit operations** (`/api/1.0/data/change/*`): `['edit']`
-- **Delete operations** (`/api/1.0/data/delete`): `['delete']` 
+- **Delete operations** (`/api/1.0/data/delete`): `['delete']`
 - **Publish operations** (`/api/1.0/actions/publish`): `['publish', 'edit']`
 - **Unpublish operations** (`/api/1.0/actions/unpublish`): `['publish', 'edit']`
 
@@ -273,18 +298,21 @@ Different endpoints require different scopes:
 The system uses Redis via [`DataCache2`](../../private/database2/DataCache/DataCache.js) with specific key patterns:
 
 #### Short-term Cache (State Values)
+
 - **Pattern**: `short-term-auth-state-{state}`
 - **Purpose**: CSRF protection during OAuth flow
 - **Lifetime**: Short-lived, deleted after single use
 - **Example**: `short-term-auth-state-a1b2c3d4e5f6...`
 
 #### Used Authorization Codes
+
 - **Pattern**: `short-term-used-auth-code-{code}`
 - **Purpose**: Prevent replay attacks
 - **Lifetime**: 20 minutes
 - **Example**: `short-term-used-auth-code-4/0AX4XfWh...`
 
 #### Mid-term Cache (Bearer Tokens)
+
 - **Pattern**: `mid-term-bearer-token-{bearerToken}`
 - **Purpose**: Store bearer token with associated user info and scopes
 - **Lifetime**: Session-based
@@ -299,7 +327,7 @@ await cache.set(auth_state_cache_key, true);
 
 // Bearer token storage
 const bearerTokenCacheKey = this.getBearerCacheKey(bearerToken);
-const bearerTokenCacheValue = {userInfo, scopes};
+const bearerTokenCacheValue = { userInfo, scopes };
 await cache.set(bearerTokenCacheKey, bearerTokenCacheValue);
 
 // Bearer token validation
@@ -384,12 +412,12 @@ async createBearer(userInfo) {
       reject('User is not valid');
       return;
     }
-    
+
     let scopes = this.getUserScopes(userInfo);
     const bearerToken = this.createBearerForUser();
     const bearerTokenCacheKey = this.getBearerCacheKey(bearerToken);
     const bearerTokenCacheValue = {userInfo, scopes};
-    
+
     let cache = new DataCache2(this.environment);
     await cache.set(bearerTokenCacheKey, bearerTokenCacheValue);
     resolve(bearerToken);
@@ -404,20 +432,20 @@ async isBearerValidFromScope(bearer, requestedScopes) {
   if (!bearer || !requestedScopes) {
     return false;
   }
-  
+
   const cache = new DataCache2(this.environment);
   const cacheKey = this.getBearerCacheKey(bearer);
   const cacheValue = await cache.get(cacheKey);
-  
+
   if (!cacheValue) {
     return false;
   }
-  
+
   const { userInfo, scopes } = cacheValue;
   if (!this.isUserValid(userInfo)) {
     return false;
   }
-  
+
   // Check if bearer was created for requested scopes
   const isBearerCreatedForRequestedScopes = requestedScopes.every(scope => scopes.includes(scope));
   return isBearerCreatedForRequestedScopes;
@@ -447,7 +475,7 @@ async deleteBearer(bearer) {
   if (!bearer) {
     return false;
   }
-  
+
   const cache = new DataCache2(this.environment);
   const cacheKey = this.getBearerCacheKey(bearer);
   await cache.del(cacheKey);
@@ -477,7 +505,7 @@ isUserValid(userInfo) {
 During authentication, new users are rejected:
 
 ```javascript
-if(!accessTokenService.isUserValid(tokenPayload)) {
+if (!accessTokenService.isUserValid(tokenPayload)) {
   this.responseObject.status(401).json({ error: 'No new users allowed' });
   return;
 }
@@ -494,7 +522,7 @@ let user = {
   last_name: tokenPayload.family_name,
   picture: tokenPayload.picture,
   display_name: tokenPayload.name,
-  email: tokenPayload.email
+  email: tokenPayload.email,
 };
 ```
 
@@ -521,16 +549,19 @@ getUserScopes(userInfo) {
 
 Different endpoints require different scopes:
 
-| Endpoint | Required Scopes | Purpose |
-|----------|----------------|---------|
-| `/api/1.0/data/change/*` | `['edit']` | Content modification |
-| `/api/1.0/data/delete` | `['delete']` | Content deletion |
-| `/api/1.0/actions/publish` | `['publish', 'edit']` | Content publishing |
+| Endpoint                     | Required Scopes       | Purpose              |
+| ---------------------------- | --------------------- | -------------------- |
+| `/api/1.0/data/change/*`     | `['edit']`            | Content modification |
+| `/api/1.0/data/delete`       | `['delete']`          | Content deletion     |
+| `/api/1.0/actions/publish`   | `['publish', 'edit']` | Content publishing   |
 | `/api/1.0/actions/unpublish` | `['publish', 'edit']` | Content unpublishing |
 
 Example validation:
+
 ```javascript
-if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])) {
+if (
+  !accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit'])
+) {
   res.status(401).send('Unauthorized');
   return;
 }
@@ -542,27 +573,27 @@ if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit']))
 
 ### Required Authentication Variables
 
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `AUTH_REGISTERED_USER_EMAIL` | Email of the single allowed user | `"user@example.com"` |
-| `AUTH_SERVER_SECRET` | Secret for token generation | `"secret-key-123"` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | `"client-id.googleusercontent.com"` |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | `"client-secret"` |
-| `APPLICATION_ACTIVE_ACTIONS` | Allowed operations | `["edit","create","delete","publish"]` |
+| Variable                     | Purpose                          | Example                                |
+| ---------------------------- | -------------------------------- | -------------------------------------- |
+| `AUTH_REGISTERED_USER_EMAIL` | Email of the single allowed user | `"user@example.com"`                   |
+| `AUTH_SERVER_SECRET`         | Secret for token generation      | `"secret-key-123"`                     |
+| `GOOGLE_CLIENT_ID`           | Google OAuth client ID           | `"client-id.googleusercontent.com"`    |
+| `GOOGLE_CLIENT_SECRET`       | Google OAuth client secret       | `"client-secret"`                      |
+| `APPLICATION_ACTIVE_ACTIONS` | Allowed operations               | `["edit","create","delete","publish"]` |
 
 ### Optional Variables
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
+| Variable             | Purpose             | Default                    |
+| -------------------- | ------------------- | -------------------------- |
 | `AUTH_OIDC_AUTH_URL` | Custom redirect URI | Auto-detected from request |
 
 ### Cache Configuration
 
-| Variable | Purpose |
-|----------|---------|
-| `REDIS_HOST` | Redis server host |
-| `REDIS_PORT` | Redis server port |
-| `REDIS_PASSWORD` | Redis authentication |
+| Variable           | Purpose                |
+| ------------------ | ---------------------- |
+| `REDIS_HOST`       | Redis server host      |
+| `REDIS_PORT`       | Redis server port      |
+| `REDIS_PASSWORD`   | Redis authentication   |
 | `CACHE_KEY_PREFIX` | Cache namespace prefix |
 
 ---
@@ -570,32 +601,38 @@ if(!accessTokenService.isBearerValidFromScope(bearerToken, ['publish', 'edit']))
 ## Security Considerations
 
 ### CSRF Protection
+
 - State parameter validation prevents CSRF attacks
 - State values are randomly generated and single-use
 - State values are validated against cache before processing
 
 ### PKCE Implementation
+
 - Code verifier/challenge prevents authorization code interception
 - Enhances security for public clients
 - SHA256 hashing of code verifier creates challenge
 
 ### Token Security
+
 - Bearer tokens are cryptographically random (128 hex characters)
 - Tokens are stored in cache with associated user context
 - Server secret protects cache key generation
 - ID token signature verification using Google's public keys
 
 ### Replay Attack Prevention
+
 - Authorization codes are cached after use
 - Subsequent use of same code is rejected
 - Prevents code interception and replay
 
 ### Single User Limitation
+
 - Only one email address is allowed to authenticate
 - New user registration is explicitly blocked
 - User validation occurs at both token creation and validation
 
 ### Session Management
+
 - Tokens stored in session storage (not persistent)
 - Cache-based token validation enables server-side revocation
 - No persistent login cookies
@@ -633,6 +670,7 @@ jwt.verify(exchangeResponse.id_token, publicKey, { algorithms: ['RS256'] });
 ### Test Coverage
 
 Authentication is thoroughly tested in:
+
 - [`AccessTokenService.tests.js`](../../private/modules/oAuth2/__tests__/AccessTokenService.tests.js)
 - [`CodeExchangeEndpoint.tests.js`](../../private/endpoints/api/1.0/auth/oAuth2/__tests__/CodeExchangeEndpoint.tests.js)
 - [`OpenIdConnectClient.test.js`](../../private/modules/oAuth2/__tests__/OpenIdConnectClient.test.js)
@@ -669,7 +707,12 @@ const mockEnvironment = {
   AUTH_SERVER_SECRET: 'secret',
   GOOGLE_CLIENT_ID: 'test-client-id',
   GOOGLE_CLIENT_SECRET: 'test-client-secret',
-  APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create', 'delete', 'publish'])
+  APPLICATION_ACTIVE_ACTIONS: JSON.stringify([
+    'edit',
+    'create',
+    'delete',
+    'publish',
+  ]),
 };
 
 // User info mocks
@@ -680,7 +723,7 @@ const validUserInfo = {
   given_name: 'Test',
   family_name: 'User',
   name: 'Test User',
-  picture: 'https://example.com/picture.jpg'
+  picture: 'https://example.com/picture.jpg',
 };
 ```
 
@@ -703,13 +746,13 @@ function attachPublishEventListener(element) {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authBearer}`
+        Authorization: `Bearer ${authBearer}`,
       },
-      body: JSON.stringify(publishEvent.detail.payload)
+      body: JSON.stringify(publishEvent.detail.payload),
     })
-    .then(response => response.json())
-    .then(data => callback(null, data))
-    .catch(error => callback(error, null));
+      .then((response) => response.json())
+      .then((data) => callback(null, data))
+      .catch((error) => callback(error, null));
   });
 }
 ```
@@ -725,7 +768,7 @@ async handleLogout(event) {
 
   accessToken = JSON.parse(accessToken);
   const authHeader = 'Bearer ' + accessToken.authenticationResult.access.access_token;
-  
+
   await fetch('/api/1.0/auth/logout', {
     method: 'GET',
     headers: {
@@ -751,6 +794,7 @@ The Google authentication implementation provides a secure, single-user OAuth 2.
 - **Security**: PKCE implementation, user validation, scope-based authorization, and replay attack prevention
 
 The system is well-architected for its current single-user requirement but would need significant enhancement for multi-user scenarios, including:
+
 - User database/registry
 - Dynamic scope assignment
 - Role-based permissions

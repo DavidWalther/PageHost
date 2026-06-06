@@ -1,41 +1,43 @@
 const { Logging } = require('../../../../public/modules/logging.js');
 const { ActionGeneral } = require('./Action_General.js');
 
-class ActionGet extends ActionGeneral{
+class ActionGet extends ActionGeneral {
   constructor() {
     super();
   }
 
   setKey(key) {
-    if(!key) { return this; }
+    if (!key) {
+      return this;
+    }
     this.key = key;
     return this;
   }
 
   async execute() {
     return new Promise((resolve, reject) => {
-      if(!this.redisClient || !this.key) {
+      if (!this.redisClient || !this.key) {
         reject('Redis connector and key are required');
       }
 
       let connectionData; // uses to store connection data
       let dataReturned; // uses to store data returned
       this.createConnection()
-      .then(data => {
+        .then((data) => {
           connectionData = data;
           return this.redisClient.get(this.key);
-      })
-      .then(readData => {
-        if(!connectionData.temporarilyConnected) {
-          resolve(readData);
-        } else {
-          dataReturned = readData;
-          return this.disconnect()
-        }
-      })
-      .then(() => {
-        resolve(dataReturned);
-      });       
+        })
+        .then((readData) => {
+          if (!connectionData.temporarilyConnected) {
+            resolve(readData);
+          } else {
+            dataReturned = readData;
+            return this.disconnect();
+          }
+        })
+        .then(() => {
+          resolve(dataReturned);
+        });
     });
   }
 
@@ -44,15 +46,22 @@ class ActionGet extends ActionGeneral{
       // readystate
       const readystate = this.redisClient.isReady;
 
-      if(!readystate) {
-        this.redisClient.connect()
-        .then(() => {
-          Logging.debugMessage({ severity: 'FINEST', message: 'Connection not ready ... temporarily connecting', location: 'RedisConnector.connect' });
-          resolve({temporarilyConnected: true});
+      if (!readystate) {
+        this.redisClient.connect().then(() => {
+          Logging.debugMessage({
+            severity: 'FINEST',
+            message: 'Connection not ready ... temporarily connecting',
+            location: 'RedisConnector.connect',
+          });
+          resolve({ temporarilyConnected: true });
         });
       } else {
-        Logging.debugMessage({ severity: 'FINEST', message: 'Already connected ... getting data', location: 'RedisConnector.connect' });
-        resolve({temporarilyConnected: false});
+        Logging.debugMessage({
+          severity: 'FINEST',
+          message: 'Already connected ... getting data',
+          location: 'RedisConnector.connect',
+        });
+        resolve({ temporarilyConnected: false });
       }
     });
   }
