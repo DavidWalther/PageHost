@@ -14,13 +14,28 @@ class SldsBreadcrumbs extends LitElement {
     lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' }
   };
 
+  sizeMapping = {
+    small: {
+      spacingStart: '.8rem',
+      spacingEnd: '.5rem'
+    },
+    medium: {
+      spacingStart: '1rem',
+      spacingEnd: '.75rem'
+    },
+    large: {
+      spacingStart: '1.75rem',
+      spacingEnd: '1rem'
+    }
+  };
+
   static styles = css`
     .slds-breadcrumb__overflow-indicator_small {
       padding-left: .8rem;
       padding-right: .5rem;
     }
 
-    .slds-breadcrumb__overflow-indicator_medium { 
+    .slds-breadcrumb__overflow-indicator_medium {
       padding-left: 1rem;
       padding-right: .75rem;
     }
@@ -67,25 +82,24 @@ class SldsBreadcrumbs extends LitElement {
     return this.size === 'large';
   }
 
-  get spacingStart() {
-    if(this.isSizeLarge) {
-      return '1.75rem';
+  get spacing() {
+    if (this.isSizeSmall) {
+      return {
+        "start": this.sizeMapping.small.spacingStart,
+        "end": this.sizeMapping.small.spacingEnd
+      };
     }
-    if(this.isSizeMedium) {
-      return '1rem';
+    if (this.isSizeLarge) {
+      return {
+        "start": this.sizeMapping.large.spacingStart,
+        "end": this.sizeMapping.large.spacingEnd
+      };
     }
-    return '.8rem';
-  }
-
-  get spacingEnd() {
-    if(this.isSizeLarge) {
-      return '1rem';
-    }
-    if(this.isSizeMedium) {
-      return '.75rem';
-    }
-
-    return '.5rem';
+    // Default to medium spacing if size is not small or large
+    return {
+      "start": this.sizeMapping.medium.spacingStart,
+      "end": this.sizeMapping.medium.spacingEnd
+    };
   }
 
   get _visibleItems() {
@@ -98,8 +112,8 @@ class SldsBreadcrumbs extends LitElement {
 
   render() {
     const sizeClass = this.isSizeSmall ? 'slds-text-heading_small' : this.isSizeMedium ? 'slds-text-heading_medium' : this.isSizeLarge ? 'slds-text-heading_large' : '';
-    const spacingWidthStart = this.spacingStart;
-    const spacingWidthEnd = this.spacingEnd;
+    const spacingWidthStart = this.spacing.start;
+    const spacingWidthEnd = this.spacing.end;
     this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-start', spacingWidthStart);
     this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-end', spacingWidthEnd);
 
