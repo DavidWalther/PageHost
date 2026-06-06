@@ -9,8 +9,8 @@ class SldsBreadcrumbs extends LitElement {
     ariaLabel: { type: String, attribute: 'aria-label' },
     isCardContainer: { type: Boolean, attribute: 'card-container' },
     size: { type: String, reflect: true },
-    overflow: { type: Boolean },
-    overflowLimit: { type: Number, attribute: 'overflow_limit' },
+    overflow: { type: Boolean }, // Enable overflow behavior. Overflow will render only a limited number of items
+    overflowLimit: { type: Number, attribute: 'overflow_limit' }, // Number of items to show when overflow is enabled.
     lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' }
   };
 
