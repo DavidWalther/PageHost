@@ -1,4 +1,4 @@
-# EPCC Workflow
+# Explore–Plan–Code Workflow
 
 ## Projekt-Kontext
 
@@ -11,12 +11,12 @@
 
 ## Grundregeln
 
-- Wir arbeiten mit dem EXPLORE-PLAN-CODE-COMMIT Workflow
+- Wir arbeiten mit dem EXPLORE-PLAN-CODE Workflow
 - Das Ende der Phasen EXPLORE und PLAN wird vom Benutzer festgelegt
-- Die Phasen CODE und COMMIT können sich wiederholen, wenn der Plan das verlangt
-- Wenn sich CODE und COMMIT wiederholen ist das selbstständig zu tun bis der Plan abgeschlossen ist
+- Die CODE-Phase wiederholt sich pro Schritt und Teilschritt, bis der Plan abgeschlossen ist
+- Diese Wiederholung ist selbstständig durchzuführen
 - Jeder Schritt des Plans (ab Schritt 1) wird auf einem eigenen Sub-Branch implementiert (`step/<kurzbeschreibung>`)
-- Jeder Teilschritt durchläuft die CODE und COMMIT Phasen
+- Jeder Teilschritt wird implementiert und mit einem eigenen Commit abgeschlossen (siehe „Commit-Regeln")
 - Nach Abschluss eines Schrittes wird der Sub-Branch per Merge Commit in den Feature-Branch gebracht und anschließend gelöscht
 - Details und Ausnahmen zum Branching: siehe Abschnitt „Branching pro Schritt"
 
@@ -109,9 +109,9 @@ das heißt:
 
 10. Nach Änderungen Prettier ausführen — nur auf die im Teilschritt geänderte Datei, damit „eine Datei pro Commit" eingehalten bleibt
 
-## COMMIT Phase
+### Commit-Regeln
 
-das heißt:
+Jeder Teilschritt wird mit einem Commit abgeschlossen:
 
 1. Es darf pro Commit nur eine Datei verändert werden
    - Backend: Produktiv- und Testcode liegen deshalb in getrennten Teilschritten (= getrennten Commits)
