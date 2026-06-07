@@ -15,9 +15,10 @@
 - Das Ende der Phasen EXPLORE und PLAN wird vom Benutzer festgelegt
 - Die Phasen CODE und COMMIT können sich wiederholen, wenn der Plan das verlangt
 - Wenn sich CODE und COMMIT wiederholen ist das selbstständig zu tun bis der Plan abgeschlossen ist
-- Jeder Schritt des Plans muss in einem eigenen Sub-Branch implementiert werden (`feature/<kurzbeschreibung>`)
+- Jeder Schritt des Plans (ab Schritt 1) wird auf einem eigenen Sub-Branch implementiert (`step/<kurzbeschreibung>`)
 - Jeder Teilschritt durchläuft die CODE und COMMIT Phasen
-- Nach erfolgreichen Tests eines Schrittes muss der Sub-Branch mit einem Merge Commit in den Feature-Branch gebracht und anschließend gelöscht werden
+- Nach Abschluss eines Schrittes wird der Sub-Branch per Merge Commit in den Feature-Branch gebracht und anschließend gelöscht
+- Details und Ausnahmen zum Branching: siehe Abschnitt „Branching pro Schritt"
 
 ## EXPLORE Phase
 
@@ -42,40 +43,47 @@ das heißt:
 
 1. Der Implementierungsplan muss in einem ./epcc_plan.md festgehalten werden
 2. Bei Refactorings: Falls Lücken in Tests identifiziert wurden, müssen diese zuerst geschlossen werden.
-3. Der Plan muss die folgende Arbeitsstruktur vorgeben:
+3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_plan.md Datei schreibend zugegriffen werden.
+4. Der Plan muss die in den folgenden Abschnitten beschriebene Arbeitsstruktur und das Plan-Format vorgeben.
 
 ### Arbeitsstruktur für Backend-Änderungen
 
-- **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test`)
+- **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test`). Kein Branch, kein Commit — nur ein Testlauf.
 - **Schritt 1 — Integrationstests**: Integrationstests für das neue Feature erstellen. So wenig Mocking wie möglich einsetzen.
-- **Schritt 2+ — Implementierung**: Implementierungsschritte mit eigenen Unit-Tests pro Schritt. Hier darf stark gemockt werden.
+- **Schritt 2+ — Implementierung**: Implementierung mit eigenen Unit-Tests. Hier darf stark gemockt werden. Test- und Produktivcode werden in getrennten Teilschritten umgesetzt (Test zuerst), damit pro Commit nur eine Datei geändert wird.
 - Nach Abschluss jedes Schrittes muss ein Testlauf eingeplant werden
 
 ### Arbeitsstruktur für Frontend-Änderungen
 
 - Für Frontend-Entwicklung sind keine automatischen Tests vorgesehen
 - Schritt 0 (Baseline) entfällt bei reinen Frontend-Änderungen
+- Bei gemischten Front-/Backend-Änderungen gilt die Backend-Arbeitsstruktur inklusive Schritt 0
 
 ### Branching pro Schritt
 
-- Jeder Schritt bekommt einen eigenen Sub-Branch: `feature/<kurzbeschreibung>`
-- Jeder Teilschritt = ein Commit
-- Die Teilschritte müssen so klein wie möglich gehalten werden, um die Übersicht zu bewahren
-- Nach erfolgreichen Tests → Sub-Branch in den Feature-Branch mergen und löschen
+- Der **Feature-Branch** ist der aktuelle Arbeits-Branch des Issues (z. B. `122-create-slds-breadcrumbs-component`). Auf ihm wird nicht direkt implementiert.
+- Jeder Schritt ab Schritt 1 bekommt einen eigenen **Sub-Branch** `step/<kurzbeschreibung>`, abgezweigt vom Feature-Branch.
+- Schritt 0 (Baseline) ist ausgenommen: kein Branch, nur ein Testlauf.
+- Jeder Teilschritt = ein Commit auf dem Sub-Branch.
+- Die Teilschritte müssen so klein wie möglich gehalten werden, um die Übersicht zu bewahren.
+- Abschluss eines Schrittes → Sub-Branch per Merge Commit in den Feature-Branch bringen, dann löschen. Abschluss-Kriterium:
+  - Backend: erfolgreicher Testlauf (`npm run test`)
+  - Frontend: kein Testkriterium (keine automatischen Tests)
 
 ### Plan-Format
 
-4. Der Plan muss als hierarchische Checkliste erstellt werden nach dem Muster:
-   - [ ] Schritt 0 - Baseline
-   - [ ] Schritt 1 - Integrationstests
-     - [ ] Teilschritt 1
-     - [ ] Teilschritt 2
-   - [ ] Schritt 2 - <Beschreibung>
-     - [ ] Teilschritt 1
-     - [ ] Teilschritt 2
-           ...
+Der Plan muss als hierarchische Checkliste erstellt werden nach dem Muster:
 
-5. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_plan.md Datei schreibend zugegriffen werden.
+- [ ] Schritt 0 - Baseline (nur Backend; kein Branch, nur Testlauf)
+- [ ] Schritt 1 - Integrationstests — Sub-Branch: `step/<kurzbeschreibung>`
+  - [ ] Teilschritt 1
+  - [ ] Teilschritt 2
+  - [ ] Merge Commit in den Feature-Branch, Sub-Branch löschen
+- [ ] Schritt 2 - <Beschreibung> — Sub-Branch: `step/<kurzbeschreibung>`
+  - [ ] Teilschritt 1
+  - [ ] Teilschritt 2
+  - [ ] Merge Commit in den Feature-Branch, Sub-Branch löschen
+        ...
 
 ## CODE Phase
 
@@ -99,15 +107,16 @@ das heißt:
 
 ### Allgemein
 
-10. Nach Änderungen Prettier ausführen
+10. Nach Änderungen Prettier ausführen — nur auf die im Teilschritt geänderte Datei, damit „eine Datei pro Commit" eingehalten bleibt
 
 ## COMMIT Phase
 
 das heißt:
 
 1. Es darf pro Commit nur eine Datei verändert werden
+   - Backend: Produktiv- und Testcode liegen deshalb in getrennten Teilschritten (= getrennten Commits)
 2. Ein Commit pro Teilschritt
 3. Das Subject eines Commits muss mit einer kurzen Version des Namens der Komponente beginnen
    - Beispiele: `chapter: add paragraph scroll parameter`, `DataFacade: add getByParagraphId method`, `slds-modal: fix close button alignment`
 4. In der Commit Message muss die Änderung in Stichpunkten beschrieben werden
-5. Sub-Branch pro Schritt: `feature/<kurzbeschreibung>` — nach erfolgreichen Tests: Merge Commit in Feature-Branch, dann Sub-Branch löschen
+5. Branching und Merge-Vorgehen: siehe Abschnitt „Branching pro Schritt"
