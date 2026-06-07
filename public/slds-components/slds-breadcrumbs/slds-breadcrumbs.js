@@ -2,6 +2,20 @@ import { LitElement, html, css, nothing } from 'https://cdn.jsdelivr.net/gh/lit/
 import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
 
 const OVERFLOW_MARKER = Symbol('overflow');
+const SIZE_MAPPING = {
+  small: {
+    left: '.8rem',
+    right: '.5rem'
+  },
+  medium: {
+    left: '1rem',
+    right: '.75rem'
+  },
+  large: {
+    left: '1.75rem',
+    right: '1rem'
+  }
+};
 
 class SldsBreadcrumbs extends LitElement {
   static properties = {
