@@ -43,6 +43,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
         '<link rel="icon" type="image/x-icon" href="favicon.svg">'
       );
       headerEntries.push('<link rel="manifest" href="manifest.json" />');
+
       headerEntries.push(
         '<link rel="stylesheet" type="text/css" href="/assets/styles/salesforce-lightning-design-system.min.css" />'
       );
@@ -118,13 +119,17 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
         '<script type="module" src="applications/bookstore/bookstore.js"></script>'
       );
 
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-breadcrumbs/slds-breadcrumbs.js"></script>'
+      );
+
       let headPlaceholder = '\n' + headerEntries.join('\n') + '\n';
 
       const indexContent = `
       <!DOCTYPE html>
       <html class="dark-mode">
         <head>${headPlaceholder}</head>
-        <body onload="initializeApp()"></body>  
+        <body onload="initializeApp()"></body>
       </html>
       `;
 
