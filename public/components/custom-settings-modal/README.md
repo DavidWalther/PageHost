@@ -1,8 +1,8 @@
 # custom-settings-modal
 
 A Web Component (LitElement) that renders the application's **settings modal**. It
-wraps [`slds-modal`](../../slds-components/slds-modal/slds-modal.js) and currently
-provides an empty skeleton; concrete settings are added later.
+wraps [`slds-modal`](../../slds-components/slds-modal/slds-modal.js) and projects
+caller-provided content through its [slots](#slots).
 
 ---
 
@@ -46,6 +46,30 @@ A typical trigger is a gear icon in the header:
 
 ```javascript
 gearButton.addEventListener('sldsbuttonclick', () => settings.show());
+```
+
+---
+
+## Slots
+
+| Slot        | Description                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| _(default)_ | Main settings content (modal body). When empty, a placeholder text is shown as fallback. |
+| `danger`    | Content for dangerous/destructive actions. Rendered inside a **red-bordered zone**.      |
+
+The `danger` zone (including its red border) is only shown when content is
+assigned to the `danger` slot — an empty `danger` slot stays invisible.
+
+```html
+<custom-settings-modal>
+  <!-- default slot: regular settings -->
+  <div>… your settings controls …</div>
+
+  <!-- danger slot: destructive actions -->
+  <div slot="danger">
+    <button class="slds-button slds-button_destructive">Delete account</button>
+  </div>
+</custom-settings-modal>
 ```
 
 ---
