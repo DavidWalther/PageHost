@@ -76,25 +76,28 @@ class Bookstore extends LitElement {
               <custom-login-module></custom-login-module>
             </div>
             <div class="slds-col slds-text-align_right">
-              <slds-toggle
-                label="Licht"
-                name="options"
-                @toggle="${this.handleToggleLightswitch}"
-              ></slds-toggle>
-            </div>
-            <div class="slds-col slds-text-align_right">
               <slds-button-icon
                 id="button-settings_open"
                 icon="utility:settings"
                 size="small"
                 variant="container-transparent"
                 @click="${this.handleOpenSettings}"
-              ></slds-button-icon>
+              >
+
+              </slds-button-icon>
             </div>
           </div>
         </custom-global-header>
       </slds-card>
-      <custom-settings-modal></custom-settings-modal>
+      <custom-settings-modal>
+        <div class="slds-col slds-text-align_right">
+          <slds-toggle
+            label="Licht"
+            name="options"
+            @toggle="${this.handleToggleLightswitch}"
+          ></slds-toggle>
+        </div>
+      </custom-settings-modal>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
