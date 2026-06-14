@@ -106,6 +106,22 @@ class Bookstore extends LitElement {
             ></slds-toggle>
           </div>
         </div>
+        <div
+          slot="danger"
+          class="slds-grid slds-wrap slds-grid_vertical-align-center"
+        >
+          <div class="slds-col slds-text-align_left slds-size_1-of-2">
+            Lokale Session löschen
+          </div>
+          <div class="slds-col slds-text-align_right slds-size_1-of-2">
+            <button
+              class="slds-button slds-button_destructive"
+              @click="${this.handleClearSession}"
+            >
+              Session löschen
+            </button>
+          </div>
+        </div>
       </custom-settings-modal>
       <span>
         <slds-panel id="sidebar">
@@ -159,6 +175,11 @@ class Bookstore extends LitElement {
 
   handleOpenSettings() {
     this.shadowRoot.querySelector('custom-settings-modal').show();
+  }
+
+  handleClearSession() {
+    sessionStorage.removeItem('code_exchange_response');
+    window.location.reload();
   }
 
   disconnectedCallback() {
