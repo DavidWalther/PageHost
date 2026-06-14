@@ -74,6 +74,9 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push(
         '<script type="module" src="components/custom-chapter-edit/custom-chapter-edit.js"></script>'
       );
+      headerEntries.push(
+        '<script type="module" src="components/custom-settings-modal/custom-settings-modal.js"></script>'
+      );
 
       headerEntries.push(
         '<script type="module" src="slds-components/slds-toggle/toggle.js"></script>'
