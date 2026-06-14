@@ -71,11 +71,8 @@ class Bookstore extends LitElement {
           </div>
           <div slot="right" class="slds-grid slds-grid_align-end slds-wrap">
             <div
-              class="slds-col slds-text-align_right slds-size_1-of-1 slds-m-bottom--x-small"
+              class="slds-col slds-size_1-of-10 slds-alignment-bump_left slds-text-align_right"
             >
-              <custom-login-module></custom-login-module>
-            </div>
-            <div class="slds-col slds-text-align_right">
               <slds-button-icon
                 id="button-settings_open"
                 icon="utility:settings"
@@ -83,19 +80,31 @@ class Bookstore extends LitElement {
                 variant="container-transparent"
                 @click="${this.handleOpenSettings}"
               >
-
               </slds-button-icon>
             </div>
           </div>
         </custom-global-header>
       </slds-card>
       <custom-settings-modal>
-        <div class="slds-col slds-text-align_right">
-          <slds-toggle
-            label="Licht"
-            name="options"
-            @toggle="${this.handleToggleLightswitch}"
-          ></slds-toggle>
+        <div class="slds-grid slds-wrap">
+          <div class="slds-col slds-text-align_center slds-size_1-of-2">
+            Login
+          </div>
+          <div
+            class="slds-col slds-text-align_right slds-size_1-of-2 slds-m-bottom--x-small"
+          >
+            <custom-login-module></custom-login-module>
+          </div>
+          <div class="slds-col slds-text-align_center slds-size_1-of-2">
+            Licht
+          </div>
+          <div class="slds-col slds-size_1-of-2 slds-text-align_right">
+            <slds-toggle
+              label=""
+              name="options"
+              @toggle="${this.handleToggleLightswitch}"
+            ></slds-toggle>
+          </div>
         </div>
       </custom-settings-modal>
       <span>
