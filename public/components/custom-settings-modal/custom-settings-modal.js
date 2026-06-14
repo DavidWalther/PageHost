@@ -33,9 +33,11 @@ class SettingsModal extends LitElement {
   render() {
     return html`
       <slds-modal title="${this.labels.modalTitle}" footless>
-        <div class="slds-align_absolute-center slds-p-around_medium">
-          <span>${this.labels.placeholder}</span>
-        </div>
+        <slot>
+          <div class="slds-align_absolute-center slds-p-around_medium">
+            <span>${this.labels.placeholder}</span>
+          </div>
+        </slot>
       </slds-modal>
     `;
   }
