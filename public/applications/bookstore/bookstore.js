@@ -82,9 +82,19 @@ class Bookstore extends LitElement {
                 @toggle="${this.handleToggleLightswitch}"
               ></slds-toggle>
             </div>
+            <div class="slds-col slds-text-align_right">
+              <slds-button-icon
+                id="button-settings_open"
+                icon="utility:settings"
+                size="small"
+                variant="container-transparent"
+                @sldsbuttonclick="${this.handleOpenSettings}"
+              ></slds-button-icon>
+            </div>
           </div>
         </custom-global-header>
       </slds-card>
+      <custom-settings-modal></custom-settings-modal>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
@@ -133,6 +143,10 @@ class Bookstore extends LitElement {
     let modalCmp = this.shadowRoot.querySelector('slds-modal');
     modalCmp.setAttribute('title', 'testmodal');
     modalCmp.show();
+  }
+
+  handleOpenSettings() {
+    this.shadowRoot.querySelector('custom-settings-modal').show();
   }
 
   disconnectedCallback() {
