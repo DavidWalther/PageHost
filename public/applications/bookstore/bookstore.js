@@ -49,6 +49,11 @@ class Bookstore extends LitElement {
     }
 
     this.hydrate();
+    this.label = {
+      'setting-login_title': 'Login',
+      'setting-lightswitch_title': 'Lichtschalter',
+      'setting-sessionClear_title': 'Login-Session löschen'
+    };
   }
 
   render() {
@@ -111,7 +116,7 @@ class Bookstore extends LitElement {
           class="slds-grid slds-wrap slds-grid_vertical-align-center"
         >
           <div class="slds-col slds-text-align_left slds-size_1-of-2">
-            Lokale Session löschen
+            Login-Session löschen
           </div>
           <div class="slds-col slds-text-align_right slds-size_1-of-2">
             <button
