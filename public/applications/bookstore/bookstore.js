@@ -88,7 +88,7 @@ class Bookstore extends LitElement {
                 icon="utility:settings"
                 size="small"
                 variant="container-transparent"
-                @sldsbuttonclick="${this.handleOpenSettings}"
+                @click="${this.handleOpenSettings}"
               ></slds-button-icon>
             </div>
           </div>
