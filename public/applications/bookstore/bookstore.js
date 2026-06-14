@@ -87,7 +87,7 @@ class Bookstore extends LitElement {
       </slds-card>
       <custom-settings-modal>
         <div class="slds-grid slds-wrap">
-          <div class="slds-col slds-text-align_center slds-size_1-of-2">
+          <div class="slds-col slds-text-align_left slds-size_1-of-2">
             Login
           </div>
           <div
@@ -95,7 +95,7 @@ class Bookstore extends LitElement {
           >
             <custom-login-module></custom-login-module>
           </div>
-          <div class="slds-col slds-text-align_center slds-size_1-of-2">
+          <div class="slds-col slds-text-align_left slds-size_1-of-2">
             Licht
           </div>
           <div class="slds-col slds-size_1-of-2 slds-text-align_right">
