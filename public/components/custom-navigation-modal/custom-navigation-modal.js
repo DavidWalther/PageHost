@@ -18,7 +18,7 @@ class NavigationModal extends LitElement {
   static styles = css`
     .tile {
       width: 100%;
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 2 / 1;
       display: flex;
       align-items: center;
       justify-content: center;
