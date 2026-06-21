@@ -66,7 +66,12 @@ class NavigationModal extends LitElement {
               console.error(error);
               return;
             }
-            this._stories = Array.isArray(data) ? data : [];
+            this._stories = Array.isArray(data)
+              ? data.sort(
+                  (firstEntry, secondEntry) =>
+                    firstEntry.sortnumber - secondEntry.sortnumber
+                )
+              : [];
           },
         },
         bubbles: true,
