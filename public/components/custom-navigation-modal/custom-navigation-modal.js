@@ -26,7 +26,7 @@ class NavigationModal extends LitElement {
       padding: 0.5rem;
       border: 1px solid #c9c9c9;
       border-radius: 0.25rem;
-      background: #ffffff;
+      background-color: var(--panel-background-color);
       color: inherit;
       font: inherit;
       cursor: pointer;
