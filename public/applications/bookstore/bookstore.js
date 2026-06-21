@@ -135,7 +135,9 @@ class Bookstore extends LitElement {
           </div>
         </div>
       </custom-settings-modal>
-      <custom-navigation-modal></custom-navigation-modal>
+      <custom-navigation-modal
+        @story-select="${this.handleStorySelect}"
+      ></custom-navigation-modal>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
@@ -192,6 +194,17 @@ class Bookstore extends LitElement {
 
   handleOpenNavigation() {
     this.shadowRoot.querySelector('custom-navigation-modal').show();
+  }
+
+  handleStorySelect(event) {
+    const { id } = event.detail;
+    this.dispatchEvent(
+      new CustomEvent('navigation', {
+        detail: { type: 'story', value: id },
+        bubbles: true,
+      })
+    );
+    this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
 
   handleClearSession() {
