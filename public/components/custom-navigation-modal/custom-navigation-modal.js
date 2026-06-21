@@ -14,9 +14,42 @@ class NavigationModal extends LitElement {
     placeholder: 'Hier folgt die Navigation.',
   };
 
+  static properties = {
+    _stories: { state: true },
+  };
+
+  constructor() {
+    super();
+    this._stories = [];
+  }
+
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    this._loadStories();
+  }
+
+  //===========================
+  // Data
+  //===========================
+
+  _loadStories() {
+    this.dispatchEvent(
+      new CustomEvent('query', {
+        detail: {
+          payload: { object: 'story' },
+          callback: (error, data) => {
+            if (error) {
+              console.error(error);
+              return;
+            }
+            this._stories = Array.isArray(data) ? data : [];
+          },
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   render() {
