@@ -52,7 +52,7 @@ class Bookstore extends LitElement {
     this.label = {
       'setting-login_title': 'Login',
       'setting-lightswitch_title': 'Lichtschalter',
-      'setting-sessionClear_title': 'Login-Session löschen'
+      'setting-sessionClear_title': 'Login-Session löschen',
     };
   }
 
@@ -66,6 +66,13 @@ class Bookstore extends LitElement {
               icon="utility:rows"
               size="small"
               variant="container-transparent"
+            ></slds-button-icon>
+            <slds-button-icon
+              id="button-navigation_open"
+              icon="utility:rows"
+              size="small"
+              variant="container-transparent"
+              @click="${this.handleOpenNavigation}"
             ></slds-button-icon>
           </div>
           <div
@@ -128,6 +135,7 @@ class Bookstore extends LitElement {
           </div>
         </div>
       </custom-settings-modal>
+      <custom-navigation-modal></custom-navigation-modal>
       <span>
         <slds-panel id="sidebar">
           <span id="sidebar-title" slot="header"></span>
@@ -180,6 +188,10 @@ class Bookstore extends LitElement {
 
   handleOpenSettings() {
     this.shadowRoot.querySelector('custom-settings-modal').show();
+  }
+
+  handleOpenNavigation() {
+    this.shadowRoot.querySelector('custom-navigation-modal').show();
   }
 
   handleClearSession() {
