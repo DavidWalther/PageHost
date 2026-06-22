@@ -62,12 +62,6 @@ class Bookstore extends LitElement {
         <custom-global-header>
           <div slot="left" class="slds-text-align_center">
             <slds-button-icon
-              id="button-panel_open"
-              icon="utility:rows"
-              size="small"
-              variant="container-transparent"
-            ></slds-button-icon>
-            <slds-button-icon
               id="button-navigation_open"
               icon="utility:rows"
               size="small"
@@ -138,12 +132,6 @@ class Bookstore extends LitElement {
       <custom-navigation-modal
         @story-select="${this.handleStorySelect}"
       ></custom-navigation-modal>
-      <span>
-        <slds-panel id="sidebar">
-          <span id="sidebar-title" slot="header"></span>
-          <div id="pill-container"></div>
-        </slds-panel>
-      </span>
 
       <div
         id="bookshelf"
@@ -244,9 +232,6 @@ class Bookstore extends LitElement {
     // Hydrate the component
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
-    this.fireQueryEvent_AllStories(
-      this.queryEventCallback_AllStories.bind(this)
-    );
 
     // Use setTimeout to ensure elements are rendered before accessing them
     setTimeout(() => {
@@ -527,90 +512,11 @@ class Bookstore extends LitElement {
   clearUrlParameter() {
     window.history.replaceState({}, '', window.location.origin);
   }
-  // ============ Panel methods ============
-
-  async initializePanel(allStories) {
-    // Use setTimeout to ensure elements are rendered
-    setTimeout(() => {
-      const buttonPanelOpen =
-        this.shadowRoot.querySelector('#button-panel_open');
-      if (buttonPanelOpen) {
-        buttonPanelOpen.addEventListener('click', this.openPanel.bind(this));
-      }
-
-      const dummyPills = [];
-      const storyData = allStories;
-
-      storyData.forEach((story) => {
-        dummyPills.push(
-          this.createButtonElement(story.name, story.id, () => {
-            this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
-            this.dispatchEvent(
-              new CustomEvent('navigation', {
-                detail: {
-                  type: 'story',
-                  value: story.id,
-                },
-                bubbles: true,
-                //composed: true
-              })
-            );
-            this.closePanel();
-          })
-        );
-      });
-
-      const pillContainer = this.shadowRoot.querySelector('#pill-container');
-      if (pillContainer) {
-        dummyPills.forEach((pill) => {
-          pillContainer.appendChild(pill);
-        });
-      }
-    }, 0);
-  }
-
-  openPanel() {
-    const panelElem = this.shadowRoot.querySelector('#sidebar');
-    if (!panelElem) {
-      return;
-    }
-    panelElem.openPanel();
-  }
-
-  closePanel() {
-    const panelElem = this.shadowRoot.querySelector('#sidebar');
-    if (!panelElem) {
-      return;
-    }
-    panelElem.closePanel();
-  }
-
-  createButtonElement(label, value, onclickCallback) {
-    const buttonElem = document.createElement('button');
-    // add slds classes
-    buttonElem.classList.add('slds-button');
-    buttonElem.classList.add('slds-button_neutral');
-
-    buttonElem.textContent = label;
-    buttonElem.setAttribute('data-story-id', value);
-
-    buttonElem.addEventListener('click', onclickCallback);
-
-    const buttonContainer = document.createElement('div');
-    buttonContainer.classList.add('slds-p-vertical_small');
-    buttonContainer.appendChild(buttonElem);
-    return buttonContainer;
-  }
-
   evaluateMetadata(metadata) {
     let pageHeaderHeadline = !metadata.pageHeaderHeadline
       ? '#config:pageHeaderHeadline#'
       : metadata.pageHeaderHeadline;
     this.spanHeaderHeadline.textContent = pageHeaderHeadline;
-    let pageSidebarTitle = !metadata.pageSidebarTitle
-      ? '#config:pageSidebarTitle#'
-      : metadata.pageSidebarTitle;
-    this.spanSidebarTitle.textContent = pageSidebarTitle;
     let metaTitle = !metadata.metaTitle
       ? '#config:metaTitle#'
       : metadata.metaTitle;
@@ -657,10 +563,6 @@ class Bookstore extends LitElement {
     return this.shadowRoot.querySelector('span#page-header-headline');
   }
 
-  get spanSidebarTitle() {
-    return this.shadowRoot.querySelector('span#sidebar-title');
-  }
-
   get chapterElement() {
     return this.shadowRoot.querySelector('custom-chapter');
   }
@@ -683,20 +585,6 @@ class Bookstore extends LitElement {
 
   // --------- Fire Query Event methods ---------
 
-  fireQueryEvent_AllStories(callback) {
-    let payload = {
-      object: 'story',
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('query', {
-        detail: { payload, callback },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
   fireQueryEvent_Metadata(callback) {
     let payload = {
       object: 'metadata',
@@ -712,15 +600,6 @@ class Bookstore extends LitElement {
   }
 
   // --------- Query Event Callback methods ---------
-
-  queryEventCallback_AllStories(error, data) {
-    if (data) {
-      this.initializePanel(data);
-    }
-    if (error) {
-      console.error(error);
-    }
-  }
 
   queryEventCallback_Metadata(error, data) {
     if (data) {
