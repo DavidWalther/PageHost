@@ -62,12 +62,6 @@ class Bookstore extends LitElement {
         <custom-global-header>
           <div slot="left" class="slds-text-align_center">
             <slds-button-icon
-              id="button-panel_open"
-              icon="utility:rows"
-              size="small"
-              variant="container-transparent"
-            ></slds-button-icon>
-            <slds-button-icon
               id="button-navigation_open"
               icon="utility:rows"
               size="small"
@@ -138,12 +132,6 @@ class Bookstore extends LitElement {
       <custom-navigation-modal
         @story-select="${this.handleStorySelect}"
       ></custom-navigation-modal>
-      <span>
-        <slds-panel id="sidebar">
-          <span id="sidebar-title" slot="header"></span>
-          <div id="pill-container"></div>
-        </slds-panel>
-      </span>
 
       <div
         id="bookshelf"
