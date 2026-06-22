@@ -232,9 +232,6 @@ class Bookstore extends LitElement {
     // Hydrate the component
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
-    this.fireQueryEvent_AllStories(
-      this.queryEventCallback_AllStories.bind(this)
-    );
 
     // Use setTimeout to ensure elements are rendered before accessing them
     setTimeout(() => {
@@ -596,20 +593,6 @@ class Bookstore extends LitElement {
 
   // --------- Fire Query Event methods ---------
 
-  fireQueryEvent_AllStories(callback) {
-    let payload = {
-      object: 'story',
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('query', {
-        detail: { payload, callback },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
   fireQueryEvent_Metadata(callback) {
     let payload = {
       object: 'metadata',
@@ -625,15 +608,6 @@ class Bookstore extends LitElement {
   }
 
   // --------- Query Event Callback methods ---------
-
-  queryEventCallback_AllStories(error, data) {
-    if (data) {
-      this.initializePanel(data);
-    }
-    if (error) {
-      console.error(error);
-    }
-  }
 
   queryEventCallback_Metadata(error, data) {
     if (data) {
