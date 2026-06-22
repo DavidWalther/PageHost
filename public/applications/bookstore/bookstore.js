@@ -517,10 +517,6 @@ class Bookstore extends LitElement {
       ? '#config:pageHeaderHeadline#'
       : metadata.pageHeaderHeadline;
     this.spanHeaderHeadline.textContent = pageHeaderHeadline;
-    let pageSidebarTitle = !metadata.pageSidebarTitle
-      ? '#config:pageSidebarTitle#'
-      : metadata.pageSidebarTitle;
-    this.spanSidebarTitle.textContent = pageSidebarTitle;
     let metaTitle = !metadata.metaTitle
       ? '#config:metaTitle#'
       : metadata.metaTitle;
@@ -565,10 +561,6 @@ class Bookstore extends LitElement {
 
   get spanHeaderHeadline() {
     return this.shadowRoot.querySelector('span#page-header-headline');
-  }
-
-  get spanSidebarTitle() {
-    return this.shadowRoot.querySelector('span#sidebar-title');
   }
 
   get chapterElement() {
