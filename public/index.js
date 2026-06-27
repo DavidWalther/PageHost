@@ -222,6 +222,14 @@ function fetchDatabase(eventpayload) {
           });
         break;
       }
+      case 'contents': {
+        doFetch(`/api/1.0/contents/all?depth=2`, preparedHeaders)
+          .then((contentsResponse) => contentsResponse.json())
+          .then((contents) => {
+            resolve(contents.result);
+          });
+        break;
+      }
       case 'metadata': {
         fetch('/metadata')
           .then((metadataResponse) => metadataResponse.json())
