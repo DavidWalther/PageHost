@@ -332,6 +332,34 @@ describe('DataStorage', () => {
     });
   });
 
+  describe('Query error propagation', () => {
+    // A failing query (e.g. CONNECTION_ENDED) must reject so the caller can
+    // handle it, instead of being swallowed into a never-settling promise that
+    // surfaces as an unhandled rejection and crashes the process.
+    const connectionError = Object.assign(
+      new Error('write CONNECTION_ENDED localhost:5432'),
+      { code: 'CONNECTION_ENDED' }
+    );
+
+    it('queryAllStories rejects when the underlying query fails', async () => {
+      dataStorage.setConditionApplicationKey('testApplication');
+      mockActionGetExecute.mockRejectedValueOnce(connectionError);
+
+      await expect(dataStorage.queryAllStories()).rejects.toThrow(
+        'CONNECTION_ENDED'
+      );
+    }, 2000);
+
+    it('queryAllChapters rejects when the underlying query fails', async () => {
+      dataStorage.setConditionApplicationKey('testApplication');
+      mockActionGetExecute.mockRejectedValueOnce(connectionError);
+
+      await expect(dataStorage.queryAllChapters()).rejects.toThrow(
+        'CONNECTION_ENDED'
+      );
+    }, 2000);
+  });
+
   describe('Updates', () => {
     let mockActionUpdateExecute;
 
