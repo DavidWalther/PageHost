@@ -1,5 +1,4 @@
 const { Logging } = require('../modules/logging');
-const { AllStoriesEndpoint } = require('./data/query/AllStoriesEndpoint');
 const { SingleStoryEndpoint } = require('./data/query/SingleStoryEndpoint');
 const { ChapterEndpoint } = require('./data/query/ChapterEndpoint');
 const { ParagraphEndpoint } = require('./data/query/ParagraphEndpoint');
@@ -32,7 +31,7 @@ class DataQueryLogicFactory {
         if (requestObject.query.id) {
           return new SingleStoryEndpoint();
         } else {
-          return new AllStoriesEndpoint();
+          return new FallbackEndpoint();
         }
       case 'chapter':
         return new ChapterEndpoint();
