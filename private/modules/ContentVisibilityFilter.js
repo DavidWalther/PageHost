@@ -103,4 +103,4 @@ class ContentVisibilityFilter {
   }
 }
 
-module.exports = { ContentVisibilityFilter };
+module.exports = ContentVisibilityFilter;

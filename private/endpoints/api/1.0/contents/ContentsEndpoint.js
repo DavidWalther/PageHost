@@ -1,9 +1,7 @@
 const { Logging } = require('../../../../modules/logging');
 const { EndpointLogic } = require('../../../EndpointLogic');
 const { DataFacade } = require('../../../../database2/DataFacade');
-const {
-  ContentVisibilityFilter,
-} = require('../../../../modules/ContentVisibilityFilter');
+const ContentVisibilityFilter = require('../../../../modules/ContentVisibilityFilter');
 
 // Currently available levels: stories -> chapters. Raised when deeper levels
 // (parent/grandparent stories) get a data model.
