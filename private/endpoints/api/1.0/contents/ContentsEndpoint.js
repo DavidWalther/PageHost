@@ -99,4 +99,4 @@ class ContentsEndpoint extends EndpointLogic {
   }
 }
 
-module.exports = { ContentsEndpoint };
+module.exports = ContentsEndpoint;

@@ -1,4 +1,4 @@
-const { ContentsEndpoint } = require('../ContentsEndpoint');
+const ContentsEndpoint = require('../ContentsEndpoint');
 const { DataFacade } = require('../../../../../database2/DataFacade');
 
 jest.mock('../../../../../database2/DataFacade');
