@@ -46,19 +46,6 @@ class DataMock {
     });
   }
 
-  getAllStories() {
-    return new Promise((resolve, reject) => {
-      const filePath = path.join(__dirname, '../tables/mocks/story.json');
-      fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(JSON.parse(data));
-        }
-      });
-    });
-  }
-
   getContentsTree() {
     return new Promise((resolve, reject) => {
       const filePath = path.join(__dirname, '../tables/mocks/story.json');

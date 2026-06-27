@@ -180,11 +180,7 @@ function fetchDatabase(eventpayload) {
             }
           });
         } else {
-          doFetch(`/data/query/story`, preparedHeaders)
-            .then((allStoriesResponse) => allStoriesResponse.json())
-            .then((allStories) => {
-              resolve(allStories);
-            });
+          resolve();
         }
         break;
       }
