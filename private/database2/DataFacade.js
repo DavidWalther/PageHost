@@ -476,13 +476,19 @@ class DataFacadeSync {
    * unpublished alike); the publish filter runs later, at delivery time.
    */
   async buildContentsTree() {
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
+    // Each query runs with closeConnection, so it ends its DataStorage's
+    // connection. Use a fresh DataStorage (= fresh connection) per query to
+    // avoid writing to an already-closed connection (CONNECTION_ENDED).
+    const createDataStorage = () => {
+      const dataStorage = new DataStorage(this.environment);
+      dataStorage.setConditionApplicationKey(
+        this.environment.APPLICATION_APPLICATION_KEY
+      );
+      return dataStorage;
+    };
 
-    let stories = await dataStorage.queryAllStories();
-    let chapters = await dataStorage.queryAllChapters();
+    let stories = await createDataStorage().queryAllStories();
+    let chapters = await createDataStorage().queryAllChapters();
 
     let chaptersByStory = {};
     chapters.forEach((chapter) => {
@@ -495,7 +501,9 @@ class DataFacadeSync {
 
     stories.forEach((story) => {
       let storyChapters = chaptersByStory[story.id] || [];
-      storyChapters.sort((first, second) => first.sortnumber - second.sortnumber);
+      storyChapters.sort(
+        (first, second) => first.sortnumber - second.sortnumber
+      );
       story.chapters = storyChapters;
     });
     stories.sort((first, second) => first.sortnumber - second.sortnumber);
