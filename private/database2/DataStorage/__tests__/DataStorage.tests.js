@@ -148,6 +148,24 @@ describe('DataStorage', () => {
       });
     });
 
+    it('queryAllChapters should call ActionGet with the application key and no publish filter', async () => {
+      mockActionConditionPublishDate.mockClear();
+      dataStorage.setConditionApplicationKey('testApplication');
+      let queryPromise = dataStorage.queryAllChapters();
+
+      expect(dataStorage).toBeInstanceOf(DataStorage);
+      expect(queryPromise).toBeInstanceOf(Promise);
+      return queryPromise.then((result) => {
+        expect(ActionGet).toHaveBeenCalled();
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
+        // flat query: no join, no publish-date filtering
+        expect(mockActionConditionPublishDate).not.toHaveBeenCalled();
+        expect(result).toBeTruthy();
+      });
+    });
+
     it('queryStory should call ActionGet and DataCleaner', async () => {
       dataStorage.setConditionApplicationKey('testApplication');
       let queryPromise = dataStorage.queryStory('testId');

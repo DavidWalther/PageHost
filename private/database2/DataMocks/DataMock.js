@@ -59,6 +59,21 @@ class DataMock {
     });
   }
 
+  getContentsTree() {
+    return new Promise((resolve, reject) => {
+      const filePath = path.join(__dirname, '../tables/mocks/story.json');
+      fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Full tree (stories with nested chapters), published and unpublished
+          // alike. The publish filter runs later, at delivery time.
+          resolve(JSON.parse(data));
+        }
+      });
+    });
+  }
+
   getStoryById(storyId) {
     return new Promise((resolve, reject) => {
       const filePath = path.join(__dirname, '../tables/mocks/story.json');

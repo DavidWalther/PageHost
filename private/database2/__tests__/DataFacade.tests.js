@@ -50,6 +50,7 @@ jest.mock('../DataStorage/DataStorage.js');
 let mockQueryConfiguration = jest.fn().mockReturnValue(MOCK_DATABASE);
 let mockQueryStory = jest.fn().mockReturnValue();
 let mockQueryAllStories = jest.fn().mockReturnValue();
+let mockQueryAllChapters = jest.fn().mockReturnValue([]);
 let mockQueryChapter = jest.fn().mockReturnValue();
 let mockQueryParagraphs = jest.fn().mockReturnValue();
 let mockQueryIdentityByKey = jest.fn().mockReturnValue();
@@ -61,6 +62,7 @@ DataStorage.mockImplementation(() => {
     setConditionApplicationKey: setConditionApplicationKey,
     queryConfiguration: mockQueryConfiguration,
     queryAllStories: mockQueryAllStories,
+    queryAllChapters: mockQueryAllChapters,
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
     queryParagraphs: mockQueryParagraphs,
@@ -240,6 +242,74 @@ describe('getData', () => {
       expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
       expect(result.id).toBe('000c00000000000023');
       expect(result.Name).toBe('Test Chapter');
+    });
+  });
+
+  describe('Contents', () => {
+    beforeEach(() => {
+      mockQueryAllStories = jest.fn().mockReturnValue([
+        { id: 's2', name: 'Story 2', sortnumber: 2, publishdate: '2020-01-01' },
+        { id: 's1', name: 'Story 1', sortnumber: 1, publishdate: '2020-01-01' },
+      ]);
+      mockQueryAllChapters = jest.fn().mockReturnValue([
+        { id: 'c-s1-2', storyid: 's1', name: 'C2', sortnumber: 2 },
+        { id: 'c-s1-1', storyid: 's1', name: 'C1', sortnumber: 1 },
+        { id: 'c-s2-1', storyid: 's2', name: 'C1', sortnumber: 1 },
+      ]);
+      mockCacheSet = jest.fn();
+    });
+
+    it("builds the full tree from flat queries on a cache miss and writes it to cache", async () => {
+      mockCacheGet = jest.fn().mockReturnValue(null);
+      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+
+      const result = await dataFacade.getData({
+        request: { table: 'contents', id: null },
+      });
+
+      expect(mockCacheGet).toHaveBeenCalledWith('contentsTree');
+      expect(mockQueryAllStories).toHaveBeenCalled();
+      expect(mockQueryAllChapters).toHaveBeenCalled();
+      expect(mockCacheSet).toHaveBeenCalledWith('contentsTree', result);
+
+      // sorted by sortnumber, chapters grouped by storyid and sorted
+      expect(result.map((story) => story.id)).toEqual(['s1', 's2']);
+      expect(result[0].chapters.map((chapter) => chapter.id)).toEqual([
+        'c-s1-1',
+        'c-s1-2',
+      ]);
+      // full tree keeps publishdate for the delivery-time filter
+      expect(result[0].publishdate).toBe('2020-01-01');
+    });
+
+    it('returns the cached tree on a hit without touching DataStorage', async () => {
+      const cachedTree = [{ id: 's1', name: 'Story 1', chapters: [] }];
+      mockCacheGet = jest.fn().mockReturnValue(cachedTree);
+      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+
+      const result = await dataFacade.getData({
+        request: { table: 'contents', id: null },
+      });
+
+      expect(mockCacheGet).toHaveBeenCalledWith('contentsTree');
+      expect(mockQueryAllStories).not.toHaveBeenCalled();
+      expect(mockQueryAllChapters).not.toHaveBeenCalled();
+      expect(result).toStrictEqual(cachedTree);
+    });
+
+    it('skips the cache entirely when skipCache is set (edit scope)', async () => {
+      mockCacheGet = jest.fn().mockReturnValue(null);
+      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
+
+      const result = await dataFacade
+        .setSkipCache(true)
+        .getData({ request: { table: 'contents', id: null } });
+
+      expect(mockCacheGet).not.toHaveBeenCalled();
+      expect(mockCacheSet).not.toHaveBeenCalled();
+      expect(mockQueryAllStories).toHaveBeenCalled();
+      expect(mockQueryAllChapters).toHaveBeenCalled();
+      expect(result.map((story) => story.id)).toEqual(['s1', 's2']);
     });
   });
 

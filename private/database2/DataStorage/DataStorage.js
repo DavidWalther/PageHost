@@ -186,6 +186,44 @@ class DataStorage {
     });
   }
 
+  queryAllChapters() {
+    const LOCATION = 'DataStorage.queryAllChapters';
+    if (!this.applicationKey) {
+      throw new Error('Application key is required');
+    }
+    return new Promise((resolve) => {
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Querying all chapters for application key: ${this.applicationKey}`,
+      });
+      let tableChapter = new TableChapter();
+      new ActionGet()
+        .setPgConnector(this.pgConnector)
+        .setTableName(tableChapter.tableName)
+        .setTableFields(tableChapter.tableFields)
+        .setConditionApplicationKey(this.applicationKey)
+        .execute()
+        .then((result) => {
+          if (result.length === 0) {
+            Logging.debugMessage({
+              severity: 'FINEST',
+              location: LOCATION,
+              message: `No chapters found for application key: ${this.applicationKey}`,
+            });
+            resolve([]);
+          } else {
+            Logging.debugMessage({
+              severity: 'FINEST',
+              location: LOCATION,
+              message: `Chapters found for application key: ${this.applicationKey}`,
+            });
+            resolve(result); // Return raw data
+          }
+        });
+    });
+  }
+
   queryStory(storyId) {
     const LOCATION = 'DataStorage.queryStory';
     if (!this.applicationKey) {

@@ -21,6 +21,7 @@ const UpsertEndpoint = require('./private/endpoints/api/1.0/data/upsertEndpoint.
 const JwtService = require('./private/modules/oAuth2/JwtService.js');
 const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
 const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
+const ContentsEndpoint = require('./private/endpoints/api/1.0/contents/ContentsEndpoint.js');
 const ServiceWorkerEndpointLogic = require('./private/endpoints/*/ServiceWorkerEndpointLogic.js');
 
 const environment = new Environment().getEnvironment();
@@ -442,6 +443,60 @@ app.patch('/api/1.0/actions/unpublish', async (req, res) => {
         message: `Unpublish Endpoint executed`,
         location: LOCATION,
       });
+    });
+});
+
+app.get('/api/1.0/contents/*', async (req, res) => {
+  const LOCATION = "Server.get('/api/1.0/contents/*')";
+
+  Logging.debugMessage({
+    severity: 'FINER',
+    message: `Request received - query: ${JSON.stringify(req.query)}`,
+    location: LOCATION,
+  });
+
+  const endpoint = new ContentsEndpoint();
+
+  // check for bearer token
+  const bearerToken = req.headers['authorization']?.split(' ')[1];
+  if (bearerToken) {
+    const userScopes = JwtService.getScopesFromJwt(
+      bearerToken,
+      environment.AUTH_SERVER_SECRET
+    );
+
+    if (!userScopes) {
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: `Bearer token is invalid`,
+        location: LOCATION,
+      });
+      res.status(401).send('Unauthorized');
+      return;
+    }
+
+    endpoint.setScopes(new Set(userScopes));
+  }
+
+  endpoint
+    .setEnvironment(environment)
+    .setRequestObject(req)
+    .setResponseObject(res)
+    .execute()
+    .then(() => {
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: `Contents Endpoint executed`,
+        location: LOCATION,
+      });
+    })
+    .catch((error) => {
+      Logging.debugMessage({
+        severity: 'FINER',
+        message: `Error executing contents endpoint: ${error}`,
+        location: LOCATION,
+      });
+      handleWildcardRequest(req, res, LOCATION);
     });
 });
 
