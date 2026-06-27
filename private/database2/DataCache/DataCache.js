@@ -91,20 +91,6 @@ class StoryCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
-class StoriesAllCacheKeyGenerator extends GlobalCacheKeyGenerator {
-  constructor(environmentVars) {
-    super(environmentVars);
-  }
-
-  generateCacheKey() {
-    return this.generateGlobalKeyPrefix() + '-stories-all';
-  }
-
-  generateCacheKeyDeprecated() {
-    return this.generateGlobalKeyPrefix() + '-stories-all';
-  }
-}
-
 class ContentsTreeCacheKeyGenerator extends GlobalCacheKeyGenerator {
   constructor(environmentVars) {
     super(environmentVars);
@@ -166,14 +152,6 @@ class CacheKeyGeneratorFactory {
         message: 'Creating MetaDataCacheKeyGenerator',
       });
       return new MetaDataCacheKeyGenerator(this.environmentVars);
-    }
-    if (key === 'storiesAll') {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: 'Creating StoriesAllCacheKeyGenerator',
-      });
-      return new StoriesAllCacheKeyGenerator(this.environmentVars);
     }
     if (key === 'contentsTree') {
       Logging.debugMessage({
