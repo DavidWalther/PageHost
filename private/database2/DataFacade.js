@@ -92,12 +92,6 @@ class DataFacadeSync {
     }
     if (
       parameterObject.request.table == 'story' &&
-      !parameterObject.request.id
-    ) {
-      return this.getAllStories();
-    }
-    if (
-      parameterObject.request.table == 'story' &&
       parameterObject.request.id
     ) {
       let recordId = parameterObject?.request?.id;
@@ -387,41 +381,6 @@ class DataFacadeSync {
         severity: 'FINEST',
         location: LOCATION,
         message: `Paragraphs found in database`,
-      });
-    }
-    return product;
-  }
-
-  async getAllStories() {
-    const LOCATION = 'DataFacadeSync.getAllStories';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getAllStories();
-    }
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying all stories for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get('storiesAll');
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No stories in cache, querying database`,
-      });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryAllStories();
-
-      cache.set('storiesAll', product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Stories found in cache`,
       });
     }
     return product;

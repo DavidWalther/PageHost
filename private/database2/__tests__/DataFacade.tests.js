@@ -155,20 +155,6 @@ describe('getData', () => {
   });
 
   describe('Story', () => {
-    it("getData should trigger a query for stories if request.table is 'story' and no id is given", async () => {
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      mockCacheGet = jest.fn().mockReturnValue(null);
-      mockQueryAllStories = jest
-        .fn()
-        .mockReturnValue([{ id: '1234' }, { id: '5678' }]);
-
-      const result = await dataFacade.getData({ request: { table: 'story' } });
-      expect(DataStorage).toHaveBeenCalled();
-      expect(mockQueryAllStories).toHaveBeenCalled();
-      expect(result).toBeTruthy();
-      expect(result).toStrictEqual([{ id: '1234' }, { id: '5678' }]);
-    });
-
     it("getData should trigger a query for a story if request.table is 'story' and an id is given", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       mockCacheGet = jest.fn().mockReturnValue(null);
