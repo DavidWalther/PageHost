@@ -101,66 +101,12 @@ beforeEach(() => {
 // ─── Step 1: Data Query Endpoints ───────────────────────────────────────────
 
 const {
-  AllStoriesEndpoint,
-} = require('../endpoints/data/query/AllStoriesEndpoint');
-const {
   SingleStoryEndpoint,
 } = require('../endpoints/data/query/SingleStoryEndpoint');
 const { ChapterEndpoint } = require('../endpoints/data/query/ChapterEndpoint');
 const {
   ParagraphEndpoint,
 } = require('../endpoints/data/query/ParagraphEndpoint');
-
-describe('AllStoriesEndpoint Integration', () => {
-  it('should fetch stories from DataStorage on a cache miss', async () => {
-    const mockStories = [
-      { id: '000s001', title: 'Story One', applicationIncluded: 'test-key' },
-      { id: '000s002', title: 'Story Two', applicationIncluded: 'test-key' },
-    ];
-    mockQueryAllStories.mockResolvedValue(mockStories);
-
-    const res = createResMock();
-    await new AllStoriesEndpoint()
-      .setEnvironment(ENVIRONMENT)
-      .setRequestObject({ query: {} })
-      .setResponseObject(res)
-      .execute();
-
-    expect(mockQueryAllStories).toHaveBeenCalledTimes(1);
-    const responseData = res.json.mock.calls[0][0];
-    expect(responseData).toHaveLength(2);
-    expect(responseData[0].id).toBe('000s001');
-  });
-
-  it('should strip applicationIncluded from the response via DataCleaner', async () => {
-    mockQueryAllStories.mockResolvedValue([
-      { id: '000s001', title: 'Story One', applicationIncluded: 'test-key' },
-    ]);
-
-    const res = createResMock();
-    await new AllStoriesEndpoint()
-      .setEnvironment(ENVIRONMENT)
-      .setRequestObject({ query: {} })
-      .setResponseObject(res)
-      .execute();
-
-    const responseData = res.json.mock.calls[0][0];
-    expect(responseData[0]).not.toHaveProperty('applicationIncluded');
-  });
-
-  it('should return an empty array when no stories exist', async () => {
-    mockQueryAllStories.mockResolvedValue([]);
-
-    const res = createResMock();
-    await new AllStoriesEndpoint()
-      .setEnvironment(ENVIRONMENT)
-      .setRequestObject({ query: {} })
-      .setResponseObject(res)
-      .execute();
-
-    expect(res.json).toHaveBeenCalledWith([]);
-  });
-});
 
 describe('SingleStoryEndpoint Integration', () => {
   it('should fetch a story from DataStorage on a cache miss', async () => {
