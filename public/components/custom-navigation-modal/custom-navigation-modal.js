@@ -13,6 +13,8 @@ class NavigationModal extends LitElement {
   labels = {
     modalTitle: 'Navigation',
     empty: 'Keine Stories vorhanden.',
+    emptyChapters: 'Keine Kapitel vorhanden.',
+    back: '< zurück',
   };
 
   static styles = css`
@@ -35,43 +37,53 @@ class NavigationModal extends LitElement {
     .tile:hover {
       border-color: #0176d3;
     }
+
+    .back-button {
+      background: none;
+      border: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .back-button:hover {
+      text-decoration: underline;
+    }
   `;
 
   static properties = {
-    _stories: { state: true },
+    _tree: { state: true },
+    _selectedStory: { state: true },
   };
 
   constructor() {
     super();
-    this._stories = [];
+    this._tree = [];
+    this._selectedStory = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this._loadStories();
+    this._loadContents();
   }
 
   //===========================
   // Data
   //===========================
 
-  _loadStories() {
+  _loadContents() {
     this.dispatchEvent(
       new CustomEvent('query', {
         detail: {
-          payload: { object: 'story' },
+          payload: { object: 'contents' },
           callback: (error, data) => {
             if (error) {
               console.error(error);
               return;
             }
-            this._stories = Array.isArray(data)
-              ? data.sort(
-                  (firstEntry, secondEntry) =>
-                    firstEntry.sortnumber - secondEntry.sortnumber
-                )
-              : [];
+            this._tree = Array.isArray(data) ? data : [];
           },
         },
         bubbles: true,
@@ -83,45 +95,105 @@ class NavigationModal extends LitElement {
   render() {
     return html`
       <slds-modal title="${this.labels.modalTitle}" footless>
-        ${this._stories.length === 0
-          ? html`
-              <div class="slds-align_absolute-center slds-p-around_medium">
-                <span>${this.labels.empty}</span>
-              </div>
-            `
-          : html`
-              <slds-layout wrap gutters-small>
-                ${this._stories.map(
-                  (story) => html`
-                    <slds-layout-item
-                      size-1-of-2
-                      medium-size-1-of-3
-                      large-size-1-of-4
-                      class="slds-p-vertical_x-small"
-                    >
-                      <button
-                        class="tile"
-                        @click="${() => this._handleTileClick(story.id)}"
-                      >
-                        <span>${story.name}</span>
-                      </button>
-                    </slds-layout-item>
-                  `
-                )}
-              </slds-layout>
-            `}
+        ${this._selectedStory === null
+          ? this._renderStories()
+          : this._renderChapters()}
       </slds-modal>
     `;
   }
 
-  _handleTileClick(id) {
+  _renderStories() {
+    if (this._tree.length === 0) {
+      return html`
+        <div class="slds-align_absolute-center slds-p-around_medium">
+          <span>${this.labels.empty}</span>
+        </div>
+      `;
+    }
+    return html`
+      <slds-layout wrap gutters-small>
+        ${this._tree.map(
+          (story) => html`
+            <slds-layout-item
+              size-1-of-2
+              medium-size-1-of-3
+              large-size-1-of-4
+              class="slds-p-vertical_x-small"
+            >
+              <button
+                class="tile"
+                @click="${() => this._handleStoryClick(story)}"
+              >
+                <span>${story.name}</span>
+              </button>
+            </slds-layout-item>
+          `
+        )}
+      </slds-layout>
+    `;
+  }
+
+  _renderChapters() {
+    const chapters = this._selectedStory.childnodes || [];
+    return html`
+      <div class="slds-m-bottom_small">
+        <button class="back-button" @click="${this._handleBack}">
+          ${this.labels.back}
+        </button>
+      </div>
+      ${chapters.length === 0
+        ? html`
+            <div class="slds-align_absolute-center slds-p-around_medium">
+              <span>${this.labels.emptyChapters}</span>
+            </div>
+          `
+        : html`
+            <slds-layout wrap gutters-small>
+              ${chapters.map(
+                (chapter) => html`
+                  <slds-layout-item
+                    size-1-of-2
+                    medium-size-1-of-3
+                    large-size-1-of-4
+                    class="slds-p-vertical_x-small"
+                  >
+                    <button
+                      class="tile"
+                      @click="${() => this._handleChapterClick(chapter.id)}"
+                    >
+                      <span>${chapter.name}</span>
+                    </button>
+                  </slds-layout-item>
+                `
+              )}
+            </slds-layout>
+          `}
+    `;
+  }
+
+  _handleStoryClick(story) {
+    this._selectedStory = story;
     this.dispatchEvent(
       new CustomEvent('story-select', {
-        detail: { id },
+        detail: { id: story.id },
         bubbles: true,
         composed: true,
       })
     );
+  }
+
+  _handleChapterClick(chapterId) {
+    this.dispatchEvent(
+      new CustomEvent('chapter-select', {
+        detail: { storyId: this._selectedStory.id, chapterId },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  _handleBack() {
+    this._selectedStory = null;
   }
 
   //===========================
@@ -129,6 +201,7 @@ class NavigationModal extends LitElement {
   //===========================
 
   show() {
+    this._selectedStory = null;
     this.shadowRoot.querySelector('slds-modal').show();
   }
 

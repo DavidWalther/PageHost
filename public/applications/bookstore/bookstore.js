@@ -27,6 +27,7 @@ class Bookstore extends LitElement {
     // Initialize component state
     this.isHydrated = false;
     this._initPara = null;
+    this._pendingChapterSelection = null;
   }
 
   // =========== Lifecycle methods ============
@@ -131,6 +132,7 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         @story-select="${this.handleStorySelect}"
+        @chapter-select="${this.handleChapterSelect}"
       ></custom-navigation-modal>
 
       <div
@@ -192,6 +194,22 @@ class Bookstore extends LitElement {
         bubbles: true,
       })
     );
+    // Modal stays open so the user can drill down into the story's chapters.
+  }
+
+  handleChapterSelect(event) {
+    const { storyId, chapterId } = event.detail;
+
+    const currentStoryId = this.storyElement.getAttribute('id');
+    if (currentStoryId !== storyId) {
+      // Suppress the cover-image override in handleLoadStory for this reload,
+      // so the explicitly selected chapter is kept.
+      this._pendingChapterSelection = chapterId;
+      this.storyElement.setAttribute('id', storyId);
+    }
+    this.chapterElement.setAttribute('id', chapterId);
+    this.storyElement.setAttribute('selectedChapter', chapterId);
+
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
 
@@ -338,6 +356,13 @@ class Bookstore extends LitElement {
       return;
     }
     console.log('Custom story loaded event:', event.detail);
+
+    if (this._pendingChapterSelection) {
+      // A chapter was selected directly (e.g. from the navigation modal);
+      // keep that selection instead of falling back to the cover chapter.
+      this._pendingChapterSelection = null;
+      return;
+    }
 
     let coverChapterId = event.detail.bookData.coverid;
     if (coverChapterId && this._initPara?.initmode !== 'chapter') {
