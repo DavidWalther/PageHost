@@ -46,7 +46,6 @@ function createResMock() {
 let mockCacheGet;
 let mockCacheSet;
 let mockCacheDel;
-let mockQueryAllStories;
 let mockQueryStory;
 let mockQueryChapter;
 let mockQueryParagraphs;
@@ -67,7 +66,6 @@ function setupDataStorageMock() {
   DataStorage.mockImplementation(() => ({
     setConditionApplicationKey: jest.fn().mockReturnThis(),
     setConditionPublishDate: jest.fn().mockReturnThis(),
-    queryAllStories: mockQueryAllStories,
     queryStory: mockQueryStory,
     queryChapter: mockQueryChapter,
     queryParagraphs: mockQueryParagraphs,
@@ -85,7 +83,6 @@ beforeEach(() => {
   mockCacheSet = jest.fn().mockResolvedValue(undefined);
   mockCacheDel = jest.fn().mockResolvedValue(undefined);
 
-  mockQueryAllStories = jest.fn().mockResolvedValue([]);
   mockQueryStory = jest.fn().mockResolvedValue({});
   mockQueryChapter = jest.fn().mockResolvedValue({});
   mockQueryParagraphs = jest.fn().mockResolvedValue({});
