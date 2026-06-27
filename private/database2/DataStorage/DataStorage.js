@@ -153,7 +153,7 @@ class DataStorage {
     if (!this.applicationKey) {
       throw new Error('Application key is required');
     }
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
@@ -182,7 +182,8 @@ class DataStorage {
             });
             resolve(result); // Return raw data
           }
-        });
+        })
+        .catch(reject);
     });
   }
 
@@ -191,7 +192,7 @@ class DataStorage {
     if (!this.applicationKey) {
       throw new Error('Application key is required');
     }
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
@@ -220,7 +221,8 @@ class DataStorage {
             });
             resolve(result); // Return raw data
           }
-        });
+        })
+        .catch(reject);
     });
   }
 
