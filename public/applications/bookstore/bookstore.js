@@ -189,8 +189,13 @@ class Bookstore extends LitElement {
     this.shadowRoot.querySelector('custom-navigation-modal').show();
   }
 
+  _setCurrentLocation(id) {
+    this._currentLocation = id;
+  }
+
   handleStorySelect(event) {
     const { id } = event.detail;
+    this._setCurrentLocation(id);
     this.dispatchEvent(
       new CustomEvent('navigation', {
         detail: { type: 'story', value: id },
@@ -212,6 +217,7 @@ class Bookstore extends LitElement {
     }
     this.chapterElement.setAttribute('id', chapterId);
     this.storyElement.setAttribute('selectedChapter', chapterId);
+    this._setCurrentLocation(chapterId);
 
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
