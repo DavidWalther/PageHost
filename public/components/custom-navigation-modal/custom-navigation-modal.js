@@ -17,6 +17,8 @@ class NavigationModal extends LitElement {
     back: '< zurück',
   };
 
+  _isOpen = false;
+
   static styles = css`
     .tile {
       width: 100%;
@@ -112,6 +114,16 @@ class NavigationModal extends LitElement {
       (story.childnodes || []).some((chapter) => chapter.id === location)
     );
     return parentStory ? parentStory.id : null;
+  }
+
+  _resolveInitialStory() {
+    // Only a chapter location pre-opens the chapter list of its parent story;
+    // a story location (or none) keeps the modal on the story level.
+    if (!this.currentLocation || this.currentLocation.startsWith('000s')) {
+      return null;
+    }
+    const storyId = this._storyIdForLocation();
+    return this._tree.find((story) => story.id === storyId) || null;
   }
 
   render() {
@@ -228,11 +240,13 @@ class NavigationModal extends LitElement {
   //===========================
 
   show() {
-    this._selectedStory = null;
+    this._isOpen = true;
+    this._selectedStory = this._resolveInitialStory();
     this.shadowRoot.querySelector('slds-modal').show();
   }
 
   hide() {
+    this._isOpen = false;
     this.shadowRoot.querySelector('slds-modal').hide();
   }
 }
