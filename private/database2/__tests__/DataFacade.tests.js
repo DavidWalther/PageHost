@@ -14,14 +14,12 @@ const MOCK_ENVIRONMENT = {
 const MOCK_CACHE = {
   metaTitle: 'Mock Tabtitle',
   pageHeaderHeadline: 'Mock Headline',
-  pageSidebarTitle: 'Mock Contents',
 };
 
 const MOCK_DATABASE = {
   rows: [
     { key: 'metaTitle', value: 'Mock Tabtitle' },
     { key: 'pageHeaderHeadline', value: 'Mock Headline' },
-    { key: 'pageSidebarTitle', value: 'Mock Contents' },
   ],
 };
 
@@ -245,7 +243,7 @@ describe('getData', () => {
       mockCacheSet = jest.fn();
     });
 
-    it("builds the full tree from flat queries on a cache miss and writes it to cache", async () => {
+    it('builds the full tree from flat queries on a cache miss and writes it to cache', async () => {
       mockCacheGet = jest.fn().mockReturnValue(null);
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
 
