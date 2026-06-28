@@ -1,26 +1,32 @@
 # Copilot Instructions
 
-<<<<<<< HEAD
-## gneral behavior
+## General behavior
 
 - Always follow the instructions in this file when generating code.
-- never make any assumptions
-- ask for clarification if anything is not clear before generating code.
-- ask questions one by one instead of all at once
+- Never make assumptions; ask for clarification before generating code.
+- Ask questions one by one instead of all at once.
+
+## Workflow & conventions (canonical sources)
+
+The binding project rules live in these files — follow them:
+
+- **Workflow (Explore–Plan–Code):** `.github/instructions/epc.instructions.md`
+- **Architecture & request flow:** `doc/architecture.md`
+- **Frontend component conventions (Lit-first):** `doc/conventions.md`
 
 ## Development
 
-- make small, incremental changes. With a commit after each change to create a clear history
-- make commit messages like "<ComponentName>: short description of the change"
+- Make small, incremental changes with a commit after each change for a clear history.
+- Commit messages: `<ComponentName>: short description of the change`.
 
 ### Backend development
 
-- use caes must be covered with tests
+- Use cases must be covered with tests.
 
 ### Frontend development
 
-- Frontend components are not tested
+- Frontend components are not tested.
 
-## commands
+## Commands
 
-- running tests: `npm run test`
+- Running tests: `npm run test`
