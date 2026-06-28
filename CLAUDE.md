@@ -1,10 +1,22 @@
 # Projekt-Anweisungen
 
+## Arbeitsweise
+
 Wir arbeiten in diesem Projekt **strikt** nach dem Explore–Plan–Code-Workflow.
 Die verbindliche Definition (Phasen, Branching pro Schritt, Commit-Regeln,
 Test-Struktur) steht in der folgenden Datei und ist bei jeder Aufgabe einzuhalten:
 
 @.github/instructions/epc.instructions.md
+
+## Projekt verstehen
+
+Architektur, Tech-Stack, Request-Flow und Datenmodell:
+
+@doc/architecture.md
+
+Frontend-Komponenten-Konventionen (Lit-first, Legacy-Muster):
+
+@doc/conventions.md
 
 ## Merkpunkte (Kurzform, Details siehe Import oben)
 
