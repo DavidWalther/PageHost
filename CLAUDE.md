@@ -18,6 +18,10 @@ Frontend-Komponenten-Konventionen (Lit-first, Legacy-Muster):
 
 @doc/conventions.md
 
+Code-Konventionen (Backend, Tests, Naming; inkl. bekannter Abweichungen):
+
+@doc/coding-conventions.md
+
 ## Merkpunkte (Kurzform, Details siehe Import oben)
 
 - **EXPLORE** und **PLAN** enden erst, wenn der Benutzer es festlegt — in diesen
