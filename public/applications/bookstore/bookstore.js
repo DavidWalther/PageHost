@@ -18,6 +18,7 @@ class Bookstore extends LitElement {
   static properties = {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
+    _currentLocation: { type: String, state: true },
   };
 
   constructor() {
@@ -28,6 +29,7 @@ class Bookstore extends LitElement {
     this.isHydrated = false;
     this._initPara = null;
     this._pendingChapterSelection = null;
+    this._currentLocation = null;
   }
 
   // =========== Lifecycle methods ============
@@ -131,6 +133,7 @@ class Bookstore extends LitElement {
         </div>
       </custom-settings-modal>
       <custom-navigation-modal
+        current-location="${this._currentLocation}"
         @story-select="${this.handleStorySelect}"
         @chapter-select="${this.handleChapterSelect}"
       ></custom-navigation-modal>
