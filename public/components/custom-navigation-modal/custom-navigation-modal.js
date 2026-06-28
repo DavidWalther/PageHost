@@ -94,6 +94,20 @@ class NavigationModal extends LitElement {
     );
   }
 
+  _storyIdForLocation() {
+    const location = this.currentLocation;
+    if (!location) {
+      return null;
+    }
+    if (location.startsWith('000s')) {
+      return location;
+    }
+    const parentStory = this._tree.find((story) =>
+      (story.childnodes || []).some((chapter) => chapter.id === location)
+    );
+    return parentStory ? parentStory.id : null;
+  }
+
   render() {
     return html`
       <slds-modal title="${this.labels.modalTitle}" footless>
