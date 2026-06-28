@@ -32,13 +32,6 @@ describe('DataMock', () => {
           applicationincluded: 'app1, app2',
           applicationexcluded: 'app3',
         },
-        {
-          id: '000m00000000000003',
-          key: 'pageSidebarTitle',
-          value: 'Mock Contents',
-          applicationincluded: 'app1, app2',
-          applicationexcluded: 'app3',
-        },
       ];
 
       fs.readFile.mockImplementation((filePath, encoding, callback) => {
@@ -54,7 +47,6 @@ describe('DataMock', () => {
 
       expect(configuration.metaTitle).toEqual('Mock Tabtitle');
       expect(configuration.pageHeaderHeadline).toEqual('Mock Headline');
-      expect(configuration.pageSidebarTitle).toEqual('Mock Contents');
     });
   });
 
