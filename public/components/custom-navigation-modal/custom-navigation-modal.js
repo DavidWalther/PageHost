@@ -94,6 +94,10 @@ class NavigationModal extends LitElement {
               return;
             }
             this._tree = Array.isArray(data) ? data : [];
+            // If show() ran before the tree was available, pre-position now.
+            if (this._isOpen && this._selectedStory === null) {
+              this._selectedStory = this._resolveInitialStory();
+            }
           },
         },
         bubbles: true,
