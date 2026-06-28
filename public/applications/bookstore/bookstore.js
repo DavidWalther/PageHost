@@ -308,12 +308,14 @@ class Bookstore extends LitElement {
       this._initPara = null;
     });
     this.storyElement.setAttribute('id', '000s00000000000011');
+    this._setCurrentLocation('000s00000000000011');
   }
 
   initWithStoryId(storyId) {
     // loaded eventlistener is attached right away
     // navigation eventlistener is attached after the loaded event was received
     this.storyElement.setAttribute('id', storyId);
+    this._setCurrentLocation(storyId);
     this.storyElement.addEventListener('loaded', (event) => {
       this.handleLoadStory(event);
       this._initPara = null;
@@ -328,6 +330,7 @@ class Bookstore extends LitElement {
     // chapter does not fire navigation events
     // loaded eventlistener is attached right away
     this.chapterElement.setAttribute('id', chapterId);
+    this._setCurrentLocation(chapterId);
     if (this._initPara?.paragraphnumber) {
       this.chapterElement.setAttribute(
         'paragraphnumber',
