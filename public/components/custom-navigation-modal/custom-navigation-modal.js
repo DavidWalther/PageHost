@@ -53,12 +53,14 @@ class NavigationModal extends LitElement {
   `;
 
   static properties = {
+    currentLocation: { type: String, attribute: 'current-location' },
     _tree: { state: true },
     _selectedStory: { state: true },
   };
 
   constructor() {
     super();
+    this.currentLocation = null;
     this._tree = [];
     this._selectedStory = null;
   }
