@@ -38,6 +38,12 @@ class NavigationModal extends LitElement {
       border-color: #0176d3;
     }
 
+    .tile_current {
+      background-color: #0176d3;
+      border-color: #0176d3;
+      color: #ffffff;
+    }
+
     .back-button {
       background: none;
       border: none;
@@ -126,6 +132,7 @@ class NavigationModal extends LitElement {
         </div>
       `;
     }
+    const currentStoryId = this._storyIdForLocation();
     return html`
       <slds-layout wrap gutters-small>
         ${this._tree.map(
@@ -137,7 +144,9 @@ class NavigationModal extends LitElement {
               class="slds-p-vertical_x-small"
             >
               <button
-                class="tile"
+                class="tile ${story.id === currentStoryId
+                  ? 'tile_current'
+                  : ''}"
                 @click="${() => this._handleStoryClick(story)}"
               >
                 <span>${story.name}</span>
