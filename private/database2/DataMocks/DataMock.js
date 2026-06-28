@@ -12,12 +12,6 @@ const LOREM_IPSUM_ARRAY = [
   'Ea nisi ex excepteur culpa nisi adipisicing non Lorem pariatur exercitation tempor qui exercitation. Veniam velit fugiat sint ad id incididunt voluptate quis. Proident reprehenderit laborum esse labore deserunt eu.',
 ];
 
-const MOCK_CONFIGURATION_MAP = new Map([
-  ['metaTitle', 'Mock Tabtitle'],
-  ['pageHeaderHeadline', 'Mock Headline'],
-  ['pageSidebarTitle', 'Mock Contents'],
-]);
-
 class DataMock {
   constructor() {}
 
