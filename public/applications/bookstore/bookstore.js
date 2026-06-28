@@ -18,6 +18,7 @@ class Bookstore extends LitElement {
   static properties = {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
+    _currentLocation: { type: String, state: true },
   };
 
   constructor() {
@@ -28,6 +29,7 @@ class Bookstore extends LitElement {
     this.isHydrated = false;
     this._initPara = null;
     this._pendingChapterSelection = null;
+    this._currentLocation = null;
   }
 
   // =========== Lifecycle methods ============
@@ -131,6 +133,7 @@ class Bookstore extends LitElement {
         </div>
       </custom-settings-modal>
       <custom-navigation-modal
+        current-location="${this._currentLocation}"
         @story-select="${this.handleStorySelect}"
         @chapter-select="${this.handleChapterSelect}"
       ></custom-navigation-modal>
@@ -186,8 +189,13 @@ class Bookstore extends LitElement {
     this.shadowRoot.querySelector('custom-navigation-modal').show();
   }
 
+  _setCurrentLocation(id) {
+    this._currentLocation = id;
+  }
+
   handleStorySelect(event) {
     const { id } = event.detail;
+    this._setCurrentLocation(id);
     this.dispatchEvent(
       new CustomEvent('navigation', {
         detail: { type: 'story', value: id },
@@ -209,6 +217,7 @@ class Bookstore extends LitElement {
     }
     this.chapterElement.setAttribute('id', chapterId);
     this.storyElement.setAttribute('selectedChapter', chapterId);
+    this._setCurrentLocation(chapterId);
 
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
@@ -299,12 +308,14 @@ class Bookstore extends LitElement {
       this._initPara = null;
     });
     this.storyElement.setAttribute('id', '000s00000000000011');
+    this._setCurrentLocation('000s00000000000011');
   }
 
   initWithStoryId(storyId) {
     // loaded eventlistener is attached right away
     // navigation eventlistener is attached after the loaded event was received
     this.storyElement.setAttribute('id', storyId);
+    this._setCurrentLocation(storyId);
     this.storyElement.addEventListener('loaded', (event) => {
       this.handleLoadStory(event);
       this._initPara = null;
@@ -319,6 +330,7 @@ class Bookstore extends LitElement {
     // chapter does not fire navigation events
     // loaded eventlistener is attached right away
     this.chapterElement.setAttribute('id', chapterId);
+    this._setCurrentLocation(chapterId);
     if (this._initPara?.paragraphnumber) {
       this.chapterElement.setAttribute(
         'paragraphnumber',
@@ -482,11 +494,13 @@ class Bookstore extends LitElement {
       this.storyElement.setAttribute('id', value);
       this.chapterElement.removeAttribute('id');
       this.storyElement.removeAttribute('selectedChapter');
+      this._setCurrentLocation(value);
       return;
     }
     if (isEventSourceStory && type === 'chapter') {
       this.chapterElement.setAttribute('id', value);
       this.storyElement.setAttribute('selectedChapter', value);
+      this._setCurrentLocation(value);
       return;
     }
   }
