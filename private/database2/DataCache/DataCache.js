@@ -91,17 +91,17 @@ class StoryCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
-class StoriesAllCacheKeyGenerator extends GlobalCacheKeyGenerator {
+class ContentsTreeCacheKeyGenerator extends GlobalCacheKeyGenerator {
   constructor(environmentVars) {
     super(environmentVars);
   }
 
   generateCacheKey() {
-    return this.generateGlobalKeyPrefix() + '-stories-all';
+    return this.generateGlobalKeyPrefix() + '-contents-tree';
   }
 
   generateCacheKeyDeprecated() {
-    return this.generateGlobalKeyPrefix() + '-stories-all';
+    return this.generateGlobalKeyPrefix() + '-contents-tree';
   }
 }
 
@@ -153,13 +153,13 @@ class CacheKeyGeneratorFactory {
       });
       return new MetaDataCacheKeyGenerator(this.environmentVars);
     }
-    if (key === 'storiesAll') {
+    if (key === 'contentsTree') {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
-        message: 'Creating StoriesAllCacheKeyGenerator',
+        message: 'Creating ContentsTreeCacheKeyGenerator',
       });
-      return new StoriesAllCacheKeyGenerator(this.environmentVars);
+      return new ContentsTreeCacheKeyGenerator(this.environmentVars);
     }
 
     // then check for keys that start with a specific prefix

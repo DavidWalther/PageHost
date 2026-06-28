@@ -32,13 +32,6 @@ describe('DataMock', () => {
           applicationincluded: 'app1, app2',
           applicationexcluded: 'app3',
         },
-        {
-          id: '000m00000000000003',
-          key: 'pageSidebarTitle',
-          value: 'Mock Contents',
-          applicationincluded: 'app1, app2',
-          applicationexcluded: 'app3',
-        },
       ];
 
       fs.readFile.mockImplementation((filePath, encoding, callback) => {
@@ -54,58 +47,6 @@ describe('DataMock', () => {
 
       expect(configuration.metaTitle).toEqual('Mock Tabtitle');
       expect(configuration.pageHeaderHeadline).toEqual('Mock Headline');
-      expect(configuration.pageSidebarTitle).toEqual('Mock Contents');
-    });
-  });
-
-  describe('getAllStories', () => {
-    it('should return all stories from the JSON file', async () => {
-      const mockFilePath = path.join(
-        __dirname,
-        '../../tables/mocks/story.json'
-      );
-      const mockData = [
-        {
-          id: '000s00000000000001',
-          name: 'Mock Story 1',
-          lastupdate: '2022-01-01 00:00:00',
-          sortnumber: 1,
-          publishdate: '2022-01-01 00:00:00',
-          applicationincluded: 'app1, app2',
-          applicationexcluded: 'app3',
-        },
-        {
-          id: '000s00000000000002',
-          name: 'Mock Story 2',
-          lastupdate: '2022-01-01 00:00:00',
-          sortnumber: 2,
-          publishdate: '2022-01-01 00:00:00',
-          applicationincluded: 'app1, app2',
-          applicationexcluded: 'app3',
-        },
-        {
-          id: '000s00000000000003',
-          name: 'Mock Story 3',
-          lastupdate: '2022-01-01 00:00:00',
-          sortnumber: 3,
-          publishdate: '2022-01-01 00:00:00',
-          applicationincluded: 'app1, app2',
-          applicationexcluded: 'app3',
-        },
-      ];
-
-      fs.readFile.mockImplementation((filePath, encoding, callback) => {
-        if (filePath === mockFilePath) {
-          callback(null, JSON.stringify(mockData));
-        } else {
-          callback(new Error('File not found'));
-        }
-      });
-
-      const dataMock = new DataMock();
-      const stories = await dataMock.getAllStories();
-
-      expect(stories).toEqual(mockData);
     });
   });
 

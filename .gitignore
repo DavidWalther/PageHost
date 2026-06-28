@@ -7,9 +7,9 @@ files/temp
 
 #AI-Tools
 
-## config files potentially containing secrets
-
-.claude/settings.json
+## settings.json wird bewusst eingecheckt (team-weite Hooks/Permissions).
+## Secrets gehoeren NICHT hierher, sondern in .env* oder settings.local.json
+## (letztere ist global gitignored).
 
 ## Files created in epcc workflow
 

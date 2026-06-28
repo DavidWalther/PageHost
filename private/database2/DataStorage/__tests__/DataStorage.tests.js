@@ -148,6 +148,24 @@ describe('DataStorage', () => {
       });
     });
 
+    it('queryAllChapters should call ActionGet with the application key and no publish filter', async () => {
+      mockActionConditionPublishDate.mockClear();
+      dataStorage.setConditionApplicationKey('testApplication');
+      let queryPromise = dataStorage.queryAllChapters();
+
+      expect(dataStorage).toBeInstanceOf(DataStorage);
+      expect(queryPromise).toBeInstanceOf(Promise);
+      return queryPromise.then((result) => {
+        expect(ActionGet).toHaveBeenCalled();
+        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+          'testApplication'
+        );
+        // flat query: no join, no publish-date filtering
+        expect(mockActionConditionPublishDate).not.toHaveBeenCalled();
+        expect(result).toBeTruthy();
+      });
+    });
+
     it('queryStory should call ActionGet and DataCleaner', async () => {
       dataStorage.setConditionApplicationKey('testApplication');
       let queryPromise = dataStorage.queryStory('testId');
@@ -312,6 +330,34 @@ describe('DataStorage', () => {
         expect(result).toEqual({});
       });
     });
+  });
+
+  describe('Query error propagation', () => {
+    // A failing query (e.g. CONNECTION_ENDED) must reject so the caller can
+    // handle it, instead of being swallowed into a never-settling promise that
+    // surfaces as an unhandled rejection and crashes the process.
+    const connectionError = Object.assign(
+      new Error('write CONNECTION_ENDED localhost:5432'),
+      { code: 'CONNECTION_ENDED' }
+    );
+
+    it('queryAllStories rejects when the underlying query fails', async () => {
+      dataStorage.setConditionApplicationKey('testApplication');
+      mockActionGetExecute.mockRejectedValueOnce(connectionError);
+
+      await expect(dataStorage.queryAllStories()).rejects.toThrow(
+        'CONNECTION_ENDED'
+      );
+    }, 2000);
+
+    it('queryAllChapters rejects when the underlying query fails', async () => {
+      dataStorage.setConditionApplicationKey('testApplication');
+      mockActionGetExecute.mockRejectedValueOnce(connectionError);
+
+      await expect(dataStorage.queryAllChapters()).rejects.toThrow(
+        'CONNECTION_ENDED'
+      );
+    }, 2000);
   });
 
   describe('Updates', () => {

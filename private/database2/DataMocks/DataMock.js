@@ -12,12 +12,6 @@ const LOREM_IPSUM_ARRAY = [
   'Ea nisi ex excepteur culpa nisi adipisicing non Lorem pariatur exercitation tempor qui exercitation. Veniam velit fugiat sint ad id incididunt voluptate quis. Proident reprehenderit laborum esse labore deserunt eu.',
 ];
 
-const MOCK_CONFIGURATION_MAP = new Map([
-  ['metaTitle', 'Mock Tabtitle'],
-  ['pageHeaderHeadline', 'Mock Headline'],
-  ['pageSidebarTitle', 'Mock Contents'],
-]);
-
 class DataMock {
   constructor() {}
 
@@ -46,13 +40,15 @@ class DataMock {
     });
   }
 
-  getAllStories() {
+  getContentsTree() {
     return new Promise((resolve, reject) => {
       const filePath = path.join(__dirname, '../tables/mocks/story.json');
       fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
           reject(err);
         } else {
+          // Full tree (stories with nested chapters), published and unpublished
+          // alike. The publish filter runs later, at delivery time.
           resolve(JSON.parse(data));
         }
       });

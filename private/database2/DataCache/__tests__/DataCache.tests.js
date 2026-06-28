@@ -132,6 +132,28 @@ describe('Cache Keys', () => {
     expect(mockGet).toHaveBeenCalledWith(expectedKey_deprecated);
   });
 
+  it('should call RedisConnector.get with the correct key when "contentsTree" is requested', async () => {
+    const dataCache = new DataCache2(MOCK_ENVIRONMENT);
+
+    await dataCache.get('contentsTree');
+    const expectedKey = `${MOCK_ENVIRONMENT.CACHE_KEY_PREFIX}-${MOCK_ENVIRONMENT.APPLICATION_APPLICATION_KEY}-${MOCK_ENVIRONMENT.CACHE_DATA_INCREMENT}-contents-tree`;
+    expect(mockGet).toHaveBeenCalledWith(expectedKey);
+  });
+
+  it('should call RedisConnector.setEx with the correct key and long-term TTL when "contentsTree" is set', async () => {
+    const dataCache = new DataCache2(MOCK_ENVIRONMENT);
+
+    const value = { result: [] };
+    const expectedKey = `${MOCK_ENVIRONMENT.CACHE_KEY_PREFIX}-${MOCK_ENVIRONMENT.APPLICATION_APPLICATION_KEY}-${MOCK_ENVIRONMENT.CACHE_DATA_INCREMENT}-contents-tree`;
+
+    await dataCache.set('contentsTree', value);
+    expect(mockSetEx).toHaveBeenCalledWith(
+      expectedKey,
+      MOCK_ENVIRONMENT.CACHE_CONTAINER_EXPIRATION_SECONDS,
+      JSON.stringify(value)
+    );
+  });
+
   it('should call RedisConnector.setEx with the correct key when "metadata" is set', async () => {
     const dataCache = new DataCache2(MOCK_ENVIRONMENT);
 

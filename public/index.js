@@ -180,11 +180,7 @@ function fetchDatabase(eventpayload) {
             }
           });
         } else {
-          doFetch(`/data/query/story`, preparedHeaders)
-            .then((allStoriesResponse) => allStoriesResponse.json())
-            .then((allStories) => {
-              resolve(allStories);
-            });
+          resolve();
         }
         break;
       }
@@ -219,6 +215,14 @@ function fetchDatabase(eventpayload) {
             } else if (typeof paragraph === 'object') {
               resolve(paragraph);
             }
+          });
+        break;
+      }
+      case 'contents': {
+        doFetch(`/api/1.0/contents/all?depth=2`, preparedHeaders)
+          .then((contentsResponse) => contentsResponse.json())
+          .then((contents) => {
+            resolve(contents.result);
           });
         break;
       }

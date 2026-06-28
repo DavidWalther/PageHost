@@ -3,6 +3,7 @@ const { Environment } = require('../modules/environment.js');
 const { DataCache2 } = require('./DataCache/DataCache.js');
 const { DataMock } = require('./DataMocks/DataMock.js');
 const { DataStorage } = require('./DataStorage/DataStorage.js');
+const { DataCleaner } = require('../modules/DataCleaner.js');
 
 class DataFacadePromise {
   constructor(environmentObject) {
@@ -91,12 +92,6 @@ class DataFacadeSync {
     }
     if (
       parameterObject.request.table == 'story' &&
-      !parameterObject.request.id
-    ) {
-      return this.getAllStories();
-    }
-    if (
-      parameterObject.request.table == 'story' &&
       parameterObject.request.id
     ) {
       let recordId = parameterObject?.request?.id;
@@ -123,6 +118,12 @@ class DataFacadeSync {
     if (parameterObject.request.table == 'identity') {
       // Identity queries always bypass cache for data freshness
       return this.getIdentityByKeyWithoutCache(parameterObject);
+    }
+    if (parameterObject.request.table == 'contents') {
+      if (!this.getSkipCache()) {
+        return this.getContentsTree();
+      }
+      return this.getContentsTreeWithoutCache();
     }
   }
 
@@ -385,39 +386,89 @@ class DataFacadeSync {
     return product;
   }
 
-  async getAllStories() {
-    const LOCATION = 'DataFacadeSync.getAllStories';
+  async getContentsTree() {
+    const LOCATION = 'DataFacadeSync.getContentsTree';
     if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getAllStories();
+      return new DataMock().getContentsTree();
     }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
-      message: `Querying all stories for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
+      message: `Querying contents tree for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
     });
     let cache = new DataCache2(this.environment);
-    let product = await cache.get('storiesAll');
+    let product = await cache.get('contentsTree');
     if (!product) {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
-        message: `No stories in cache, querying database`,
+        message: `No contents tree in cache, building from database`,
       });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryAllStories();
-
-      cache.set('storiesAll', product);
+      product = await this.buildContentsTree();
+      cache.set('contentsTree', product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
-        message: `Stories found in cache`,
+        message: `Contents tree found in cache`,
       });
     }
     return product;
+  }
+
+  async getContentsTreeWithoutCache() {
+    const LOCATION = 'DataFacadeSync.getContentsTreeWithoutCache';
+    if (DataFacade.isDataMockEnabled()) {
+      return new DataMock().getContentsTree();
+    }
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Building contents tree from database (no cache)`,
+    });
+    return this.buildContentsTree();
+  }
+
+  /**
+   * Assembles the full node tree (stories with nested chapters) from flat,
+   * per-level queries. The tree is intentionally unfiltered (published and
+   * unpublished alike); the publish filter runs later, at delivery time.
+   */
+  async buildContentsTree() {
+    // Each query runs with closeConnection, so it ends its DataStorage's
+    // connection. Use a fresh DataStorage (= fresh connection) per query to
+    // avoid writing to an already-closed connection (CONNECTION_ENDED).
+    const createDataStorage = () => {
+      const dataStorage = new DataStorage(this.environment);
+      dataStorage.setConditionApplicationKey(
+        this.environment.APPLICATION_APPLICATION_KEY
+      );
+      return dataStorage;
+    };
+
+    let stories = await createDataStorage().queryAllStories();
+    let chapters = await createDataStorage().queryAllChapters();
+
+    let chaptersByStory = {};
+    chapters.forEach((chapter) => {
+      let storyId = chapter.storyid;
+      if (!chaptersByStory[storyId]) {
+        chaptersByStory[storyId] = [];
+      }
+      chaptersByStory[storyId].push(chapter);
+    });
+
+    stories.forEach((story) => {
+      let storyChapters = chaptersByStory[story.id] || [];
+      storyChapters.sort(
+        (first, second) => first.sortnumber - second.sortnumber
+      );
+      story.chapters = storyChapters;
+    });
+    stories.sort((first, second) => first.sortnumber - second.sortnumber);
+
+    new DataCleaner().removeApplicationKeys(stories);
+    return stories;
   }
 
   async getStory(recordId) {
