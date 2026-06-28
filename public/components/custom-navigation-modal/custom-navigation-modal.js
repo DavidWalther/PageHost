@@ -17,6 +17,8 @@ class NavigationModal extends LitElement {
     back: '< zurück',
   };
 
+  _isOpen = false;
+
   static styles = css`
     .tile {
       width: 100%;
@@ -38,6 +40,12 @@ class NavigationModal extends LitElement {
       border-color: #0176d3;
     }
 
+    .tile_current {
+      background-color: #0176d3;
+      border-color: #0176d3;
+      color: #ffffff;
+    }
+
     .back-button {
       background: none;
       border: none;
@@ -53,12 +61,14 @@ class NavigationModal extends LitElement {
   `;
 
   static properties = {
+    currentLocation: { type: String, attribute: 'current-location' },
     _tree: { state: true },
     _selectedStory: { state: true },
   };
 
   constructor() {
     super();
+    this.currentLocation = null;
     this._tree = [];
     this._selectedStory = null;
   }
@@ -84,12 +94,40 @@ class NavigationModal extends LitElement {
               return;
             }
             this._tree = Array.isArray(data) ? data : [];
+            // If show() ran before the tree was available, pre-position now.
+            if (this._isOpen && this._selectedStory === null) {
+              this._selectedStory = this._resolveInitialStory();
+            }
           },
         },
         bubbles: true,
         composed: true,
       })
     );
+  }
+
+  _storyIdForLocation() {
+    const location = this.currentLocation;
+    if (!location) {
+      return null;
+    }
+    if (location.startsWith('000s')) {
+      return location;
+    }
+    const parentStory = this._tree.find((story) =>
+      (story.childnodes || []).some((chapter) => chapter.id === location)
+    );
+    return parentStory ? parentStory.id : null;
+  }
+
+  _resolveInitialStory() {
+    // Only a chapter location pre-opens the chapter list of its parent story;
+    // a story location (or none) keeps the modal on the story level.
+    if (!this.currentLocation || this.currentLocation.startsWith('000s')) {
+      return null;
+    }
+    const storyId = this._storyIdForLocation();
+    return this._tree.find((story) => story.id === storyId) || null;
   }
 
   render() {
@@ -110,6 +148,7 @@ class NavigationModal extends LitElement {
         </div>
       `;
     }
+    const currentStoryId = this._storyIdForLocation();
     return html`
       <slds-layout wrap gutters-small>
         ${this._tree.map(
@@ -121,7 +160,9 @@ class NavigationModal extends LitElement {
               class="slds-p-vertical_x-small"
             >
               <button
-                class="tile"
+                class="tile ${story.id === currentStoryId
+                  ? 'tile_current'
+                  : ''}"
                 @click="${() => this._handleStoryClick(story)}"
               >
                 <span>${story.name}</span>
@@ -158,7 +199,9 @@ class NavigationModal extends LitElement {
                     class="slds-p-vertical_x-small"
                   >
                     <button
-                      class="tile"
+                      class="tile ${chapter.id === this.currentLocation
+                        ? 'tile_current'
+                        : ''}"
                       @click="${() => this._handleChapterClick(chapter.id)}"
                     >
                       <span>${chapter.name}</span>
@@ -201,11 +244,13 @@ class NavigationModal extends LitElement {
   //===========================
 
   show() {
-    this._selectedStory = null;
+    this._isOpen = true;
+    this._selectedStory = this._resolveInitialStory();
     this.shadowRoot.querySelector('slds-modal').show();
   }
 
   hide() {
+    this._isOpen = false;
     this.shadowRoot.querySelector('slds-modal').hide();
   }
 }
