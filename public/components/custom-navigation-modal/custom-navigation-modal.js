@@ -183,7 +183,9 @@ class NavigationModal extends LitElement {
                     class="slds-p-vertical_x-small"
                   >
                     <button
-                      class="tile"
+                      class="tile ${chapter.id === this.currentLocation
+                        ? 'tile_current'
+                        : ''}"
                       @click="${() => this._handleChapterClick(chapter.id)}"
                     >
                       <span>${chapter.name}</span>
