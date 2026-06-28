@@ -494,11 +494,13 @@ class Bookstore extends LitElement {
       this.storyElement.setAttribute('id', value);
       this.chapterElement.removeAttribute('id');
       this.storyElement.removeAttribute('selectedChapter');
+      this._setCurrentLocation(value);
       return;
     }
     if (isEventSourceStory && type === 'chapter') {
       this.chapterElement.setAttribute('id', value);
       this.storyElement.setAttribute('selectedChapter', value);
+      this._setCurrentLocation(value);
       return;
     }
   }
