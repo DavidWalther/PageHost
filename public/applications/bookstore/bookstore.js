@@ -62,8 +62,8 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <custom-global-header>
-          <div slot="left" class="slds-text-align_center">
+        <slds-layout wrap>
+          <slds-layout-item size-3-of-12>
             <slds-button-icon
               id="button-navigation_open"
               icon="utility:rows"
@@ -71,14 +71,13 @@ class Bookstore extends LitElement {
               variant="container-transparent"
               @click="${this.handleOpenNavigation}"
             ></slds-button-icon>
-          </div>
-          <div
-            slot="mid"
-            class="slds-text-align_center slds-text-heading_large"
-          >
-            <span id="page-header-headline"></span>
-          </div>
-          <div slot="right" class="slds-grid slds-grid_align-end slds-wrap">
+          </slds-layout-item>
+          <slds-layout-item size-6-of-12>
+            <div class="slds-text-align_center slds-text-heading_large">
+              <span id="page-header-headline"></span>
+            </div>
+          </slds-layout-item>
+          <slds-layout-item size-3-of-12>
             <div
               class="slds-col slds-size_1-of-10 slds-alignment-bump_left slds-text-align_right"
             >
@@ -91,8 +90,8 @@ class Bookstore extends LitElement {
               >
               </slds-button-icon>
             </div>
-          </div>
-        </custom-global-header>
+          </slds-layout-item>
+        </slds-layout>
       </slds-card>
       <custom-settings-modal>
         <div class="slds-grid slds-wrap">
