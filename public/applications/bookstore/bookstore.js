@@ -63,32 +63,36 @@ class Bookstore extends LitElement {
     return html`
       <slds-card no-footer no-header>
         <slds-layout wrap>
-          <slds-layout-item size-3-of-12>
-            <slds-button-icon
-              id="button-navigation_open"
-              icon="utility:rows"
-              size="small"
-              variant="container-transparent"
-              @click="${this.handleOpenNavigation}"
-            ></slds-button-icon>
+          <slds-layout-item align-middle size-3-of-12>
+            <slds-layout wrap>
+              <slds-layout-item>
+                <slds-button-icon
+                  id="button-navigation_open"
+                  icon="utility:rows"
+                  size="small"
+                  variant="container-transparent"
+                  @click="${this.handleOpenNavigation}"
+                ></slds-button-icon>
+              </slds-layout-item>
+            </slds-layout>
           </slds-layout-item>
           <slds-layout-item size-6-of-12>
             <div class="slds-text-align_center slds-text-heading_large">
               <span id="page-header-headline"></span>
             </div>
           </slds-layout-item>
-          <slds-layout-item size-3-of-12>
-            <div
-              class="slds-col slds-size_1-of-10 slds-alignment-bump_left slds-text-align_right"
-            >
-              <slds-button-icon
-                id="button-settings_open"
-                icon="utility:settings"
-                size="small"
-                variant="container-transparent"
-                @click="${this.handleOpenSettings}"
-              ></slds-button-icon>
-            </div>
+          <slds-layout-item align-middle size-3-of-12>
+            <slds-layout align-end>
+              <slds-layout-item>
+                <slds-button-icon
+                  id="button-settings_open"
+                  icon="utility:settings"
+                  size="small"
+                  variant="container-transparent"
+                  @click="${this.handleOpenSettings}"
+                ></slds-button-icon>
+              </slds-layout-item>
+            </slds-layout>
           </slds-layout-item>
         </slds-layout>
       </slds-card>
