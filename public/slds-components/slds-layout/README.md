@@ -54,6 +54,13 @@ A flex grid container. Renders a `<div>` with the `slds-grid` class and a `<slot
 | `vertical-align-center` | `slds-grid_vertical-align-center` | Center items vertically |
 | `vertical-align-end`    | `slds-grid_vertical-align-end`    | Align items to bottom   |
 
+#### Direction / Reverse
+
+| Attribute          | SLDS Class                   | Effect                                                                                                                 |
+| ------------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `reverse`          | `slds-grid_reverse`          | Reverse the horizontal order of items (`flex-direction: row-reverse`)                                                  |
+| `reverse-vertical` | `slds-grid_vertical-reverse` | Stack items vertically in reverse order (`flex-direction: column-reverse`) — also switches the grid to a column layout |
+
 ---
 
 ## `<slds-layout-item>`
@@ -173,5 +180,26 @@ The following fractions are supported for all four breakpoint prefixes (`size-*`
   <slds-layout-item size-1-of-4>A</slds-layout-item>
   <slds-layout-item size-1-of-4>B</slds-layout-item>
   <slds-layout-item size-1-of-4 bump-right>C</slds-layout-item>
+</slds-layout>
+```
+
+### Reversed horizontal order
+
+Items appear right-to-left while keeping the source order in the DOM.
+
+```html
+<slds-layout reverse gutters-small>
+  <slds-layout-item size-1-of-3>First in DOM, last visually</slds-layout-item>
+  <slds-layout-item size-1-of-3>Middle</slds-layout-item>
+  <slds-layout-item size-1-of-3>Last in DOM, first visually</slds-layout-item>
+</slds-layout>
+```
+
+### Reversed vertical stack
+
+```html
+<slds-layout reverse-vertical>
+  <slds-layout-item>Top in DOM, shown at the bottom</slds-layout-item>
+  <slds-layout-item>Bottom in DOM, shown at the top</slds-layout-item>
 </slds-layout>
 ```
