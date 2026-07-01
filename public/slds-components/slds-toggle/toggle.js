@@ -5,9 +5,6 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
-let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
-const templatePath = 'slds-components/slds-toggle/toggle.html';
-
 class SLDSToggle extends LitElement {
   static properties = {
     label: { type: String },
@@ -19,11 +16,6 @@ class SLDSToggle extends LitElement {
     direction: { type: String }, // ['right-to-left']
   };
 
-  constructor() {
-    super();
-    this.labelPosition = 'left';
-  }
-
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
@@ -31,7 +23,7 @@ class SLDSToggle extends LitElement {
 
   render() {
     const toggleId = `toggle-${Math.random().toString(36).substring(2, 11)}`;
-    const gridClasses = `slds-checkbox_toggle slds-grid${this.directionReversed ? ' slds-grid_reverse' : ''}`;
+    const gridClasses = 'slds-checkbox_toggle slds-grid';
 
     const htmlLabel = html`
       <span class="slds-form-element__label slds-m-bottom_none"
