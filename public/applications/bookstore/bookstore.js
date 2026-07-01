@@ -97,26 +97,38 @@ class Bookstore extends LitElement {
         </slds-layout>
       </slds-card>
       <custom-settings-modal>
-        <div class="slds-grid slds-wrap">
-          <div class="slds-col slds-text-align_left slds-size_1-of-2">
-            Login
-          </div>
-          <div
-            class="slds-col slds-text-align_right slds-size_1-of-2 slds-m-bottom--x-small"
-          >
-            <custom-login-module></custom-login-module>
-          </div>
-          <div class="slds-col slds-text-align_left slds-size_1-of-2">
-            Licht
-          </div>
-          <div class="slds-col slds-size_1-of-2 slds-text-align_right">
-            <slds-toggle
-              label=""
-              name="options"
-              @toggle="${this.handleToggleLightswitch}"
-            ></slds-toggle>
-          </div>
-        </div>
+        <slds-layout wrap>
+          <slds-layout-item size-1-of-1 class="slds-m-bottom--medium">
+            <slds-layout>
+              <slds-layout-item size-1-of-4>
+                <span>Login</span>
+              </slds-layout-item>
+              <slds-layout-item size-3-of-4>
+                <custom-login-module></custom-login-module>
+              </slds-layout-item>
+            </slds-layout>
+          </slds-layout-item>
+
+          <slds-layout-item size-1-of-1>
+            <slds-layout>
+              <slds-layout-item size-1-of-4>
+                <span>Licht</span>
+              </slds-layout-item>
+              <slds-layout-item size-3-of-4>
+                <slds-layout align-end>
+                  <slds-layout-item>
+                    <slds-toggle
+                      label=""
+                      name="options"
+                      @toggle="${this.handleToggleLightswitch}"
+                    ></slds-toggle>
+                  </slds-layout-item>
+                </slds-layout>
+              </slds-layout-item>
+            </slds-layout>
+          </slds-layout-item>
+
+        </slds-layout>
         <div
           slot="danger"
           class="slds-grid slds-wrap slds-grid_vertical-align-center"
