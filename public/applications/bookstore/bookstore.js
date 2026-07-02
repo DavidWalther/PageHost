@@ -62,59 +62,73 @@ class Bookstore extends LitElement {
   render() {
     return html`
       <slds-card no-footer no-header>
-        <custom-global-header>
-          <div slot="left" class="slds-text-align_center">
-            <slds-button-icon
-              id="button-navigation_open"
-              icon="utility:rows"
-              size="small"
-              variant="container-transparent"
-              @click="${this.handleOpenNavigation}"
-            ></slds-button-icon>
-          </div>
-          <div
-            slot="mid"
-            class="slds-text-align_center slds-text-heading_large"
-          >
-            <span id="page-header-headline"></span>
-          </div>
-          <div slot="right" class="slds-grid slds-grid_align-end slds-wrap">
-            <div
-              class="slds-col slds-size_1-of-10 slds-alignment-bump_left slds-text-align_right"
-            >
-              <slds-button-icon
-                id="button-settings_open"
-                icon="utility:settings"
-                size="small"
-                variant="container-transparent"
-                @click="${this.handleOpenSettings}"
-              >
-              </slds-button-icon>
+        <slds-layout wrap>
+          <slds-layout-item align-middle size-3-of-12>
+            <slds-layout wrap>
+              <slds-layout-item>
+                <slds-button-icon
+                  id="button-navigation_open"
+                  icon="utility:rows"
+                  size="small"
+                  variant="container-transparent"
+                  @click="${this.handleOpenNavigation}"
+                ></slds-button-icon>
+              </slds-layout-item>
+            </slds-layout>
+          </slds-layout-item>
+          <slds-layout-item size-6-of-12>
+            <div class="slds-text-align_center slds-text-heading_large">
+              <span id="page-header-headline"></span>
             </div>
-          </div>
-        </custom-global-header>
+          </slds-layout-item>
+          <slds-layout-item align-middle size-3-of-12>
+            <slds-layout align-end>
+              <slds-layout-item>
+                <slds-button-icon
+                  id="button-settings_open"
+                  icon="utility:settings"
+                  size="small"
+                  variant="container-transparent"
+                  @click="${this.handleOpenSettings}"
+                ></slds-button-icon>
+              </slds-layout-item>
+            </slds-layout>
+          </slds-layout-item>
+        </slds-layout>
       </slds-card>
       <custom-settings-modal>
-        <div class="slds-grid slds-wrap">
-          <div class="slds-col slds-text-align_left slds-size_1-of-2">
-            Login
-          </div>
-          <div
-            class="slds-col slds-text-align_right slds-size_1-of-2 slds-m-bottom--x-small"
-          >
-            <custom-login-module></custom-login-module>
-          </div>
-          <div class="slds-col slds-text-align_left slds-size_1-of-2">
-            Licht
-          </div>
-          <div class="slds-col slds-size_1-of-2 slds-text-align_right">
-            <slds-toggle
-              label=""
-              name="options"
-              @toggle="${this.handleToggleLightswitch}"
-            ></slds-toggle>
-          </div>
-        </div>
+        <slds-layout wrap vertical>
+          <slds-layout-item size-1-of-1 class="slds-m-bottom--medium">
+            <slds-layout>
+              <slds-layout-item size-1-of-4>
+                <span>Login</span>
+              </slds-layout-item>
+              <slds-layout-item size-3-of-4>
+                <custom-login-module></custom-login-module>
+              </slds-layout-item>
+            </slds-layout>
+          </slds-layout-item>
+
+          <slds-layout-item size-1-of-1>
+            <slds-layout>
+              <slds-layout-item size-1-of-4>
+                <span>Licht</span>
+              </slds-layout-item>
+              <slds-layout-item size-3-of-4>
+                <slds-layout align-end>
+                  <slds-layout-item>
+                    <slds-toggle
+                      label=""
+                      name="options"
+                      @toggle="${this.handleToggleLightswitch}"
+                    ></slds-toggle>
+                  </slds-layout-item>
+                </slds-layout>
+              </slds-layout-item>
+            </slds-layout>
+          </slds-layout-item>
+
+        </slds-layout>
         <div
           slot="danger"
           class="slds-grid slds-wrap slds-grid_vertical-align-center"
