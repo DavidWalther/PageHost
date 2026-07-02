@@ -97,7 +97,7 @@ class Bookstore extends LitElement {
         </slds-layout>
       </slds-card>
       <custom-settings-modal>
-        <slds-layout wrap>
+        <slds-layout wrap vertical>
           <slds-layout-item size-1-of-1 class="slds-m-bottom--medium">
             <slds-layout>
               <slds-layout-item size-1-of-4>
