@@ -20,11 +20,14 @@ class SettingsModal extends LitElement {
   };
 
   static styles = css`
+    .save-zone {
+      padding: 0.75rem;
+    }
+
     .danger-zone {
       border: 1px solid var(--slds-color_error, #ba0517);
       border-radius: 0.25rem;
       padding: 0.75rem;
-      margin-top: 1rem;
     }
   `;
 
@@ -41,11 +44,13 @@ class SettingsModal extends LitElement {
   render() {
     return html`
       <slds-modal title="${this.labels.modalTitle}" footless>
-        <slot>
-          <div class="slds-align_absolute-center slds-p-around_medium">
-            <span>${this.labels.placeholder}</span>
-          </div>
-        </slot>
+        <div class="save-zone">
+          <slot>
+            <div class="slds-align_absolute-center slds-p-around_medium">
+              <span>${this.labels.placeholder}</span>
+            </div>
+          </slot>
+        </div>
         <div class="danger-zone" ?hidden="${!this._hasDanger}">
           <slot name="danger" @slotchange="${this._onDangerSlotChange}"></slot>
         </div>
