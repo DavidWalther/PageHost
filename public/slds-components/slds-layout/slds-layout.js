@@ -21,6 +21,8 @@ class SldsLayout extends LitElement {
     alignSpread: { type: Boolean, attribute: 'align-spread' },
     alignEnd: { type: Boolean, attribute: 'align-end' },
     // Vertical align
+
+    vertical: { type: Boolean, attribute: 'vertical' },
     verticalAlignStart: { type: Boolean, attribute: 'vertical-align-start' },
     verticalAlignCenter: { type: Boolean, attribute: 'vertical-align-center' },
     verticalAlignEnd: { type: Boolean, attribute: 'vertical-align-end' },
@@ -75,6 +77,7 @@ class SldsLayout extends LitElement {
     toggle('alignSpace', 'slds-grid_align-space');
     toggle('alignSpread', 'slds-grid_align-spread');
     toggle('alignEnd', 'slds-grid_align-end');
+    toggle('vertical', 'slds-grid_vertical');
     toggle('verticalAlignStart', 'slds-grid_vertical-align-start');
     toggle('verticalAlignCenter', 'slds-grid_vertical-align-center');
     toggle('verticalAlignEnd', 'slds-grid_vertical-align-end');

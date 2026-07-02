@@ -1,6 +1,6 @@
 # slds-layout & slds-layout-item
 
-Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/components/utilities/grid/).  
+Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/components/utilities/grid/).
 Each attribute is a **boolean** — simply add the attribute name to enable the corresponding SLDS CSS class.
 
 ---
@@ -48,11 +48,12 @@ A flex grid container. Renders a `<div>` with the `slds-grid` class and a `<slot
 
 #### Vertical Alignment
 
-| Attribute               | SLDS Class                        | Effect                  |
-| ----------------------- | --------------------------------- | ----------------------- |
-| `vertical-align-start`  | `slds-grid_vertical-align-start`  | Align items to top      |
-| `vertical-align-center` | `slds-grid_vertical-align-center` | Center items vertically |
-| `vertical-align-end`    | `slds-grid_vertical-align-end`    | Align items to bottom   |
+| Attribute               | SLDS Class                        | Effect                     |
+| ----------------------- | --------------------------------- | -------------------------- |
+| `vertical`              | `slds-grid_vertical`              | Enables top-down alignment |
+| `vertical-align-start`  | `slds-grid_vertical-align-start`  | Align items to top         |
+| `vertical-align-center` | `slds-grid_vertical-align-center` | Center items vertically    |
+| `vertical-align-end`    | `slds-grid_vertical-align-end`    | Align items to bottom      |
 
 #### Direction / Reverse
 
@@ -80,7 +81,7 @@ A flex child column. Renders directly (no shadow DOM) with the `slds-col` class 
 
 #### Size (no breakpoint — applies at all sizes)
 
-Attribute pattern: `size-{fraction}`  
+Attribute pattern: `size-{fraction}`
 SLDS class pattern: `slds-size_{fraction}`
 
 #### Responsive Sizes
