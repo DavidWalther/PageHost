@@ -8,12 +8,12 @@ Entscheidungen des Benutzers: `system`-Block im env-variables-Endpoint komplett
 entfernen; Doku-Bereinigung inkl. Legacy-Guides unter `files/CoPilotSetups/`.
 
 - [x] Schritt 0 — Baseline (kein Branch): `npm run test` grün bestätigen (331 Backend + 4 Playwright grün)
-- [ ] Schritt 1 — DataFacade + DataMock-Kern entfernen — Sub-Branch `step/remove-datamock-core`
-  - [ ] `DataFacade.tests.js` anpassen: `isDataMockEnabled`-Suite + Mock-Config-Test + Mock-Env-Zeilen entfernen
-  - [ ] `DataFacade.js`: beide `require` (Z. 2 + 4), `static isDataMockEnabled()`, alle Mock-Zweige entfernen; Create-Pfad auf reinen Storage-Pfad reduzieren
-  - [ ] Ordner `private/database2/DataMocks/` und `private/database2/tables/mocks/*.json` löschen
-  - [ ] Prettier auf geänderte Dateien; `npm run test` grün
-  - [ ] Merge-Commit in Feature-Branch, Sub-Branch löschen
+- [x] Schritt 1 — DataFacade + DataMock-Kern entfernen — Sub-Branch `step/remove-datamock-core` (gemergt, 321 Backend-Tests grün)
+  - [x] `DataFacade.tests.js` anpassen: `isDataMockEnabled`-Suite + Mock-Config-Test + Mock-Env-Zeilen entfernt
+  - [x] `DataFacade.js`: beide `require`, `static isDataMockEnabled()`, alle Mock-Zweige entfernt; Create-Pfad auf reinen Storage-Pfad reduziert
+  - [x] Ordner `private/database2/DataMocks/` und `private/database2/tables/mocks/*.json` gelöscht
+  - [x] Prettier; `npm run test` grün
+  - [x] Merge-Commit in Feature-Branch, Sub-Branch gelöscht
 - [ ] Schritt 2 — Env-Flag-Exposure + Config bereinigen — Sub-Branch `step/remove-mock-env`
   - [ ] `environmetVariables.js`: `system`-Block entfernen → Response `{ auth: {…} }`
   - [ ] `environmetVariables.tests.js`: `system`-Erwartung aus beiden Tests entfernen
