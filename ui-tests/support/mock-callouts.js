@@ -20,17 +20,6 @@ const MOCK_METADATA = {
   meta: {},
 };
 
-const MOCK_ENV_VARIABLES = {
-  auth: {
-    google: {
-      clientId: 'mock-client-id',
-      redirect_uri: 'http://localhost:3000/',
-      scope: 'openid email profile',
-      response_type: 'code',
-    },
-  },
-};
-
 const MOCK_STORY = {
   id: '000s00000000000011',
   name: 'Mock Story 1',
@@ -132,9 +121,6 @@ async function mockBookstoreCallouts(page) {
   await page.route('**/metadata', (route) =>
     route.fulfill({ json: MOCK_METADATA })
   );
-  await page.route('**/api/1.0/env/variables', (route) =>
-    route.fulfill({ json: MOCK_ENV_VARIABLES })
-  );
   await page.route('**/api/1.0/contents/**', (route) =>
     route.fulfill({ json: MOCK_CONTENTS })
   );
@@ -152,7 +138,6 @@ async function mockBookstoreCallouts(page) {
 module.exports = {
   mockBookstoreCallouts,
   MOCK_METADATA,
-  MOCK_ENV_VARIABLES,
   MOCK_STORY,
   MOCK_CHAPTER,
   MOCK_PARAGRAPH,
