@@ -22,8 +22,12 @@ entfernen; Doku-Bereinigung inkl. Legacy-Guides unter `files/CoPilotSetups/`.
   - [x] `ui-tests/support/mock-callouts.js`: `isMock: true` aus `MOCK_ENV_VARIABLES` entfernt
   - [x] Prettier; `npm run test` + Playwright grün
   - [x] Merge-Commit in Feature-Branch, Sub-Branch gelöscht
-- [ ] Schritt 3 — Dokumentation bereinigen — Sub-Branch `step/remove-mock-docs`
-  - [ ] Kern-Doku: `doc/architecture.md`, `private/database2/README.md`, `private/endpoints/api/1.0/contents/README.md`, `doc/coding-conventions.md`, `doc/frontend-testing.md`, Kommentar `ui-tests/support/mock-callouts.js:9`
-  - [ ] Legacy-Guides: `files/CoPilotSetups/documentation_database.md`, `Endpoint-Architecture-Implementation-Guide.md`
-  - [ ] Prettier auf geänderte Dateien; abschließender `npm run test`-Lauf grün
-  - [ ] Merge-Commit in Feature-Branch, Sub-Branch löschen
+- [x] Schritt 3 — Dokumentation bereinigen — Sub-Branch `step/remove-mock-docs` (gemergt, 321 Backend + 4 Playwright grün)
+  - [x] Kern-Doku: `doc/architecture.md`, `private/database2/README.md`, `private/endpoints/api/1.0/contents/README.md`, `doc/coding-conventions.md`, `doc/frontend-testing.md`, Kommentar `ui-tests/support/mock-callouts.js`
+  - [x] Legacy-Guides: `files/CoPilotSetups/documentation_database.md`, `Endpoint-Architecture-Implementation-Guide.md`
+  - [x] Prettier; abschließender `npm run test`-Lauf grün
+  - [x] Merge-Commit in Feature-Branch, Sub-Branch gelöscht
+
+**Abschluss:** Projektweiter Regressionsgrep ohne Treffer für
+`MOCK_DATA_ENABLE`/`DataMock`/`isMock`/`tables/mocks`. Backend-DataMock-Altlast
+vollständig entfernt.
