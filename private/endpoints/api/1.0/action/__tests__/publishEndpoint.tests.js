@@ -22,7 +22,6 @@ describe('PublishEndpoint', () => {
         'delete',
         'publish',
       ]),
-      MOCK_DATA_ENABLE: 'false',
       LOGGING_SEVERITY_LEVEL: 'DEBUG',
     };
 

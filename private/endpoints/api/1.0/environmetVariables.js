@@ -6,9 +6,6 @@ class EnvironmentVariablesEndpoint extends EndpointLogic {
       this.environment.AUTH_OIDC_REDIRECT_URI ||
       `${this.requestObject.protocol}://${this.requestObject.get('host')}`;
     const publicVars = {
-      system: {
-        isMock: this.environment.MOCK_DATA_ENABLE === 'true',
-      },
       auth: {
         version: '1.0',
         google: {

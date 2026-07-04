@@ -21,7 +21,6 @@ const MOCK_METADATA = {
 };
 
 const MOCK_ENV_VARIABLES = {
-  isMock: true,
   auth: {
     google: {
       clientId: 'mock-client-id',
