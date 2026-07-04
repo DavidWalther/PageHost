@@ -55,9 +55,9 @@ das heißt:
 
 ### Arbeitsstruktur für Frontend-Änderungen
 
-- Für Frontend-Entwicklung sind keine automatischen Tests vorgesehen
-- Schritt 0 (Baseline) entfällt bei reinen Frontend-Änderungen
-- Bei gemischten Front-/Backend-Änderungen gilt die Backend-Arbeitsstruktur inklusive Schritt 0
+- Frontend wird mit **Playwright-UI-Tests** abgesichert (`ui-tests/*.spec.js`, `npm run test:frontend`). Setup, Callout-Mocking und Auth-Muster: `doc/frontend-testing.md`.
+- Neue oder geänderte UI-Flows brauchen mindestens einen Smoke-Test. Eine feste Schritt-0/Integration/Unit-Staffelung wie im Backend ist nicht vorgeschrieben; verpflichtend ist eine grüne Playwright-Suite als Abschlusskriterium (siehe „Branching pro Schritt").
+- Bei gemischten Front-/Backend-Änderungen gilt zusätzlich die Backend-Arbeitsstruktur inklusive Schritt 0.
 
 ### Branching pro Schritt
 
@@ -68,7 +68,7 @@ das heißt:
 - Die Teilschritte müssen so klein wie möglich gehalten werden, um die Übersicht zu bewahren.
 - Abschluss eines Schrittes → Sub-Branch per Merge Commit in den Feature-Branch bringen, dann löschen. Abschluss-Kriterium:
   - Backend: erfolgreicher Testlauf (`npm run test`)
-  - Frontend: kein Testkriterium (keine automatischen Tests)
+  - Frontend: grüne Playwright-Suite (`npm run test:frontend`)
 
 ### Plan-Format
 
@@ -103,7 +103,7 @@ das heißt:
 
 7. Lit-Komponenten in `public/components/` — Skill `lit-web-components` nutzen
 8. SLDS-Klassen für Styling verwenden — Skill `slds-v1` nutzen
-9. Keine automatischen Tests erforderlich
+9. UI-Tests mit Playwright schreiben/aktualisieren (`ui-tests/*.spec.js`) — Setup und Muster: `doc/frontend-testing.md`
 
 ### Allgemein
 
