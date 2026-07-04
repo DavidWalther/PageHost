@@ -32,18 +32,18 @@ das heißt:
    - Backend Endpoints: `private/endpoints/`
    - Backend Datenschicht: `private/database2/`
    - Backend Module: `private/modules/`
-5. Findings werden in einem ./epcc_explore.md festgehalten
+5. Findings werden in einem ./EPC/explore.md festgehalten
 6. Noch keine Instruktionen für die konkrete Implementierung definieren
 7. Bei Refactorings: Es müssen Lücken in den existierenden Tests identifiziert werden
-8. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_explore.md Datei schreibend zugegriffen werden.
+8. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/explore.md Datei schreibend zugegriffen werden.
 
 ## PLAN Phase
 
 das heißt:
 
-1. Der Implementierungsplan muss in einem ./epcc_plan.md festgehalten werden
+1. Der Implementierungsplan muss in einem ./EPC/plan.md festgehalten werden
 2. Bei Refactorings: Falls Lücken in Tests identifiziert wurden, müssen diese zuerst geschlossen werden.
-3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_plan.md Datei schreibend zugegriffen werden.
+3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/plan.md Datei schreibend zugegriffen werden.
 4. Der Plan muss die in den folgenden Abschnitten beschriebene Arbeitsstruktur und das Plan-Format vorgeben.
 
 ### Arbeitsstruktur für Backend-Änderungen
@@ -89,7 +89,44 @@ Der Plan muss als hierarchische Checkliste erstellt werden nach dem Muster:
 
 das heißt:
 
-1. Befolge exakt die Implementierungsschritte aus ./epcc_plan.md
+1. Befolge exakt die Implementierungsschritte aus ./EPC/plan.md
+## EXPLORE Phase
+
+das heißt:
+
+1. Ein tiefes Verständnis für die Anforderung entwickeln
+2. Unklarheiten beseitigen
+3. Betroffene Komponenten identifizieren
+4. Betroffene Schicht explizit benennen:
+   - Frontend: `public/components/`, `public/slds-components/`
+   - Backend Endpoints: `private/endpoints/`
+   - Backend Datenschicht: `private/database2/`
+   - Backend Module: `private/modules/`
+5. Findings werden in einem ./EPC/explore.md festgehalten
+6. Noch keine Instruktionen für die konkrete Implementierung definieren
+7. Bei Refactorings: Es müssen Lücken in den existierenden Tests identifiziert werden
+8. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/explore.md Datei schreibend zugegriffen werden.
+
+## PLAN Phase
+
+das heißt:
+
+1. Der Implementierungsplan muss in einem ./EPC/plan.md festgehalten werden
+2. Bei Refactorings: Falls Lücken in Tests identifiziert wurden, müssen diese zuerst geschlossen werden.
+3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/plan.md Datei schreibend zugegriffen werden.
+4. Der Plan muss die in den folgenden Abschnitten beschriebene Arbeitsstruktur und das Plan-Format vorgeben.
+
+### Arbeitsstruktur für Backend-Änderungen
+
+- **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test`). Kein Branch, kein Commit — nur ein Testlauf.
+- **Schritt 1 — Integrationstests**: Integrationstests für das neue Feature erstellen. So wenig Mocking wie möglich einsetzen.
+- **Schritt 2+ — Implementierung**: Implementierung mit eigenen Unit-Tests. Hier darf stark gemockt werden. Test- und Produktivcode werden in getrennten Teilschritten umgesetzt (Test zuerst), damit pro Commit nur eine Datei geändert wird.
+- Nach Abschluss jedes Schrittes muss ein Testlauf eingeplant werden
+
+### Arbeitsstruktur für Frontend-Änderungen
+
+- Für Frontend-Entwicklung sind keine automatischen Tests vorgesehen
+- Schritt 0 (Baseline) entfällt bei reinen Frontend-Änderungen
 2. Aktualisiere die Plan-Datei bei jedem Fortschritt. Auch nach Teilschritten.
 
 ### Backend-Entwicklung
