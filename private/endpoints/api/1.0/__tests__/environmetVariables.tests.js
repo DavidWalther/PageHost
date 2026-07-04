@@ -34,7 +34,6 @@ describe('EnvironmentVariablesEndpoint', () => {
         version: expect.any(String),
         google: expect.any(Object),
       },
-      system: expect.any(Object),
     });
   });
 
@@ -54,7 +53,6 @@ describe('EnvironmentVariablesEndpoint', () => {
         version: expect.any(String),
         google: expect.any(Object),
       },
-      system: expect.any(Object),
     });
   });
 });
