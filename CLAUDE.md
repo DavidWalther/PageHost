@@ -25,8 +25,9 @@ Code-Konventionen (Backend, Tests, Naming; inkl. bekannter Abweichungen):
 ## Merkpunkte (Kurzform, Details siehe Import oben)
 
 - **EXPLORE** und **PLAN** enden erst, wenn der Benutzer es festlegt — in diesen
-  Phasen **keine Code-Änderungen**, nur `epcc_explore.md` bzw. `epcc_plan.md`.
-- **CODE** läuft selbstständig Schritt für Schritt nach `epcc_plan.md`.
+  Phasen **keine Code-Änderungen**, nur `EPC/explore.md` bzw. `EPC/plan.md`.
+- **CODE** läuft selbstständig Schritt für Schritt nach `EPC/plan.md`.
 - Jeder Schritt ab Schritt 1 → eigener Sub-Branch `step/<kurzbeschreibung>`.
-- Jeder Teilschritt = ein Commit, nur eine Datei pro Commit.
+- Jeder Teilschritt = ein Commit = ein sinnvoller Schritt (darf mehrere Dateien
+  umfassen); viele kleine Commits sind besser als wenige große.
 - Backend: Tests nach jeder Änderung (`npm run test`), Suite grün vor Weitergang.

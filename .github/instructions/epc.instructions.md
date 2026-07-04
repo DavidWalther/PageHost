@@ -50,7 +50,7 @@ das heißt:
 
 - **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test`). Kein Branch, kein Commit — nur ein Testlauf.
 - **Schritt 1 — Integrationstests**: Integrationstests für das neue Feature erstellen. So wenig Mocking wie möglich einsetzen.
-- **Schritt 2+ — Implementierung**: Implementierung mit eigenen Unit-Tests. Hier darf stark gemockt werden. Test- und Produktivcode werden in getrennten Teilschritten umgesetzt (Test zuerst), damit pro Commit nur eine Datei geändert wird.
+- **Schritt 2+ — Implementierung**: Implementierung mit eigenen Unit-Tests. Hier darf stark gemockt werden. Empfohlen ist Test-zuerst; ob Test- und Produktivcode in einem Commit oder in mehreren kleinen Commits landen, richtet sich danach, was einen sinnvollen, gut lesbaren Schritt ergibt.
 - Nach Abschluss jedes Schrittes muss ein Testlauf eingeplant werden
 
 ### Arbeitsstruktur für Frontend-Änderungen
@@ -107,14 +107,15 @@ das heißt:
 
 ### Allgemein
 
-10. Nach Änderungen Prettier ausführen — nur auf die im Teilschritt geänderte Datei, damit „eine Datei pro Commit" eingehalten bleibt
+10. Nach Änderungen Prettier ausführen — nur auf die im Teilschritt geänderten Dateien (nicht das ganze Projekt), damit der Commit auf den beabsichtigten Schritt beschränkt bleibt
 
 ### Commit-Regeln
 
 Jeder Teilschritt wird mit einem Commit abgeschlossen:
 
-1. Es darf pro Commit nur eine Datei verändert werden
-   - Backend: Produktiv- und Testcode liegen deshalb in getrennten Teilschritten (= getrennten Commits)
+1. Ein Commit umfasst einen sinnvollen Schritt in Richtung des Ziels — nicht an eine einzelne Datei gebunden, darf mehrere Dateien umfassen
+   - Commits klein genug halten, dass sich das Vorgehen allein aus der Commit-Historie ablesen lässt
+   - Grundsatz: viele kleine Commits sind besser als wenige große
 2. Ein Commit pro Teilschritt
 3. Das Subject eines Commits muss mit einer kurzen Version des Namens der Komponente beginnen
    - Beispiele: `chapter: add paragraph scroll parameter`, `DataFacade: add getByParagraphId method`, `slds-modal: fix close button alignment`
