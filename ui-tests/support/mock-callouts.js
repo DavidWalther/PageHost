@@ -5,9 +5,9 @@
  * ohne echtes Backend (Postgres/Redis) laufen, werden diese Callouts hier per
  * `page.route()` abgefangen und mit deterministischen Mock-Bodies beantwortet.
  *
- * Die Datenformen orientieren sich an den echten Fixtures unter
- * `private/database2/tables/mocks/` (Story `000s00000000000011` = "Mock Story 1"),
- * damit die App wie mit echten Daten rendert.
+ * Die Datenformen orientieren sich am echten Datenmodell (Story → Chapter →
+ * Paragraph; Story `000s00000000000011` = "Mock Story 1"), damit die App wie
+ * mit echten Daten rendert.
  *
  * Auth wird nicht gemockt: Ein frischer Browser-Context hat keine Session
  * (`code_exchange_response`), daher nutzt die App plain `fetch` statt

@@ -16,7 +16,6 @@ Understanding the environment variables used in the application is crucial for p
 | ----------------------------- | ---------------------------------- | ------------------------------ | -------- |
 | `APPLICATION_APPLICATION_KEY` | Unique identifier for app instance | `'app-key-123'`                | Yes      |
 | `APPLICATION_ACTIVE_ACTIONS`  | JSON array of allowed operations   | `'["edit","create","delete"]'` | Yes      |
-| `MOCK_DATA_ENABLE`            | Enable/disable mock data sources   | `'false'`                      | Yes      |
 | `LOGGING_SEVERITY_LEVEL`      | Control logging verbosity          | `'DEBUG'`                      | No       |
 
 ### Authentication Variables
@@ -617,7 +616,6 @@ describe('NewEndpoint', () => {
     mockEnvironment = {
       APPLICATION_APPLICATION_KEY: 'test-key',
       APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create', 'delete']),
-      MOCK_DATA_ENABLE: 'false',
       LOGGING_SEVERITY_LEVEL: 'DEBUG'
     };
 
@@ -645,7 +643,6 @@ describe('NewEndpoint', () => {
 mockEnvironment = {
   APPLICATION_APPLICATION_KEY: 'test-key', // Required for most endpoints
   APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create', 'delete']), // Permissions
-  MOCK_DATA_ENABLE: 'false', // Data source control
   LOGGING_SEVERITY_LEVEL: 'DEBUG', // Logging control
 };
 ```
@@ -707,7 +704,6 @@ describe('NewEndpoint', () => {
     mockEnvironment = {
       APPLICATION_APPLICATION_KEY: 'test-key',
       APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['edit', 'create']),
-      MOCK_DATA_ENABLE: 'false',
     };
 
     // Request/Response setup
