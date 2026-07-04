@@ -1,0 +1,34 @@
+const { test, expect } = require('@playwright/test');
+const { mockBookstoreCallouts } = require('./support/mock-callouts');
+
+/**
+ * Smoke-Test der Bookstore-App.
+ *
+ * Prüft, dass die App ohne echtes Backend lädt und rendert: Die SSR-Shell wird
+ * ausgeliefert, `<app-bookstore>` wird erzeugt, und die per `page.route()`
+ * gemockten Datencallouts fließen bis in die gerenderte UI durch.
+ *
+ * Läuft anonym (frischer Context ohne Session) — Auth ist damit implizit
+ * umgangen, der Identity Provider wird nie kontaktiert.
+ */
+test.describe('Bookstore smoke', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockBookstoreCallouts(page);
+  });
+
+  test('App lädt und rendert die Grundstruktur', async ({ page }) => {
+    await page.goto('/');
+
+    // SSR-Shell hat die Haupt-App-Komponente erzeugt.
+    await expect(page.locator('app-bookstore')).toBeAttached();
+
+    // Grundlayout ist sichtbar (Playwright durchdringt offene Shadow Roots).
+    await expect(page.locator('#bookshelf')).toBeVisible();
+
+    // Gemockter Story-Callout ist bis in die UI durchgeflossen:
+    // custom-story rendert den Story-Namen in seiner Titelzeile.
+    await expect(page.locator('#span-chapter-title')).toHaveText(
+      'Mock Story 1'
+    );
+  });
+});

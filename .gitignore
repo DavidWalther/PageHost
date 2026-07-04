@@ -15,3 +15,9 @@ files/temp
 
 epcc*
 
+## Playwright artifacts
+
+test-results
+playwright-report
+blob-report
+

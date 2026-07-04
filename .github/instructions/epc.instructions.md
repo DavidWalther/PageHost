@@ -32,32 +32,32 @@ das heißt:
    - Backend Endpoints: `private/endpoints/`
    - Backend Datenschicht: `private/database2/`
    - Backend Module: `private/modules/`
-5. Findings werden in einem ./epcc_explore.md festgehalten
+5. Findings werden in einem ./EPC/explore.md festgehalten
 6. Noch keine Instruktionen für die konkrete Implementierung definieren
 7. Bei Refactorings: Es müssen Lücken in den existierenden Tests identifiziert werden
-8. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_explore.md Datei schreibend zugegriffen werden.
+8. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/explore.md Datei schreibend zugegriffen werden.
 
 ## PLAN Phase
 
 das heißt:
 
-1. Der Implementierungsplan muss in einem ./epcc_plan.md festgehalten werden
+1. Der Implementierungsplan muss in einem ./EPC/plan.md festgehalten werden
 2. Bei Refactorings: Falls Lücken in Tests identifiziert wurden, müssen diese zuerst geschlossen werden.
-3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die epcc_plan.md Datei schreibend zugegriffen werden.
+3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/plan.md Datei schreibend zugegriffen werden.
 4. Der Plan muss die in den folgenden Abschnitten beschriebene Arbeitsstruktur und das Plan-Format vorgeben.
 
 ### Arbeitsstruktur für Backend-Änderungen
 
 - **Schritt 0 — Baseline**: Alle existierenden Tests laufen lassen (`npm run test`). Kein Branch, kein Commit — nur ein Testlauf.
 - **Schritt 1 — Integrationstests**: Integrationstests für das neue Feature erstellen. So wenig Mocking wie möglich einsetzen.
-- **Schritt 2+ — Implementierung**: Implementierung mit eigenen Unit-Tests. Hier darf stark gemockt werden. Test- und Produktivcode werden in getrennten Teilschritten umgesetzt (Test zuerst), damit pro Commit nur eine Datei geändert wird.
+- **Schritt 2+ — Implementierung**: Implementierung mit eigenen Unit-Tests. Hier darf stark gemockt werden. Empfohlen ist Test-zuerst; ob Test- und Produktivcode in einem Commit oder in mehreren kleinen Commits landen, richtet sich danach, was einen sinnvollen, gut lesbaren Schritt ergibt.
 - Nach Abschluss jedes Schrittes muss ein Testlauf eingeplant werden
 
 ### Arbeitsstruktur für Frontend-Änderungen
 
-- Für Frontend-Entwicklung sind keine automatischen Tests vorgesehen
-- Schritt 0 (Baseline) entfällt bei reinen Frontend-Änderungen
-- Bei gemischten Front-/Backend-Änderungen gilt die Backend-Arbeitsstruktur inklusive Schritt 0
+- Frontend wird mit **Playwright-UI-Tests** abgesichert (`ui-tests/*.spec.js`, `npm run test:frontend`). Setup, Callout-Mocking und Auth-Muster: `doc/frontend-testing.md`.
+- Neue oder geänderte UI-Flows brauchen mindestens einen Smoke-Test. Eine feste Schritt-0/Integration/Unit-Staffelung wie im Backend ist nicht vorgeschrieben; verpflichtend ist eine grüne Playwright-Suite als Abschlusskriterium (siehe „Branching pro Schritt").
+- Bei gemischten Front-/Backend-Änderungen gilt zusätzlich die Backend-Arbeitsstruktur inklusive Schritt 0.
 
 ### Branching pro Schritt
 
@@ -68,7 +68,7 @@ das heißt:
 - Die Teilschritte müssen so klein wie möglich gehalten werden, um die Übersicht zu bewahren.
 - Abschluss eines Schrittes → Sub-Branch per Merge Commit in den Feature-Branch bringen, dann löschen. Abschluss-Kriterium:
   - Backend: erfolgreicher Testlauf (`npm run test`)
-  - Frontend: kein Testkriterium (keine automatischen Tests)
+  - Frontend: grüne Playwright-Suite (`npm run test:frontend`)
 
 ### Plan-Format
 
@@ -89,7 +89,7 @@ Der Plan muss als hierarchische Checkliste erstellt werden nach dem Muster:
 
 das heißt:
 
-1. Befolge exakt die Implementierungsschritte aus ./epcc_plan.md
+1. Befolge exakt die Implementierungsschritte aus ./EPC/plan.md
 2. Aktualisiere die Plan-Datei bei jedem Fortschritt. Auch nach Teilschritten.
 
 ### Backend-Entwicklung
@@ -103,18 +103,19 @@ das heißt:
 
 7. Lit-Komponenten in `public/components/` — Skill `lit-web-components` nutzen
 8. SLDS-Klassen für Styling verwenden — Skill `slds-v1` nutzen
-9. Keine automatischen Tests erforderlich
+9. UI-Tests mit Playwright schreiben/aktualisieren (`ui-tests/*.spec.js`) — Setup und Muster: `doc/frontend-testing.md`
 
 ### Allgemein
 
-10. Nach Änderungen Prettier ausführen — nur auf die im Teilschritt geänderte Datei, damit „eine Datei pro Commit" eingehalten bleibt
+10. Nach Änderungen Prettier ausführen — nur auf die im Teilschritt geänderten Dateien (nicht das ganze Projekt), damit der Commit auf den beabsichtigten Schritt beschränkt bleibt
 
 ### Commit-Regeln
 
 Jeder Teilschritt wird mit einem Commit abgeschlossen:
 
-1. Es darf pro Commit nur eine Datei verändert werden
-   - Backend: Produktiv- und Testcode liegen deshalb in getrennten Teilschritten (= getrennten Commits)
+1. Ein Commit umfasst einen sinnvollen Schritt in Richtung des Ziels — nicht an eine einzelne Datei gebunden, darf mehrere Dateien umfassen
+   - Commits klein genug halten, dass sich das Vorgehen allein aus der Commit-Historie ablesen lässt
+   - Grundsatz: viele kleine Commits sind besser als wenige große
 2. Ein Commit pro Teilschritt
 3. Das Subject eines Commits muss mit einer kurzen Version des Namens der Komponente beginnen
    - Beispiele: `chapter: add paragraph scroll parameter`, `DataFacade: add getByParagraphId method`, `slds-modal: fix close button alignment`

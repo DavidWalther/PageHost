@@ -40,11 +40,8 @@ function createMockJwt(header, payload, signature) {
   };
 
   let jwtParts = [];
-  //console.log('Test: json headser: ', mockJwtHeader);
   let stringifiedHeader = JSON.stringify(mockJwtHeader);
-  //console.log('Test: stringifiedHeader: ', stringifiedHeader);
   let encodedHeader = encodeBase64(stringifiedHeader);
-  //console.log('Test: encodedHeader: ', encodedHeader);
   jwtParts.push(encodedHeader);
 
   let stringifiedPayload = JSON.stringify(mockJwtPayload);

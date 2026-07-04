@@ -64,4 +64,5 @@ Template-Caching aus einer `.html`-Datei (`loadHtmlMarkup` / geteiltes
 - Mobile-first.
 - Formatter: Prettier (`.prettierrc`) — nur die im Teilschritt geänderte Datei
   formatieren (Commit-Disziplin, siehe EPC-Workflow).
-- Frontend wird **nicht** automatisch getestet.
+- Frontend wird mit **Playwright**-UI-Tests abgesichert (`ui-tests/*.spec.js`).
+  Setup und Muster: **`doc/frontend-testing.md`**.
