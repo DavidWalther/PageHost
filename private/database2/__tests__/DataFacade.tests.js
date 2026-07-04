@@ -5,7 +5,6 @@ const { DataStorage } = require('../DataStorage/DataStorage.js');
 
 const MOCK_ENVIRONMENT = {
   APPLICATION_APPLICATION_KEY: 'test-key',
-  MOCK_DATA_ENABLE: 'false',
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
   REDIS_PASSWORD: 'test-password',
   REDIS_HOST: 'test-host',
@@ -79,41 +78,6 @@ describe('DataFacade', () => {
     const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
     expect(dataFacade).toBeInstanceOf(DataFacade);
   });
-
-  describe('isDataMockEnabled', () => {
-    beforeEach(() => {
-      Environment.getEnvironment = mockGetEnvironment;
-    });
-
-    it('should be a static method', () => {
-      expect(typeof DataFacade.isDataMockEnabled).toBe('function');
-    });
-
-    it('should return a boolean', () => {
-      const result = DataFacade.isDataMockEnabled();
-      expect(typeof result).toBe('boolean');
-    });
-
-    it('should return true if MOCK_DATA_ENABLE is true', () => {
-      mockGetEnvironment = jest.fn().mockReturnValue({
-        APPLICATION_APPLICATION_KEY: 'test-key',
-        MOCK_DATA_ENABLE: 'true',
-        LOGGING_SEVERITY_LEVEL: 'DEBUG',
-      });
-      const result = DataFacade.isDataMockEnabled();
-      expect(result).toBe(true);
-    });
-
-    it('should return false if MOCK_DATA_ENABLE is false', () => {
-      mockGetEnvironment = jest.fn().mockReturnValue({
-        APPLICATION_APPLICATION_KEY: 'test-key',
-        MOCK_DATA_ENABLE: 'false',
-        LOGGING_SEVERITY_LEVEL: 'DEBUG',
-      });
-      const result = DataFacade.isDataMockEnabled();
-      expect(result).toBe(false);
-    });
-  });
 });
 
 describe('getData', () => {
@@ -169,18 +133,6 @@ describe('getData', () => {
   });
 
   describe('Chapter', () => {
-    /*
-    it('should neither call DataCache nor DataStorage if mock data is enabled', async () => {
-      MOCK_ENVIRONMENT.MOCK_DATA_ENABLE = 'true';
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-
-      const result = await dataFacade.getData({ request: { table: 'chapter', id: '000c00000000000023' } });
-      expect(DataCache2).not.toHaveBeenCalled();
-      expect(DataStorage).not.toHaveBeenCalled();
-      expect(result).toBeTruthy();
-    });
-    */
-
     it("should call DataCache and DataStorage if request.table is 'chapter'", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       mockCacheGet = jest.fn().mockReturnValue();
@@ -297,25 +249,13 @@ describe('getData', () => {
     });
   });
 
-  describe('Interaction between Mock, Database and Cache', () => {
+  describe('Interaction between Database and Cache', () => {
     afterEach(() => {
       DataCache2.mockClear();
       Environment.mockClear();
-      MOCK_ENVIRONMENT.MOCK_DATA_ENABLE = 'false';
     });
 
-    it('should return a mock configuration object if MOCK_DATA_ENABLE is true', async () => {
-      MOCK_ENVIRONMENT.MOCK_DATA_ENABLE = 'true';
-      Environment.getEnvironment = mockGetEnvironment;
-
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      const result = await dataFacade.getData({
-        request: { table: 'configuration' },
-      });
-      expect(result).toBeTruthy();
-    });
-
-    it("should call 'get' from Cache if MOCK_DATA_ENABLE is false", async () => {
+    it("should call 'get' from Cache", async () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       dataFacade
         .getData({ request: { table: 'configuration' } })
@@ -325,7 +265,7 @@ describe('getData', () => {
         });
     });
 
-    it('should call DataStorage if MOCK_DATA_ENABLE is false and Cache returns nothing', async () => {
+    it('should call DataStorage if Cache returns nothing', async () => {
       mockCacheGet = jest.fn().mockReturnValue(null);
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
 
