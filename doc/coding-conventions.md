@@ -59,7 +59,6 @@ Anfassen angleichen; eine gesammelte Migration ist optional.
 - **Test-Dateiname `*.test.js`** (Standard: `*.tests.js`):
   - `private/modules/oAuth2/__tests__/OpenIdConnectClient.test.js`
   - `private/database2/DataCache/__tests__/RedisConnector.test.js`
-  - `private/database2/DataMocks/__tests__/DataMock.test.js`
   - `private/database2/DataStorage/__tests__/sanitizer.test.js`
 - **`test()` statt `it()`:** 2 Testdateien (bei nächster Berührung umstellen).
 - **`.then`/`await` gemischt** in einer Datei:

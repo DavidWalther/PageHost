@@ -81,8 +81,6 @@ wiederverwendet. Ein Node gilt als sichtbar, wenn sein `publishdate` gesetzt und
 `DataFacade.getData({ table: 'contents' })` baut den Baum aus flachen Queries je Ebene
 (`DataStorage.queryAllStories()` + `queryAllChapters()`) und gruppiert Chapters per
 `chapter.storyid → story.id` (konstant 2 DB-Round-Trips, skaliert auf künftige Ebenen).
-Im Mock-Modus (`MOCK_DATA_ENABLE=true`) liefert `DataMock.getContentsTree()` den Baum aus
-`tables/mocks/story.json`.
 
 ## Beteiligte Dateien
 

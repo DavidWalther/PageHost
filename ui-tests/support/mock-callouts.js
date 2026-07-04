@@ -5,9 +5,9 @@
  * ohne echtes Backend (Postgres/Redis) laufen, werden diese Callouts hier per
  * `page.route()` abgefangen und mit deterministischen Mock-Bodies beantwortet.
  *
- * Die Datenformen orientieren sich an den echten Fixtures unter
- * `private/database2/tables/mocks/` (Story `000s00000000000011` = "Mock Story 1"),
- * damit die App wie mit echten Daten rendert.
+ * Die Datenformen orientieren sich am echten Datenmodell (Story → Chapter →
+ * Paragraph; Story `000s00000000000011` = "Mock Story 1"), damit die App wie
+ * mit echten Daten rendert.
  *
  * Auth wird nicht gemockt: Ein frischer Browser-Context hat keine Session
  * (`code_exchange_response`), daher nutzt die App plain `fetch` statt
@@ -18,18 +18,6 @@ const MOCK_METADATA = {
   pageHeaderHeadline: 'Mock Bookstore',
   metaTitle: 'Mock Bookstore',
   meta: {},
-};
-
-const MOCK_ENV_VARIABLES = {
-  isMock: true,
-  auth: {
-    google: {
-      clientId: 'mock-client-id',
-      redirect_uri: 'http://localhost:3000/',
-      scope: 'openid email profile',
-      response_type: 'code',
-    },
-  },
 };
 
 const MOCK_STORY = {
@@ -133,9 +121,6 @@ async function mockBookstoreCallouts(page) {
   await page.route('**/metadata', (route) =>
     route.fulfill({ json: MOCK_METADATA })
   );
-  await page.route('**/api/1.0/env/variables', (route) =>
-    route.fulfill({ json: MOCK_ENV_VARIABLES })
-  );
   await page.route('**/api/1.0/contents/**', (route) =>
     route.fulfill({ json: MOCK_CONTENTS })
   );
@@ -153,7 +138,6 @@ async function mockBookstoreCallouts(page) {
 module.exports = {
   mockBookstoreCallouts,
   MOCK_METADATA,
-  MOCK_ENV_VARIABLES,
   MOCK_STORY,
   MOCK_CHAPTER,
   MOCK_PARAGRAPH,

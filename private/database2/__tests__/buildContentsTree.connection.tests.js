@@ -17,7 +17,6 @@ jest.mock('../DataStorage/pgConnector.js');
 
 const MOCK_ENVIRONMENT = {
   APPLICATION_APPLICATION_KEY: 'test-key',
-  MOCK_DATA_ENABLE: 'false',
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
 };
 

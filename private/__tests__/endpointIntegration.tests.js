@@ -26,7 +26,6 @@ const ENVIRONMENT = Object.freeze({
     'delete',
     'publish',
   ]),
-  MOCK_DATA_ENABLE: 'false',
   CACHE_KEY_PREFIX: 'TEST',
   CACHE_DATA_INCREMENT: '1',
   CACHE_CONTAINER_EXPIRATION_SECONDS: 60,
@@ -1043,7 +1042,6 @@ describe('EnvironmentVariablesEndpoint Integration', () => {
   it('should return public environment variables', async () => {
     const env = {
       ...ENVIRONMENT,
-      MOCK_DATA_ENABLE: 'false',
       GOOGLE_CLIENT_ID: 'my-client-id',
     };
     const req = {
@@ -1059,7 +1057,6 @@ describe('EnvironmentVariablesEndpoint Integration', () => {
       .execute();
 
     const responseData = res.json.mock.calls[0][0];
-    expect(responseData.system.isMock).toBe(false);
     expect(responseData.auth.google.clientId).toBe('my-client-id');
     expect(responseData.auth.version).toBe('1.0');
   });

@@ -1,18 +1,12 @@
 ## Overview
 
-This document describes how the `DataFacade`, `DataMock`, `DataCache`, and `DataStorage` classes work together to provide a seamless data retrieval and caching mechanism for the application.
+This document describes how the `DataFacade`, `DataCache`, and `DataStorage` classes work together to provide a seamless data retrieval and caching mechanism for the application.
 
 ### DataFacade
 
 - Acts as the main entry point for data retrieval.
 - Determines whether to return a promise or synchronous data based on the `parameterObject`.
-- Checks if mock data is enabled and uses `DataMock` if true.
-- Otherwise, it uses `DataCache` and `DataStorage` to fetch and cache data.
-
-### DataMock
-
-- Provides mock data for testing purposes.
-- When mock data is enabled, `DataFacade` uses `DataMock` to create and return mock configurations.
+- Uses `DataCache` and `DataStorage` to fetch and cache data.
 
 ### DataCache
 
@@ -32,20 +26,16 @@ This document describes how the `DataFacade`, `DataMock`, `DataCache`, and `Data
 1. **Data Request**:
    - A request for data is made through `DataFacade.getData(parameterObject)`.
 
-2. **Mock Data Check**:
-   - `DataFacade` checks if mock data is enabled using `DataFacade.isDataMockEnabled()`.
-   - If enabled, `DataMock.createConfiguration()` is called to return mock data.
-
-3. **Cache Check**:
-   - If mock data is not enabled, `DataFacade` uses `DataCache2` to check if the requested data is available in the cache.
+2. **Cache Check**:
+   - `DataFacade` uses `DataCache2` to check if the requested data is available in the cache.
    - `DataCache2.get(key)` generates the cache key and retrieves data from Redis.
 
-4. **Database Query**:
+3. **Database Query**:
    - If the data is not in the cache, `DataStorage` is used to query the database.
    - `DataStorage` methods (e.g., `queryConfiguration`, `queryParagraphs`) fetch data from the database.
 
-5. **Cache Update**:
+4. **Cache Update**:
    - The fetched data is then cached using `DataCache2.set(key, value)` for future requests.
 
-6. **Data Return**:
+5. **Data Return**:
    - The data is returned to the caller, either from the cache or directly from the database.

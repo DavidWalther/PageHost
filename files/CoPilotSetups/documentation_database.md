@@ -28,7 +28,6 @@ The DataFacade serves as the primary interface for all data operations and coord
 - Manage cache-bypass logic through `skipCache` flag
 - Handle CRUD operations (Create, Read, Update, Delete)
 - Coordinate between DataStorage and DataCache
-- Support mock data for testing via `MOCK_DATA_ENABLE` environment variable
 
 #### Cache Strategy:
 
@@ -296,7 +295,6 @@ keyElements.push(this.environmentVars.APPLICATION_APPLICATION_KEY);
 ### Core Application Variables:
 
 - `APPLICATION_APPLICATION_KEY`: Primary tenant/application identifier
-- `MOCK_DATA_ENABLE`: Enable/disable mock data for testing
 - `LOGGING_SEVERITY_LEVEL`: Control debug output verbosity
 
 ### Cache Configuration:
@@ -313,12 +311,6 @@ keyElements.push(this.environmentVars.APPLICATION_APPLICATION_KEY);
 - `ENDPOINT_ID`: Cloud database project identifier
 
 ## Testing Architecture
-
-### Mock Data Support:
-
-- Controlled via `MOCK_DATA_ENABLE` environment variable
-- DataMock classes provide test data for all entity types
-- Enables testing without database/cache dependencies
 
 ### Cache Testing:
 
