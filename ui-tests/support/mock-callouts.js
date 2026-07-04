@@ -84,14 +84,43 @@ const MOCK_PARAGRAPH = [
   },
 ];
 
+// Inhaltsbaum wie vom Endpoint `/api/1.0/contents/all` geliefert:
+// Node = { id, label, name, childnodes: Node[] } (allowlist, siehe
+// private/endpoints/api/1.0/contents/README.md). Zwei Stories, damit das
+// Navigations-Modal das Listen *aller* Stories zeigt.
 const MOCK_CONTENTS = {
   result: [
     {
       id: '000s00000000000011',
+      label: 'Mock Story 1',
       name: 'Mock Story 1',
-      sortnumber: 1,
-      publishdate: '2022-01-01 00:00:00',
-      chapters: MOCK_STORY.chapters,
+      childnodes: [
+        {
+          id: '000c00000000000001',
+          label: 'Mock Chapter 1 for Story 1',
+          name: 'Mock Chapter 1 for Story 1',
+          childnodes: [],
+        },
+        {
+          id: '000c00000000000002',
+          label: 'Mock Chapter 2 for Story 1',
+          name: 'Mock Chapter 2 for Story 1',
+          childnodes: [],
+        },
+      ],
+    },
+    {
+      id: '000s00000000000012',
+      label: 'Mock Story 2',
+      name: 'Mock Story 2',
+      childnodes: [
+        {
+          id: '000c00000000000003',
+          label: 'Mock Chapter 1 for Story 2',
+          name: 'Mock Chapter 1 for Story 2',
+          childnodes: [],
+        },
+      ],
     },
   ],
 };
