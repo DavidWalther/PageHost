@@ -1,7 +1,5 @@
 const { Logging } = require('../modules/logging.js');
-const { Environment } = require('../modules/environment.js');
 const { DataCache2 } = require('./DataCache/DataCache.js');
-const { DataMock } = require('./DataMocks/DataMock.js');
 const { DataStorage } = require('./DataStorage/DataStorage.js');
 const { DataCleaner } = require('../modules/DataCleaner.js');
 
@@ -195,32 +193,25 @@ class DataFacadeSync {
     );
     try {
       // Always skip cache for creation
-      let createdRecord;
-      if (DataFacade.isDataMockEnabled()) {
-        // Optionally implement mock create logic here
-        createdRecord = payload; // Just echo back for now
-      } else {
-        let tableName = object;
-        let table;
-        switch (tableName) {
-          case 'configuration':
-            table =
-              new (require('./tables/configuration').TableConfiguration)();
-            break;
-          case 'paragraph':
-            table = new (require('./tables/paragraph').TableParagraph)();
-            break;
-          case 'story':
-            table = new (require('./tables/story').TableStory)();
-            break;
-          case 'chapter':
-            table = new (require('./tables/chapter').TableChapter)();
-            break;
-          default:
-            throw new Error(`Invalid table name: ${tableName}`);
-        }
-        createdRecord = await dataStorage.createRecord(table, payload);
+      let tableName = object;
+      let table;
+      switch (tableName) {
+        case 'configuration':
+          table = new (require('./tables/configuration').TableConfiguration)();
+          break;
+        case 'paragraph':
+          table = new (require('./tables/paragraph').TableParagraph)();
+          break;
+        case 'story':
+          table = new (require('./tables/story').TableStory)();
+          break;
+        case 'chapter':
+          table = new (require('./tables/chapter').TableChapter)();
+          break;
+        default:
+          throw new Error(`Invalid table name: ${tableName}`);
       }
+      const createdRecord = await dataStorage.createRecord(table, payload);
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
@@ -284,9 +275,6 @@ class DataFacadeSync {
 
   async getConfigurations() {
     const LOCATION = 'DataFacadeSync.getConfigurations';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().createConfiguration();
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -318,9 +306,6 @@ class DataFacadeSync {
 
   async getParagraphs(recordId) {
     const LOCATION = 'DataFacadeSync.getParagraphs';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getParagraphById(recordId);
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -354,9 +339,6 @@ class DataFacadeSync {
     let recordId = parameterObject?.request?.id;
     let publishDate = parameterObject?.request?.publishDate;
     const LOCATION = 'DataFacadeSync.getParagraphWithoutCache';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getParagraphById(recordId);
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -388,9 +370,6 @@ class DataFacadeSync {
 
   async getContentsTree() {
     const LOCATION = 'DataFacadeSync.getContentsTree';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getContentsTree();
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -418,9 +397,6 @@ class DataFacadeSync {
 
   async getContentsTreeWithoutCache() {
     const LOCATION = 'DataFacadeSync.getContentsTreeWithoutCache';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getContentsTree();
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -473,9 +449,6 @@ class DataFacadeSync {
 
   async getStory(recordId) {
     const LOCATION = 'DataFacadeSync.getStory';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getStoryById(recordId);
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -509,9 +482,6 @@ class DataFacadeSync {
     let recordId = parameterObject?.request?.id;
     let publishDate = parameterObject?.request?.publishDate;
     const LOCATION = 'DataFacadeSync.getStoryWithoutCache';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getStoryById(recordId);
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -550,9 +520,6 @@ class DataFacadeSync {
   }
 
   async getChapter(recordId) {
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getChapterById(recordId);
-    }
     const LOCATION = 'DataFacadeSync.getChapter';
     Logging.debugMessage({
       severity: 'FINEST',
@@ -586,9 +553,6 @@ class DataFacadeSync {
   async getChapterWithoutCache(parameterObject) {
     let recordId = parameterObject?.request?.id;
     const LOCATION = 'DataFacadeSync.getChapterWithoutCache';
-    if (DataFacade.isDataMockEnabled()) {
-      return new DataMock().getChapterById(recordId);
-    }
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
@@ -721,11 +685,6 @@ class DataFacade {
         .setScopes(this.scopes)
         .deleteData(data);
     }
-  }
-
-  static isDataMockEnabled() {
-    const environment = new Environment().getEnvironment();
-    return environment.MOCK_DATA_ENABLE === 'true';
   }
 }
 
