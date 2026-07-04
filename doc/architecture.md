@@ -58,13 +58,12 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
    Cache-/Publish-Verhalten.
 3. **`DataFacade`** (`private/database2/DataFacade.js`) ist der einzige Einstieg
    in die Datenschicht. Sie entscheidet je `table`:
-   - Mock aktiv (`MOCK_DATA_ENABLE=true`) → `DataMock`
-   - sonst zuerst **`DataCache`** (Redis), bei Cache-Miss **`DataStorage`**
+   - zuerst **`DataCache`** (Redis), bei Cache-Miss **`DataStorage`**
      (Postgres) und Rückschreiben in den Cache.
    - `edit`-Scope bzw. `skipCache` umgehen den Cache und liefern ungefilterte
      (auch unveröffentlichte) Daten.
 
-   → Vollständige Beschreibung der Zusammenarbeit von Facade/Cache/Storage/Mock:
+   → Vollständige Beschreibung der Zusammenarbeit von Facade/Cache/Storage:
    **`private/database2/README.md`**.
 
 ### Cache & Publish-Filter

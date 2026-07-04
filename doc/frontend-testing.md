@@ -40,8 +40,8 @@ die Datenschicht. Der zentrale Helper ist
 [`ui-tests/support/mock-callouts.js`](../ui-tests/support/mock-callouts.js)
 (`mockBookstoreCallouts(page)`); er deckt `/metadata`,
 `/api/1.0/env/variables`, `/api/1.0/contents/**` und
-`/data/query/story|chapter|paragraph` ab. Die Mock-Formen orientieren sich an
-den echten Fixtures unter `private/database2/tables/mocks/`.
+`/data/query/story|chapter|paragraph` ab. Die Mock-Formen orientieren sich am
+echten Datenmodell (Story → Chapter → Paragraph).
 
 ```js
 const { mockBookstoreCallouts } = require('./support/mock-callouts');
