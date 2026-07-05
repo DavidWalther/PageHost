@@ -11,9 +11,8 @@ files/temp
 ## Secrets gehoeren NICHT hierher, sondern in .env* oder settings.local.json
 ## (letztere ist global gitignored).
 
-## Files created in epcc workflow
-
-epcc*
+## Files created in EPC workflow
+EPC/*.md
 
 ## Playwright artifacts
 
