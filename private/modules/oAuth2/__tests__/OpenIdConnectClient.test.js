@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const OpenIdConnectClient = require('../OpenIdConnectClient');
 const rsaPemFromModExp = require('rsa-pem-from-mod-exp');
 
+jest.mock('../../../modules/logging');
 jest.mock('rsa-pem-from-mod-exp');
 jest.mock('jsonwebtoken', () => ({
   verify: jest
