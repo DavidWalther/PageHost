@@ -23,6 +23,7 @@ const MOCK_DATABASE = {
 };
 
 // ---- Environment.js mock ----
+jest.mock('../../modules/logging');
 jest.mock('../../modules/environment.js');
 let mockGetEnvironment = jest.fn().mockReturnValue(MOCK_ENVIRONMENT);
 Environment.mockImplementation(() => {

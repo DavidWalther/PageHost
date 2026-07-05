@@ -4,6 +4,7 @@ const ActionUpdate = require('../actions/update.js'); // Mock ActionUpdate
 const { DataStorage } = require('../DataStorage.js');
 const { DataCleaner } = require('../../../modules/DataCleaner.js');
 
+jest.mock('../../../modules/logging');
 jest.mock('../pgConnector.js');
 jest.mock('../actions/get.js');
 jest.mock('../actions/update.js'); // Mock ActionUpdate
