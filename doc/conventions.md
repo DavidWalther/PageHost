@@ -6,10 +6,10 @@ sind nur noch Verweise hierher.
 
 ## Zwei Komponenten-Typen
 
-| Typ | Ordner | HTML-Tag-Präfix | Zweck |
-| :-- | :-- | :-- | :-- |
-| SLDS-Bausteine | `public/slds-components/` | `slds-` | generisch, wiederverwendbar, **nicht** app-spezifisch |
-| App-Komponenten | `public/components/` | `custom-` | anwendungsspezifisch |
+| Typ             | Ordner                    | HTML-Tag-Präfix | Zweck                                                 |
+| :-------------- | :------------------------ | :-------------- | :---------------------------------------------------- |
+| SLDS-Bausteine  | `public/slds-components/` | `slds-`         | generisch, wiederverwendbar, **nicht** app-spezifisch |
+| App-Komponenten | `public/components/`      | `custom-`       | anwendungsspezifisch                                  |
 
 Dateistruktur je Komponente: `<name>/<name>.js` (Logik), optional
 `<name>/<name>.html` (Markup, nur beim Legacy-Muster, s. u.).
@@ -20,8 +20,11 @@ Neue Komponenten — und bereits **alle `custom-*`** sowie neuere `slds-*` —
 werden mit **Lit** gebaut, eingebunden per CDN (kein Bundler):
 
 ```js
-import { LitElement, html, css } from
-  'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 class CustomExample extends LitElement {
@@ -48,7 +51,7 @@ customElements.define('custom-example', CustomExample);
 ## Legacy-Muster: nativ + Markup-Caching
 
 Einige ältere `slds-*`-Komponenten (z. B. `slds-card`, `slds-input`,
-`slds-spinner`, `slds-toast`) nutzen noch natives `HTMLElement` mit
+`slds-toast`) nutzen noch natives `HTMLElement` mit
 Template-Caching aus einer `.html`-Datei (`loadHtmlMarkup` / geteiltes
 `templatePromise`).
 
