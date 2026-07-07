@@ -53,7 +53,6 @@ const STATIC_FILES = [
   // SLDS Components - HTML Templates
   '/slds-components/slds-combobox/slds-combobox.html',
   '/slds-components/slds-panel/slds-panel.html',
-  '/slds-components/slds-spinner/slds-spinner.html',
   '/slds-components/slds-input/slds-input.html',
   '/slds-components/slds-global-header/slds-global-header.html',
   '/slds-components/slds-card/slds-card.html',
