@@ -51,7 +51,7 @@ customElements.define('custom-example', CustomExample);
 ## Legacy-Muster: nativ + Markup-Caching
 
 Einige ältere `slds-*`-Komponenten (z. B. `slds-input`,
-`slds-toast`) nutzen noch natives `HTMLElement` mit
+`slds-combobox`) nutzen noch natives `HTMLElement` mit
 Template-Caching aus einer `.html`-Datei (`loadHtmlMarkup` / geteiltes
 `templatePromise`).
 
