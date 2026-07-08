@@ -55,7 +55,6 @@ const STATIC_FILES = [
   '/slds-components/slds-panel/slds-panel.html',
   '/slds-components/slds-input/slds-input.html',
   '/slds-components/slds-global-header/slds-global-header.html',
-  '/slds-components/slds-card/slds-card.html',
   '/slds-components/slds-toast/slds-toast.html',
   '/slds-components/slds-button-icon/slds-button-icon.html',
 
