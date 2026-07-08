@@ -1,138 +1,55 @@
+import {
+  LitElement,
+  html,
+  css,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
-
-const templatePath = '/slds-components/slds-toast/slds-toast.html';
-let templatePromise = null; // will contain the promise of the fetch the markup
-let loadedMarkUp = null; // will be set on the first load of the markup
 
 const THEME_DEFAULT = 'info';
 const STATES = new Set(['success', 'info', 'warning', 'error']);
+const ICON_SPRITE = '/assets/icons/utility-sprite/svg/symbols.svg';
 
-const ICON_URL_PLACEHOLDER = '{!state!}';
-const ICON_URL_TPL = '/assets/icons/utility-sprite/svg/symbols.svg#{!state!}';
-const THEME_TPL = 'slds-theme_{!state!}';
-const ICON_UTILITY_TPL = 'slds-icon-utility-{!state!}';
+class SldsToast extends LitElement {
+  static properties = {
+    state: { type: String },
+  };
 
-class SldsToast extends HTMLElement {
-  constructor() {
-    super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });
-    this.applyGlobalStyles();
-  }
-
-  applyGlobalStyles() {
-    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-  }
-
-  // ------------------ react on attribut changes -  ------------------
-
-  static get observedAttributes() {
-    return [
-      'state',
-      'debug', // is only checked for existence
-    ];
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    // do something with the attribute value
-
-    if (oldValue === newValue) {
-      return;
+  static styles = css`
+    div.slds-notify {
+      min-width: fit-content;
     }
+  `;
 
-    switch (name) {
-      case 'state':
-        if (newValue) {
-          this.setToastContainerThemeStyle(newValue);
-        }
-        break;
-      default:
-        break;
-    }
+  connectedCallback() {
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot);
   }
 
-  // ------------------ Attribute getters ------------------
+  render() {
+    // Ungültiger/fehlender State -> Default `info` (wie Legacy-`state`-Getter).
+    const state = STATES.has(this.state) ? this.state : THEME_DEFAULT;
 
-  get isDebug() {
-    return this.hasAttribute('debug');
-  }
-
-  get state() {
-    let attributeValue = this.getAttribute('state');
-    // if attribute is not in the list of themes, return default
-
-    if (!STATES.has(attributeValue)) {
-      attributeValue = THEME_DEFAULT;
-    }
-    return attributeValue;
-  }
-
-  // ------------------ Lifecycle Callbacks -  ------------------
-
-  async connectedCallback() {
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
-    }
-
-    const mainTemplateContent =
-      loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-
-    this.setToastContainerThemeStyle(this.state);
-  }
-
-  // ------------------ load html markup ------------------
-
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-        .then((response) => response.text())
-        .then((html) => {
-          return new DOMParser().parseFromString(html, 'text/html');
-        });
-    }
-    return templatePromise;
-  }
-
-  // ------------------ Template getters ------------------
-
-  getMainTemplate() {
-    return loadedMarkUp.querySelector('#template-main').content;
-  }
-
-  // ------------------ event getters ------------------
-
-  get notifyContainer() {
-    return this.shadowRoot.querySelector('.slds-notify');
-  }
-
-  get svgIcon() {
-    return this.shadowRoot.querySelector('svg.slds-icon');
-  }
-
-  get spanAssistiveText() {
-    return this.shadowRoot.querySelector('span.slds-assistive-text');
-  }
-
-  get iconContainer() {
-    return this.shadowRoot.querySelector('.slds-icon_container');
-  }
-
-  // ------------------ actions ------------------
-
-  setToastContainerThemeStyle(state) {
-    if (!this.notifyContainer) {
-      return;
-    }
-
-    this.notifyContainer.classList.add(THEME_TPL.replace('{!state!}', state));
-
-    let iconSvgElement = this.svgIcon;
-    iconSvgElement.innerHTML = `<use xlink:href="${ICON_URL_TPL.replace(ICON_URL_PLACEHOLDER, state)}"></use>`;
-
-    this.spanAssistiveText.innerHTML = state;
-
-    let iconContainer = this.iconContainer;
-    iconContainer.classList.add(ICON_UTILITY_TPL.replace('{!state!}', state));
+    return html`
+      <div class="slds-notify_container slds-is-relative">
+        <div
+          class="slds-notify slds-notify_toast slds-theme_${state}"
+          role="status"
+        >
+          <span class="slds-assistive-text">${state}</span>
+          <span
+            class="slds-icon_container slds-icon-utility-${state} slds-m-right_small slds-no-flex slds-align-top"
+            title="Description of icon when needed"
+          >
+            <svg class="slds-icon slds-icon_small" aria-hidden="true">
+              <use xlink:href="${ICON_SPRITE}#${state}"></use>
+            </svg>
+          </span>
+          <div class="slds-notify__content">
+            <h2 class="slds-text-heading_small"><slot></slot></h2>
+          </div>
+        </div>
+      </div>
+    `;
   }
 }
 
