@@ -54,7 +54,6 @@ const STATIC_FILES = [
   '/slds-components/slds-combobox/slds-combobox.html',
   '/slds-components/slds-panel/slds-panel.html',
   '/slds-components/slds-input/slds-input.html',
-  '/slds-components/slds-button-icon/slds-button-icon.html',
 
   // External assets (referenced in IndexHtmlEndpointLogic.js)
   '/assets/styles/salesforce-lightning-design-system.min.css',
