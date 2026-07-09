@@ -1,39 +1,31 @@
+import {
+  LitElement,
+  html,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
-const templatePath =
-  'slds-components/slds-global-header/slds-global-header.html';
-let templatePromise = null;
-let loadedMarkUp = null;
-
-class SldsGlobalHeader extends HTMLElement {
-  constructor() {
-    super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });
-    this.applyGlobalStyles();
+class SldsGlobalHeader extends LitElement {
+  connectedCallback() {
+    super.connectedCallback();
+    addGlobalStylesToShadowRoot(this.shadowRoot);
   }
 
-  applyGlobalStyles() {
-    addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-  }
-
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-        .then((response) => response.text())
-        .then((html) => {
-          return new DOMParser().parseFromString(html, 'text/html');
-        });
-    }
-    return templatePromise;
-  }
-
-  async connectedCallback() {
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
-    }
-    const mainTemplateContent =
-      loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
+  render() {
+    return html`
+      <header class="slds-global-header_container">
+        <div class="slds-global-header">
+          <div class="slds-global-header__item">
+            <slot name="logo"></slot>
+          </div>
+          <div class="slds-global-header__item slds-global-header__item_search">
+            <slot name="search"></slot>
+          </div>
+          <div class="slds-global-header__item">
+            <slot name="actions"></slot>
+          </div>
+        </div>
+      </header>
+    `;
   }
 }
 
