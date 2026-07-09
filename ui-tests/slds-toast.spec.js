@@ -35,7 +35,10 @@ async function mountToast(page, { attrs = {}, message } = {}) {
       return {
         notifyClass: notify ? notify.className : null,
         role: notify ? notify.getAttribute('role') : null,
-        href: use ? use.getAttribute('xlink:href') : null,
+        // href.baseVal ist die vom Browser tatsächlich aufgelöste Sprite-
+        // Referenz — getAttribute('xlink:href') würde auch einen nicht
+        // aufgelösten Wert liefern (Icon fehlt), baseVal fällt darauf herein.
+        href: use ? use.href.baseVal : null,
         assistive: assistive ? assistive.textContent : null,
         iconContainerClass: iconContainer ? iconContainer.className : null,
         slotAssigned: slot
