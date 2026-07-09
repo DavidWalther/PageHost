@@ -37,7 +37,10 @@ async function mountButton(page, { attrs = {} } = {}) {
         hasButton: !!button,
         buttonClass: button ? button.className : null,
         disabled: button ? button.hasAttribute('disabled') : null,
-        href: use ? use.getAttribute('xlink:href') : null,
+        // href.baseVal ist die vom Browser tatsächlich aufgelöste Sprite-
+        // Referenz — im Gegensatz zu getAttribute('xlink:href') fällt hier ein
+        // nicht-genamespacetes/nicht-auflösbares href auf (Icon würde fehlen).
+        href: use ? use.href.baseVal : null,
         assistive: assistive ? assistive.textContent : null,
       };
     },
