@@ -1,53 +1,48 @@
-## SLDSButtonIcon Component
+# slds-button-icon
 
-The `SLDSButtonIcon` component is a custom web component that creates a Salesforce Lightning Design System (SLDS) styled button with an icon. It supports various configurations like icon selection, size, variant, and disabled state.
+A Lit web component that renders a Salesforce Lightning Design System (SLDS)
+icon-only button as a `<slds-button-icon>` custom element. It reproduces the
+previous (legacy) behaviour one-to-one — only the implementation changed from the
+native markup-caching pattern to Lit.
 
-### Attributes
-
-- **icon**: Specifies the icon to be used in the format "icon-type:icon-name".
-- **disabled**: If present, disables the button.
-- **size**: Defines the size of the button. Acceptable values are `"large"`, `"small"`, `"x-small"`, `"xx-small"`.
-- **variant**: Determines the button's style variant. Possible values are `"icon-only"`, `"container-transparent"`, `"container-filled"`.
-- **no-border** (Deprecated): If present, removes the border styling from the button. Note: This attribute has been deprecated and replaced by the `variant` attribute.
-
-### Usage
-
-To use the `SLDSButtonIcon` component, you need to define the element in your HTML and set any desired attributes. Here's an example of how to use it:
+## Usage
 
 ```html
+<script
+  type="module"
+  src="/slds-components/slds-button-icon/slds-button-icon.js"
+></script>
+
 <slds-button-icon
   icon="utility:settings"
-  size="large"
-  variant="icon-only"
+  size="small"
+  variant="container-transparent"
 ></slds-button-icon>
 ```
 
-### Events
+## Attributes
 
-- **sldsbuttonclick**: This event is dispatched when the button is clicked, provided the button is not disabled.
+| Attribute   | Type    | Default            | Description                                                                                                                        |
+| ----------- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `icon`      | String  | —                  | Icon in the form `type:name` (e.g. `utility:settings`). Drives the sprite `use` href and the (capitalised) assistive text.         |
+| `variant`   | String  | `container-filled` | One of `icon-only`, `container-transparent`, `container-filled`. Missing → `container-filled`; any other value → no variant class. |
+| `size`      | String  | —                  | One of `large`, `small`, `x-small`, `xx-small`. Any other/missing value → no size class.                                           |
+| `disabled`  | Boolean | absent             | If present, the inner `<button>` is disabled (and therefore fires no click).                                                       |
+| `no-border` | —       | —                  | **Deprecated no-op.** Present in the legacy API but has no effect (kept as a no-op for compatibility; see `EPC/Missed.md`).        |
 
-### Example
+## Clicks
 
-```html
-<!-- SLDS Button Icon with settings icon and large size -->
-<slds-button-icon icon="utility:settings" size="large"></slds-button-icon>
+The component dispatches **no custom event**. The inner `<button>` lives in the
+shadow root, so a native `click` bubbles and is retargeted to the host — attach a
+plain `click` listener on `<slds-button-icon>` (e.g. Lit `@click`), exactly as the
+consumers (`custom-chapter`, `custom-story`, `custom-chapter-edit`, `bookstore`)
+do. When `disabled` is set, the button fires no click.
 
-<!-- SLDS Button Icon as a filled container with a disabled state -->
-<slds-button-icon
-  icon="utility:download"
-  variant="container-filled"
-  disabled
-></slds-button-icon>
-```
+> Note: earlier documentation mentioned an `sldsbuttonclick` event — that event
+> was never dispatched by the component and no consumer relied on it. Use the
+> native `click` on the host instead.
 
-### Importing the Component
+## Styling
 
-Make sure to import the JavaScript file of the component into your project to use `SLDSButtonIcon`:
-
-```html
-<script type="module" src="path/to/slds-button-icon.js"></script>
-```
-
-### Styling
-
-The component internally uses SLDS classes and supports customizations through the exposed attributes. Direct CSS styling can be applied to the custom element, and it will inherit the styles according to the Shadow DOM encapsulation rules.
+SLDS styles are injected into the shadow root via `addGlobalStylesToShadowRoot`
+from `/modules/global-styles.mjs`. The component adds no local styles.
