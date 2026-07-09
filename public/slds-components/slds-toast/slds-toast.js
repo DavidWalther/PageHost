@@ -41,7 +41,7 @@ class SldsToast extends LitElement {
             title="Description of icon when needed"
           >
             <svg class="slds-icon slds-icon_small" aria-hidden="true">
-              <use xlink:href="${ICON_SPRITE}#${state}"></use>
+              <use href="${ICON_SPRITE}#${state}"></use>
             </svg>
           </span>
           <div class="slds-notify__content">
