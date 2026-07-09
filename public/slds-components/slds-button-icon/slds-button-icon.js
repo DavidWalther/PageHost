@@ -56,7 +56,7 @@ class SLDSButtonIcon extends LitElement {
     return html`
       <button class="${buttonClass}" title="" ?disabled=${this.disabled}>
         <svg class="slds-button__icon" aria-hidden="true">
-          <use xlink:href="${href}"></use>
+          <use href="${href}"></use>
         </svg>
         <span class="slds-assistive-text">${assistive}</span>
       </button>
