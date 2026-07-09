@@ -48,6 +48,29 @@ customElements.define('custom-example', CustomExample);
 - Lit-Patterns (Properties, Templates, Direktiven, Events) → Skill
   **`lit-web-components`**.
 
+### SVG-Icons: `href` statt `xlink:href` (wichtig!)
+
+SLDS-Icons werden per Sprite-Referenz in einem SVG-`<use>` eingebunden. In Lit
+**immer das SVG2-Attribut `href` verwenden, nie `xlink:href`**:
+
+```js
+// richtig — Icon löst auf:
+html`<svg class="slds-icon"><use href="${sprite}#${name}"></use></svg>`;
+// falsch — Icon fehlt (kein Fehler, nur unsichtbar):
+html`<svg class="slds-icon"><use xlink:href="${sprite}#${name}"></use></svg>`;
+```
+
+- **Fehlverhalten:** Eine **dynamische** `xlink:href`-Bindung setzt lit-html per
+  `setAttribute('xlink:href', …)` **ohne** den XLink-Namespace. Das SVG-`<use>`
+  erkennt diesen nicht-genamespaceten Wert **nicht** als Referenz → `href.baseVal`
+  bleibt leer, das **Icon fehlt** (kein Konsolenfehler). Legacy-Markup mit
+  statischem `xlink:href` funktionierte, weil dort der HTML-Parser den Namespace
+  gesetzt hat — beim Lit-Port geht das verloren.
+- **Test-Regel:** Im Playwright-Test die **aufgelöste** Referenz prüfen
+  (`use.href.baseVal`), **nicht** `getAttribute('xlink:href')` — letzteres liefert
+  den String auch dann, wenn das Icon gar nicht auflöst, und lässt den Bug durch.
+- Betroffen/behoben: `slds-toast`, `slds-button-icon` (2026-07-09).
+
 ## Legacy-Muster: nativ + Markup-Caching
 
 Einige ältere `slds-*`-Komponenten (z. B. `slds-input`,
