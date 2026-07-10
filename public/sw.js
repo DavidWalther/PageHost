@@ -52,7 +52,6 @@ const STATIC_FILES = [
 
   // SLDS Components - HTML Templates
   '/slds-components/slds-combobox/slds-combobox.html',
-  '/slds-components/slds-panel/slds-panel.html',
   '/slds-components/slds-input/slds-input.html',
 
   // External assets (referenced in IndexHtmlEndpointLogic.js)
