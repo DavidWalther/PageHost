@@ -1,116 +1,72 @@
+import {
+  LitElement,
+  html,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
-const templatePath = 'slds-components/slds-input/slds-input.html';
-let templatePromise = null;
-let loadedMarkUp = null;
+// Strategy-Registry für die Control-Varianten je `type`. Jede Strategie liefert
+// das Markup des Form-Controls (gleiche Schnittstelle: render({ value, onChange })).
+// Ein neuer Typ = ein neuer Eintrag (Open/Closed) — keine switch-Kaskade.
+const inputTypeStrategies = {
+  date: {
+    render: ({ value, onChange }) => html`
+      <div class="slds-form-element__control">
+        <input
+          type="date"
+          id="input-date"
+          class="slds-input input-element"
+          .value=${value ?? ''}
+          @change=${onChange}
+        />
+      </div>
+    `,
+  },
+  text: {
+    render: ({ value, onChange }) => html`
+      <div class="slds-form-element__control">
+        <input
+          type="text"
+          id="input-text"
+          class="slds-input input-element"
+          .value=${value ?? ''}
+          @change=${onChange}
+        />
+      </div>
+    `,
+  },
+};
 
-class SldsInput extends HTMLElement {
-  constructor() {
-    super();
-    const shadowRoot = this.attachShadow({ mode: 'open' });
-    this.applyGlobalStyles();
-  }
+// Unbekannter/fehlender Typ -> text-Fallback (entspricht dem Legacy-default-Zweig).
+const resolveInputTypeStrategy = (type) =>
+  inputTypeStrategies[type] ?? inputTypeStrategies.text;
 
-  applyGlobalStyles() {
+class SldsInput extends LitElement {
+  static properties = {
+    value: { type: String },
+    label: { type: String },
+    type: { type: String },
+  };
+
+  connectedCallback() {
+    super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
   }
 
-  //-------------------
-  // Lifecycle hooks
-  //-------------------
+  render() {
+    const control = resolveInputTypeStrategy(this.type).render({
+      value: this.value,
+      onChange: (event) => this.handleChangeInput(event),
+    });
 
-  async connectedCallback() {
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
-    }
-
-    const mainTemplateContent =
-      loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-    this.handleAttributeTypeChange(this.getAttribute('type'));
-    this.handleAttributeValueChange(this.getAttribute('value'));
-    this.handleAttributeLabelChange(this.getAttribute('label'));
-
-    this.shadowRoot
-      .querySelectorAll('input.input-element')
-      .forEach((element) => {
-        element.addEventListener('change', this.handleChangeInput.bind(this));
-      });
-    this._initialized = true;
+    return html`
+      <div class="slds-form-element">
+        <label class="slds-form-element__label" for="input-sample1"
+          >${this.label ?? ''}</label
+        >
+        ${control}
+      </div>
+    `;
   }
-
-  //-------------------
-  // Listen to outside attribute changes
-  //-------------------
-
-  static get observedAttributes() {
-    return ['value', 'label', 'type']; // Added 'type' attribute
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (!this._initialized) {
-      return;
-    }
-    switch (name) {
-      case 'value':
-        this.handleAttributeValueChange(newValue);
-        break;
-      case 'label':
-        this.handleAttributeLabelChange(newValue);
-        break;
-      case 'type': // Added case for 'type' attribute
-        this.handleAttributeTypeChange(newValue);
-        break;
-      default:
-        break;
-    }
-  }
-
-  handleAttributeValueChange(newValue) {
-    // Handle value attribute change
-
-    this.shadowRoot
-      .querySelectorAll(
-        'div.slds-form-element > div.slds-form-element__control > .input-element'
-      )
-      .forEach((element) => {
-        element.value = newValue;
-      });
-  }
-
-  handleAttributeLabelChange(newValue) {
-    // Handle label attribute change
-    this.shadowRoot.querySelector(
-      'label.slds-form-element__label'
-    ).textContent = newValue;
-  }
-
-  handleAttributeTypeChange(newValue) {
-    // Handle type attribute change
-
-    if (!loadedMarkUp) {
-      return;
-    }
-
-    switch (newValue) {
-      case 'date':
-        this.replaceSlotWithTemplate(
-          'placeholder-input',
-          '#template-type-date'
-        );
-        break;
-      default:
-        this.replaceSlotWithTemplate(
-          'placeholder-input',
-          '#template-type-text'
-        );
-        break;
-    }
-  }
-
-  //-------------------
-  // Event handlers
-  //-------------------
 
   handleChangeInput(event) {
     event.stopPropagation();
@@ -123,30 +79,6 @@ class SldsInput extends HTMLElement {
       },
     });
     this.dispatchEvent(eventChange);
-  }
-
-  //-------------------
-  // Helpers
-  //-------------------
-
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-        .then((response) => response.text())
-        .then((html) => {
-          return new DOMParser().parseFromString(html, 'text/html');
-        });
-    }
-    return templatePromise;
-  }
-
-  replaceSlotWithTemplate(slotId, templateId) {
-    const slot = this.shadowRoot.querySelector(`slot[name=${slotId}]`);
-    if (slot) {
-      const templateContent = loadedMarkUp.querySelector(templateId).content;
-      const parentNode = slot.parentNode;
-      parentNode.replaceChild(templateContent.cloneNode(true), slot);
-    }
   }
 }
 
