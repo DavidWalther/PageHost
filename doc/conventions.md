@@ -73,10 +73,9 @@ html`<svg class="slds-icon"><use xlink:href="${sprite}#${name}"></use></svg>`;
 
 ## Legacy-Muster: nativ + Markup-Caching
 
-Einige ältere `slds-*`-Komponenten (z. B. `slds-input`,
-`slds-combobox`) nutzen noch natives `HTMLElement` mit
-Template-Caching aus einer `.html`-Datei (`loadHtmlMarkup` / geteiltes
-`templatePromise`).
+Eine ältere `slds-*`-Komponente (`slds-combobox`) nutzt noch natives
+`HTMLElement` mit Template-Caching aus einer `.html`-Datei (`loadHtmlMarkup` /
+geteiltes `templatePromise`).
 
 - **Für neue Komponenten nicht mehr verwenden.** Lit ist der Standard.
 - Beim Anfassen einer Legacy-Komponente: bestehendes Muster respektieren oder

@@ -71,6 +71,6 @@ Anfassen angleichen; eine gesammelte Migration ist optional.
   - `private/modules/oAuth2/OpenIdConnectClient.js`
 - **`let` ohne Reassignment:** verbreitet (z. B. `let cache = new DataCache2()`);
   bei Berührung auf `const` ziehen.
-- **Frontend Legacy-Muster:** 2 ältere `slds-*`-Komponenten nutzen noch natives
-  Markup-Caching statt Lit (`slds-combobox`, `slds-input`;
+- **Frontend Legacy-Muster:** 1 ältere `slds-*`-Komponente nutzt noch natives
+  Markup-Caching statt Lit (`slds-combobox`;
   Details in `doc/conventions.md`).
