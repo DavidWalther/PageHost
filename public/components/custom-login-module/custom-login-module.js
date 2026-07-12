@@ -63,7 +63,7 @@ class LoginComponent extends LitElement {
         <button id="button-logout" ?hidden=${!this.isLoggedIn} @click="${this.handleClickLogout}">Logout</button>
       </div>
 
-      <slds-modal title="Login" footless>
+      <slds-modal heading="Login" footless>
         <div class="slds-grid slds-gutters slds-wrap">
           <div class="slds-col slds-size_1-of-1">
 	          <div class="slds-align_absolute-center slds-m-bottom--medium warning">

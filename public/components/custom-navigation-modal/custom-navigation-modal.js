@@ -132,10 +132,12 @@ class NavigationModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal title="${this.labels.modalTitle}" footless>
-        ${this._selectedStory === null
-          ? this._renderStories()
-          : this._renderChapters()}
+      <slds-modal heading="${this.labels.modalTitle}" footless>
+        ${
+          this._selectedStory === null
+            ? this._renderStories()
+            : this._renderChapters()
+        }
       </slds-modal>
     `;
   }
@@ -160,9 +162,9 @@ class NavigationModal extends LitElement {
               class="slds-p-vertical_x-small"
             >
               <button
-                class="tile ${story.id === currentStoryId
-                  ? 'tile_current'
-                  : ''}"
+                class="tile ${
+                  story.id === currentStoryId ? 'tile_current' : ''
+                }"
                 @click="${() => this._handleStoryClick(story)}"
               >
                 <span>${story.name}</span>
@@ -182,15 +184,16 @@ class NavigationModal extends LitElement {
           ${this.labels.back}
         </button>
       </div>
-      ${chapters.length === 0
-        ? html`
-            <div class="slds-align_absolute-center slds-p-around_medium">
-              <span>${this.labels.emptyChapters}</span>
-            </div>
-          `
-        : html`
-            <slds-layout wrap gutters-small>
-              ${chapters.map(
+      ${
+        chapters.length === 0
+          ? html`
+              <div class="slds-align_absolute-center slds-p-around_medium">
+                <span>${this.labels.emptyChapters}</span>
+              </div>
+            `
+          : html`
+              <slds-layout wrap gutters-small>
+                ${chapters.map(
                 (chapter) => html`
                   <slds-layout-item
                     size-1-of-2
@@ -199,9 +202,11 @@ class NavigationModal extends LitElement {
                     class="slds-p-vertical_x-small"
                   >
                     <button
-                      class="tile ${chapter.id === this.currentLocation
-                        ? 'tile_current'
-                        : ''}"
+                      class="tile ${
+                        chapter.id === this.currentLocation
+                          ? 'tile_current'
+                          : ''
+                      }"
                       @click="${() => this._handleChapterClick(chapter.id)}"
                     >
                       <span>${chapter.name}</span>
@@ -209,8 +214,9 @@ class NavigationModal extends LitElement {
                   </slds-layout-item>
                 `
               )}
-            </slds-layout>
-          `}
+              </slds-layout>
+            `
+      }
     `;
   }
 

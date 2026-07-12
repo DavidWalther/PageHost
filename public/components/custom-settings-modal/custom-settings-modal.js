@@ -43,7 +43,7 @@ class SettingsModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal title="${this.labels.modalTitle}" footless>
+      <slds-modal heading="${this.labels.modalTitle}" footless>
         <div class="save-zone">
           <slot>
             <div class="slds-align_absolute-center slds-p-around_medium">
