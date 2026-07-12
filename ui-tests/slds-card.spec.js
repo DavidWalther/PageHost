@@ -51,6 +51,15 @@ async function mountCard(page, { attrs = {}, slots = {} } = {}) {
           '.slds-card__body_inner slot:not([name])'
         ),
         hasFooter: !!root.querySelector('.slds-card__footer'),
+        // Text, den das Shadow-DOM des Footers selbst beisteuert (ohne den
+        // geslotteten Inhalt) — deckt versehentlich mitgerenderte Zeichen auf.
+        footerAssistiveText: root.querySelector(
+          '.slds-card__footer .slds-assistive-text'
+        )
+          ? root
+              .querySelector('.slds-card__footer .slds-assistive-text')
+              .textContent.trim()
+          : null,
         assigned,
       };
     },
@@ -81,16 +90,29 @@ test.describe('slds-card', () => {
     expect(res.hasHeaderBlock).toBe(true);
   });
 
+  test('Footer: kein überzähliges Zeichen im Assistive-Text', async ({
+    page,
+  }) => {
+    // Das Markup trug hinter dem footer-Slot ein zweites ">", das als Textknoten
+    // im Assistive-Text landete und Screenreadern vorgelesen wurde.
+    const res = await mountCard(page);
+    expect(res.footerAssistiveText).toBe('');
+  });
+
   test('no-border setzt die Klasse no-border am Article', async ({ page }) => {
     const res = await mountCard(page, { attrs: { 'no-border': true } });
     expect(res.articleClass).toContain('no-border');
   });
 
-  test('no-header ist ein No-Op — Header bleibt gerendert', async ({
+  test('no-header entfernt den Header, Body und Footer bleiben', async ({
     page,
   }) => {
     const res = await mountCard(page, { attrs: { 'no-header': true } });
-    expect(res.hasHeaderBlock).toBe(true);
+    expect(res.hasHeaderBlock).toBe(false);
+    expect(res.hasHeaderSlot).toBe(false);
+    expect(res.hasActionsSlot).toBe(false);
+    expect(res.hasBodyInner).toBe(true);
+    expect(res.hasFooter).toBe(true);
   });
 
   test('Slot-Projektion: header/actions/footer/default', async ({ page }) => {
