@@ -55,12 +55,10 @@ The component renders a `<div>` with `role="progressbar"` and the ARIA attribute
 
 ## Notes
 
-- **`size` is not validated.** Any value other than `medium` is turned into
-  `slds-progress-bar_<value>` verbatim, so a typo (`size="smal"`) silently yields an
-  inert class rather than an error. Other components (`slds-spinner`,
-  `slds-button-icon`) check against a whitelist.
-- `size="medium"` deliberately applies **no** modifier class: the base class
+- `size` is checked against a whitelist (`x-small`, `small`, `medium`, `large`); an
+  unknown value applies **no** modifier class.
+- `size="medium"` deliberately applies **no** modifier class either: the base class
   `.slds-progress-bar` already has `height: 0.5rem` — the same value as
   `.slds-progress-bar_medium`.
-- **`percent` is not guarded against non-numeric input.** A value such as `"abc"`
-  produces `aria-valuenow="NaN"` and `width: NaN%` (the bar stays empty).
+- `percent` is coerced to a number and clamped to 0–100. A non-numeric value falls
+  back to `0` rather than producing `NaN`.
