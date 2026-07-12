@@ -22,7 +22,7 @@ const JwtService = require('./private/modules/oAuth2/JwtService.js');
 const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpoint.js');
 const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
 const ContentsEndpoint = require('./private/endpoints/api/1.0/contents/ContentsEndpoint.js');
-const ServiceWorkerEndpointLogic = require('./private/endpoints/*/ServiceWorkerEndpointLogic.js');
+const ServiceWorkerEndpointLogic = require('./private/endpoints/wildcard/ServiceWorkerEndpointLogic.js');
 
 const environment = new Environment().getEnvironment();
 

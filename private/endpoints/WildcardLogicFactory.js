@@ -1,11 +1,11 @@
 const { Logging } = require('../modules/logging');
-const IndexHtmlEndpointLogic = require('./*/IndexHtmlEndpointLogic');
+const IndexHtmlEndpointLogic = require('./wildcard/IndexHtmlEndpointLogic');
 const NotFoundEndpointLogic = require('./misc/NotFoundEndpointLogic');
-const ManifestEndpointLogic = require('./*/ManifestEndpointLogic');
-const RobotsEndpointLogic = require('./*/RobotsEndpointLogic');
-const FaviconEndpointLogic = require('./*/FaviconEndpointLogic');
-const IconEndpointLogic = require('./*/IconEndpointLogic');
-const SitemapEndpointLogic = require('./*/SitemapEndpointLogic');
+const ManifestEndpointLogic = require('./wildcard/ManifestEndpointLogic');
+const RobotsEndpointLogic = require('./wildcard/RobotsEndpointLogic');
+const FaviconEndpointLogic = require('./wildcard/FaviconEndpointLogic');
+const IconEndpointLogic = require('./wildcard/IconEndpointLogic');
+const SitemapEndpointLogic = require('./wildcard/SitemapEndpointLogic');
 
 class WildcardLogicFactory {
   static getProduct(requestObject) {
