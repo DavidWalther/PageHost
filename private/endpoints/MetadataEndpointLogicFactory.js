@@ -1,6 +1,6 @@
 const { Logging } = require('../modules/logging');
 const ManifestEndpointLogic = require('./metadata/MetaDataEndpointLogic');
-const IndexHtmlEndpointLogic = require('./*/IndexHtmlEndpointLogic');
+const IndexHtmlEndpointLogic = require('./wildcard/IndexHtmlEndpointLogic');
 
 class MetadataEndpointLogicFactory {
   static getProduct(requestObject) {
