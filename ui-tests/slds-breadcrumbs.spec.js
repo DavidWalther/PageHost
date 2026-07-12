@@ -67,12 +67,18 @@ async function clickCrumb(page, index) {
   return page.evaluate(async (index) => {
     const el = document.querySelector('slds-breadcrumbs');
     const details = [];
-    el.addEventListener('click', (event) => details.push(event.detail));
+    const nativeClicks = [];
+    el.addEventListener('breadcrumb-select', (event) =>
+      details.push(event.detail)
+    );
+    // Mitzählen, was ein Listener auf `click` sähe — früher hieß das CustomEvent
+    // genauso und war vom nativen Click nicht zu unterscheiden.
+    el.addEventListener('click', (event) => nativeClicks.push(event.detail));
 
     const anchors = el.shadowRoot.querySelectorAll('a');
     anchors[index].click();
     await el.updateComplete;
-    return details;
+    return { details, nativeClicks };
   }, index);
 }
 
@@ -129,14 +135,17 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.ariaCurrent[3]).toBe('page');
   });
 
-  test('Klick feuert click mit detail { key, label, href, index }', async ({
+  test('Klick feuert breadcrumb-select mit detail { key, label, href, index }', async ({
     page,
   }) => {
     await mountBreadcrumbs(page);
-    const details = await clickCrumb(page, 1);
-    expect(details).toEqual([
+    const res = await clickCrumb(page, 1);
+    expect(res.details).toEqual([
       { key: 'accounts', label: 'Accounts', href: '/accounts', index: 1 },
     ]);
+    // Das Event heißt nicht mehr `click` und kollidiert damit nicht mehr mit dem
+    // nativen Click (dessen `detail` die Klickzahl ist, kein Item-Objekt).
+    expect(res.nativeClicks).toEqual([]);
   });
 
   test('overflow: erstes Item, Ellipse und die letzten zwei bei Limit 3', async ({

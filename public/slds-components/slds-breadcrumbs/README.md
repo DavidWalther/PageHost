@@ -43,7 +43,7 @@ Each entry in the `items` array must be an object with the following fields:
 
 | Field   | Type   | Required | Description                                                 |
 | ------- | ------ | -------- | ----------------------------------------------------------- |
-| `key`   | String | Yes      | Unique identifier; passed through in the `click` event      |
+| `key`   | String | Yes      | Unique identifier; passed through in `breadcrumb-select`    |
 | `label` | String | Yes      | Text shown in the breadcrumb item                           |
 | `href`  | String | No       | Navigation URL; omit to render the anchor without an `href` |
 
@@ -51,17 +51,13 @@ Each entry in the `items` array must be an object with the following fields:
 
 ## Events
 
-| Event   | Detail                        | Description                                                                                                   |
-| ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `click` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
+| Event               | Detail                        | Description                                                                                                   |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `breadcrumb-select` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
 
-> **Caveat — `click` collides with the native event.** The component dispatches a
-> `CustomEvent` literally named `click`, which bubbles. Clicks that do _not_ hit a
-> link (padding, the `li`, the last item's `<span>`) still produce a **native**
-> `click` that is retargeted to the host. A listener on `click` therefore receives
-> both kinds, and on the native one `event.detail` is the browser's click **count**
-> (`1`), not the item object — so `event.detail.key` is silently `undefined`.
-> Guard accordingly, or check `event instanceof CustomEvent`.
+> The event used to be called `click`, which collided with the native click event
+> (whose `detail` is the browser's click count, not an item object). Listen for
+> `breadcrumb-select` instead.
 
 ---
 
@@ -137,12 +133,12 @@ A value below `2` cannot express "first item + `…` + last item", so
 ></slds-breadcrumbs>
 ```
 
-### Listening to click events
+### Listening to selections
 
 ```javascript
 document
   .querySelector('slds-breadcrumbs')
-  .addEventListener('click', (event) => {
+  .addEventListener('breadcrumb-select', (event) => {
     const { key, label, href, index } = event.detail;
     console.log(`Clicked: ${label} (key: ${key}, index: ${index})`);
   });
