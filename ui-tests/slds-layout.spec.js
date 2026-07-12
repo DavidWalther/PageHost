@@ -147,8 +147,8 @@ test.describe('slds-layout', () => {
   }) => {
     const res = await mountGrid(page, {
       itemAttrs: {
-        'size-1-of-2': true,
-        'medium-size-1-of-3': true,
+        size: '1-of-2',
+        'medium-size': '1-of-3',
         'bump-right': true,
         'align-middle': true,
       },
@@ -164,18 +164,87 @@ test.describe('slds-layout', () => {
     );
   });
 
+  test('Item: alle vier Breakpoints wirken nebeneinander', async ({ page }) => {
+    const res = await mountGrid(page, {
+      itemAttrs: {
+        size: '1-of-1',
+        'small-size': '1-of-2',
+        'medium-size': '1-of-3',
+        'large-size': '1-of-4',
+      },
+    });
+    expect(res.itemClasses).toEqual(
+      expect.arrayContaining([
+        'slds-size_1-of-1',
+        'slds-small-size_1-of-2',
+        'slds-medium-size_1-of-3',
+        'slds-large-size_1-of-4',
+      ])
+    );
+  });
+
+  test('Item: Siebtel werden unterstützt (SLDS kennt sie, die Komponente bisher nicht)', async ({
+    page,
+  }) => {
+    const res = await mountGrid(page, { itemAttrs: { size: '3-of-7' } });
+    expect(res.itemClasses).toContain('slds-size_3-of-7');
+  });
+
+  test('Item: unbekannter Bruchteil erzeugt keine Größenklasse', async ({
+    page,
+  }) => {
+    // SLDS kennt keinen Nenner 9 — ein Tippfehler darf keine wirkungslose Klasse
+    // erzeugen, die still nichts tut.
+    const res = await mountGrid(page, { itemAttrs: { size: '1-of-9' } });
+    expect(res.itemClasses).toEqual(['slds-col']);
+  });
+
+  test('Item: Größenwechsel ersetzt die Klasse, statt sie zu akkumulieren', async ({
+    page,
+  }) => {
+    await mountGrid(page, { itemAttrs: { size: '1-of-2' } });
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.setAttribute('size', '3-of-4');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).toContain('slds-size_3-of-4');
+    expect(after).not.toContain('slds-size_1-of-2');
+  });
+
   test('Item: Entfernen des Größen-Attributs entfernt die Klasse wieder', async ({
     page,
   }) => {
-    await mountGrid(page, { itemAttrs: { 'size-1-of-2': true } });
+    await mountGrid(page, { itemAttrs: { size: '1-of-2' } });
 
-    const without = await toggleAttribute(
-      page,
-      'slds-layout-item',
-      'size-1-of-2',
-      false
-    );
+    const without = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.removeAttribute('size');
+      await item.updateComplete;
+      return [...item.classList];
+    });
     expect(without).not.toContain('slds-size_1-of-2');
     expect(without).toContain('slds-col');
+  });
+
+  test('Item: eine consumer-eigene Klasse am Host überlebt einen Größenwechsel', async ({
+    page,
+  }) => {
+    // Light DOM: die classList gehört der Komponente nicht allein. bookstore und
+    // custom-navigation-modal setzen dort eigene Klassen (slds-m-bottom--medium,
+    // slds-p-vertical_x-small) — die dürfen nicht mit aufgeräumt werden.
+    await mountGrid(page, { itemAttrs: { size: '1-of-2' } });
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.classList.add('slds-m-bottom--medium');
+      item.setAttribute('size', '3-of-4');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).toContain('slds-m-bottom--medium');
+    expect(after).toContain('slds-size_3-of-4');
   });
 });
