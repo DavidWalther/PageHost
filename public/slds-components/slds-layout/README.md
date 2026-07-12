@@ -3,11 +3,43 @@
 Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/components/utilities/grid/).
 Each attribute is a **boolean** — simply add the attribute name to enable the corresponding SLDS CSS class.
 
+## Rendering: light DOM, not shadow DOM
+
+Unlike every other `slds-*` component, both elements render into the **light DOM**
+(`createRenderRoot() { return this; }`). That has three consequences worth knowing:
+
+- There is **no shadow root** and **no wrapper `<div>`**. The SLDS classes are put
+  **on the host element itself** — `<slds-layout>` _is_ the `slds-grid`, and
+  `<slds-layout-item>` _is_ the `slds-col`.
+- Children stay where they are; nothing is projected through a slot.
+- SLDS styles are **not** injected via `addGlobalStylesToShadowRoot`. The classes
+  are styled by whatever stylesheet applies in the surrounding scope — the document
+  for top-level usage, or the enclosing component's shadow root.
+
+```html
+<!-- what you write -->
+<slds-layout wrap gutters-small>
+  <slds-layout-item size-1-of-2>Left</slds-layout-item>
+</slds-layout>
+
+<!-- what ends up in the DOM -->
+<slds-layout wrap gutters-small class="slds-grid slds-wrap slds-gutters_small">
+  <slds-layout-item size-1-of-2 class="slds-col slds-size_1-of-2"
+    >Left</slds-layout-item
+  >
+</slds-layout>
+```
+
+> **Note.** Both components additionally append an empty, functionless `<slot>`
+> element to themselves — a `<slot>` only projects inside a shadow root. It is
+> inert (`display: contents`), but it is dead markup; tracked in `EPC/Missed.md`
+> (A-12).
+
 ---
 
 ## `<slds-layout>`
 
-A flex grid container. Renders a `<div>` with the `slds-grid` class and a `<slot>` for layout items.
+A flex grid container: adds `slds-grid` to the host element.
 
 ### Usage
 
@@ -66,7 +98,7 @@ A flex grid container. Renders a `<div>` with the `slds-grid` class and a `<slot
 
 ## `<slds-layout-item>`
 
-A flex child column. Renders directly (no shadow DOM) with the `slds-col` class and a `<slot>`.
+A flex child column: adds `slds-col` to the host element (light DOM, see above).
 
 ### Usage
 
