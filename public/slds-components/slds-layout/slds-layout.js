@@ -44,6 +44,7 @@ class SldsLayout extends LitElement {
     this.alignSpace = false;
     this.alignSpread = false;
     this.alignEnd = false;
+    this.vertical = false;
     this.verticalAlignStart = false;
     this.verticalAlignCenter = false;
     this.verticalAlignEnd = false;
