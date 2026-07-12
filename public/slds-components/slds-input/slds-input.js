@@ -1,41 +1,45 @@
 import {
   LitElement,
   html,
+  nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
-// Strategy-Registry für die Control-Varianten je `type`. Jede Strategie liefert
-// das Markup des Form-Controls (gleiche Schnittstelle: render({ value, onChange })).
+// Gemeinsames Control-Markup aller Typen. `placeholder`/`min` werden weggelassen,
+// wenn sie nicht gesetzt sind (`nothing`), statt als leere Attribute zu landen.
+const renderControl = (
+  type,
+  { inputId, value, onChange, placeholder, required, min }
+) => html`
+  <div class="slds-form-element__control">
+    <input
+      type=${type}
+      id=${inputId}
+      class="slds-input input-element"
+      .value=${value ?? ''}
+      placeholder=${placeholder ?? nothing}
+      min=${min ?? nothing}
+      ?required=${required}
+      @change=${onChange}
+    />
+  </div>
+`;
+
+// Strategy-Registry für die Control-Varianten je `type`. Jede Strategie kennt die
+// `id` ihres Controls (das Label bindet sein `for` daran) und liefert das Markup.
 // Ein neuer Typ = ein neuer Eintrag (Open/Closed) — keine switch-Kaskade.
-// Jede Strategie kennt die `id` ihres Controls; das Label bindet sein `for` daran.
 const inputTypeStrategies = {
   date: {
     inputId: 'input-date',
-    render: ({ inputId, value, onChange }) => html`
-      <div class="slds-form-element__control">
-        <input
-          type="date"
-          id=${inputId}
-          class="slds-input input-element"
-          .value=${value ?? ''}
-          @change=${onChange}
-        />
-      </div>
-    `,
+    render: (context) => renderControl('date', context),
+  },
+  number: {
+    inputId: 'input-number',
+    render: (context) => renderControl('number', context),
   },
   text: {
     inputId: 'input-text',
-    render: ({ inputId, value, onChange }) => html`
-      <div class="slds-form-element__control">
-        <input
-          type="text"
-          id=${inputId}
-          class="slds-input input-element"
-          .value=${value ?? ''}
-          @change=${onChange}
-        />
-      </div>
-    `,
+    render: (context) => renderControl('text', context),
   },
 };
 
@@ -48,7 +52,15 @@ class SldsInput extends LitElement {
     value: { type: String },
     label: { type: String },
     type: { type: String },
+    placeholder: { type: String },
+    required: { type: Boolean },
+    min: { type: String },
   };
+
+  constructor() {
+    super();
+    this.required = false;
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -60,6 +72,9 @@ class SldsInput extends LitElement {
     const control = strategy.render({
       inputId: strategy.inputId,
       value: this.value,
+      placeholder: this.placeholder,
+      required: this.required,
+      min: this.min,
       onChange: (event) => this.handleChangeInput(event),
     });
 
