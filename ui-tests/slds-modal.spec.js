@@ -184,12 +184,15 @@ test.describe('slds-modal', () => {
     });
   }
 
-  // Kennung des fokussierten Elements — bei Fokus im Shadow-DOM meldet
-  // document.activeElement nur den Host.
+  // Kennung des fokussierten Elements. `document.activeElement` retargetet: liegt
+  // der Fokus in einem Shadow Root, meldet es nur dessen äußersten Host — deshalb
+  // bis zum echten Element absteigen.
   async function focusedId(page) {
     return page.evaluate(() => {
-      const modal = document.querySelector('slds-modal');
-      const active = modal.shadowRoot.activeElement ?? document.activeElement;
+      let active = document.activeElement;
+      while (active?.shadowRoot?.activeElement) {
+        active = active.shadowRoot.activeElement;
+      }
       if (!active) return null;
       if (active.classList.contains('slds-modal__close')) return 'close-button';
       return active.id || active.tagName.toLowerCase();
@@ -260,6 +263,75 @@ test.describe('slds-modal', () => {
     expect(res.afterFirstClose).toBe('hidden');
     // Jetzt ist keines mehr offen -> der Ausgangswert der Seite kehrt zurück.
     expect(res.afterSecondClose).toBe('scroll');
+  });
+
+  test('Fokus-Trap hält auch, wenn das Modal in einem fremden Shadow Root steckt', async ({
+    page,
+  }) => {
+    // Genau der Fall aller vier Consumer: custom-navigation-modal & Co. wickeln das
+    // slds-modal ein, sein Slot-Inhalt liegt also im Shadow Root eines ANDEREN
+    // Elements. `document.activeElement` meldet dann nur den äußersten Host — wer
+    // damit vergleicht, findet das fokussierte Element nie und lässt Tab entkommen.
+    await page.evaluate(async () => {
+      await import('/slds-components/slds-modal/slds-modal.js');
+      document.querySelectorAll('modal-wrapper').forEach((el) => el.remove());
+
+      if (!customElements.get('modal-wrapper')) {
+        customElements.define(
+          'modal-wrapper',
+          class extends HTMLElement {
+            constructor() {
+              super();
+              this.attachShadow({ mode: 'open' });
+            }
+          }
+        );
+      }
+
+      const wrapper = document.createElement('modal-wrapper');
+      document.body.appendChild(wrapper);
+      wrapper.shadowRoot.innerHTML = `
+        <slds-modal>
+          <button id="first-in-body">Erster</button>
+          <button id="last-in-body">Zweiter</button>
+        </slds-modal>
+      `;
+
+      const modal = wrapper.shadowRoot.querySelector('slds-modal');
+      await modal.updateComplete;
+      modal.open = true;
+      await modal.updateComplete;
+    });
+
+    const deepFocusedId = () =>
+      page.evaluate(() => {
+        let active = document.activeElement;
+        while (active?.shadowRoot?.activeElement) {
+          active = active.shadowRoot.activeElement;
+        }
+        if (active?.classList.contains('slds-modal__close')) {
+          return 'close-button';
+        }
+        return active?.id ?? active?.tagName.toLowerCase() ?? null;
+      });
+
+    expect(await deepFocusedId()).toBe('close-button');
+
+    // Durchtabben: der Fokus darf den Dialog nie verlassen.
+    const trail = [];
+    for (let i = 0; i < 6; i += 1) {
+      await page.keyboard.press('Tab');
+      trail.push(await deepFocusedId());
+    }
+    // Erwartet: zyklisch über die drei fokussierbaren Elemente, nichts von außen.
+    expect(trail).toEqual([
+      'first-in-body',
+      'last-in-body',
+      'close-button',
+      'first-in-body',
+      'last-in-body',
+      'close-button',
+    ]);
   });
 
   test('Schließen gibt den Fokus an den Auslöser zurück', async ({ page }) => {
