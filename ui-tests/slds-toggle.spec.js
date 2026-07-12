@@ -13,7 +13,7 @@ const { test, expect } = require('@playwright/test');
 async function mountToggle(page, { attrs = {}, clicks = 0 } = {}) {
   return page.evaluate(
     async ({ attrs, clicks }) => {
-      await import('/slds-components/slds-toggle/toggle.js');
+      await import('/slds-components/slds-toggle/slds-toggle.js');
       document.querySelectorAll('slds-toggle').forEach((el) => el.remove());
 
       const el = document.createElement('slds-toggle');
@@ -112,7 +112,7 @@ test.describe('slds-toggle', () => {
     // Früher wurde sie in render() per Math.random() neu erzeugt und wechselte
     // damit bei jedem Update — von außen nicht referenzierbar.
     const ids = await page.evaluate(async () => {
-      await import('/slds-components/slds-toggle/toggle.js');
+      await import('/slds-components/slds-toggle/slds-toggle.js');
       document.querySelectorAll('slds-toggle').forEach((el) => el.remove());
 
       const el = document.createElement('slds-toggle');
