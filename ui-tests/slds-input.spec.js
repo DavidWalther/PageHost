@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut-, Typ- und Event-Tests für die Lit-Komponente `slds-input`.
@@ -97,7 +98,7 @@ async function dispatchChange(page, { attrs = {}, inputValue } = {}) {
 
 test.describe('slds-input', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: Form-Element mit Label und Text-Input (default)', async ({

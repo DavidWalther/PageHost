@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Struktur- und Attribut-Tests für die Lit-Komponenten `slds-layout` und
@@ -76,7 +77,7 @@ async function toggleAttribute(page, selector, name, present) {
 
 test.describe('slds-layout', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Light DOM: kein Shadow Root, slds-grid und slds-col am Host', async ({

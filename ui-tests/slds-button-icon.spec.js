@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut-, Icon- und Klick-Contract-Tests für die Lit-Komponente
@@ -76,7 +77,7 @@ async function clickInnerButton(page, { attrs = {} } = {}) {
 
 test.describe('slds-button-icon', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Default: Basisklassen, Variant-Default container-filled, Icon + Assistive', async ({

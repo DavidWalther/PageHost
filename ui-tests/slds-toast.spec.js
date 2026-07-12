@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut- und Slot-Effekt-Tests für die Lit-Komponente `slds-toast`.
@@ -52,7 +53,7 @@ async function mountToast(page, { attrs = {}, message } = {}) {
 
 test.describe('slds-toast', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Default: info-Theme, Icon, Assistive-Text', async ({ page }) => {

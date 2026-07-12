@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut-, Event- und Struktur-Tests für die Lit-Komponente `slds-toggle`.
@@ -71,7 +72,7 @@ async function mountToggle(page, { attrs = {}, clicks = 0 } = {}) {
 
 test.describe('slds-toggle', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: SLDS-Blueprint mit Faux-Container und On/Off-Spans', async ({
