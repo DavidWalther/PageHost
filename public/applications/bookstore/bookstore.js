@@ -63,7 +63,7 @@ class Bookstore extends LitElement {
     return html`
       <slds-card no-footer no-header>
         <slds-layout wrap>
-          <slds-layout-item align-middle size-3-of-12>
+          <slds-layout-item align-middle size="3-of-12">
             <slds-layout wrap>
               <slds-layout-item>
                 <slds-button-icon
@@ -76,12 +76,12 @@ class Bookstore extends LitElement {
               </slds-layout-item>
             </slds-layout>
           </slds-layout-item>
-          <slds-layout-item size-6-of-12>
+          <slds-layout-item size="6-of-12">
             <div class="slds-text-align_center slds-text-heading_large">
               <span id="page-header-headline"></span>
             </div>
           </slds-layout-item>
-          <slds-layout-item align-middle size-3-of-12>
+          <slds-layout-item align-middle size="3-of-12">
             <slds-layout align-end>
               <slds-layout-item>
                 <slds-button-icon
@@ -98,23 +98,23 @@ class Bookstore extends LitElement {
       </slds-card>
       <custom-settings-modal>
         <slds-layout wrap vertical>
-          <slds-layout-item size-1-of-1 class="slds-m-bottom--medium">
+          <slds-layout-item size="1-of-1" class="slds-m-bottom--medium">
             <slds-layout>
-              <slds-layout-item size-1-of-4>
+              <slds-layout-item size="1-of-4">
                 <span>Login</span>
               </slds-layout-item>
-              <slds-layout-item size-3-of-4>
+              <slds-layout-item size="3-of-4">
                 <custom-login-module></custom-login-module>
               </slds-layout-item>
             </slds-layout>
           </slds-layout-item>
 
-          <slds-layout-item size-1-of-1>
+          <slds-layout-item size="1-of-1">
             <slds-layout>
-              <slds-layout-item size-1-of-4>
+              <slds-layout-item size="1-of-4">
                 <span>Licht</span>
               </slds-layout-item>
-              <slds-layout-item size-3-of-4>
+              <slds-layout-item size="3-of-4">
                 <slds-layout align-end>
                   <slds-layout-item>
                     <slds-toggle
@@ -127,7 +127,6 @@ class Bookstore extends LitElement {
               </slds-layout-item>
             </slds-layout>
           </slds-layout-item>
-
         </slds-layout>
         <div
           slot="danger"

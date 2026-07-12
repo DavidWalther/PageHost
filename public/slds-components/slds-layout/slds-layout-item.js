@@ -3,105 +3,58 @@ import {
   nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
-// Supported SLDS size fractions
-const SIZE_FRACTIONS = [
-  '1-of-1',
-  '1-of-2',
-  '1-of-3',
-  '2-of-3',
-  '1-of-4',
-  '2-of-4',
-  '3-of-4',
-  '1-of-5',
-  '2-of-5',
-  '3-of-5',
-  '4-of-5',
-  '1-of-6',
-  '2-of-6',
-  '3-of-6',
-  '4-of-6',
-  '5-of-6',
-  '1-of-8',
-  '2-of-8',
-  '3-of-8',
-  '4-of-8',
-  '5-of-8',
-  '6-of-8',
-  '7-of-8',
-  '1-of-12',
-  '2-of-12',
-  '3-of-12',
-  '4-of-12',
-  '5-of-12',
-  '6-of-12',
-  '7-of-12',
-  '8-of-12',
-  '9-of-12',
-  '10-of-12',
-  '11-of-12',
-  '12-of-12',
-];
+// SLDS definiert Spaltenbreiten nur für diese Nenner. Daraus ergeben sich alle
+// gültigen Bruchteile (1-of-1, 1-of-2, 2-of-2, … 12-of-12) — genau die 48, die im
+// Stylesheet stehen. Generiert statt gepflegt: eine Handliste war unvollständig
+// (die komplette Siebtel-Familie und 2-of-2, 3-of-3, … fehlten).
+const DENOMINATORS = [1, 2, 3, 4, 5, 6, 7, 8, 12];
+const SIZE_FRACTIONS = new Set(
+  DENOMINATORS.flatMap((denominator) =>
+    Array.from(
+      { length: denominator },
+      (_, index) => `${index + 1}-of-${denominator}`
+    )
+  )
+);
 
 const BREAKPOINTS = [
-  { prefix: 'size', attrPrefix: 'size', classPrefix: 'slds-size_' },
-  {
-    prefix: 'smallSize',
-    attrPrefix: 'small-size',
-    classPrefix: 'slds-small-size_',
-  },
-  {
-    prefix: 'mediumSize',
-    attrPrefix: 'medium-size',
-    classPrefix: 'slds-medium-size_',
-  },
-  {
-    prefix: 'largeSize',
-    attrPrefix: 'large-size',
-    classPrefix: 'slds-large-size_',
-  },
+  { prop: 'size', classPrefix: 'slds-size_' },
+  { prop: 'smallSize', classPrefix: 'slds-small-size_' },
+  { prop: 'mediumSize', classPrefix: 'slds-medium-size_' },
+  { prop: 'largeSize', classPrefix: 'slds-large-size_' },
 ];
 
-// Converts a hyphenated fraction string to a camelCase suffix, e.g. "1-of-2" -> "1Of2"
-function fractionToCamel(fraction) {
-  return fraction.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
-}
+const BUMP_CLASSES = {
+  bumpLeft: 'slds-col_bump-left',
+  bumpRight: 'slds-col_bump-right',
+  bumpTop: 'slds-col_bump-top',
+  bumpBottom: 'slds-col_bump-bottom',
+};
 
-// Build the full prop name and attribute name for a breakpoint + fraction
-function propName(breakpointPrefix, fraction) {
-  return `${breakpointPrefix}${fractionToCamel('-' + fraction)}`;
-}
-
-function attrName(attrPrefix, fraction) {
-  return `${attrPrefix}-${fraction}`;
-}
+const ALIGN_CLASSES = {
+  alignTop: 'slds-align-top',
+  alignMiddle: 'slds-align-middle',
+  alignBottom: 'slds-align-bottom',
+};
 
 class SldsLayoutItem extends LitElement {
-  static get properties() {
-    const props = {};
+  static properties = {
+    // Ein String je Breakpoint (`size="1-of-2"`). Früher stand hier ein Boolean je
+    // Bruchteil UND Breakpoint — 136 Properties für dieselbe Funktion.
+    size: { type: String },
+    smallSize: { type: String, attribute: 'small-size' },
+    mediumSize: { type: String, attribute: 'medium-size' },
+    largeSize: { type: String, attribute: 'large-size' },
 
-    // Size fraction booleans per breakpoint
-    for (const bp of BREAKPOINTS) {
-      for (const frac of SIZE_FRACTIONS) {
-        props[propName(bp.prefix, frac)] = {
-          type: Boolean,
-          attribute: attrName(bp.attrPrefix, frac),
-        };
-      }
-    }
+    bumpLeft: { type: Boolean, attribute: 'bump-left' },
+    bumpRight: { type: Boolean, attribute: 'bump-right' },
+    bumpTop: { type: Boolean, attribute: 'bump-top' },
+    bumpBottom: { type: Boolean, attribute: 'bump-bottom' },
 
-    // Bump variants
-    props.bumpLeft = { type: Boolean, attribute: 'bump-left' };
-    props.bumpRight = { type: Boolean, attribute: 'bump-right' };
-    props.bumpTop = { type: Boolean, attribute: 'bump-top' };
-    props.bumpBottom = { type: Boolean, attribute: 'bump-bottom' };
-
-    // Align variants
-    props.alignTop = { type: Boolean, attribute: 'align-top' };
-    props.alignMiddle = { type: Boolean, attribute: 'align-middle' };
-    props.alignBottom = { type: Boolean, attribute: 'align-bottom' };
-
-    return props;
-  }
+    alignTop: { type: Boolean, attribute: 'align-top' },
+    alignMiddle: { type: Boolean, attribute: 'align-middle' },
+    alignBottom: { type: Boolean, attribute: 'align-bottom' },
+  };
 
   createRenderRoot() {
     return this;
@@ -113,35 +66,33 @@ class SldsLayoutItem extends LitElement {
   }
 
   updated(changedProperties) {
-    // Size fractions
-    for (const bp of BREAKPOINTS) {
-      for (const frac of SIZE_FRACTIONS) {
-        const prop = propName(bp.prefix, frac);
-        if (changedProperties.has(prop)) {
-          this.classList.toggle(`${bp.classPrefix}${frac}`, this[prop]);
-        }
+    for (const breakpoint of BREAKPOINTS) {
+      if (!changedProperties.has(breakpoint.prop)) {
+        continue;
+      }
+
+      // Light DOM: die classList gehört uns nicht allein — Consumer setzen dort
+      // eigene Klassen (z. B. slds-m-bottom--medium). Deshalb gezielt die zuvor
+      // gesetzte Klasse entfernen statt pauschal aufzuräumen.
+      const previous = changedProperties.get(breakpoint.prop);
+      if (previous) {
+        this.classList.remove(`${breakpoint.classPrefix}${previous}`);
+      }
+
+      const current = this[breakpoint.prop];
+      // Unbekannter Bruchteil -> keine Klasse (statt still einer wirkungslosen).
+      if (SIZE_FRACTIONS.has(current)) {
+        this.classList.add(`${breakpoint.classPrefix}${current}`);
       }
     }
 
-    // Bump
-    const bumpMap = {
-      bumpLeft: 'slds-col_bump-left',
-      bumpRight: 'slds-col_bump-right',
-      bumpTop: 'slds-col_bump-top',
-      bumpBottom: 'slds-col_bump-bottom',
-    };
-    for (const [prop, cls] of Object.entries(bumpMap)) {
-      if (changedProperties.has(prop)) this.classList.toggle(cls, this[prop]);
-    }
-
-    // Align
-    const alignMap = {
-      alignTop: 'slds-align-top',
-      alignMiddle: 'slds-align-middle',
-      alignBottom: 'slds-align-bottom',
-    };
-    for (const [prop, cls] of Object.entries(alignMap)) {
-      if (changedProperties.has(prop)) this.classList.toggle(cls, this[prop]);
+    for (const [prop, className] of Object.entries({
+      ...BUMP_CLASSES,
+      ...ALIGN_CLASSES,
+    })) {
+      if (changedProperties.has(prop)) {
+        this.classList.toggle(className, this[prop]);
+      }
     }
   }
 
