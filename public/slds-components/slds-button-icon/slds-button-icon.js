@@ -18,8 +18,6 @@ class SLDSButtonIcon extends LitElement {
     size: { type: String },
     variant: { type: String },
     disabled: { type: Boolean },
-    // Legacy-API: in observedAttributes, aber ohne Wirkung -> No-Op (wie Legacy).
-    noBorder: { type: Boolean, attribute: 'no-border' },
   };
 
   connectedCallback() {
