@@ -68,11 +68,6 @@ the event (that is the legacy contract).
 
 ## Known legacy quirks (reproduced on purpose)
 
-The port is faithful, so two visible oddities were kept as they were (fixing them
-would be a behaviour change → own issue):
-
-- Option labels do **not** truncate: the legacy overwrites the template's
-  `slds-truncate` span via `textContent`, so it never reaches the DOM.
 - `aria-expanded` stays `"false"` even while the dropdown is open; only the
   `slds-is-open` class reflects the state.
 

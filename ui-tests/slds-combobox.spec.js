@@ -79,8 +79,14 @@ async function mountCombobox(page, { attrs = {}, actions = [] } = {}) {
           ariaSelected: div.getAttribute('aria-selected'),
           ariaChecked: div.getAttribute('aria-checked'),
           bodyText: body ? body.textContent.trim() : null,
-          bodyTitle: body ? body.getAttribute('title') : null,
           bodyStyle: body ? body.getAttribute('style') : null,
+          // Das Label steckt im Truncate-Span, der auch den title trägt (Blueprint).
+          truncateText: body?.querySelector('span.slds-truncate')
+            ? body.querySelector('span.slds-truncate').textContent.trim()
+            : null,
+          truncateTitle: body?.querySelector('span.slds-truncate')
+            ? body.querySelector('span.slds-truncate').getAttribute('title')
+            : null,
           hasTruncateSpan: !!(body && body.querySelector('span.slds-truncate')),
           // href.baseVal ist die vom Browser aufgelöste Sprite-Referenz —
           // getAttribute('xlink:href') würde auch ein nicht auflösendes Icon
@@ -211,7 +217,7 @@ test.describe('slds-combobox', () => {
     expect(res.inputPlaceholder).toBe('Kapitel auswählen');
   });
 
-  test('Options-Rendering: li je Option, ohne slds-truncate-Span (faithful)', async ({
+  test('Options-Rendering: li je Option mit Truncate-Span', async ({
     page,
   }) => {
     const res = await mountCombobox(page, {
@@ -225,13 +231,15 @@ test.describe('slds-combobox', () => {
     expect(first.role).toBe('option');
     expect(first.divClass).toContain('slds-listbox__option');
     expect(first.divClass).toContain('slds-listbox__option_plain');
-    expect(first.bodyText).toBe('Alpha');
-    expect(first.bodyTitle).toBe('Alpha title');
     expect(first.bodyStyle).toContain('--custom-combobox-option-color');
-    // Legacy zerstört den Truncate-Span per textContent — faithful reproduziert.
-    expect(first.hasTruncateSpan).toBe(false);
 
-    expect(res.items.map((item) => item.bodyText)).toEqual([
+    // Ohne den Truncate-Span laufen lange Labels aus der Combobox heraus, statt
+    // mit Ellipse abgeschnitten zu werden.
+    expect(first.hasTruncateSpan).toBe(true);
+    expect(first.truncateText).toBe('Alpha');
+    expect(first.truncateTitle).toBe('Alpha title');
+
+    expect(res.items.map((item) => item.truncateText)).toEqual([
       'Alpha',
       'Beta',
       'Gamma',
