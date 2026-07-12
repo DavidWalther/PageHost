@@ -5,17 +5,12 @@ const { test, expect } = require('@playwright/test');
  *
  * Die Komponente wird isoliert gemountet — der App-Server liefert `public/`
  * statisch aus, daher ist kein Consumer und kein echtes Backend nötig. Geprüft
- * wird das gerenderte Shadow-DOM, das dem Legacy-Verhalten entspricht:
- * `.slds-form-element` mit Label und einem Control-Input, dessen Typ per
- * Strategy gewählt wird (`date` → Date-Input, alles andere → Text-Input als
- * Fallback), das `value`/`label`-Attribut wirkt, `type`/`value`/`label` reaktiv
- * sind und ein nativer `change` am Input als `change`-CustomEvent mit
- * `detail: { type, value }` am Host erneut gefeuert wird.
- *
- * Hinweis zum reaktiven `type`-Wechsel (Test 7): In der Legacy war das ein No-Op
- * (der `placeholder-input`-Slot ist nach dem Erst-Render bereits durch ein
- * Template ersetzt). Der Lit-Port löst die Strategy bei jedem Render neu auf und
- * unterstützt den Wechsel sauber — eine bewusste, nie exponierte Divergenz.
+ * wird das gerenderte Shadow-DOM: `.slds-form-element` mit Label und einem
+ * Control-Input, dessen Typ per Strategy-Registry gewählt wird (`date`, `number`,
+ * `text`; ein unbekannter Typ fällt auf `text` zurück). Dazu die durchgereichten
+ * Attribute (`value`, `label`, `placeholder`, `required`, `min`), die Reaktivität
+ * und der Event-Contract: ein nativer `change` am Input wird als
+ * `change`-CustomEvent mit `detail: { type, value }` am Host erneut gefeuert.
  */
 
 // Mountet <slds-input> mit den gegebenen Attributen, wendet optional danach eine
@@ -55,6 +50,9 @@ async function mountInput(page, { attrs = {}, setAttrAfter } = {}) {
         inputType: input ? input.getAttribute('type') : null,
         inputClass: input ? input.className : null,
         inputValue: input ? input.value : null,
+        inputPlaceholder: input ? input.getAttribute('placeholder') : null,
+        inputRequired: input ? input.required : null,
+        inputMin: input ? input.getAttribute('min') : null,
       };
     },
     { attrs, setAttrAfter }
@@ -141,12 +139,55 @@ test.describe('slds-input', () => {
     expect(res.inputType).toBe('date');
   });
 
-  test('type="number" fällt auf den Text-Input zurück (faithful)', async ({
+  test('type="number" rendert einen Number-Input', async ({ page }) => {
+    // Fiel früher still auf den Text-Input zurück, obwohl custom-chapter-edit
+    // type="number" setzt und den Wert numerisch weiterverarbeitet.
+    const res = await mountInput(page, { attrs: { type: 'number' } });
+    expect(res.inputId).toBe('input-number');
+    expect(res.inputType).toBe('number');
+  });
+
+  test('unbekannter Typ fällt weiterhin auf den Text-Input zurück', async ({
     page,
   }) => {
-    const res = await mountInput(page, { attrs: { type: 'number' } });
+    const res = await mountInput(page, { attrs: { type: 'quantenfeld' } });
     expect(res.inputId).toBe('input-text');
     expect(res.inputType).toBe('text');
+  });
+
+  test('placeholder, required und min wirken am Input', async ({ page }) => {
+    // Alle drei wurden vom Consumer gesetzt und von der Komponente ignoriert.
+    const res = await mountInput(page, {
+      attrs: {
+        type: 'number',
+        placeholder: 'z. B. 1',
+        required: true,
+        min: '1',
+      },
+    });
+    expect(res.inputPlaceholder).toBe('z. B. 1');
+    expect(res.inputRequired).toBe(true);
+    expect(res.inputMin).toBe('1');
+  });
+
+  test('ohne placeholder/required/min bleiben die Attribute weg', async ({
+    page,
+  }) => {
+    const res = await mountInput(page);
+    expect(res.inputPlaceholder).toBeNull();
+    expect(res.inputRequired).toBe(false);
+    expect(res.inputMin).toBeNull();
+  });
+
+  test('change-Event beim Number-Input meldet type "number"', async ({
+    page,
+  }) => {
+    const res = await dispatchChange(page, {
+      attrs: { type: 'number' },
+      inputValue: '42',
+    });
+    expect(res.detailType).toBe('number');
+    expect(res.detailValue).toBe('42');
   });
 
   test('change-Event: nativer change am Input feuert change am Host', async ({
