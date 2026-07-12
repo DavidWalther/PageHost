@@ -43,22 +43,12 @@ const STATIC_FILES = [
   '/slds-components/slds-card/slds-card.js',
   '/slds-components/slds-toast/slds-toast.js',
   '/slds-components/slds-button-icon/slds-button-icon.js',
-  '/slds-components/slds-toggle/toggle.js',
+  '/slds-components/slds-toggle/slds-toggle.js',
   '/slds-components/slds-modal/slds-modal.js',
   '/slds-components/slds-layout/slds-layout.js',
   '/slds-components/slds-layout/slds-layout-item.js',
   '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
   '/slds-components/slds-progress-bar/slds-progress-bar.js',
-
-  // SLDS Components - HTML Templates
-  '/slds-components/slds-combobox/slds-combobox.html',
-  '/slds-components/slds-panel/slds-panel.html',
-  '/slds-components/slds-spinner/slds-spinner.html',
-  '/slds-components/slds-input/slds-input.html',
-  '/slds-components/slds-global-header/slds-global-header.html',
-  '/slds-components/slds-card/slds-card.html',
-  '/slds-components/slds-toast/slds-toast.html',
-  '/slds-components/slds-button-icon/slds-button-icon.html',
 
   // External assets (referenced in IndexHtmlEndpointLogic.js)
   '/assets/styles/salesforce-lightning-design-system.min.css',

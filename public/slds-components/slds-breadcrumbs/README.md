@@ -7,21 +7,24 @@ A Web Component (LitElement) that renders a Salesforce Lightning Design System (
 ## Import
 
 ```html
-<script type="module" src="/slds-components/slds-breadcrumbs/slds-breadcrumbs.js"></script>
+<script
+  type="module"
+  src="/slds-components/slds-breadcrumbs/slds-breadcrumbs.js"
+></script>
 ```
 
 ---
 
 ## Attributes
 
-| Attribute           | Type    | Required | Default         | Description                                                        |
-|---------------------|---------|----------|-----------------|--------------------------------------------------------------------|
-| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see [Item shape](#item-shape))   |
-| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                           |
-| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                           |
-| `card-container`    | Boolean | No       | `false`         | Wraps the breadcrumbs inside an `slds-card`                        |
-| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; collapses middle items into `…`           |
-| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored without `overflow`) |
+| Attribute           | Type    | Required | Default         | Description                                                                |
+| ------------------- | ------- | -------- | --------------- | -------------------------------------------------------------------------- |
+| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see [Item shape](#item-shape))           |
+| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                                   |
+| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                                   |
+| `card-container`    | Boolean | No       | `false`         | Wraps the breadcrumbs inside an `slds-card`                                |
+| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; collapses middle items into `…`                   |
+| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored without `overflow`)     |
 | `last-item-as-link` | Boolean | No       | `false`         | Renders the last (current) item as a clickable `<a>` instead of a `<span>` |
 
 ---
@@ -38,19 +41,23 @@ Each entry in the `items` array must be an object with the following fields:
 }
 ```
 
-| Field   | Type   | Required | Description                                                  |
-|---------|--------|----------|--------------------------------------------------------------|
-| `key`   | String | Yes      | Unique identifier; passed through in the `click` event       |
-| `label` | String | Yes      | Text shown in the breadcrumb item                            |
-| `href`  | String | No       | Navigation URL; omit to render the anchor without an `href`  |
+| Field   | Type   | Required | Description                                                 |
+| ------- | ------ | -------- | ----------------------------------------------------------- |
+| `key`   | String | Yes      | Unique identifier; passed through in `breadcrumb-select`    |
+| `label` | String | Yes      | Text shown in the breadcrumb item                           |
+| `href`  | String | No       | Navigation URL; omit to render the anchor without an `href` |
 
 ---
 
 ## Events
 
-| Event   | Detail                        | Description                                                                                                 |
-|---------|-------------------------------|-------------------------------------------------------------------------------------------------------------|
-| `click` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
+| Event               | Detail                        | Description                                                                                                   |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `breadcrumb-select` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
+
+> The event used to be called `click`, which collided with the native click event
+> (whose `detail` is the browser's click count, not an item object). Listen for
+> `breadcrumb-select` instead.
 
 ---
 
@@ -58,11 +65,14 @@ Each entry in the `items` array must be an object with the following fields:
 
 The `size` attribute controls the text size and the spacing between items.
 
-| Value    | SLDS class applied          |
-|----------|-----------------------------|
-| `small`  | `slds-text-heading_small`   |
-| `medium` | `slds-text-heading_medium`  |
-| `large`  | `slds-text-heading_large`   |
+| Value    | SLDS class applied         | Item spacing |
+| -------- | -------------------------- | ------------ |
+| `small`  | `slds-text-heading_small`  | `.8rem`      |
+| `medium` | `slds-text-heading_medium` | `1rem`       |
+| `large`  | `slds-text-heading_large`  | `1.75rem`    |
+
+An unknown value falls back to `medium` for **both** the text class and the
+spacing.
 
 ---
 
@@ -79,6 +89,9 @@ Example with 5 items and `overflow_limit="3"`:
 ```
 Home  ›  …  ›  Contacts  ›  ACME Corp
 ```
+
+A value below `2` cannot express "first item + `…` + last item", so
+`overflow_limit` is raised to `2` in that case.
 
 ---
 
@@ -123,22 +136,21 @@ Home  ›  …  ›  Contacts  ›  ACME Corp
 ></slds-breadcrumbs>
 ```
 
-### Listening to click events
+### Listening to selections
 
 ```javascript
-document.querySelector('slds-breadcrumbs').addEventListener('click', (event) => {
-  const { key, label, href, index } = event.detail;
-  console.log(`Clicked: ${label} (key: ${key}, index: ${index})`);
-});
+document
+  .querySelector('slds-breadcrumbs')
+  .addEventListener('breadcrumb-select', (event) => {
+    const { key, label, href, index } = event.detail;
+    console.log(`Clicked: ${label} (key: ${key}, index: ${index})`);
+  });
 ```
 
 ### Custom `aria-label`
 
 ```html
-<slds-breadcrumbs
-  aria-label="Page navigation"
-  items='[...]'
-></slds-breadcrumbs>
+<slds-breadcrumbs aria-label="Page navigation" items="[...]"></slds-breadcrumbs>
 ```
 
 ### Last item as link

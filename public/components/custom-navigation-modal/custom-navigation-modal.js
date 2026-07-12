@@ -132,10 +132,12 @@ class NavigationModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal title="${this.labels.modalTitle}" footless>
-        ${this._selectedStory === null
-          ? this._renderStories()
-          : this._renderChapters()}
+      <slds-modal heading="${this.labels.modalTitle}" footless>
+        ${
+          this._selectedStory === null
+            ? this._renderStories()
+            : this._renderChapters()
+        }
       </slds-modal>
     `;
   }
@@ -154,19 +156,20 @@ class NavigationModal extends LitElement {
         ${this._tree.map(
           (story) => html`
             <slds-layout-item
-              size-1-of-2
-              medium-size-1-of-3
-              large-size-1-of-4
-              class="slds-p-vertical_x-small"
+              size="1-of-2"
+              medium-size="1-of-3"
+              large-size="1-of-4"
             >
-              <button
-                class="tile ${story.id === currentStoryId
-                  ? 'tile_current'
-                  : ''}"
-                @click="${() => this._handleStoryClick(story)}"
-              >
-                <span>${story.name}</span>
-              </button>
+              <div class="slds-p-vertical_x-small">
+                <button
+                  class="tile ${
+                    story.id === currentStoryId ? 'tile_current' : ''
+                  }"
+                  @click="${() => this._handleStoryClick(story)}"
+                >
+                  <span>${story.name}</span>
+                </button>
+              </div>
             </slds-layout-item>
           `
         )}
@@ -182,35 +185,40 @@ class NavigationModal extends LitElement {
           ${this.labels.back}
         </button>
       </div>
-      ${chapters.length === 0
-        ? html`
-            <div class="slds-align_absolute-center slds-p-around_medium">
-              <span>${this.labels.emptyChapters}</span>
-            </div>
-          `
-        : html`
-            <slds-layout wrap gutters-small>
-              ${chapters.map(
-                (chapter) => html`
-                  <slds-layout-item
-                    size-1-of-2
-                    medium-size-1-of-3
-                    large-size-1-of-4
-                    class="slds-p-vertical_x-small"
-                  >
-                    <button
-                      class="tile ${chapter.id === this.currentLocation
-                        ? 'tile_current'
-                        : ''}"
-                      @click="${() => this._handleChapterClick(chapter.id)}"
+      ${
+        chapters.length === 0
+          ? html`
+              <div class="slds-align_absolute-center slds-p-around_medium">
+                <span>${this.labels.emptyChapters}</span>
+              </div>
+            `
+          : html`
+              <slds-layout wrap gutters-small>
+                ${chapters.map(
+                  (chapter) => html`
+                    <slds-layout-item
+                      size="1-of-2"
+                      medium-size="1-of-3"
+                      large-size="1-of-4"
                     >
-                      <span>${chapter.name}</span>
-                    </button>
-                  </slds-layout-item>
-                `
-              )}
-            </slds-layout>
-          `}
+                      <div class="slds-p-vertical_x-small">
+                        <button
+                          class="tile ${
+                            chapter.id === this.currentLocation
+                              ? 'tile_current'
+                              : ''
+                          }"
+                          @click="${() => this._handleChapterClick(chapter.id)}"
+                        >
+                          <span>${chapter.name}</span>
+                        </button>
+                      </div>
+                    </slds-layout-item>
+                  `
+                )}
+              </slds-layout>
+            `
+      }
     `;
   }
 

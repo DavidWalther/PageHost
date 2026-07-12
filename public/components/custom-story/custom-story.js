@@ -108,10 +108,9 @@ class CustomStory extends LitElement {
     return html`
       <div class="slds-col slds-grow-none">
         <button
-          class="slds-button slds-button_neutral ${this.selectedChapter ===
-          chapter.id
-            ? 'slds-button_brand'
-            : ''}"
+          class="slds-button slds-button_neutral ${
+            this.selectedChapter === chapter.id ? 'slds-button_brand' : ''
+          }"
           data-chapter-id=${chapter.id}
           @click=${() => this.changeChapter(chapter.id)}
           ?disabled=${isSelected}
@@ -136,7 +135,7 @@ class CustomStory extends LitElement {
           label="Kapitel"
           placeholder="Kapitel auswählen"
           value=${this.selectedChapter}
-          @select=${(e) => this.changeChapter(e.detail.value)}
+          @combobox-select=${(e) => this.changeChapter(e.detail.value)}
         ></slds-combobox>
       </div>
     `;

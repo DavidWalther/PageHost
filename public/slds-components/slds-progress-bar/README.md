@@ -52,3 +52,13 @@ A Lit web component that renders a Salesforce Lightning Design System (SLDS) pro
 ## Accessibility
 
 The component renders a `<div>` with `role="progressbar"` and the ARIA attributes `aria-valuemin`, `aria-valuemax`, and `aria-valuenow`. An assistive-text `<span>` inside the value element also announces the percentage (e.g. _"Progress: 60%"_).
+
+## Notes
+
+- `size` is checked against a whitelist (`x-small`, `small`, `medium`, `large`); an
+  unknown value applies **no** modifier class.
+- `size="medium"` deliberately applies **no** modifier class either: the base class
+  `.slds-progress-bar` already has `height: 0.5rem` — the same value as
+  `.slds-progress-bar_medium`.
+- `percent` is coerced to a number and clamped to 0–100. A non-numeric value falls
+  back to `0` rather than producing `NaN`.

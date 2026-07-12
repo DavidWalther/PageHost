@@ -8,7 +8,10 @@ a `<slds-toggle>` custom element that emits a `toggle` event on change.
 ## Usage
 
 ```html
-<script type="module" src="/slds-components/slds-toggle/toggle.js"></script>
+<script
+  type="module"
+  src="/slds-components/slds-toggle/slds-toggle.js"
+></script>
 
 <slds-toggle
   label="Enable feature"
@@ -92,10 +95,14 @@ root, adding `slds-grid` on the label for label/switch layout:
       <input
         type="checkbox"
         name="…"
-        id="toggle-…"
-        aria-describedby="toggle-…"
+        id="toggle-abc123"
+        aria-describedby="toggle-state-abc123"
       />
-      <span class="slds-checkbox_faux_container" aria-live="assertive">
+      <span
+        id="toggle-state-abc123"
+        class="slds-checkbox_faux_container"
+        aria-live="assertive"
+      >
         <span class="slds-checkbox_faux"></span>
         <span class="slds-checkbox_on">Enabled label</span>
         <span class="slds-checkbox_off">Disabled label</span>
@@ -147,10 +154,13 @@ inline validation.
 
 ## Accessibility
 
-- The `<input>` is associated with its `<label>` via a per-render generated
-  `id` / `for` pair, as required by SLDS form elements.
-- `aria-live="assertive"` on `slds-checkbox_faux_container` announces state
-  changes, matching the SLDS blueprint.
+- The `<input>` is associated with its `<label>` via an `id` / `for` pair, as
+  required by SLDS form elements. The `id` is generated once per instance and stays
+  stable across updates.
+- `aria-describedby` on the input references the state-text container
+  (`slds-checkbox_faux_container`), which carries the on/off labels.
+- `aria-live="assertive"` on that container announces state changes, matching the
+  SLDS blueprint.
 - SLDS styles are injected into the shadow root via
   `addGlobalStylesToShadowRoot` from `/modules/global-styles.mjs`.
 
@@ -161,3 +171,5 @@ inline validation.
   because it is public API consumed by `custom-publishing`, `custom-chapter-edit`
   and the `bookstore` application via `@toggle`; renaming it is a separate,
   breaking change.
+- The file is named `toggle.js`, not `slds-toggle.js` as `doc/conventions.md`
+  requires (`<name>/<name>.js`).

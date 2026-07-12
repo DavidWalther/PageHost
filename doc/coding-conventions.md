@@ -20,7 +20,7 @@ regelt Prettier (`.prettierrc`: `singleQuote`, `semi`, `tabWidth: 2`,
   zugewiesen wird. `var` ist verboten.
   ```js
   const cache = new DataCache2(this.environment); // nie neu zugewiesen → const
-  let product = await cache.get(recordId);         // wird unten neu gesetzt → let
+  let product = await cache.get(recordId); // wird unten neu gesetzt → let
   if (!product) product = await dataStorage.query(recordId);
   ```
 - **Async:** `async`/`await` ist der Standard. `.then()`-Ketten nur in Altcode;
@@ -30,7 +30,11 @@ regelt Prettier (`.prettierrc`: `singleQuote`, `semi`, `tabWidth: 2`,
   `severity`, `location: LOCATION`, `message` loggen.
   ```js
   const LOCATION = 'DataFacadeSync.getStory';
-  Logging.debugMessage({ severity: 'FINEST', location: LOCATION, message: '…' });
+  Logging.debugMessage({
+    severity: 'FINEST',
+    location: LOCATION,
+    message: '…',
+  });
   ```
 - **Naming:** `camelCase` für Variablen/Methoden, `PascalCase` für Klassen.
 
@@ -46,8 +50,8 @@ regelt Prettier (`.prettierrc`: `singleQuote`, `semi`, `tabWidth: 2`,
 
 ## Frontend
 
-- Komponenten-Muster (Lit-first, Legacy-Markup-Caching), Ordner- und
-  Tag-Präfixe: **`doc/conventions.md`** (kanonisch).
+- Komponenten-Muster (Lit), Ordner- und Tag-Präfixe:
+  **`doc/conventions.md`** (kanonisch).
 - **Event-Namen:** `kebab-case`, möglichst sprechend/qualifiziert
   (`chapter-select`, `chapter-updated`) statt nackter Einwörter (`select`).
 
@@ -67,5 +71,3 @@ Anfassen angleichen; eine gesammelte Migration ist optional.
   - `private/modules/oAuth2/OpenIdConnectClient.js`
 - **`let` ohne Reassignment:** verbreitet (z. B. `let cache = new DataCache2()`);
   bei Berührung auf `const` ziehen.
-- **Frontend Legacy-Muster:** 9 ältere `slds-*`-Komponenten nutzen noch natives
-  Markup-Caching statt Lit (Details in `doc/conventions.md`).
