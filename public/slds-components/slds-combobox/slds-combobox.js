@@ -234,10 +234,12 @@ class Combobox extends LitElement {
           </span>
           <span
             class="slds-media__body"
-            title="${option.title}"
             style="color: var(--custom-combobox-option-color);"
-            >${option.label}</span
           >
+            <span class="slds-truncate" title="${option.title}"
+              >${option.label}</span
+            >
+          </span>
         </div>
       </li>
     `;
