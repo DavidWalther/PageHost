@@ -108,12 +108,21 @@ test.describe('slds-input', () => {
     const res = await mountInput(page);
     expect(res.hasFormElement).toBe(true);
     expect(res.labelClass).toContain('slds-form-element__label');
-    expect(res.labelFor).toBe('input-sample1');
     expect(res.hasControl).toBe(true);
     expect(res.inputId).toBe('input-text');
     expect(res.inputType).toBe('text');
     expect(res.inputClass).toContain('slds-input');
     expect(res.inputClass).toContain('input-element');
+    // Das Label zeigte früher auf ein `input-sample1`, das es nie gab.
+    expect(res.labelFor).toBe(res.inputId);
+  });
+
+  test('Label und Input sind auch beim date-Typ verknüpft', async ({
+    page,
+  }) => {
+    const res = await mountInput(page, { attrs: { type: 'date' } });
+    expect(res.inputId).toBe('input-date');
+    expect(res.labelFor).toBe('input-date');
   });
 
   test('label-Attribut setzt den Label-Text', async ({ page }) => {
