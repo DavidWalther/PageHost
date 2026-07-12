@@ -93,10 +93,11 @@ class Combobox extends LitElement {
   }
 
   fireSelectEvent(selectedValue) {
-    // bubbles/composed waren frueher undefined (der zweite Parameter wurde nie
-    // belegt) -> beide false: das Event verliess die Komponente nicht.
+    // Qualifizierter Name statt `select`: das ist der native Event-Name der
+    // Text-Selektion in <input>/<textarea>. Ein gleichnamiges CustomEvent waere
+    // fuer einen Listener am Host nicht davon zu unterscheiden.
     this.dispatchEvent(
-      new CustomEvent('select', {
+      new CustomEvent('combobox-select', {
         detail: { value: selectedValue },
         bubbles: true,
         composed: true,
