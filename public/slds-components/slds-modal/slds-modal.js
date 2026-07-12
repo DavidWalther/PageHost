@@ -57,25 +57,27 @@ class SLDSModal extends LitElement {
           >
             <svg class="slds-button__icon slds-button__icon_large">
               <use
-                xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+                href="/assets/icons/utility-sprite/svg/symbols.svg#close"
               ></use>
             </svg>
             <span class="slds-assistive-text">Cancel & Close</span>
           </button>
 
           <!-- Modal Header -->
-          ${!this.headless
-            ? html`
-                <div class="slds-modal__header">
-                  <h1
-                    id="modal-heading"
-                    class="slds-modal__title slds-hyphenate"
-                  >
-                    <slot name="headline">${this.title}</slot>
-                  </h1>
-                </div>
-              `
-            : ''}
+          ${
+            !this.headless
+              ? html`
+                  <div class="slds-modal__header">
+                    <h1
+                      id="modal-heading"
+                      class="slds-modal__title slds-hyphenate"
+                    >
+                      <slot name="headline">${this.title}</slot>
+                    </h1>
+                  </div>
+                `
+              : ''
+          }
 
           <!-- Modal Body -->
           <div class="slds-modal__content slds-p-around_medium">
@@ -83,13 +85,15 @@ class SLDSModal extends LitElement {
           </div>
 
           <!-- Modal Footer -->
-          ${!this.footless
-            ? html`
-                <div class="slds-modal__footer">
-                  <slot name="footer"></slot>
-                </div>
-              `
-            : ''}
+          ${
+            !this.footless
+              ? html`
+                  <div class="slds-modal__footer">
+                    <slot name="footer"></slot>
+                  </div>
+                `
+              : ''
+          }
         </div>
       </section>
       <!-- Modal Backdrop -->
