@@ -1,6 +1,6 @@
 import {
   LitElement,
-  html,
+  nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 class SldsLayout extends LitElement {
@@ -85,8 +85,11 @@ class SldsLayout extends LitElement {
     toggle('reverseVertical', 'slds-grid_vertical-reverse');
   }
 
+  // Light DOM (siehe createRenderRoot): die Kinder stehen bereits da, wo sie
+  // hingehoeren. Ein <slot> projiziert nur innerhalb eines Shadow Roots und waere
+  // hier lediglich ein totes Element im Baum.
   render() {
-    return html`<slot></slot>`;
+    return nothing;
   }
 }
 

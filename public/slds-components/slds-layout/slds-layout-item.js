@@ -1,6 +1,6 @@
 import {
   LitElement,
-  html,
+  nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 
 // Supported SLDS size fractions
@@ -145,8 +145,9 @@ class SldsLayoutItem extends LitElement {
     }
   }
 
+  // Light DOM (siehe createRenderRoot) — kein <slot>, siehe slds-layout.js.
   render() {
-    return html`<slot></slot>`;
+    return nothing;
   }
 }
 
