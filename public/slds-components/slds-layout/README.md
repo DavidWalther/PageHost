@@ -30,10 +30,6 @@ Unlike every other `slds-*` component, both elements render into the **light DOM
 </slds-layout>
 ```
 
-> **Note.** Both components additionally append an empty, functionless `<slot>`
-> element to themselves — a `<slot>` only projects inside a shadow root. It is
-> inert (`display: contents`), but it is dead markup.
-
 ---
 
 ## `<slds-layout>`
