@@ -139,19 +139,26 @@ async function selectEvent(page, { attrs = {}, index = 0 } = {}) {
 
       let onHost = null;
       let reachedBody = false;
-      el.addEventListener('select', (event) => {
+      let nativeSelects = 0;
+      el.addEventListener('combobox-select', (event) => {
         onHost = {
           detailValue: event.detail ? event.detail.value : null,
           bubbles: event.bubbles,
           composed: event.composed,
         };
       });
-      document.body.addEventListener('select', () => (reachedBody = true));
+      document.body.addEventListener(
+        'combobox-select',
+        () => (reachedBody = true)
+      );
+      // `select` ist ein nativer Event-Name (Text-Selektion in input/textarea).
+      // Am Host darf unter diesem Namen nichts mehr ankommen.
+      el.addEventListener('select', () => (nativeSelects += 1));
 
       el.shadowRoot.querySelectorAll('ul.slds-listbox li')[index].click();
       await el.updateComplete;
 
-      return { onHost, reachedBody };
+      return { onHost, reachedBody, nativeSelects };
     },
     { attrs, index }
   );
@@ -317,11 +324,11 @@ test.describe('slds-combobox', () => {
     expect(res.comboboxClass).toContain('slds-is-open');
   });
 
-  test('select-Event: detail.value am Host, bubbelt und ist composed', async ({
+  test('combobox-select: detail.value am Host, bubbelt und ist composed', async ({
     page,
   }) => {
-    // Feuerte früher ohne bubbles/composed (beide undefined) und verließ die
-    // Komponente damit nicht — nur ein Listener direkt am Element sah es.
+    // Hieß früher `select` — ein nativer Event-Name — und feuerte ohne
+    // bubbles/composed (beide undefined), verließ die Komponente also nicht.
     const res = await selectEvent(page, {
       attrs: { options: JSON.stringify(OPTIONS) },
       index: 1,
@@ -331,6 +338,8 @@ test.describe('slds-combobox', () => {
     expect(res.onHost.bubbles).toBe(true);
     expect(res.onHost.composed).toBe(true);
     expect(res.reachedBody).toBe(true);
+    // Unter dem nativen Namen kommt am Host nichts mehr an.
+    expect(res.nativeSelects).toBe(0);
   });
 
   test('Filter: filterable reduziert die Liste, ohne filterable passiert nichts', async ({
