@@ -1,9 +1,6 @@
 const { Logging } = require('../../modules/logging');
 const { EndpointLogic } = require('../EndpointLogic');
 
-const RELATIVE_FILE_PATH = '/private/endpoints/*';
-const ABSOLUTE_FILE_PATH = __dirname;
-
 class IndexHtmlEndpointLogic extends EndpointLogic {
   constructor() {
     super();
@@ -29,10 +26,6 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
         message: 'Executed index request',
         location: LOCATION,
       });
-
-      //      let indexPath = ABSOLUTE_FILE_PATH.replace(RELATIVE_FILE_PATH, '') + '/public/index.html';
-
-      //this.responseObject.sendFile(indexPath);
 
       let headerEntries = [];
       headerEntries.push('<meta charset="UTF-8">');
