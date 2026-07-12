@@ -49,9 +49,11 @@ async function mountModal(page, { attrs = {}, action } = {}) {
         hasCloseButton: !!root.querySelector('.slds-modal__close'),
         hasHeader: !!root.querySelector('.slds-modal__header'),
         hasFooter: !!root.querySelector('.slds-modal__footer'),
-        title: root.querySelector('.slds-modal__title')
+        heading: root.querySelector('.slds-modal__title')
           ? root.querySelector('.slds-modal__title').textContent.trim()
           : null,
+        // Das native title-Attribut am Host -> Browser-Tooltip. Muss leer bleiben.
+        hostTitle: el.title,
         // Aufgelöste Sprite-Referenz — deckt auf, wenn das Icon nicht auflöst.
         iconHref: use ? use.href.baseVal : null,
         assistive: root.querySelector('.slds-assistive-text')
@@ -92,14 +94,17 @@ test.describe('slds-modal', () => {
     );
   });
 
-  test('title wird im Header gerendert, headless entfernt ihn', async ({
+  test('heading wird im Header gerendert, headless entfernt ihn', async ({
     page,
   }) => {
     const withHeader = await mountModal(page, {
-      attrs: { open: true, title: 'Kapitel bearbeiten' },
+      attrs: { open: true, heading: 'Kapitel bearbeiten' },
     });
     expect(withHeader.hasHeader).toBe(true);
-    expect(withHeader.title).toBe('Kapitel bearbeiten');
+    expect(withHeader.heading).toBe('Kapitel bearbeiten');
+    // Die Property hiess frueher `title` und ueberschattete damit das globale
+    // HTML-Attribut: der Host bekam zusaetzlich einen Browser-Tooltip.
+    expect(withHeader.hostTitle).toBe('');
 
     const headless = await mountModal(page, {
       attrs: { open: true, headless: true },

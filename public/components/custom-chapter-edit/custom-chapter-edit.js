@@ -109,27 +109,31 @@ class CustomChapterEdit extends LitElement {
 
     return html`
       <!-- Edit Chapter Button -->
-      ${canEdit
-        ? html` <slds-button-icon
-            icon="utility:edit"
-            variant="container-filled"
-            title="${this.labels.labelEditChapter}"
-            @click=${this._handleEditButtonClick}
-          ></slds-button-icon>`
-        : ''}
+      ${
+        canEdit
+          ? html` <slds-button-icon
+              icon="utility:edit"
+              variant="container-filled"
+              title="${this.labels.labelEditChapter}"
+              @click=${this._handleEditButtonClick}
+            ></slds-button-icon>`
+          : ''
+      }
 
       <!-- Create Chapter Button -->
-      ${!this._isEditMode && canCreate
-        ? html` <slds-button-icon
-            icon="utility:add"
-            variant="container-filled"
-            title="${this.labels.labelCreateChapter}"
-            @click=${this._handleCreateButtonClick}
-          ></slds-button-icon>`
-        : ''}
+      ${
+        !this._isEditMode && canCreate
+          ? html` <slds-button-icon
+              icon="utility:add"
+              variant="container-filled"
+              title="${this.labels.labelCreateChapter}"
+              @click=${this._handleCreateButtonClick}
+            ></slds-button-icon>`
+          : ''
+      }
 
       <!-- Modal -->
-      <slds-modal title="${modalTitle}" @close=${this._handleModalClose}>
+      <slds-modal heading="${modalTitle}" @close=${this._handleModalClose}>
         <!-- Modal Content -->
         ${this.renderTabs()}
 
@@ -141,16 +145,18 @@ class CustomChapterEdit extends LitElement {
           >
             ${this.labels.cancelButton}
           </button>
-          ${this._activeTab === 'edit'
-            ? html`
-                <button
-                  class="slds-button slds-button_brand"
-                  @click=${this._handleConfirm}
-                >
-                  ${confirmLabel}
-                </button>
-              `
-            : ''}
+          ${
+            this._activeTab === 'edit'
+              ? html`
+                  <button
+                    class="slds-button slds-button_brand"
+                    @click=${this._handleConfirm}
+                  >
+                    ${confirmLabel}
+                  </button>
+                `
+              : ''
+          }
         </div>
       </slds-modal>
     `;
@@ -167,9 +173,9 @@ class CustomChapterEdit extends LitElement {
     // Edit Tab
     tabHeads.push(
       html` <li
-        class="slds-tabs_default__item ${this._activeTab === 'edit'
-          ? 'slds-is-active'
-          : ''}"
+        class="slds-tabs_default__item ${
+          this._activeTab === 'edit' ? 'slds-is-active' : ''
+        }"
         role="presentation"
       >
         <a
@@ -182,9 +188,9 @@ class CustomChapterEdit extends LitElement {
     );
     tabPanels.push(
       html` <div
-        class="slds-tabs_default__content ${this._activeTab === 'edit'
-          ? 'slds-show'
-          : 'slds-hide'}"
+        class="slds-tabs_default__content ${
+          this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'
+        }"
       >
         ${this.renderEditTab()}
       </div>`
@@ -194,9 +200,9 @@ class CustomChapterEdit extends LitElement {
       // Publish Tab
       tabHeads.push(
         html` <li
-          class="slds-tabs_default__item ${this._activeTab === 'publish'
-            ? 'slds-is-active'
-            : ''}"
+          class="slds-tabs_default__item ${
+            this._activeTab === 'publish' ? 'slds-is-active' : ''
+          }"
           role="presentation"
         >
           <a
@@ -209,9 +215,9 @@ class CustomChapterEdit extends LitElement {
       );
       tabPanels.push(
         html` <div
-          class="slds-tabs_default__content ${this._activeTab === 'publish'
-            ? 'slds-show'
-            : 'slds-hide'}"
+          class="slds-tabs_default__content ${
+            this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'
+          }"
         >
           ${this.renderPublishTab()}
         </div>`
