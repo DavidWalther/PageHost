@@ -13,7 +13,7 @@ const { test, expect } = require('@playwright/test');
 async function mountToggle(page, { attrs = {}, clicks = 0 } = {}) {
   return page.evaluate(
     async ({ attrs, clicks }) => {
-      await import('/slds-components/slds-toggle/toggle.js');
+      await import('/slds-components/slds-toggle/slds-toggle.js');
       document.querySelectorAll('slds-toggle').forEach((el) => el.remove());
 
       const el = document.createElement('slds-toggle');
@@ -57,10 +57,10 @@ async function mountToggle(page, { attrs = {}, clicks = 0 } = {}) {
         inputName: input ? input.getAttribute('name') : null,
         inputChecked: input ? input.checked : null,
         inputDisabled: input ? input.disabled : null,
-        // Die id wird bei jedem Render neu gewürfelt, deshalb nur die Verknüpfung
-        // prüfen — nie einen konkreten Wert.
         labelFor: label ? label.getAttribute('for') : null,
         inputId: input ? input.id : null,
+        describedBy: input ? input.getAttribute('aria-describedby') : null,
+        stateTextId: faux ? faux.id : null,
         hostCheckedAttr: el.hasAttribute('checked'),
         events,
       };
@@ -104,10 +104,42 @@ test.describe('slds-toggle', () => {
 
   test('Label und Input sind über for/id verknüpft', async ({ page }) => {
     const res = await mountToggle(page);
-    // Bewusst nur die Gleichheit: die id wird bei jedem Render neu erzeugt
-    // (Math.random() in render()) und ist deshalb kein Contract.
     expect(res.inputId).toBeTruthy();
     expect(res.labelFor).toBe(res.inputId);
+  });
+
+  test('die id bleibt über Updates hinweg stabil', async ({ page }) => {
+    // Früher wurde sie in render() per Math.random() neu erzeugt und wechselte
+    // damit bei jedem Update — von außen nicht referenzierbar.
+    const ids = await page.evaluate(async () => {
+      await import('/slds-components/slds-toggle/slds-toggle.js');
+      document.querySelectorAll('slds-toggle').forEach((el) => el.remove());
+
+      const el = document.createElement('slds-toggle');
+      el.setAttribute('label', 'Erst');
+      document.body.appendChild(el);
+      await el.updateComplete;
+      const before = el.shadowRoot.querySelector('input').id;
+
+      el.setAttribute('label', 'Dann');
+      el.setAttribute('checked', '');
+      await el.updateComplete;
+      const input = el.shadowRoot.querySelector('input');
+
+      return { before, after: input.id, labelFor: input.id };
+    });
+    expect(ids.after).toBe(ids.before);
+  });
+
+  test('aria-describedby zeigt auf den Zustandstext, nicht auf das Input selbst', async ({
+    page,
+  }) => {
+    const res = await mountToggle(page, {
+      attrs: { 'enabled-label': 'An', 'disabled-label': 'Aus' },
+    });
+    expect(res.describedBy).toBeTruthy();
+    expect(res.describedBy).toBe(res.stateTextId);
+    expect(res.describedBy).not.toBe(res.inputId);
   });
 
   test('checked setzt den Schalter', async ({ page }) => {
