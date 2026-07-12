@@ -48,6 +48,11 @@ async function mountBreadcrumbs(page, { attrs = {}, items = ITEMS } = {}) {
         navRole: nav ? nav.getAttribute('role') : null,
         ariaLabel: nav ? nav.getAttribute('aria-label') : null,
         listClass: list ? list.className : null,
+        // Abstände gehen als Custom Properties an den Host; SLDS liest sie im
+        // ShadowDOM. Muss zur Textklasse passen (früher liefen sie auseinander).
+        spacingStart: el.style.getPropertyValue(
+          '--slds-c-breadcrumbs-spacing-inline-start'
+        ),
         labels: listItems.map((li) => li.textContent.trim()),
         tags: listItems.map((li) =>
           li.firstElementChild ? li.firstElementChild.tagName : null
@@ -107,12 +112,25 @@ test.describe('slds-breadcrumbs', () => {
     expect(custom.ariaLabel).toBe('Seitennavigation');
   });
 
-  test('size setzt die Textklasse am ol', async ({ page }) => {
+  test('size setzt Textklasse und Abstand passend zueinander', async ({
+    page,
+  }) => {
     const medium = await mountBreadcrumbs(page);
     expect(medium.listClass).toContain('slds-text-heading_medium');
+    expect(medium.spacingStart).toBe('1rem');
 
     const large = await mountBreadcrumbs(page, { attrs: { size: 'large' } });
     expect(large.listClass).toContain('slds-text-heading_large');
+    expect(large.spacingStart).toBe('1.75rem');
+  });
+
+  test('unbekannte size fällt geschlossen auf medium zurück', async ({
+    page,
+  }) => {
+    // Früher inkonsistent: keine Textklasse, aber Medium-Abstände.
+    const res = await mountBreadcrumbs(page, { attrs: { size: 'riesig' } });
+    expect(res.listClass).toContain('slds-text-heading_medium');
+    expect(res.spacingStart).toBe('1rem');
   });
 
   test('Letztes Item ist ein span mit aria-current="page", die übrigen sind Links', async ({
