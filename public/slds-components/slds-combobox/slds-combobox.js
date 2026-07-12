@@ -150,7 +150,7 @@ class Combobox extends LitElement {
           <div class="slds-combobox_container">
             <div
               class="${comboboxClasses}"
-              aria-expanded="false"
+              aria-expanded="${this._open ? 'true' : 'false'}"
               aria-haspopup="listbox"
               role="combobox"
               @click=${() => this.handleComboboxClick()}
