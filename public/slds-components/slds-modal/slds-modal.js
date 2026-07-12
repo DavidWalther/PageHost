@@ -8,6 +8,34 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+// Der Body-Scroll ist eine globale Ressource: bei mehreren offenen Modals darf ihn
+// erst das letzte wieder freigeben. Der urspruengliche Wert wird gesichert, statt
+// beim Schliessen pauschal auf '' zurueckgesetzt zu werden.
+const openModals = new Set();
+let bodyOverflowBeforeLock = null;
+
+function lockBodyScroll(modal) {
+  if (openModals.size === 0) {
+    bodyOverflowBeforeLock = document.body.style.overflow;
+  }
+  openModals.add(modal);
+  document.body.style.overflow = 'hidden';
+}
+
+function unlockBodyScroll(modal) {
+  // Ohne diesen Guard wuerde schon das erste Render (open === false) den
+  // Body-Scroll "freigeben" und einen bestehenden overflow-Wert der Seite
+  // ueberschreiben, obwohl nie ein Modal offen war.
+  if (!openModals.has(modal)) {
+    return;
+  }
+  openModals.delete(modal);
+  if (openModals.size === 0) {
+    document.body.style.overflow = bodyOverflowBeforeLock ?? '';
+    bodyOverflowBeforeLock = null;
+  }
+}
+
 class SLDSModal extends LitElement {
   static properties = {
     // Nicht `title`: das ist ein globales HTML-Attribut mit nativer Property —
@@ -38,6 +66,8 @@ class SLDSModal extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     document.removeEventListener('keydown', this._handleKeyDown);
+    // Ein offen entferntes Modal wuerde den Body-Scroll sonst dauerhaft sperren.
+    unlockBodyScroll(this);
   }
 
   render() {
@@ -122,9 +152,9 @@ class SLDSModal extends LitElement {
         // Erst merken, wohin der Fokus zurueck soll — _setFocus() verschiebt ihn.
         this._previousFocus = document.activeElement;
         this._setFocus();
-        document.body.style.overflow = 'hidden'; // Prevent body scroll
+        lockBodyScroll(this);
       } else {
-        document.body.style.overflow = ''; // Restore body scroll
+        unlockBodyScroll(this);
         this._restoreFocus();
       }
     }

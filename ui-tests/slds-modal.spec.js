@@ -218,6 +218,49 @@ test.describe('slds-modal', () => {
     expect(await focusedId(page)).toBe('last-in-body');
   });
 
+  test('Body-Scroll: erst das letzte offene Modal gibt ihn frei und stellt den Ausgangswert her', async ({
+    page,
+  }) => {
+    // Früher setzte jedes Modal beim Schließen pauschal overflow = '' — das erste
+    // Schließen gab den Scroll also frei, obwohl noch ein Modal offen war, und
+    // überschrieb dabei einen zuvor gesetzten eigenen Wert.
+    const res = await page.evaluate(async () => {
+      await import('/slds-components/slds-modal/slds-modal.js');
+      document.querySelectorAll('slds-modal').forEach((el) => el.remove());
+      document.body.style.overflow = 'scroll'; // Ausgangswert der Seite
+
+      const first = document.createElement('slds-modal');
+      const second = document.createElement('slds-modal');
+      document.body.append(first, second);
+      await first.updateComplete;
+      await second.updateComplete;
+
+      first.show();
+      await first.updateComplete;
+      const afterFirstOpen = document.body.style.overflow;
+
+      second.show();
+      await second.updateComplete;
+
+      first.hide();
+      await first.updateComplete;
+      const afterFirstClose = document.body.style.overflow;
+
+      second.hide();
+      await second.updateComplete;
+      const afterSecondClose = document.body.style.overflow;
+
+      document.body.style.overflow = '';
+      return { afterFirstOpen, afterFirstClose, afterSecondClose };
+    });
+
+    expect(res.afterFirstOpen).toBe('hidden');
+    // Ein Modal ist noch offen -> Scroll bleibt gesperrt.
+    expect(res.afterFirstClose).toBe('hidden');
+    // Jetzt ist keines mehr offen -> der Ausgangswert der Seite kehrt zurück.
+    expect(res.afterSecondClose).toBe('scroll');
+  });
+
   test('Schließen gibt den Fokus an den Auslöser zurück', async ({ page }) => {
     await mountOpenModalWithButtons(page);
     await page.evaluate(async () => {
