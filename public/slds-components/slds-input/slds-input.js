@@ -7,13 +7,15 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 // Strategy-Registry für die Control-Varianten je `type`. Jede Strategie liefert
 // das Markup des Form-Controls (gleiche Schnittstelle: render({ value, onChange })).
 // Ein neuer Typ = ein neuer Eintrag (Open/Closed) — keine switch-Kaskade.
+// Jede Strategie kennt die `id` ihres Controls; das Label bindet sein `for` daran.
 const inputTypeStrategies = {
   date: {
-    render: ({ value, onChange }) => html`
+    inputId: 'input-date',
+    render: ({ inputId, value, onChange }) => html`
       <div class="slds-form-element__control">
         <input
           type="date"
-          id="input-date"
+          id=${inputId}
           class="slds-input input-element"
           .value=${value ?? ''}
           @change=${onChange}
@@ -22,11 +24,12 @@ const inputTypeStrategies = {
     `,
   },
   text: {
-    render: ({ value, onChange }) => html`
+    inputId: 'input-text',
+    render: ({ inputId, value, onChange }) => html`
       <div class="slds-form-element__control">
         <input
           type="text"
-          id="input-text"
+          id=${inputId}
           class="slds-input input-element"
           .value=${value ?? ''}
           @change=${onChange}
@@ -53,14 +56,16 @@ class SldsInput extends LitElement {
   }
 
   render() {
-    const control = resolveInputTypeStrategy(this.type).render({
+    const strategy = resolveInputTypeStrategy(this.type);
+    const control = strategy.render({
+      inputId: strategy.inputId,
       value: this.value,
       onChange: (event) => this.handleChangeInput(event),
     });
 
     return html`
       <div class="slds-form-element">
-        <label class="slds-form-element__label" for="input-sample1"
+        <label class="slds-form-element__label" for=${strategy.inputId}
           >${this.label ?? ''}</label
         >
         ${control}
