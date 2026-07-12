@@ -50,8 +50,8 @@ regelt Prettier (`.prettierrc`: `singleQuote`, `semi`, `tabWidth: 2`,
 
 ## Frontend
 
-- Komponenten-Muster (Lit-first, Legacy-Markup-Caching), Ordner- und
-  Tag-Präfixe: **`doc/conventions.md`** (kanonisch).
+- Komponenten-Muster (Lit), Ordner- und Tag-Präfixe:
+  **`doc/conventions.md`** (kanonisch).
 - **Event-Namen:** `kebab-case`, möglichst sprechend/qualifiziert
   (`chapter-select`, `chapter-updated`) statt nackter Einwörter (`select`).
 
@@ -71,6 +71,3 @@ Anfassen angleichen; eine gesammelte Migration ist optional.
   - `private/modules/oAuth2/OpenIdConnectClient.js`
 - **`let` ohne Reassignment:** verbreitet (z. B. `let cache = new DataCache2()`);
   bei Berührung auf `const` ziehen.
-- **Frontend Legacy-Muster:** 1 ältere `slds-*`-Komponente nutzt noch natives
-  Markup-Caching statt Lit (`slds-combobox`;
-  Details in `doc/conventions.md`).
