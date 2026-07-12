@@ -92,15 +92,14 @@ class Combobox extends LitElement {
     this._open = false;
   }
 
-  fireSelectEvent(selectedValue, options) {
-    const composed = options && options.composed;
-    const bubbles = options && options.bubbles;
-
+  fireSelectEvent(selectedValue) {
+    // bubbles/composed waren frueher undefined (der zweite Parameter wurde nie
+    // belegt) -> beide false: das Event verliess die Komponente nicht.
     this.dispatchEvent(
       new CustomEvent('select', {
         detail: { value: selectedValue },
-        composed: composed,
-        bubbles: bubbles,
+        bubbles: true,
+        composed: true,
       })
     );
   }
@@ -150,7 +149,7 @@ class Combobox extends LitElement {
           <div class="slds-combobox_container">
             <div
               class="${comboboxClasses}"
-              aria-expanded="false"
+              aria-expanded="${this._open ? 'true' : 'false'}"
               aria-haspopup="listbox"
               role="combobox"
               @click=${() => this.handleComboboxClick()}
@@ -234,10 +233,12 @@ class Combobox extends LitElement {
           </span>
           <span
             class="slds-media__body"
-            title="${option.title}"
             style="color: var(--custom-combobox-option-color);"
-            >${option.label}</span
           >
+            <span class="slds-truncate" title="${option.title}"
+              >${option.label}</span
+            >
+          </span>
         </div>
       </li>
     `;
