@@ -91,11 +91,8 @@ Example with 5 items and `overflow_limit="3"`:
 Home  ›  …  ›  Contacts  ›  ACME Corp
 ```
 
-> **Caveat — `overflow_limit` must be 2 or higher.** With `overflow_limit="1"` the
-> component renders the first item, the `…`, and then the **entire list again**
-> (the first item appears twice); `overflow_limit="0"` collapses nothing. The cause
-> is an off-by-one: the tail is computed as `slice(-(limit - 1))`, and `slice(-0)`
-> is `slice(0)` — the whole array.
+A value below `2` cannot express "first item + `…` + last item", so
+`overflow_limit` is raised to `2` in that case.
 
 ---
 
