@@ -178,8 +178,10 @@ class SldsBreadcrumbs extends LitElement {
   _handleClick(event, item, index) {
     event.preventDefault();
     event.stopPropagation();
+    // Qualifizierter Name statt `click`: ein CustomEvent namens `click` wäre vom
+    // nativen Click nicht zu unterscheiden, dessen `detail` die Klickzahl ist.
     this.dispatchEvent(
-      new CustomEvent('click', {
+      new CustomEvent('breadcrumb-select', {
         detail: {
           key: item.key,
           label: item.label,
