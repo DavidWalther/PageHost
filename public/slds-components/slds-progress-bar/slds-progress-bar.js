@@ -4,6 +4,16 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
+// Gültige Größen -> SLDS-Modifier. `medium` bekommt bewusst keine Klasse: die
+// Basisklasse `.slds-progress-bar` hat bereits die Medium-Höhe (0.5rem).
+// Unbekannte Größe -> keine Klasse (statt einer erfundenen, die still nichts tut).
+const SIZE_CLASS_MAP = {
+  'x-small': 'slds-progress-bar_x-small',
+  small: 'slds-progress-bar_small',
+  medium: '',
+  large: 'slds-progress-bar_large',
+};
+
 class SLDSProgressBar extends LitElement {
   static properties = {
     percent: { type: Number },
@@ -28,11 +38,16 @@ class SLDSProgressBar extends LitElement {
   }
 
   render() {
-    const clampedPercent = Math.min(100, Math.max(0, this.percent));
+    // Nicht-numerisches `percent` (z. B. ein leerer oder kaputter Attributwert)
+    // ergäbe sonst NaN in aria-valuenow und `width: NaN%`.
+    const percent = Number(this.percent);
+    const clampedPercent = Number.isFinite(percent)
+      ? Math.min(100, Math.max(0, percent))
+      : 0;
 
     const rootClasses = [
       'slds-progress-bar',
-      this.size !== 'medium' ? `slds-progress-bar_${this.size}` : '',
+      SIZE_CLASS_MAP[this.size],
       this.circular ? 'slds-progress-bar_circular' : '',
       this.vertical ? 'slds-progress-bar_vertical' : '',
     ]
