@@ -50,9 +50,6 @@ const STATIC_FILES = [
   '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
   '/slds-components/slds-progress-bar/slds-progress-bar.js',
 
-  // SLDS Components - HTML Templates
-  '/slds-components/slds-combobox/slds-combobox.html',
-
   // External assets (referenced in IndexHtmlEndpointLogic.js)
   '/assets/styles/salesforce-lightning-design-system.min.css',
 
