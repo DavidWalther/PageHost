@@ -24,6 +24,9 @@ class SLDSToggle extends LitElement {
     const suffix = Math.random().toString(36).substring(2, 11);
     this.toggleId = `toggle-${suffix}`;
     this.stateTextId = `toggle-state-${suffix}`;
+
+    this.checked = false;
+    this.disabled = false;
   }
 
   connectedCallback() {
@@ -77,6 +80,8 @@ class SLDSToggle extends LitElement {
   }
 
   _handleToggle(event) {
+    // Zuweisung an die reaktive Property loest das Update bereits aus —
+    // ein zusaetzliches requestUpdate() waere ueberfluessig.
     this.checked = event.target.checked;
 
     // Dispatch custom event for external listeners
@@ -89,7 +94,6 @@ class SLDSToggle extends LitElement {
         bubbles: true,
       })
     );
-    this.requestUpdate();
   }
 }
 
