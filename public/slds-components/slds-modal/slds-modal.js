@@ -5,6 +5,9 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 class SLDSModal extends LitElement {
   static properties = {
     title: { type: String },
@@ -114,9 +117,10 @@ class SLDSModal extends LitElement {
   updated(changedProperties) {
     if (changedProperties.has('open')) {
       if (this.open) {
+        // Erst merken, wohin der Fokus zurueck soll — _setFocus() verschiebt ihn.
+        this._previousFocus = document.activeElement;
         this._setFocus();
         document.body.style.overflow = 'hidden'; // Prevent body scroll
-        this._trapFocus();
       } else {
         document.body.style.overflow = ''; // Restore body scroll
         this._restoreFocus();
@@ -169,11 +173,35 @@ class SLDSModal extends LitElement {
     }
   }
 
+  // Fokussierbare Elemente in Tab-Reihenfolge: erst der Close-Button aus dem
+  // ShadowDOM, dann der geslottete Inhalt aus dem Light DOM. Frueher wurde
+  // ausschliesslich im ShadowDOM gesucht — dort steht aber nur ein <slot>, sodass
+  // der Trap nie etwas fand und Tab aus dem Dialog herauslief.
+  _focusableElements() {
+    const nodes = [
+      ...this.shadowRoot.querySelectorAll(FOCUSABLE_SELECTOR),
+      ...this.querySelectorAll(FOCUSABLE_SELECTOR),
+    ];
+    return nodes.filter(
+      (node) => !node.disabled && node.getAttribute('aria-hidden') !== 'true'
+    );
+  }
+
+  // Bei Fokus im ShadowDOM meldet document.activeElement nur den Host.
+  _activeElement() {
+    return this.shadowRoot.activeElement ?? document.activeElement;
+  }
+
   _setFocus() {
-    // Focus on the modal content
-    const modalContent = this.shadowRoot.querySelector('.slds-modal__content');
-    if (modalContent) {
-      modalContent.focus();
+    const [firstFocusable] = this._focusableElements();
+    if (firstFocusable) {
+      firstFocusable.focus();
+      return;
+    }
+    // Kein fokussierbarer Inhalt -> auf den Dialog selbst (traegt tabindex="-1").
+    const dialog = this.shadowRoot.querySelector('section.slds-modal');
+    if (dialog) {
+      dialog.focus();
     }
   }
 
@@ -185,31 +213,23 @@ class SLDSModal extends LitElement {
     }
   }
 
-  _trapFocus() {
-    // Store the currently focused element
-    this._previousFocus = document.activeElement;
-  }
-
   _handleTabKey(event) {
-    // Basic tab trapping - can be enhanced for better accessibility
-    const modal = this.shadowRoot.querySelector('.slds-modal__content');
-    const focusableElements = modal.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
+    const focusable = this._focusableElements();
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
 
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+    const firstElement = focusable[0];
+    const lastElement = focusable[focusable.length - 1];
+    const active = this._activeElement();
 
-    if (event.shiftKey) {
-      if (document.activeElement === firstElement) {
-        lastElement.focus();
-        event.preventDefault();
-      }
-    } else {
-      if (document.activeElement === lastElement) {
-        firstElement.focus();
-        event.preventDefault();
-      }
+    if (event.shiftKey && active === firstElement) {
+      lastElement.focus();
+      event.preventDefault();
+    } else if (!event.shiftKey && active === lastElement) {
+      firstElement.focus();
+      event.preventDefault();
     }
   }
 }
