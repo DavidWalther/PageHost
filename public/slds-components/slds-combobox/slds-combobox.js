@@ -92,15 +92,14 @@ class Combobox extends LitElement {
     this._open = false;
   }
 
-  fireSelectEvent(selectedValue, options) {
-    const composed = options && options.composed;
-    const bubbles = options && options.bubbles;
-
+  fireSelectEvent(selectedValue) {
+    // bubbles/composed waren frueher undefined (der zweite Parameter wurde nie
+    // belegt) -> beide false: das Event verliess die Komponente nicht.
     this.dispatchEvent(
       new CustomEvent('select', {
         detail: { value: selectedValue },
-        composed: composed,
-        bubbles: bubbles,
+        bubbles: true,
+        composed: true,
       })
     );
   }

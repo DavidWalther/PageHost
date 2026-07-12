@@ -316,19 +316,20 @@ test.describe('slds-combobox', () => {
     expect(res.comboboxClass).toContain('slds-is-open');
   });
 
-  test('select-Event: detail.value am Host, bubbelt nicht (faithful)', async ({
+  test('select-Event: detail.value am Host, bubbelt und ist composed', async ({
     page,
   }) => {
+    // Feuerte früher ohne bubbles/composed (beide undefined) und verließ die
+    // Komponente damit nicht — nur ein Listener direkt am Element sah es.
     const res = await selectEvent(page, {
       attrs: { options: JSON.stringify(OPTIONS) },
       index: 1,
     });
     expect(res.onHost).not.toBeNull();
     expect(res.onHost.detailValue).toBe('c2');
-    expect(res.onHost.bubbles).toBe(false);
-    expect(res.onHost.composed).toBe(false);
-    // Nicht bubbelnd -> erreicht den body nicht.
-    expect(res.reachedBody).toBe(false);
+    expect(res.onHost.bubbles).toBe(true);
+    expect(res.onHost.composed).toBe(true);
+    expect(res.reachedBody).toBe(true);
   });
 
   test('Filter: filterable reduziert die Liste, ohne filterable passiert nichts', async ({
