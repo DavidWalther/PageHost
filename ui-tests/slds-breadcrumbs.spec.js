@@ -157,26 +157,21 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.labels).toEqual(['Home', 'Accounts', 'Contacts', 'ACME Corp']);
   });
 
-  test('FEHLVERHALTEN: overflow_limit="1" dupliziert die Liste', async ({
+  test('overflow_limit unter 2 wird auf 2 angehoben (erstes + Ellipse + letztes)', async ({
     page,
   }) => {
-    // Kein gewolltes Verhalten, sondern ein festgehaltener Bug: `_visibleItems`
-    // rechnet `slice(-(limit - 1))` -> bei limit 1 ist das `slice(-0)`, und -0 ist
-    // in JS 0, also `slice(0)` = das ganze Array. Ergebnis: erstes Item, Ellipse,
-    // danach nochmals ALLE Items ("Home" taucht doppelt auf).
-    // Dieser Test schlägt um, sobald der Guard `limit < 2` nachgerüstet wird —
-    // genau das ist beabsichtigt.
-    const res = await mountBreadcrumbs(page, {
+    // Unter 2 lässt sich "erstes + … + letztes" nicht darstellen. Früher lief die
+    // Rechnung `slice(-(limit - 1))` bei limit 1 auf `slice(-0)` === `slice(0)`
+    // hinaus und hängte die GANZE Liste an (das erste Item doppelt).
+    const limitOne = await mountBreadcrumbs(page, {
       attrs: { overflow: true, overflow_limit: '1' },
     });
-    expect(res.labels).toEqual([
-      'Home',
-      '…',
-      'Home',
-      'Accounts',
-      'Contacts',
-      'ACME Corp',
-    ]);
+    expect(limitOne.labels).toEqual(['Home', '…', 'ACME Corp']);
+
+    const limitZero = await mountBreadcrumbs(page, {
+      attrs: { overflow: true, overflow_limit: '0' },
+    });
+    expect(limitZero.labels).toEqual(['Home', '…', 'ACME Corp']);
   });
 
   test('card-container wickelt die Breadcrumbs in eine slds-card', async ({

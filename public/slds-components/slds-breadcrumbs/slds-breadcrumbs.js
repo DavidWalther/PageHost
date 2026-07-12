@@ -1,20 +1,26 @@
-import { LitElement, html, css, nothing } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
-import { addGlobalStylesToShadowRoot } from "/modules/global-styles.mjs";
+import {
+  LitElement,
+  html,
+  css,
+  nothing,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 const OVERFLOW_MARKER = Symbol('overflow');
+const MIN_OVERFLOW_LIMIT = 2;
 const SIZE_MAPPING = {
   small: {
     left: '.8rem',
-    right: '.5rem'
+    right: '.5rem',
   },
   medium: {
     left: '1rem',
-    right: '.75rem'
+    right: '.75rem',
   },
   large: {
     left: '1.75rem',
-    right: '1rem'
-  }
+    right: '1rem',
+  },
 };
 
 class SldsBreadcrumbs extends LitElement {
@@ -25,7 +31,7 @@ class SldsBreadcrumbs extends LitElement {
     size: { type: String, reflect: true },
     overflow: { type: Boolean }, // Enable overflow behavior. Overflow will render only a limited number of items
     overflowLimit: { type: Number, attribute: 'overflow_limit' }, // Number of items to show when overflow is enabled.
-    lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' }
+    lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' },
   };
 
   static styles = css`
@@ -78,31 +84,55 @@ class SldsBreadcrumbs extends LitElement {
   }
 
   get _visibleItems() {
-    if (!this.overflow || this.items.length <= this.overflowLimit) {
+    // Unter 2 sichtbaren Items lässt sich "erstes + … + letztes" nicht darstellen.
+    // Ohne diesen Guard liefe `slice(-(limit - 1))` bei limit 1 auf `slice(-0)` und
+    // damit auf `slice(0)` hinaus — also auf die komplette Liste.
+    const limit = Math.max(MIN_OVERFLOW_LIMIT, this.overflowLimit);
+    if (!this.overflow || this.items.length <= limit) {
       return this.items;
     }
-    const tail = this.items.slice(-(this.overflowLimit - 1));
+    const tail = this.items.slice(-(limit - 1));
     return [this.items[0], OVERFLOW_MARKER, ...tail];
   }
 
   render() {
-    const sizeClass = this.isSizeSmall ? 'slds-text-heading_small' : this.isSizeMedium ? 'slds-text-heading_medium' : this.isSizeLarge ? 'slds-text-heading_large' : '';
-    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-start', this.spacing.left);
-    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-end', this.spacing.right);
+    const sizeClass = this.isSizeSmall
+      ? 'slds-text-heading_small'
+      : this.isSizeMedium
+        ? 'slds-text-heading_medium'
+        : this.isSizeLarge
+          ? 'slds-text-heading_large'
+          : '';
+    this.style.setProperty(
+      '--slds-c-breadcrumbs-spacing-inline-start',
+      this.spacing.left
+    );
+    this.style.setProperty(
+      '--slds-c-breadcrumbs-spacing-inline-end',
+      this.spacing.right
+    );
 
     const content = html`
-      <nav role="navigation" slot="${this.isCardContainer ? 'header' : ''}" aria-label="${this.ariaLabel}">
+      <nav
+        role="navigation"
+        slot="${this.isCardContainer ? 'header' : ''}"
+        aria-label="${this.ariaLabel}"
+      >
         <ol class="${sizeClass} slds-breadcrumb slds-list_horizontal slds-wrap">
           ${this._visibleItems.map((item, index) =>
             item === OVERFLOW_MARKER
               ? this._renderOverflowIndicator()
-              : this._renderItem(item, index, index === this._visibleItems.length - 1)
+              : this._renderItem(
+                  item,
+                  index,
+                  index === this._visibleItems.length - 1
+                )
           )}
         </ol>
       </nav>
     `;
 
-    if(!this.isCardContainer) {
+    if (!this.isCardContainer) {
       return content;
     }
     return html`<slds-card no-footer>${content}</slds-card>`;
@@ -111,23 +141,35 @@ class SldsBreadcrumbs extends LitElement {
   _renderOverflowIndicator() {
     const spacing = this.spacing;
     return html`
-      <li class="slds-breadcrumb__item" style="padding-left: ${spacing.left}; padding-right: ${spacing.right};">
+      <li
+        class="slds-breadcrumb__item"
+        style="padding-left: ${spacing.left}; padding-right: ${spacing.right};"
+      >
         <span>…</span>
       </li>
     `;
   }
 
   _renderItem(item, index, isLast = false) {
-    const innerContent = (isLast && !this.lastItemAsLink)
-      ? html`<span style="padding-left: ${this.spacing.left}; " title="${item.label}">${item.label}</span>`
-      : html`<a
-          href="${item.href ?? nothing}"
-          title="${item.label}"
-          @click="${(event) => this._handleClick(event, item, index)}"
-        >${item.label}</a>`;
+    const innerContent =
+      isLast && !this.lastItemAsLink
+        ? html`<span
+            style="padding-left: ${this.spacing.left}; "
+            title="${item.label}"
+            >${item.label}</span
+          >`
+        : html`<a
+            href="${item.href ?? nothing}"
+            title="${item.label}"
+            @click="${(event) => this._handleClick(event, item, index)}"
+            >${item.label}</a
+          >`;
 
     return html`
-      <li class="slds-breadcrumb__item" aria-current="${isLast ? 'page' : nothing}">
+      <li
+        class="slds-breadcrumb__item"
+        aria-current="${isLast ? 'page' : nothing}"
+      >
         ${innerContent}
       </li>
     `;
@@ -136,15 +178,17 @@ class SldsBreadcrumbs extends LitElement {
   _handleClick(event, item, index) {
     event.preventDefault();
     event.stopPropagation();
-    this.dispatchEvent(new CustomEvent('click', {
-      detail: {
-        key: item.key,
-        label: item.label,
-        href: item.href,
-        index
-      },
-      bubbles: true
-    }));
+    this.dispatchEvent(
+      new CustomEvent('click', {
+        detail: {
+          key: item.key,
+          label: item.label,
+          href: item.href,
+          index,
+        },
+        bubbles: true,
+      })
+    );
   }
 }
 
