@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { mockBookstoreCallouts } = require('./support/mock-callouts');
+const { cacheLitBundle } = require('./support/component-page');
 
 /**
  * Smoke-Test der Bookstore-App.
@@ -14,6 +15,7 @@ const { mockBookstoreCallouts } = require('./support/mock-callouts');
 test.describe('Bookstore smoke', () => {
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
+    await cacheLitBundle(page);
   });
 
   test('App lädt und rendert die Grundstruktur', async ({ page }) => {

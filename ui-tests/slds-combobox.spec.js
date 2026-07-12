@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Struktur-, Dropdown-, Selektions- und Filter-Tests für die Lit-Komponente
@@ -158,7 +159,7 @@ async function selectEvent(page, { attrs = {}, index = 0 } = {}) {
 
 test.describe('slds-combobox', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: Combobox mit Input, Dropdown und Listbox', async ({

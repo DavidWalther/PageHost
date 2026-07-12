@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut-Effekt-Tests für die Lit-Komponente `slds-spinner`.
@@ -35,7 +36,7 @@ async function mountSpinner(page, attrs = {}) {
 
 test.describe('slds-spinner', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Default: zentrierter Placeholder mit brand-Spinner', async ({

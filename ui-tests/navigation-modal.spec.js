@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { mockBookstoreCallouts } = require('./support/mock-callouts');
+const { cacheLitBundle } = require('./support/component-page');
 
 /**
  * UI-Tests für das Navigations-Modal (`custom-navigation-modal`).
@@ -19,6 +20,7 @@ test.describe('Navigation modal', () => {
 
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
+    await cacheLitBundle(page);
     await page.goto('/');
     await expect(page.locator('app-bookstore')).toBeAttached();
   });

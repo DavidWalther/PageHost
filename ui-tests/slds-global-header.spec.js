@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Struktur- und Slot-Effekt-Tests für die Lit-Komponente `slds-global-header`.
@@ -60,7 +61,7 @@ async function mountHeader(page, { slots = {} } = {}) {
 
 test.describe('slds-global-header', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: Container, Header, drei Items, drei benannte Slots', async ({
