@@ -62,13 +62,18 @@ html`<svg class="slds-icon"><use xlink:href="${sprite}#${name}"></use></svg>`;
 - **Fehlverhalten:** Eine **dynamische** `xlink:href`-Bindung setzt lit-html per
   `setAttribute('xlink:href', …)` **ohne** den XLink-Namespace. Das SVG-`<use>`
   erkennt diesen nicht-genamespaceten Wert **nicht** als Referenz → `href.baseVal`
-  bleibt leer, das **Icon fehlt** (kein Konsolenfehler). Legacy-Markup mit
-  statischem `xlink:href` funktionierte, weil dort der HTML-Parser den Namespace
-  gesetzt hat — beim Lit-Port geht das verloren.
+  bleibt leer, das **Icon fehlt** (kein Konsolenfehler).
+- **Nur dynamische Bindings brechen.** Ein **statisches** `xlink:href` im
+  Lit-Template funktioniert, weil lit das Template vom HTML-Parser verarbeiten
+  lässt und der den XLink-Namespace setzt (wie früher beim `.html`-Markup).
+  Trotzdem gilt ausnahmslos `href`: Sobald jemand das statische Attribut später
+  zu einer Bindung macht, verschwindet das Icon **still**.
 - **Test-Regel:** Im Playwright-Test die **aufgelöste** Referenz prüfen
   (`use.href.baseVal`), **nicht** `getAttribute('xlink:href')` — letzteres liefert
   den String auch dann, wenn das Icon gar nicht auflöst, und lässt den Bug durch.
-- Betroffen/behoben: `slds-toast`, `slds-button-icon` (2026-07-09).
+- Historie: als Bug aufgetreten und behoben in `slds-toast` und
+  `slds-button-icon` (2026-07-09); bei den Ports von `slds-panel` und
+  `slds-combobox` von vornherein auf `href` gezogen.
 
 ## Historie: abgelöste Muster
 
