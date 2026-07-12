@@ -50,6 +50,40 @@ test.beforeEach(async ({ page }) => {
 });
 ```
 
+## Zwei Testarten — und warum das wichtig ist
+
+| Art                  | Specs                                 | Seite                                 |
+| :------------------- | :------------------------------------ | :------------------------------------ |
+| **App-Tests**        | `bookstore.smoke`, `navigation-modal` | echte App (`page.goto('/')`)          |
+| **Komponententests** | `slds-*.spec.js`                      | **leere Seite** (`gotoComponentPage`) |
+
+Ein Komponententest mountet eine Webkomponente isoliert und prüft ihr Shadow-DOM.
+Er braucht dafür **keine laufende App** — nur eine Seite auf demselben Origin, von
+der aus sich `/slds-components/…` als Modul importieren lässt. Deshalb:
+
+```js
+const { gotoComponentPage } = require('./support/component-page');
+
+test.beforeEach(async ({ page }) => {
+  await gotoComponentPage(page); // statt page.goto('/')
+});
+```
+
+**Nicht** `page.goto('/')` in einem Komponententest verwenden. Das bootet die volle
+Bookstore-App: rund 40 Requests pro Test, darunter echte Backend-Callouts
+(`/metadata`, `/api/1.0/contents/all`, `/data/query/*` — je 600–900 ms) und zwei
+Fahrten ins offene Internet (Lit vom jsDelivr-CDN, ein Logo von Wikimedia). Bei 100+
+Tests auf mehreren Workern hing die Suite dadurch an fremder Netzwerklatenz und war
+**unter Last flaky** — genau der Grund, warum es diesen Helper gibt.
+
+[`ui-tests/support/component-page.js`](../ui-tests/support/component-page.js) liefert
+zwei Funktionen:
+
+- `gotoComponentPage(page)` — ersetzt das Dokument `/` durch eine leere Seite.
+- `cacheLitBundle(page)` — holt das Lit-Bundle **einmal pro Worker** und beantwortet
+  weitere Requests aus dem Speicher (es bleibt das echte Bundle). Auch die App-Tests
+  nutzen das, weil jede Komponente Lit per CDN importiert.
+
 ## Authentifizierung
 
 Der echte OIDC-/Google-Identity-Provider steht im Test nicht zur Verfügung und
