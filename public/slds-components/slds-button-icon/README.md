@@ -22,13 +22,15 @@ native markup-caching pattern to Lit.
 
 ## Attributes
 
-| Attribute   | Type    | Default            | Description                                                                                                                        |
-| ----------- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `icon`      | String  | —                  | Icon in the form `type:name` (e.g. `utility:settings`). Drives the sprite `use` href and the (capitalised) assistive text.         |
-| `variant`   | String  | `container-filled` | One of `icon-only`, `container-transparent`, `container-filled`. Missing → `container-filled`; any other value → no variant class. |
-| `size`      | String  | —                  | One of `large`, `small`, `x-small`, `xx-small`. Any other/missing value → no size class.                                           |
-| `disabled`  | Boolean | absent             | If present, the inner `<button>` is disabled (and therefore fires no click).                                                       |
-| `no-border` | —       | —                  | **Deprecated no-op.** Present in the legacy API but has no effect (kept as a no-op for compatibility).                             |
+| Attribute  | Type    | Default            | Description                                                                                                                        |
+| ---------- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `icon`     | String  | —                  | Icon in the form `type:name` (e.g. `utility:settings`). Drives the sprite `use` href and the (capitalised) assistive text.         |
+| `variant`  | String  | `container-filled` | One of `icon-only`, `container-transparent`, `container-filled`. Missing → `container-filled`; any other value → no variant class. |
+| `size`     | String  | —                  | One of `large`, `small`, `x-small`, `xx-small`. Any other/missing value → no size class.                                           |
+| `disabled` | Boolean | absent             | If present, the inner `<button>` is disabled (and therefore fires no click).                                                       |
+
+> The legacy API also had a `no-border` attribute. It never did anything (no code
+> path read it) and has been removed — use `variant` to control the border.
 
 ## Clicks
 
