@@ -98,15 +98,17 @@ class Bookstore extends LitElement {
       </slds-card>
       <custom-settings-modal>
         <slds-layout wrap vertical>
-          <slds-layout-item size="1-of-1" class="slds-m-bottom--medium">
-            <slds-layout>
-              <slds-layout-item size="1-of-4">
-                <span>Login</span>
-              </slds-layout-item>
-              <slds-layout-item size="3-of-4">
-                <custom-login-module></custom-login-module>
-              </slds-layout-item>
-            </slds-layout>
+          <slds-layout-item size="1-of-1">
+            <div class="slds-m-bottom_medium">
+              <slds-layout>
+                <slds-layout-item size="1-of-4">
+                  <span>Login</span>
+                </slds-layout-item>
+                <slds-layout-item size="3-of-4">
+                  <custom-login-module></custom-login-module>
+                </slds-layout-item>
+              </slds-layout>
+            </div>
           </slds-layout-item>
 
           <slds-layout-item size="1-of-1">

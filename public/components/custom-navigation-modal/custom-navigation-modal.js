@@ -159,16 +159,17 @@ class NavigationModal extends LitElement {
               size="1-of-2"
               medium-size="1-of-3"
               large-size="1-of-4"
-              class="slds-p-vertical_x-small"
             >
-              <button
-                class="tile ${
-                  story.id === currentStoryId ? 'tile_current' : ''
-                }"
-                @click="${() => this._handleStoryClick(story)}"
-              >
-                <span>${story.name}</span>
-              </button>
+              <div class="slds-p-vertical_x-small">
+                <button
+                  class="tile ${
+                    story.id === currentStoryId ? 'tile_current' : ''
+                  }"
+                  @click="${() => this._handleStoryClick(story)}"
+                >
+                  <span>${story.name}</span>
+                </button>
+              </div>
             </slds-layout-item>
           `
         )}
@@ -199,18 +200,19 @@ class NavigationModal extends LitElement {
                       size="1-of-2"
                       medium-size="1-of-3"
                       large-size="1-of-4"
-                      class="slds-p-vertical_x-small"
                     >
-                      <button
-                        class="tile ${
-                        chapter.id === this.currentLocation
-                          ? 'tile_current'
-                          : ''
-                      }"
-                        @click="${() => this._handleChapterClick(chapter.id)}"
-                      >
-                        <span>${chapter.name}</span>
-                      </button>
+                      <div class="slds-p-vertical_x-small">
+                        <button
+                          class="tile ${
+                            chapter.id === this.currentLocation
+                              ? 'tile_current'
+                              : ''
+                          }"
+                          @click="${() => this._handleChapterClick(chapter.id)}"
+                        >
+                          <span>${chapter.name}</span>
+                        </button>
+                      </div>
                     </slds-layout-item>
                   `
                 )}
