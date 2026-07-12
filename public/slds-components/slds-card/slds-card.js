@@ -65,8 +65,8 @@ class Card extends LitElement {
                   <a class="slds-card__footer-action" href="#"
                     >View All
                     <span class="slds-assistive-text"
-                      ><slot name="footer"></slot>></span
-                    >
+                      ><slot name="footer"></slot
+                    ></span>
                   </a>
                 </footer>
               `
