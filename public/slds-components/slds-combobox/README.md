@@ -66,11 +66,6 @@ the event (that is the legacy contract).
   click land first.
 - Changing `options` resets the filter; selecting an option does not.
 
-## Known legacy quirks (reproduced on purpose)
-
-- `aria-expanded` stays `"false"` even while the dropdown is open; only the
-  `slds-is-open` class reflects the state.
-
 ## Styling
 
 SLDS styles are injected into the shadow root via `addGlobalStylesToShadowRoot`

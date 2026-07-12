@@ -6,15 +6,9 @@ const { test, expect } = require('@playwright/test');
  *
  * Die Komponente wird isoliert gemountet — der App-Server liefert `public/`
  * statisch aus, daher ist kein Consumer und kein echtes Backend nötig. Geprüft
- * wird das gerenderte Shadow-DOM, das dem Legacy-Verhalten entspricht.
- *
- * Zwei Legacy-Eigenheiten werden hier bewusst als Contract festgehalten
- * (Benutzerentscheidung: strikt faithful):
- * - Test 4: die Option enthält **keinen** `slds-truncate`-Span — das Legacy
- *   zerstört ihn per `textContent` auf der `media__body`.
- * - Test 13: `aria-expanded` bleibt **immer** `"false"`; nur die Klasse
- *   `slds-is-open` spiegelt den Dropdown-Zustand.
- * - Test 10: `select` bubbelt **nicht** (Legacy feuert ohne bubbles/composed).
+ * wird das gerenderte Shadow-DOM: Struktur und ARIA, das Options-Markup samt
+ * Truncate-Span, Selektion und Check-Icon, Dropdown-Toggle, Filter, Blur — und
+ * der Event-Contract (`select` mit `detail.value`).
  */
 
 const OPTIONS = [
@@ -362,14 +356,26 @@ test.describe('slds-combobox', () => {
     expect(res.comboboxClass).not.toContain('slds-is-open');
   });
 
-  test('aria-expanded bleibt "false", auch wenn das Dropdown offen ist (faithful)', async ({
-    page,
-  }) => {
-    const res = await mountCombobox(page, {
+  test('aria-expanded folgt dem Dropdown-Zustand', async ({ page }) => {
+    // Stand früher statisch auf "false" — Screenreader erfuhren nie, dass das
+    // Dropdown offen ist; nur die Klasse slds-is-open spiegelte den Zustand.
+    const closed = await mountCombobox(page, {
+      attrs: { options: JSON.stringify(OPTIONS) },
+    });
+    expect(closed.comboboxClass).not.toContain('slds-is-open');
+    expect(closed.ariaExpanded).toBe('false');
+
+    const open = await mountCombobox(page, {
       attrs: { options: JSON.stringify(OPTIONS) },
       actions: [{ type: 'toggle' }],
     });
-    expect(res.comboboxClass).toContain('slds-is-open');
-    expect(res.ariaExpanded).toBe('false');
+    expect(open.comboboxClass).toContain('slds-is-open');
+    expect(open.ariaExpanded).toBe('true');
+
+    const reclosed = await mountCombobox(page, {
+      attrs: { options: JSON.stringify(OPTIONS) },
+      actions: [{ type: 'toggle' }, { type: 'toggle' }],
+    });
+    expect(reclosed.ariaExpanded).toBe('false');
   });
 });
