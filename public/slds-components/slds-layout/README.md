@@ -1,7 +1,11 @@
 # slds-layout & slds-layout-item
 
 Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/components/utilities/grid/).
-Each attribute is a **boolean** — simply add the attribute name to enable the corresponding SLDS CSS class.
+
+Most attributes are **booleans** — add the attribute name to enable the corresponding
+SLDS class (`wrap`, `gutters-small`, `bump-right`, …). The **sizes** of
+`<slds-layout-item>` are the exception: they take the fraction as a **value**
+(`size="1-of-2"`, `medium-size="1-of-3"`).
 
 ## Rendering: light DOM, not shadow DOM
 
@@ -19,12 +23,12 @@ Unlike every other `slds-*` component, both elements render into the **light DOM
 ```html
 <!-- what you write -->
 <slds-layout wrap gutters-small>
-  <slds-layout-item size-1-of-2>Left</slds-layout-item>
+  <slds-layout-item size="1-of-2">Left</slds-layout-item>
 </slds-layout>
 
 <!-- what ends up in the DOM -->
 <slds-layout wrap gutters-small class="slds-grid slds-wrap slds-gutters_small">
-  <slds-layout-item size-1-of-2 class="slds-col slds-size_1-of-2"
+  <slds-layout-item size="1-of-2" class="slds-col slds-size_1-of-2"
     >Left</slds-layout-item
   >
 </slds-layout>
@@ -99,67 +103,40 @@ A flex child column: adds `slds-col` to the host element (light DOM, see above).
 
 ```html
 <slds-layout wrap>
-  <slds-layout-item size-1-of-2 medium-size-1-of-3>...</slds-layout-item>
-  <slds-layout-item size-1-of-2 medium-size-2-of-3>...</slds-layout-item>
+  <slds-layout-item size="1-of-2" medium-size="1-of-3">...</slds-layout-item>
+  <slds-layout-item size="1-of-2" medium-size="2-of-3">...</slds-layout-item>
 </slds-layout>
 ```
 
 ### Attributes
 
-#### Size (no breakpoint — applies at all sizes)
+#### Sizes
 
-Attribute pattern: `size-{fraction}`
-SLDS class pattern: `slds-size_{fraction}`
+The size is a **string** naming the fraction — one attribute per breakpoint:
 
-#### Responsive Sizes
+| Attribute     | SLDS class           | Applies from     |
+| ------------- | -------------------- | ---------------- |
+| `size`        | `slds-size_*`        | all widths       |
+| `small-size`  | `slds-small-size_*`  | Small (≥ 480px)  |
+| `medium-size` | `slds-medium-size_*` | Medium (≥ 768px) |
+| `large-size`  | `slds-large-size_*`  | Large (≥ 1024px) |
 
-| Attribute prefix | SLDS class prefix    | Breakpoint      |
-| ---------------- | -------------------- | --------------- |
-| `small-size-*`   | `slds-small-size_*`  | Small (≥480px)  |
-| `medium-size-*`  | `slds-medium-size_*` | Medium (≥768px) |
-| `large-size-*`   | `slds-large-size_*`  | Large (≥1024px) |
+```html
+<slds-layout-item
+  size="1-of-1"
+  medium-size="1-of-2"
+  large-size="1-of-4"
+></slds-layout-item>
+```
 
-#### Supported Fractions
+#### Supported fractions
 
-The following fractions are supported for all four breakpoint prefixes (`size-*`, `small-size-*`, `medium-size-*`, `large-size-*`):
+Every fraction SLDS defines — that is, `{n}-of-{d}` with **`d` one of
+1, 2, 3, 4, 5, 6, 7, 8, 12** and `n` from `1` to `d`. That makes 48 fractions per
+breakpoint (`1-of-1`, `1-of-2`, `2-of-2`, … `12-of-12`).
 
-| Fraction   | Column width |
-| ---------- | ------------ |
-| `1-of-1`   | 100%         |
-| `1-of-2`   | 50%          |
-| `1-of-3`   | 33.33%       |
-| `2-of-3`   | 66.67%       |
-| `1-of-4`   | 25%          |
-| `2-of-4`   | 50%          |
-| `3-of-4`   | 75%          |
-| `1-of-5`   | 20%          |
-| `2-of-5`   | 40%          |
-| `3-of-5`   | 60%          |
-| `4-of-5`   | 80%          |
-| `1-of-6`   | 16.67%       |
-| `2-of-6`   | 33.33%       |
-| `3-of-6`   | 50%          |
-| `4-of-6`   | 66.67%       |
-| `5-of-6`   | 83.33%       |
-| `1-of-8`   | 12.5%        |
-| `2-of-8`   | 25%          |
-| `3-of-8`   | 37.5%        |
-| `4-of-8`   | 50%          |
-| `5-of-8`   | 62.5%        |
-| `6-of-8`   | 75%          |
-| `7-of-8`   | 87.5%        |
-| `1-of-12`  | 8.33%        |
-| `2-of-12`  | 16.67%       |
-| `3-of-12`  | 25%          |
-| `4-of-12`  | 33.33%       |
-| `5-of-12`  | 41.67%       |
-| `6-of-12`  | 50%          |
-| `7-of-12`  | 58.33%       |
-| `8-of-12`  | 66.67%       |
-| `9-of-12`  | 75%          |
-| `10-of-12` | 83.33%       |
-| `11-of-12` | 91.67%       |
-| `12-of-12` | 100%         |
+A value outside that set applies **no** size class — a typo such as `size="1-of-9"`
+(SLDS has no ninths) fails visibly rather than silently producing an inert class.
 
 #### Bump (auto-margin push)
 
@@ -186,8 +163,8 @@ The following fractions are supported for all four breakpoint prefixes (`size-*`
 
 ```html
 <slds-layout wrap gutters-small>
-  <slds-layout-item size-1-of-2>Left</slds-layout-item>
-  <slds-layout-item size-1-of-2>Right</slds-layout-item>
+  <slds-layout-item size="1-of-2">Left</slds-layout-item>
+  <slds-layout-item size="1-of-2">Right</slds-layout-item>
 </slds-layout>
 ```
 
@@ -195,9 +172,9 @@ The following fractions are supported for all four breakpoint prefixes (`size-*`
 
 ```html
 <slds-layout wrap>
-  <slds-layout-item size-1-of-1 medium-size-1-of-3>Col 1</slds-layout-item>
-  <slds-layout-item size-1-of-1 medium-size-1-of-3>Col 2</slds-layout-item>
-  <slds-layout-item size-1-of-1 medium-size-1-of-3>Col 3</slds-layout-item>
+  <slds-layout-item size="1-of-1" medium-size="1-of-3">Col 1</slds-layout-item>
+  <slds-layout-item size="1-of-1" medium-size="1-of-3">Col 2</slds-layout-item>
+  <slds-layout-item size="1-of-1" medium-size="1-of-3">Col 3</slds-layout-item>
 </slds-layout>
 ```
 
@@ -205,9 +182,9 @@ The following fractions are supported for all four breakpoint prefixes (`size-*`
 
 ```html
 <slds-layout align-spread vertical-align-center>
-  <slds-layout-item size-1-of-4>A</slds-layout-item>
-  <slds-layout-item size-1-of-4>B</slds-layout-item>
-  <slds-layout-item size-1-of-4 bump-right>C</slds-layout-item>
+  <slds-layout-item size="1-of-4">A</slds-layout-item>
+  <slds-layout-item size="1-of-4">B</slds-layout-item>
+  <slds-layout-item size="1-of-4" bump-right>C</slds-layout-item>
 </slds-layout>
 ```
 
@@ -217,9 +194,9 @@ Items appear right-to-left while keeping the source order in the DOM.
 
 ```html
 <slds-layout reverse gutters-small>
-  <slds-layout-item size-1-of-3>First in DOM, last visually</slds-layout-item>
-  <slds-layout-item size-1-of-3>Middle</slds-layout-item>
-  <slds-layout-item size-1-of-3>Last in DOM, first visually</slds-layout-item>
+  <slds-layout-item size="1-of-3">First in DOM, last visually</slds-layout-item>
+  <slds-layout-item size="1-of-3">Middle</slds-layout-item>
+  <slds-layout-item size="1-of-3">Last in DOM, first visually</slds-layout-item>
 </slds-layout>
 ```
 
