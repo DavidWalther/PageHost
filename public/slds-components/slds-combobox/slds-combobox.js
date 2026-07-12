@@ -1,397 +1,258 @@
+import {
+  LitElement,
+  html,
+  nothing,
+} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
-const templatePath = 'slds-components/slds-combobox/slds-combobox.html';
-let templatePromise = null; // this variable makes sure only the first load results in an actual fetch
-let loadedMarkUp = null;
+const SPRITE = '/assets/icons/utility-sprite/svg/symbols.svg';
+const OPTION_CLASSES =
+  'slds-media slds-listbox__option slds-listbox__option_plain slds-media_small';
+// Das Dropdown schließt verzögert, damit ein Klick auf eine Option noch
+// verarbeitet wird, bevor die Liste verschwindet.
+const BLUR_CLOSE_DELAY_MS = 50;
 
-class Combobox extends HTMLElement {
+class Combobox extends LitElement {
+  static properties = {
+    label: { type: String },
+    placeholder: { type: String },
+    options: { type: Array }, // JSON-Array-String [{ value, label, title }]
+    value: { type: String },
+    disabled: { type: Boolean },
+    filterable: { type: Boolean },
+
+    _open: { state: true },
+    // Die Legacy schreibt bei einem Options-Klick nicht in `value` zurück,
+    // sondern markiert nur — daher ein eigener State neben der Property.
+    _selectedValue: { state: true },
+    _inputText: { state: true },
+    // Nur bei keyup gesetzt: ein Options-Klick lässt den Filter stehen, ein
+    // options-Wechsel setzt ihn zurück.
+    _filterText: { state: true },
+    // Setzt die Legacy ausschließlich beim Options-Klick.
+    _activeDescendant: { state: true },
+  };
+
   constructor() {
     super();
-    const shadowRoot = this.attachShadow({ mode: 'open' }); // Attach a shadow root
-
-    this.applyGlobalStyles();
+    this._open = false;
+    this._inputText = '';
+    this._filterText = '';
   }
 
-  applyGlobalStyles() {
+  connectedCallback() {
+    super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
   }
 
-  async loadHtmlMarkup() {
-    if (!templatePromise) {
-      templatePromise = fetch(templatePath)
-        .then((response) => response.text())
-        .then((html) => {
-          return new DOMParser().parseFromString(html, 'text/html');
-        });
+  willUpdate(changedProperties) {
+    if (changedProperties.has('options')) {
+      this._filterText = '';
     }
-    return templatePromise;
-  }
-
-  // ------------------ Lifecycle Callbacks ------------------
-
-  async connectedCallback() {
-    if (!loadedMarkUp) {
-      loadedMarkUp = await this.loadHtmlMarkup();
-    }
-
-    // Append the main template
-    const mainTemplateContent =
-      loadedMarkUp.querySelector('#template-main').content;
-    this.shadowRoot.appendChild(mainTemplateContent.cloneNode(true));
-
-    this.shadowRoot
-      .querySelector('.slds-combobox')
-      .addEventListener('click', this.handleComboboxClick.bind(this));
-    this.inputElem.addEventListener('blur', this.handleComboboxBlur.bind(this));
-    this.inputElem.addEventListener('keyup', this.handleInputKeyUp.bind(this));
-
-    this.setInputDisabled(this.disabled);
-    this.createComboboxEntries(this.options);
-    this.setSelectedValue(this.value);
-    this.setComboboxLabel(this.label);
-    this.setComboboxPlaceholder(this.placeholder);
-    this.setEditable(this.filterable);
-  }
-
-  // ------------------ React on attribute changes ------------------
-
-  static get observedAttributes() {
-    return [
-      'label',
-      'placeholder',
-      'options', // JSON array string [{value, label, title}]
-      'value',
-      'disabled',
-      'filterable',
-    ];
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue === newValue) {
-      return;
-    }
-
-    switch (name) {
-      case 'label': {
-        this.setComboboxLabel(newValue);
-        break;
-      }
-      case 'placeholder': {
-        this.setComboboxPlaceholder(newValue);
-        break;
-      }
-      case 'options': {
-        this.clearComboboxEntries();
-        this.createComboboxEntries(this.options);
-        break;
-      }
-      case 'value': {
-        this.setSelectedValue(newValue);
-        break;
-      }
-      case 'disabled': {
-        this.setInputDisabled(newValue);
-        break;
-      }
-      case 'filterable': {
-        this.setEditable(newValue);
-        break;
-      }
+    if (changedProperties.has('value')) {
+      this._selectedValue = this.value;
+      this._inputText = this.labelForValue(this.value) ?? this._inputText;
     }
   }
 
-  // ------------------ Getters and Setters ------------------
+  // ------------------ Derived state ------------------
 
-  get value() {
-    return this.getAttribute('value');
+  // Entspricht setInputLabel: ohne Optionen oder ohne Wert bleibt der
+  // Input-Text unangetastet; ein Wert ohne passende Option leert ihn.
+  labelForValue(selectedValue) {
+    if (!this.options || !selectedValue) {
+      return undefined;
+    }
+    const entry = this.options.find((option) => option.value === selectedValue);
+    return entry ? entry.label : '';
   }
 
-  get options() {
-    return JSON.parse(this.getAttribute('options'));
-  }
-
-  get label() {
-    return this.getAttribute('label');
-  }
-
-  get placeholder() {
-    return this.getAttribute('placeholder');
-  }
-
-  get disabled() {
-    return this.hasAttribute('disabled');
-  }
-
-  get filterable() {
-    let truthyValus = [true, ''];
-    let filterableAttribute = this.getAttribute('filterable');
-    let filterable = new Set(truthyValus).has(filterableAttribute);
-
-    return filterable;
-  }
-
-  // ------------------ Element getters ------------------
-
-  get inputElem() {
-    return this.shadowRoot.querySelector('input');
-  }
-  get dropdownTriggerElem() {
-    return this.shadowRoot.querySelector('.slds-dropdown-trigger');
-  }
-
-  get labelElem() {
-    return this.shadowRoot.querySelector('label.slds-form-element__label');
-  }
-
-  // ------------------ Event handlers ------------------
-
-  handleComboboxClick(event) {
-    this.toggleDropdown();
-  }
-
-  handleComboboxBlur(event) {
-    // if elements are hidden right away the click event on the dropdown is not handled
-    setTimeout(() => {
-      this.closeDropdown();
-    }, 50);
-  }
-
-  handleInputKeyUp(event) {
-    let enteredValue = event.target.value;
-
-    this.filterOptions(enteredValue);
+  get displayedOptions() {
+    const options = this.options ?? [];
+    if (!this.filterable) {
+      return options;
+    }
+    const filter = this._filterText.toLowerCase();
+    return options.filter((option) =>
+      option.label.toLowerCase().includes(filter)
+    );
   }
 
   // ------------------ Actions ------------------
 
-  setEditable(editable) {
-    if (editable === undefined) {
-      return;
-    }
-
-    let inputElem = this.inputElem;
-    if (!inputElem) {
-      return;
-    }
-    if (editable) {
-      inputElem.removeAttribute('readonly');
-    } else {
-      inputElem.setAttribute('readonly', '');
-    }
-  }
-
-  filterOptions(enteredValue) {
-    if (!this.filterable) {
-      return;
-    }
-    let filteredOptions = this.options.filter((entry) => {
-      return entry.label.toLowerCase().includes(enteredValue.toLowerCase());
-    });
-
-    this.clearComboboxEntries();
-    this.createComboboxEntries(filteredOptions);
-  }
-
-  setInputDisabled(disabled) {
-    if (!this.inputElem) {
-      return;
-    }
-    this.inputElem.disabled = disabled;
-  }
-
-  setSelectedValue(value) {
-    this.setInputLabel(value);
-    this.markSelectedItem(value);
-  }
-
-  setComboboxLabel(label) {
-    if (!this.labelElem) {
-      return;
-    }
-    this.labelElem.textContent = label;
-  }
-
-  setComboboxPlaceholder(placeholder) {
-    if (!this.inputElem) {
-      return;
-    }
-    let placeholderValue = !placeholder ? '' : placeholder;
-    this.inputElem.setAttribute('placeholder', placeholderValue);
-  }
-
-  setInputLabel(selectedValue) {
-    if (!this.inputElem) {
-      return;
-    }
-    if (!this.options) {
-      return;
-    }
-    if (!selectedValue) {
-      return;
-    }
-    let selectedEntry = this.options.find(
-      (entry) => entry.value === selectedValue
-    );
-    this.inputElem.value = !selectedEntry ? null : selectedEntry.label;
-  }
-
   toggleDropdown() {
-    this.dropdownTriggerElem.classList.toggle('slds-is-open');
+    this._open = !this._open;
   }
 
   openDropdown() {
-    this.dropdownTriggerElem.classList.add('slds-is-open');
+    this._open = true;
   }
 
   closeDropdown() {
-    this.dropdownTriggerElem.classList.remove('slds-is-open');
+    this._open = false;
   }
 
   fireSelectEvent(selectedValue, options) {
-    let eventDetail = { value: selectedValue };
-    let composed = options && options.composed;
-    let bubbles = options && options.bubbles;
+    const composed = options && options.composed;
+    const bubbles = options && options.bubbles;
 
-    const event = new CustomEvent('select', {
-      detail: eventDetail,
-      composed: composed,
-      bubbles: bubbles,
-    });
-
-    this.dispatchEvent(event);
-  }
-
-  // ------------------ Helper methods ------------------
-
-  /**
-   * Description:
-   * Mark the selected item in the dropdown list und deselects all other items
-   */
-  markSelectedItem(selectedValue) {
-    const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) {
-      return;
-    }
-
-    this.unmarkAllItems();
-
-    const liElems = ulElem.querySelectorAll('li');
-    //find seleczted item and mark it
-    liElems.forEach((liElem) => {
-      if (liElem.querySelector('div').dataset.value === selectedValue) {
-        this.markItem(liElem);
-      }
-    });
-  }
-
-  /**
-   * Description:
-   * removes the hightlightning of all items
-   * loops over all list items and
-   * - removes the 'slds-is-selected' class
-   * - removes the template-selected-icon in li > div > span.slds-listbox__option-icon
-   */
-  unmarkAllItems() {
-    const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) {
-      return;
-    }
-
-    const liElems = ulElem.querySelectorAll('li');
-    liElems.forEach((liElem) => {
-      this.unmarkItem(liElem);
-    });
-  }
-
-  unmarkItem(liElem) {
-    const innerDivElem = liElem.querySelector('div');
-    innerDivElem.classList.remove('slds-is-selected');
-    innerDivElem.classList.remove('slds-has-focus');
-    innerDivElem.removeAttribute('aria-selected');
-    innerDivElem.removeAttribute('aria-checked');
-    const iconSpan = innerDivElem.querySelector(
-      'span.slds-listbox__option-icon'
+    this.dispatchEvent(
+      new CustomEvent('select', {
+        detail: { value: selectedValue },
+        composed: composed,
+        bubbles: bubbles,
+      })
     );
-    iconSpan.innerHTML = '';
   }
 
-  /**
-   * Description:
-   * marks an entry as selected
-   * - adds the 'slds-is-selected' class
-   * - adds the template-selected-icon in li > div > span.slds-listbox__option-icon
-   */
-  markItem(liElem) {
-    const innerDivElem = liElem.querySelector('div');
-    innerDivElem.classList.add('slds-is-selected');
-    innerDivElem.classList.add('slds-has-focus');
-    innerDivElem.setAttribute('aria-selected', 'true');
-    innerDivElem.setAttribute('aria-checked', 'true');
-    //selet template 'template-selected-icon'
-    const iconTemplate = loadedMarkUp.querySelector('#template-selected-icon');
-    const iconContent = iconTemplate.content.cloneNode(true);
-    const iconSpan = innerDivElem.querySelector(
-      'span.slds-listbox__option-icon'
-    );
-    iconSpan.appendChild(iconContent);
+  // ------------------ Event handlers ------------------
+
+  handleComboboxClick() {
+    this.toggleDropdown();
   }
 
-  /**
-   * Description:
-   * clears the list entries for the combobox dropdown
-   */
-  clearComboboxEntries() {
-    const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) {
-      return;
-    }
-    while (ulElem.firstChild) {
-      ulElem.removeChild(ulElem.firstChild);
-    }
+  handleComboboxBlur() {
+    setTimeout(() => {
+      this.closeDropdown();
+    }, BLUR_CLOSE_DELAY_MS);
   }
 
-  /**
-   * Description:
-   * Create the list entries for the combobox dropdown
-   */
-  createComboboxEntries(options) {
-    const ulElem = this.shadowRoot.querySelector('ul.slds-listbox');
-    if (!ulElem) {
-      return;
-    }
-    options.forEach((valueEntry) => {
-      const content = this.createComboboxEntry(valueEntry);
-      ulElem.appendChild(content);
-    });
+  handleInputKeyUp(event) {
+    const enteredValue = event.target.value;
+    this._inputText = enteredValue;
+    this._filterText = enteredValue;
   }
 
-  /**
-   * Description:
-   * creates a list entry for the combobox dropdown
-   */
-  createComboboxEntry(valueEntry) {
-    const templateContent = loadedMarkUp.querySelector(
-      '#template-list-item'
-    ).content;
-    const content = templateContent.cloneNode(true);
-    const divElem = content.querySelector('div');
-    divElem.id = valueEntry.value;
-    divElem.dataset.value = valueEntry.value;
-    const spanElem = content.querySelector('span.slds-media__body');
-    spanElem.textContent = valueEntry.label;
-    spanElem.title = valueEntry.title;
-    spanElem.style.color = 'var(--custom-combobox-option-color)';
+  handleOptionClick(event, option) {
+    event.stopPropagation();
+    this._activeDescendant = option.value;
+    this._selectedValue = option.value;
+    this._inputText = this.labelForValue(option.value) ?? this._inputText;
+    this.fireSelectEvent(option.value);
+  }
 
-    let liElement = content.querySelector('li');
-    liElement.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const value = event.currentTarget.querySelector('div').dataset.value;
-      this.inputElem.setAttribute('aria-activedescendant', value);
-      this.setInputLabel(value);
-      this.markSelectedItem(value);
-      this.fireSelectEvent(value);
-    });
-    return content;
+  // ------------------ Rendering ------------------
+
+  render() {
+    const comboboxClasses = [
+      'slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click',
+      this._open ? 'slds-is-open' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return html`
+      <div class="slds-form-element">
+        <label class="slds-form-element__label" for="combobox-id"
+          >${this.label ?? ''}</label
+        >
+        <div class="slds-form-element__control">
+          <div class="slds-combobox_container">
+            <div
+              class="${comboboxClasses}"
+              aria-expanded="false"
+              aria-haspopup="listbox"
+              role="combobox"
+              @click=${() => this.handleComboboxClick()}
+            >
+              <div
+                class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right"
+                role="none"
+              >
+                <input
+                  type="text"
+                  class="slds-input slds-combobox__input"
+                  id="combobox-id"
+                  aria-controls="listbox-id"
+                  autocomplete="off"
+                  role="textbox"
+                  placeholder="${this.placeholder ?? ''}"
+                  aria-activedescendant="${this._activeDescendant ?? nothing}"
+                  ?readonly=${!this.filterable}
+                  ?disabled=${this.disabled}
+                  .value=${this._inputText}
+                  @blur=${() => this.handleComboboxBlur()}
+                  @keyup=${(event) => this.handleInputKeyUp(event)}
+                />
+                <span
+                  class="slds-icon_container slds-icon-utility-down slds-input__icon slds-input__icon_right"
+                >
+                  <svg
+                    class="slds-icon slds-icon slds-icon_x-small slds-icon-text-default"
+                    aria-hidden="true"
+                  >
+                    <use href="${SPRITE}#down"></use>
+                  </svg>
+                </span>
+              </div>
+              <div
+                id="listbox-id"
+                class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid"
+                role="listbox"
+              >
+                <ul
+                  class="slds-listbox slds-listbox_vertical"
+                  role="presentation"
+                >
+                  ${this.displayedOptions.map((option) =>
+                    this.renderOption(option)
+                  )}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  renderOption(option) {
+    const isSelected = option.value === this._selectedValue;
+    const optionClasses = [
+      OPTION_CLASSES,
+      isSelected ? 'slds-is-selected slds-has-focus' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return html`
+      <li
+        role="presentation"
+        class="slds-listbox__item"
+        @click=${(event) => this.handleOptionClick(event, option)}
+      >
+        <div
+          class="${optionClasses}"
+          role="option"
+          id="${option.value}"
+          data-value="${option.value}"
+          aria-selected="${isSelected ? 'true' : nothing}"
+          aria-checked="${isSelected ? 'true' : nothing}"
+        >
+          <span class="slds-media__figure slds-listbox__option-icon">
+            ${isSelected ? this.renderSelectedIcon() : nothing}
+          </span>
+          <span
+            class="slds-media__body"
+            title="${option.title}"
+            style="color: var(--custom-combobox-option-color);"
+            >${option.label}</span
+          >
+        </div>
+      </li>
+    `;
+  }
+
+  renderSelectedIcon() {
+    return html`
+      <span
+        class="slds-icon_container slds-icon-utility-check slds-current-color"
+      >
+        <svg class="slds-icon slds-icon_x-small" aria-hidden="true">
+          <use href="${SPRITE}#check"></use>
+        </svg>
+      </span>
+    `;
   }
 }
 
