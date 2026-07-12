@@ -24,13 +24,13 @@ pattern to Lit.
 <script>
   document
     .querySelector('slds-combobox')
-    .addEventListener('select', (e) => console.log(e.detail.value));
+    .addEventListener('combobox-select', (e) => console.log(e.detail.value));
 </script>
 ```
 
 Consumer in this app: `public/components/custom-story/custom-story.js` renders a
 combobox instead of chapter buttons once a story has more chapters than
-`chapterButtonsNumberMax`, and navigates on `select`.
+`chapterButtonsNumberMax`, and navigates on `combobox-select`.
 
 ## Attributes
 
@@ -48,9 +48,14 @@ dropdown only.
 
 ## Events
 
-| Event    | Detail      | Description                                                                                                    |
-| -------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
-| `select` | `{ value }` | Fired when an option is clicked. Does **not** bubble and is **not** composed — listen directly on the element. |
+| Event             | Detail      | Description                                               |
+| ----------------- | ----------- | --------------------------------------------------------- |
+| `combobox-select` | `{ value }` | Fired when an option is clicked. Bubbles and is composed. |
+
+> The event used to be called `select` — the _native_ event name for text
+> selection in `<input>`/`<textarea>`, which a listener on the host could not tell
+> apart from ours. It also fired without `bubbles`/`composed` and so never left the
+> component. Both are fixed; listen for `combobox-select`.
 
 Selecting an option does **not** write back to the `value` attribute; the
 component marks the option itself and lets the consumer decide what to do with
@@ -61,7 +66,7 @@ the event (that is the legacy contract).
 - Clicking the combobox (including the input) toggles the dropdown
   (`slds-is-open` on the trigger).
 - Clicking an option marks it, puts its label in the input, sets
-  `aria-activedescendant` and fires `select`. The dropdown stays open.
+  `aria-activedescendant` and fires `combobox-select`. The dropdown stays open.
 - Blurring the input closes the dropdown after 50 ms — the delay lets an option
   click land first.
 - Changing `options` resets the filter; selecting an option does not.
