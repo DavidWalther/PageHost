@@ -96,20 +96,12 @@ test.describe('slds-layout', () => {
     expect(res.childTexts).toEqual(['Erste Spalte', 'Zweite Spalte']);
   });
 
-  test('FEHLVERHALTEN: ein totes slot-Element wird angehängt', async ({
-    page,
-  }) => {
-    // Beide Komponenten rendern `html`<slot></slot>`` in ihren eigenen Light DOM.
-    // Ein <slot> projiziert aber nur INNERHALB eines Shadow Roots — hier hat es
-    // keinerlei Funktion und bleibt als leeres Element im Baum zurück.
-    // Dieser Test schlägt um, sobald render() auf `nothing` umgestellt wird —
-    // genau das ist beabsichtigt.
+  test('kein totes slot-Element im Light DOM', async ({ page }) => {
+    // Früher rendeten beide Komponenten ein <slot> in ihren eigenen Light DOM.
+    // Ein <slot> projiziert nur INNERHALB eines Shadow Roots — dort war es
+    // funktionslos und blieb als leeres Element im Baum zurück.
     const res = await mountGrid(page);
-    expect(res.childTags).toEqual([
-      'SLDS-LAYOUT-ITEM',
-      'SLDS-LAYOUT-ITEM',
-      'SLOT',
-    ]);
+    expect(res.childTags).toEqual(['SLDS-LAYOUT-ITEM', 'SLDS-LAYOUT-ITEM']);
   });
 
   test('Layout-Attribute schalten die passenden SLDS-Klassen', async ({
