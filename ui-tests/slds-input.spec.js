@@ -15,8 +15,7 @@ const { test, expect } = require('@playwright/test');
  * Hinweis zum reaktiven `type`-Wechsel (Test 7): In der Legacy war das ein No-Op
  * (der `placeholder-input`-Slot ist nach dem Erst-Render bereits durch ein
  * Template ersetzt). Der Lit-Port löst die Strategy bei jedem Render neu auf und
- * unterstützt den Wechsel sauber — bewusste, nie exponierte Divergenz, siehe
- * `EPC/Missed.md` (slds-input #5).
+ * unterstützt den Wechsel sauber — eine bewusste, nie exponierte Divergenz.
  */
 
 // Mountet <slds-input> mit den gegebenen Attributen, wendet optional danach eine

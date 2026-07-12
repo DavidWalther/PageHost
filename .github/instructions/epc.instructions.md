@@ -19,6 +19,29 @@
 - Jeder Teilschritt wird implementiert und mit einem eigenen Commit abgeschlossen (siehe „Commit-Regeln")
 - Nach Abschluss eines Schrittes wird der Sub-Branch per Merge Commit in den Feature-Branch gebracht und anschließend gelöscht
 - Details und Ausnahmen zum Branching: siehe Abschnitt „Branching pro Schritt"
+- Nebenbefunde werden nicht spontan gefixt, sondern in `EPC/Missed.md` geparkt: siehe Abschnitt „Nebenbefunde"
+
+## Nebenbefunde — `EPC/Missed.md`
+
+In jeder Phase fallen Dinge auf, die **nicht** zur aktuellen Aufgabe gehören: ein
+Bug nebenan, eine falsche Doku, eine Altlast. Beides wäre falsch — sie spontan zu
+fixen (Scope-Drift, der Plan franst aus) oder sie zu vergessen. Deshalb:
+
+1. **Parken statt fixen.** Jeder Nebenbefund wird sofort in `EPC/Missed.md`
+   festgehalten und **nicht** unterwegs behoben. Der geplante Weg bleibt der Weg.
+2. **Format: abhakbare Checkliste.** Ein Eintrag = ein Befund, mit Befund, Ort im
+   Code und der Begründung, warum er nicht sofort behoben wurde.
+3. **Danach ist es die Todo-Liste.** Ist der Plan abgearbeitet, wird `EPC/Missed.md`
+   zur neuen Todo-Liste und **abgearbeitet** — jeder Eintrag nach denselben Regeln
+   (eigener Schritt, Sub-Branch, Tests, Commit).
+4. **Abschluss-Kriterium.** Die Aufgabe ist erst fertig, wenn `EPC/Missed.md` —
+   genau wie `EPC/plan.md` — **vollständig abgehakt** ist. Bleibt ein Eintrag
+   bewusst offen, wird er in ein eigenes Issue überführt und dort vermerkt.
+5. **Arbeitsdokument, kein Register.** `EPC/` ist gitignored und lebt nur für die
+   Dauer der Aufgabe. Aus **committeten** Dateien (README, `doc/`, Tests) darf
+   deshalb **nie** auf `EPC/Missed.md` verwiesen werden — solche Verweise zeigen
+   nach dem Abarbeiten ins Leere. Was dauerhaft gelten soll, gehört in die Doku
+   oder in ein Issue, nicht in einen Verweis auf ein Wegwerf-Dokument.
 
 ## EXPLORE Phase
 
@@ -35,7 +58,8 @@ das heißt:
 5. Findings werden in einem ./EPC/explore.md festgehalten
 6. Noch keine Instruktionen für die konkrete Implementierung definieren
 7. Bei Refactorings: Es müssen Lücken in den existierenden Tests identifiziert werden
-8. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/explore.md Datei schreibend zugegriffen werden.
+8. Auffälligkeiten außerhalb der Aufgabe kommen nach ./EPC/Missed.md (siehe „Nebenbefunde")
+9. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die Dateien EPC/explore.md und EPC/Missed.md schreibend zugegriffen werden.
 
 ## PLAN Phase
 
@@ -43,8 +67,9 @@ das heißt:
 
 1. Der Implementierungsplan muss in einem ./EPC/plan.md festgehalten werden
 2. Bei Refactorings: Falls Lücken in Tests identifiziert wurden, müssen diese zuerst geschlossen werden.
-3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die EPC/plan.md Datei schreibend zugegriffen werden.
+3. KEINE ÄNDERUNGEN am Code. Es darf ausschließlich auf die Dateien EPC/plan.md und EPC/Missed.md schreibend zugegriffen werden.
 4. Der Plan muss die in den folgenden Abschnitten beschriebene Arbeitsstruktur und das Plan-Format vorgeben.
+5. Das Abarbeiten der Einträge aus ./EPC/Missed.md gehört mit in den Plan (siehe „Nebenbefunde")
 
 ### Arbeitsstruktur für Backend-Änderungen
 

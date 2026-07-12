@@ -28,7 +28,7 @@ native markup-caching pattern to Lit.
 | `variant`   | String  | `container-filled` | One of `icon-only`, `container-transparent`, `container-filled`. Missing → `container-filled`; any other value → no variant class. |
 | `size`      | String  | —                  | One of `large`, `small`, `x-small`, `xx-small`. Any other/missing value → no size class.                                           |
 | `disabled`  | Boolean | absent             | If present, the inner `<button>` is disabled (and therefore fires no click).                                                       |
-| `no-border` | —       | —                  | **Deprecated no-op.** Present in the legacy API but has no effect (kept as a no-op for compatibility; see `EPC/Missed.md`).        |
+| `no-border` | —       | —                  | **Deprecated no-op.** Present in the legacy API but has no effect (kept as a no-op for compatibility).                             |
 
 ## Clicks
 

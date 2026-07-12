@@ -9,8 +9,8 @@ const { test, expect } = require('@playwright/test');
  * die README beschreibt.
  *
  * Wichtig: Die Tests halten das **Ist-Verhalten** fest, auch wo es fehlerhaft ist
- * (siehe den Overflow-Grenzfall unten). Die zugehörigen Findings stehen in
- * `EPC/Missed.md`, Abschnitt „Audit der SLDS-Komponenten".
+ * (siehe den Overflow-Grenzfall unten). Solche Tests beginnen mit `FEHLVERHALTEN`
+ * und schlagen um, sobald der Bug behoben wird — dann gehört der Test mit angepasst.
  */
 
 const ITEMS = [
@@ -157,7 +157,7 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.labels).toEqual(['Home', 'Accounts', 'Contacts', 'ACME Corp']);
   });
 
-  test('FEHLVERHALTEN (EPC/Missed.md A-1): overflow_limit="1" dupliziert die Liste', async ({
+  test('FEHLVERHALTEN: overflow_limit="1" dupliziert die Liste', async ({
     page,
   }) => {
     // Kein gewolltes Verhalten, sondern ein festgehaltener Bug: `_visibleItems`

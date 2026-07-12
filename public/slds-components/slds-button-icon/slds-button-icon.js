@@ -45,7 +45,7 @@ class SLDSButtonIcon extends LitElement {
       .join(' ');
 
     // icon "type:name": Sprite aus type, Assistive = name kapitalisiert.
-    // Fehlt icon oder name -> href/Assistive leer (defensiv, siehe EPC/Missed.md).
+    // Fehlt icon oder name -> href/Assistive leer (defensiv, statt zu werfen).
     const [type, name] = (this.icon || '').split(':');
     const href =
       type && name

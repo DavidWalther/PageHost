@@ -10,8 +10,8 @@ const { test, expect } = require('@playwright/test');
  * `el.classList` statt eines Shadow-DOM-Baums.
  *
  * Die Tests halten das **Ist-Verhalten** fest, auch wo es fehlerhaft ist (siehe
- * das tote `<slot>` unten). Findings: `EPC/Missed.md`, Abschnitt „Audit der
- * SLDS-Komponenten".
+ * das tote `<slot>` unten). Solche Tests beginnen mit `FEHLVERHALTEN` und schlagen
+ * um, sobald der Bug behoben wird — dann gehört der Test mit angepasst.
  */
 
 async function mountGrid(page, { layoutAttrs = {}, itemAttrs = {} } = {}) {
@@ -96,7 +96,7 @@ test.describe('slds-layout', () => {
     expect(res.childTexts).toEqual(['Erste Spalte', 'Zweite Spalte']);
   });
 
-  test('FEHLVERHALTEN (EPC/Missed.md A-12): ein totes slot-Element wird angehängt', async ({
+  test('FEHLVERHALTEN: ein totes slot-Element wird angehängt', async ({
     page,
   }) => {
     // Beide Komponenten rendern `html`<slot></slot>`` in ihren eigenen Light DOM.

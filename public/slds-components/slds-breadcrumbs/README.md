@@ -61,8 +61,7 @@ Each entry in the `items` array must be an object with the following fields:
 > `click` that is retargeted to the host. A listener on `click` therefore receives
 > both kinds, and on the native one `event.detail` is the browser's click **count**
 > (`1`), not the item object — so `event.detail.key` is silently `undefined`.
-> Guard accordingly, or check `event instanceof CustomEvent`. Tracked in
-> `EPC/Missed.md` (A-2).
+> Guard accordingly, or check `event instanceof CustomEvent`.
 
 ---
 
@@ -96,7 +95,7 @@ Home  ›  …  ›  Contacts  ›  ACME Corp
 > component renders the first item, the `…`, and then the **entire list again**
 > (the first item appears twice); `overflow_limit="0"` collapses nothing. The cause
 > is an off-by-one: the tail is computed as `slice(-(limit - 1))`, and `slice(-0)`
-> is `slice(0)` — the whole array. Tracked in `EPC/Missed.md` (A-1).
+> is `slice(0)` — the whole array.
 
 ---
 

@@ -33,7 +33,7 @@ footer.
 > **Note — `no-header` is a no-op.** In the legacy component `no-header` never
 > had any effect (the header was always rendered), and this Lit port keeps that
 > behaviour deliberately to stay a faithful port. Making `no-header` actually
-> hide the header is tracked as a separate item in `EPC/Missed.md`.
+> hide the header would be a behaviour change and needs its own issue.
 
 ## Slots
 
