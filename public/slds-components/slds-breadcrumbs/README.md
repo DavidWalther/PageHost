@@ -43,7 +43,7 @@ Each entry in the `items` array must be an object with the following fields:
 
 | Field   | Type   | Required | Description                                                 |
 | ------- | ------ | -------- | ----------------------------------------------------------- |
-| `key`   | String | Yes      | Unique identifier; passed through in the `click` event      |
+| `key`   | String | Yes      | Unique identifier; passed through in `breadcrumb-select`    |
 | `label` | String | Yes      | Text shown in the breadcrumb item                           |
 | `href`  | String | No       | Navigation URL; omit to render the anchor without an `href` |
 
@@ -51,17 +51,13 @@ Each entry in the `items` array must be an object with the following fields:
 
 ## Events
 
-| Event   | Detail                        | Description                                                                                                   |
-| ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `click` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
+| Event               | Detail                        | Description                                                                                                   |
+| ------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `breadcrumb-select` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
 
-> **Caveat — `click` collides with the native event.** The component dispatches a
-> `CustomEvent` literally named `click`, which bubbles. Clicks that do _not_ hit a
-> link (padding, the `li`, the last item's `<span>`) still produce a **native**
-> `click` that is retargeted to the host. A listener on `click` therefore receives
-> both kinds, and on the native one `event.detail` is the browser's click **count**
-> (`1`), not the item object — so `event.detail.key` is silently `undefined`.
-> Guard accordingly, or check `event instanceof CustomEvent`.
+> The event used to be called `click`, which collided with the native click event
+> (whose `detail` is the browser's click count, not an item object). Listen for
+> `breadcrumb-select` instead.
 
 ---
 
@@ -69,11 +65,14 @@ Each entry in the `items` array must be an object with the following fields:
 
 The `size` attribute controls the text size and the spacing between items.
 
-| Value    | SLDS class applied         |
-| -------- | -------------------------- |
-| `small`  | `slds-text-heading_small`  |
-| `medium` | `slds-text-heading_medium` |
-| `large`  | `slds-text-heading_large`  |
+| Value    | SLDS class applied         | Item spacing |
+| -------- | -------------------------- | ------------ |
+| `small`  | `slds-text-heading_small`  | `.8rem`      |
+| `medium` | `slds-text-heading_medium` | `1rem`       |
+| `large`  | `slds-text-heading_large`  | `1.75rem`    |
+
+An unknown value falls back to `medium` for **both** the text class and the
+spacing.
 
 ---
 
@@ -91,11 +90,8 @@ Example with 5 items and `overflow_limit="3"`:
 Home  ›  …  ›  Contacts  ›  ACME Corp
 ```
 
-> **Caveat — `overflow_limit` must be 2 or higher.** With `overflow_limit="1"` the
-> component renders the first item, the `…`, and then the **entire list again**
-> (the first item appears twice); `overflow_limit="0"` collapses nothing. The cause
-> is an off-by-one: the tail is computed as `slice(-(limit - 1))`, and `slice(-0)`
-> is `slice(0)` — the whole array.
+A value below `2` cannot express "first item + `…` + last item", so
+`overflow_limit` is raised to `2` in that case.
 
 ---
 
@@ -140,12 +136,12 @@ Home  ›  …  ›  Contacts  ›  ACME Corp
 ></slds-breadcrumbs>
 ```
 
-### Listening to click events
+### Listening to selections
 
 ```javascript
 document
   .querySelector('slds-breadcrumbs')
-  .addEventListener('click', (event) => {
+  .addEventListener('breadcrumb-select', (event) => {
     const { key, label, href, index } = event.detail;
     console.log(`Clicked: ${label} (key: ${key}, index: ${index})`);
   });

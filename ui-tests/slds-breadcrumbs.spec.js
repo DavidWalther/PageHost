@@ -48,6 +48,11 @@ async function mountBreadcrumbs(page, { attrs = {}, items = ITEMS } = {}) {
         navRole: nav ? nav.getAttribute('role') : null,
         ariaLabel: nav ? nav.getAttribute('aria-label') : null,
         listClass: list ? list.className : null,
+        // Abstände gehen als Custom Properties an den Host; SLDS liest sie im
+        // ShadowDOM. Muss zur Textklasse passen (früher liefen sie auseinander).
+        spacingStart: el.style.getPropertyValue(
+          '--slds-c-breadcrumbs-spacing-inline-start'
+        ),
         labels: listItems.map((li) => li.textContent.trim()),
         tags: listItems.map((li) =>
           li.firstElementChild ? li.firstElementChild.tagName : null
@@ -67,12 +72,18 @@ async function clickCrumb(page, index) {
   return page.evaluate(async (index) => {
     const el = document.querySelector('slds-breadcrumbs');
     const details = [];
-    el.addEventListener('click', (event) => details.push(event.detail));
+    const nativeClicks = [];
+    el.addEventListener('breadcrumb-select', (event) =>
+      details.push(event.detail)
+    );
+    // Mitzählen, was ein Listener auf `click` sähe — früher hieß das CustomEvent
+    // genauso und war vom nativen Click nicht zu unterscheiden.
+    el.addEventListener('click', (event) => nativeClicks.push(event.detail));
 
     const anchors = el.shadowRoot.querySelectorAll('a');
     anchors[index].click();
     await el.updateComplete;
-    return details;
+    return { details, nativeClicks };
   }, index);
 }
 
@@ -101,12 +112,25 @@ test.describe('slds-breadcrumbs', () => {
     expect(custom.ariaLabel).toBe('Seitennavigation');
   });
 
-  test('size setzt die Textklasse am ol', async ({ page }) => {
+  test('size setzt Textklasse und Abstand passend zueinander', async ({
+    page,
+  }) => {
     const medium = await mountBreadcrumbs(page);
     expect(medium.listClass).toContain('slds-text-heading_medium');
+    expect(medium.spacingStart).toBe('1rem');
 
     const large = await mountBreadcrumbs(page, { attrs: { size: 'large' } });
     expect(large.listClass).toContain('slds-text-heading_large');
+    expect(large.spacingStart).toBe('1.75rem');
+  });
+
+  test('unbekannte size fällt geschlossen auf medium zurück', async ({
+    page,
+  }) => {
+    // Früher inkonsistent: keine Textklasse, aber Medium-Abstände.
+    const res = await mountBreadcrumbs(page, { attrs: { size: 'riesig' } });
+    expect(res.listClass).toContain('slds-text-heading_medium');
+    expect(res.spacingStart).toBe('1rem');
   });
 
   test('Letztes Item ist ein span mit aria-current="page", die übrigen sind Links', async ({
@@ -129,14 +153,17 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.ariaCurrent[3]).toBe('page');
   });
 
-  test('Klick feuert click mit detail { key, label, href, index }', async ({
+  test('Klick feuert breadcrumb-select mit detail { key, label, href, index }', async ({
     page,
   }) => {
     await mountBreadcrumbs(page);
-    const details = await clickCrumb(page, 1);
-    expect(details).toEqual([
+    const res = await clickCrumb(page, 1);
+    expect(res.details).toEqual([
       { key: 'accounts', label: 'Accounts', href: '/accounts', index: 1 },
     ]);
+    // Das Event heißt nicht mehr `click` und kollidiert damit nicht mehr mit dem
+    // nativen Click (dessen `detail` die Klickzahl ist, kein Item-Objekt).
+    expect(res.nativeClicks).toEqual([]);
   });
 
   test('overflow: erstes Item, Ellipse und die letzten zwei bei Limit 3', async ({
@@ -157,26 +184,21 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.labels).toEqual(['Home', 'Accounts', 'Contacts', 'ACME Corp']);
   });
 
-  test('FEHLVERHALTEN: overflow_limit="1" dupliziert die Liste', async ({
+  test('overflow_limit unter 2 wird auf 2 angehoben (erstes + Ellipse + letztes)', async ({
     page,
   }) => {
-    // Kein gewolltes Verhalten, sondern ein festgehaltener Bug: `_visibleItems`
-    // rechnet `slice(-(limit - 1))` -> bei limit 1 ist das `slice(-0)`, und -0 ist
-    // in JS 0, also `slice(0)` = das ganze Array. Ergebnis: erstes Item, Ellipse,
-    // danach nochmals ALLE Items ("Home" taucht doppelt auf).
-    // Dieser Test schlägt um, sobald der Guard `limit < 2` nachgerüstet wird —
-    // genau das ist beabsichtigt.
-    const res = await mountBreadcrumbs(page, {
+    // Unter 2 lässt sich "erstes + … + letztes" nicht darstellen. Früher lief die
+    // Rechnung `slice(-(limit - 1))` bei limit 1 auf `slice(-0)` === `slice(0)`
+    // hinaus und hängte die GANZE Liste an (das erste Item doppelt).
+    const limitOne = await mountBreadcrumbs(page, {
       attrs: { overflow: true, overflow_limit: '1' },
     });
-    expect(res.labels).toEqual([
-      'Home',
-      '…',
-      'Home',
-      'Accounts',
-      'Contacts',
-      'ACME Corp',
-    ]);
+    expect(limitOne.labels).toEqual(['Home', '…', 'ACME Corp']);
+
+    const limitZero = await mountBreadcrumbs(page, {
+      attrs: { overflow: true, overflow_limit: '0' },
+    });
+    expect(limitZero.labels).toEqual(['Home', '…', 'ACME Corp']);
   });
 
   test('card-container wickelt die Breadcrumbs in eine slds-card', async ({
