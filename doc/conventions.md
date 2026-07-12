@@ -11,13 +11,12 @@ sind nur noch Verweise hierher.
 | SLDS-Bausteine  | `public/slds-components/` | `slds-`         | generisch, wiederverwendbar, **nicht** app-spezifisch |
 | App-Komponenten | `public/components/`      | `custom-`       | anwendungsspezifisch                                  |
 
-Dateistruktur je Komponente: `<name>/<name>.js` (Logik), optional
-`<name>/<name>.html` (Markup, nur beim Legacy-Muster, s. u.).
+Dateistruktur je Komponente: `<name>/<name>.js` (Logik), dazu eine `README.md`.
 
-## Bevorzugtes Muster: Lit (für alles Neue)
+## Verbindliches Muster: Lit
 
-Neue Komponenten — und bereits **alle `custom-*`** sowie neuere `slds-*` —
-werden mit **Lit** gebaut, eingebunden per CDN (kein Bundler):
+**Alle** Komponenten (`custom-*` und `slds-*`) werden mit **Lit** gebaut,
+eingebunden per CDN (kein Bundler):
 
 ```js
 import {
@@ -71,18 +70,20 @@ html`<svg class="slds-icon"><use xlink:href="${sprite}#${name}"></use></svg>`;
   den String auch dann, wenn das Icon gar nicht auflöst, und lässt den Bug durch.
 - Betroffen/behoben: `slds-toast`, `slds-button-icon` (2026-07-09).
 
-## Legacy-Muster: nativ + Markup-Caching
+## Historie: abgelöste Muster
 
-Eine ältere `slds-*`-Komponente (`slds-combobox`) nutzt noch natives
-`HTMLElement` mit Template-Caching aus einer `.html`-Datei (`loadHtmlMarkup` /
-geteiltes `templatePromise`).
+Beide früheren Muster sind vollständig abgelöst — sie tauchen im Code nicht mehr
+auf und dürfen nicht wiederbelebt werden:
 
-- **Für neue Komponenten nicht mehr verwenden.** Lit ist der Standard.
-- Beim Anfassen einer Legacy-Komponente: bestehendes Muster respektieren oder
-  bewusst auf Lit migrieren — nicht mischen.
-- **Veraltet:** Der frühere SLDS-Preloader über `/modules/slds.js`
-  (`sharedStyleSheetConst`) existiert **nicht mehr**. Aktuell ist
-  `/modules/global-styles.mjs`.
+- **Natives `HTMLElement` + Markup-Caching** (`.html`-Datei, `loadHtmlMarkup` /
+  geteiltes `templatePromise`): mit der Portierung von `slds-combobox`
+  (2026-07-12) restlos auf Lit migriert. Es gibt keine `.html`-Komponentendateien
+  mehr.
+- **SLDS-Preloader über `/modules/slds.js`** (`sharedStyleSheetConst`): existiert
+  nicht mehr, ersetzt durch `/modules/global-styles.mjs`.
+
+Bewusst ausgelassene Fixes aus den Portierungen (latente Legacy-Eigenheiten, die
+originalgetreu übernommen wurden) sind in `EPC/Missed.md` protokolliert.
 
 ## Allgemein
 
