@@ -156,9 +156,9 @@ class NavigationModal extends LitElement {
         ${this._tree.map(
           (story) => html`
             <slds-layout-item
-              size-1-of-2
-              medium-size-1-of-3
-              large-size-1-of-4
+              size="1-of-2"
+              medium-size="1-of-3"
+              large-size="1-of-4"
               class="slds-p-vertical_x-small"
             >
               <button
@@ -194,26 +194,26 @@ class NavigationModal extends LitElement {
           : html`
               <slds-layout wrap gutters-small>
                 ${chapters.map(
-                (chapter) => html`
-                  <slds-layout-item
-                    size-1-of-2
-                    medium-size-1-of-3
-                    large-size-1-of-4
-                    class="slds-p-vertical_x-small"
-                  >
-                    <button
-                      class="tile ${
+                  (chapter) => html`
+                    <slds-layout-item
+                      size="1-of-2"
+                      medium-size="1-of-3"
+                      large-size="1-of-4"
+                      class="slds-p-vertical_x-small"
+                    >
+                      <button
+                        class="tile ${
                         chapter.id === this.currentLocation
                           ? 'tile_current'
                           : ''
                       }"
-                      @click="${() => this._handleChapterClick(chapter.id)}"
-                    >
-                      <span>${chapter.name}</span>
-                    </button>
-                  </slds-layout-item>
-                `
-              )}
+                        @click="${() => this._handleChapterClick(chapter.id)}"
+                      >
+                        <span>${chapter.name}</span>
+                      </button>
+                    </slds-layout-item>
+                  `
+                )}
               </slds-layout>
             `
       }
