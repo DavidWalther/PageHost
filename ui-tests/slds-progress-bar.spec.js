@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut-Effekt-Tests für die Lit-Komponente `slds-progress-bar`.
@@ -42,7 +43,7 @@ async function mountProgressBar(page, attrs = {}) {
 
 test.describe('slds-progress-bar', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: progressbar-Rolle mit Wertebereich und Value-Span', async ({

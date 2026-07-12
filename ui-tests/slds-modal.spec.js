@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Tests für die Lit-Komponente `slds-modal`.
@@ -67,7 +68,7 @@ async function mountModal(page, { attrs = {}, action } = {}) {
 
 test.describe('slds-modal', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('geschlossen: rendert nichts', async ({ page }) => {

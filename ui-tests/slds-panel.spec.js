@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Struktur-, Zustands- und Slot-Tests für die Lit-Komponente `slds-panel`.
@@ -104,7 +105,7 @@ async function mountPanel(page, { slots = {}, actions = [] } = {}) {
 
 test.describe('slds-panel', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: docked-left Panel mit Header, Body und Close-Button', async ({

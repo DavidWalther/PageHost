@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Struktur-, Attribut- und Event-Tests für die Lit-Komponente `slds-breadcrumbs`.
@@ -89,7 +90,7 @@ async function clickCrumb(page, index) {
 
 test.describe('slds-breadcrumbs', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Struktur: nav mit ol und einem li je Item', async ({ page }) => {

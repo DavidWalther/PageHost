@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { gotoComponentPage } = require('./support/component-page');
 
 /**
  * Attribut- und Slot-Effekt-Tests für die Lit-Komponente `slds-card`.
@@ -69,7 +70,7 @@ async function mountCard(page, { attrs = {}, slots = {} } = {}) {
 
 test.describe('slds-card', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await gotoComponentPage(page);
   });
 
   test('Default: article + Header + Body + Footer', async ({ page }) => {
