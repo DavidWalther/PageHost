@@ -68,7 +68,7 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
 
 ### Cache & Publish-Filter
 
-- Der **Inhaltsbaum** (`contents`) wird **vollständig** (veröffentlicht *und*
+- Der **Inhaltsbaum** (`contents`) wird **vollständig** (veröffentlicht _und_
   unveröffentlicht) im Cache gehalten; der Publish-Filter läuft erst bei der
   Auslieferung als eigenes Modul (`private/modules/ContentVisibilityFilter.js`),
   damit dieselbe Baum-Quelle z. B. auch für `sitemap.xml` nutzbar ist.
@@ -90,10 +90,10 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
   `custom-`. Holen Daten über Events, die im Wildcard-/SSR-Pfad an die Backend-
   Endpoints gebunden werden.
 
-> **Zwei Komponenten-Generationen** (wichtig!): Neue Komponenten und alle
-> `custom-*` nutzen **Lit (CDN)** + `global-styles.mjs`. Ältere `slds-*`
-> nutzen noch ein natives Muster mit Markup-Caching. Verbindliche Regeln,
-> inklusive welches Muster für Neues gilt: **`doc/conventions.md`**.
+> **Einheitliches Komponenten-Muster:** **Alle** Komponenten (`slds-*` und
+> `custom-*`) nutzen **Lit (CDN)** + `global-styles.mjs`. Das frühere native
+> Muster mit Markup-Caching (`.html`-Dateien) ist vollständig abgelöst.
+> Verbindliche Regeln: **`doc/conventions.md`**.
 
 ## Tests
 
