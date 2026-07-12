@@ -10,7 +10,9 @@ const FOCUSABLE_SELECTOR =
 
 class SLDSModal extends LitElement {
   static properties = {
-    title: { type: String },
+    // Nicht `title`: das ist ein globales HTML-Attribut mit nativer Property —
+    // die zu ueberschatten haengt dem Host zusaetzlich einen Browser-Tooltip an.
+    heading: { type: String },
     headless: { type: Boolean, reflect: true },
     footless: { type: Boolean, reflect: true },
     open: { type: Boolean, reflect: true },
@@ -18,7 +20,7 @@ class SLDSModal extends LitElement {
 
   constructor() {
     super();
-    this.title = '';
+    this.heading = '';
     this.headless = false;
     this.footless = false;
     this.open = false;
@@ -75,7 +77,7 @@ class SLDSModal extends LitElement {
                       id="modal-heading"
                       class="slds-modal__title slds-hyphenate"
                     >
-                      <slot name="headline">${this.title}</slot>
+                      <slot name="headline">${this.heading}</slot>
                     </h1>
                   </div>
                 `

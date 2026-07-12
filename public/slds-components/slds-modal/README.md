@@ -13,7 +13,7 @@ The component renders **nothing** while it is closed. Opening it is normally don
 ```html
 <script type="module" src="/slds-components/slds-modal/slds-modal.js"></script>
 
-<slds-modal title="Edit chapter" @close="${this._handleClose}">
+<slds-modal heading="Edit chapter" @close="${this._handleClose}">
   <p>Body content…</p>
   <div slot="footer">
     <button class="slds-button">Save</button>
@@ -29,25 +29,23 @@ this.shadowRoot.querySelector('slds-modal').hide();
 
 ## Attributes
 
-| Attribute  | Type    | Default | Description                                                                    |
-| ---------- | ------- | ------- | ------------------------------------------------------------------------------ |
-| `open`     | Boolean | `false` | Whether the dialog is shown. Reflected. While `false`, nothing is rendered.    |
-| `title`    | String  | `''`    | Heading text, used unless the `headline` slot is filled. **See caveat below.** |
-| `headless` | Boolean | `false` | Omits the header region. Reflected.                                            |
-| `footless` | Boolean | `false` | Omits the footer region. Reflected.                                            |
+| Attribute  | Type    | Default | Description                                                                 |
+| ---------- | ------- | ------- | --------------------------------------------------------------------------- |
+| `open`     | Boolean | `false` | Whether the dialog is shown. Reflected. While `false`, nothing is rendered. |
+| `heading`  | String  | `''`    | Heading text, used unless the `headline` slot is filled.                    |
+| `headless` | Boolean | `false` | Omits the header region. Reflected.                                         |
+| `footless` | Boolean | `false` | Omits the footer region. Reflected.                                         |
 
-> **Caveat — `title` shadows the native attribute.** `title` is a _global_ HTML
-> attribute with a native property, so setting it also gives the host element a
-> browser tooltip. Renaming it would break all four consumers, so it is a known,
-> unfixed wart.
+> The heading attribute used to be called `title`, which shadowed the _global_ HTML
+> `title` attribute and gave the host an unwanted browser tooltip. Use `heading`.
 
 ## Slots
 
-| Slot        | Description                                                          |
-| ----------- | -------------------------------------------------------------------- |
-| _(default)_ | Body content (`slds-modal__content`).                                |
-| `headline`  | Header content. Falls back to the `title` attribute when left empty. |
-| `footer`    | Footer content. Only rendered when `footless` is not set.            |
+| Slot        | Description                                                       |
+| ----------- | ----------------------------------------------------------------- |
+| _(default)_ | Body content (`slds-modal__content`).                             |
+| `headline`  | Header content. Falls back to the `heading` attribute when empty. |
+| `footer`    | Footer content. Only rendered when `footless` is not set.         |
 
 ## Methods
 
@@ -72,21 +70,21 @@ Three paths close the dialog, and each one fires `close`:
 - a click on the **backdrop**,
 - the **Escape** key (a `keydown` listener on `document`, active only while open).
 
-## Accessibility — known limits
+## Accessibility
 
 The dialog carries `role="dialog"`, `aria-modal="true"` and
-`aria-labelledby="modal-heading"`, and the close button has assistive text. Two
-pieces of the focus handling do **not** work, however — named here rather than
-silently papered over:
+`aria-labelledby="modal-heading"`, and the close button has assistive text.
 
-- **The focus trap never engages.** `_handleTabKey` looks for focusable elements
-  inside `.slds-modal__content` in the _shadow_ root, but the content arrives as
-  slotted _light_ DOM — so nothing is ever found and Tab can leave the dialog.
-- **Focus does not move into the dialog on open.** `_setFocus()` calls `focus()`
-  on `.slds-modal__content`, a `<div>` without `tabindex`, which is not focusable.
+Focus is managed while the dialog is open:
 
-Until those are fixed, consumers that need a real focus trap have to provide it
-themselves.
+- On open, focus moves to the first focusable element — the close button, followed
+  by whatever the slots contain. If there is nothing focusable, the dialog section
+  itself takes focus (it carries `tabindex="-1"`).
+- **Tab is trapped**: tabbing past the last element wraps to the first, and
+  Shift+Tab from the first wraps to the last. The candidates are collected from the
+  shadow root (close button) _and_ the slotted light DOM, since the dialog content
+  is projected rather than owned.
+- On close, focus returns to the element that had it before the dialog opened.
 
 ## Styling
 
