@@ -65,11 +65,14 @@ Each entry in the `items` array must be an object with the following fields:
 
 The `size` attribute controls the text size and the spacing between items.
 
-| Value    | SLDS class applied         |
-| -------- | -------------------------- |
-| `small`  | `slds-text-heading_small`  |
-| `medium` | `slds-text-heading_medium` |
-| `large`  | `slds-text-heading_large`  |
+| Value    | SLDS class applied         | Item spacing |
+| -------- | -------------------------- | ------------ |
+| `small`  | `slds-text-heading_small`  | `.8rem`      |
+| `medium` | `slds-text-heading_medium` | `1rem`       |
+| `large`  | `slds-text-heading_large`  | `1.75rem`    |
+
+An unknown value falls back to `medium` for **both** the text class and the
+spacing.
 
 ---
 

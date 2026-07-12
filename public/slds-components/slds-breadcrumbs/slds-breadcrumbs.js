@@ -5,23 +5,33 @@ import {
   nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+// `card-container` rendert eine <slds-card> — ohne diesen Import bliebe sie ein
+// unbekanntes Element, sobald die Breadcrumbs standalone eingebunden werden.
+import '/slds-components/slds-card/slds-card.js';
 
 const OVERFLOW_MARKER = Symbol('overflow');
 const MIN_OVERFLOW_LIMIT = 2;
+
+// Größe -> Textklasse und Abstände. Unbekannte Größe fällt geschlossen auf
+// `medium` zurück (Textklasse und Abstand liefen sonst auseinander).
 const SIZE_MAPPING = {
   small: {
+    textClass: 'slds-text-heading_small',
     left: '.8rem',
     right: '.5rem',
   },
   medium: {
+    textClass: 'slds-text-heading_medium',
     left: '1rem',
     right: '.75rem',
   },
   large: {
+    textClass: 'slds-text-heading_large',
     left: '1.75rem',
     right: '1rem',
   },
 };
+const DEFAULT_SIZE = 'medium';
 
 class SldsBreadcrumbs extends LitElement {
   static properties = {
@@ -60,27 +70,17 @@ class SldsBreadcrumbs extends LitElement {
     addGlobalStylesToShadowRoot(this.shadowRoot);
   }
 
-  get isSizeSmall() {
-    return this.size === 'small';
-  }
-
-  get isSizeMedium() {
-    return this.size === 'medium';
-  }
-
-  get isSizeLarge() {
-    return this.size === 'large';
-  }
-
   get spacing() {
-    if (this.isSizeSmall) {
-      return SIZE_MAPPING.small;
-    }
-    if (this.isSizeLarge) {
-      return SIZE_MAPPING.large;
-    }
-    // Default to medium spacing if size is not small or large
-    return SIZE_MAPPING.medium;
+    return SIZE_MAPPING[this.size] ?? SIZE_MAPPING[DEFAULT_SIZE];
+  }
+
+  // Die Abstände gehen als Custom Properties an den Host; SLDS liest sie im
+  // ShadowDOM aus (`--slds-c-breadcrumbs-spacing-inline-*`). Das gehört nach
+  // `updated()` — `render()` muss seiteneffektfrei bleiben.
+  updated() {
+    const { left, right } = this.spacing;
+    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-start', left);
+    this.style.setProperty('--slds-c-breadcrumbs-spacing-inline-end', right);
   }
 
   get _visibleItems() {
@@ -96,21 +96,7 @@ class SldsBreadcrumbs extends LitElement {
   }
 
   render() {
-    const sizeClass = this.isSizeSmall
-      ? 'slds-text-heading_small'
-      : this.isSizeMedium
-        ? 'slds-text-heading_medium'
-        : this.isSizeLarge
-          ? 'slds-text-heading_large'
-          : '';
-    this.style.setProperty(
-      '--slds-c-breadcrumbs-spacing-inline-start',
-      this.spacing.left
-    );
-    this.style.setProperty(
-      '--slds-c-breadcrumbs-spacing-inline-end',
-      this.spacing.right
-    );
+    const sizeClass = this.spacing.textClass;
 
     const content = html`
       <nav
