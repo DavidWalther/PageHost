@@ -27,8 +27,8 @@ a `<slds-toggle>` custom element that emits a `toggle` event on change.
 | `enabledLabel`  | `enabled-label`  | String  | –       | Text rendered in the "on" state span (`slds-checkbox_on`).                           |
 | `disabledLabel` | `disabled-label` | String  | –       | Text rendered in the "off" state span (`slds-checkbox_off`).                         |
 | `name`          | `name`           | String  | –       | `name` attribute of the underlying `<input type="checkbox">`.                        |
-| `checked`       | `checked`        | Boolean | `false` | Current state of the switch. Reflected to the attribute, so it can be read from DOM. |
-| `disabled`      | `disabled`       | Boolean | `false` | Disables the switch (sets the `disabled` attribute on the input).                    |
+| `checked`       | `checked`        | Boolean | absent  | Current state of the switch. Reflected to the attribute, so it can be read from DOM. |
+| `disabled`      | `disabled`       | Boolean | absent  | Disables the switch (sets the `disabled` attribute on the input).                    |
 | `direction`     | `direction`      | String  | `ltr`   | Set to `"right-to-left"` to render the control with `dir="rtl"` on the wrapper.      |
 
 ## Events
@@ -147,8 +147,8 @@ inline validation.
 
 ## Accessibility
 
-- The `<input>` is associated with its `<label>` via a per-render generated
-  `id` / `for` pair, as required by SLDS form elements.
+- The `<input>` is associated with its `<label>` via an `id` / `for` pair, as
+  required by SLDS form elements. **The `id` is not stable** — see below.
 - `aria-live="assertive"` on `slds-checkbox_faux_container` announces state
   changes, matching the SLDS blueprint.
 - SLDS styles are injected into the shadow root via
@@ -156,8 +156,18 @@ inline validation.
 
 ## Notes / deviations from project conventions
 
+- **The `id` is regenerated on every render.** `render()` derives it from
+  `Math.random()`, so `input.id`, `label[for]` and `aria-describedby` change with
+  every update. The label association itself stays intact (both change together),
+  but the `id` cannot be referenced from the outside — do not rely on it. Tracked
+  in `EPC/Missed.md` (A-6).
+- **`aria-describedby` points at the input itself**, which describes nothing. In
+  the SLDS blueprint it references a descriptive text element. Tracked in
+  `EPC/Missed.md` (A-7).
 - The `toggle` event name is a bare single word; project conventions prefer
   qualified, kebab-case event names (e.g. `toggle-change`). It is kept as-is
   because it is public API consumed by `custom-publishing`, `custom-chapter-edit`
   and the `bookstore` application via `@toggle`; renaming it is a separate,
   breaking change.
+- The file is named `toggle.js`, not `slds-toggle.js` as `doc/conventions.md`
+  requires (`<name>/<name>.js`). Tracked in `EPC/Missed.md` (A-10).
