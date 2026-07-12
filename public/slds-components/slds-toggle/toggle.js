@@ -16,13 +16,23 @@ class SLDSToggle extends LitElement {
     direction: { type: String }, // ['right-to-left']
   };
 
+  constructor() {
+    super();
+    // Einmalig je Instanz — nicht bei jedem Render neu. Sonst wechselten `id`,
+    // `for` und `aria-describedby` mit jedem Update und waeren von aussen nicht
+    // referenzierbar.
+    const suffix = Math.random().toString(36).substring(2, 11);
+    this.toggleId = `toggle-${suffix}`;
+    this.stateTextId = `toggle-state-${suffix}`;
+  }
+
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
   }
 
   render() {
-    const toggleId = `toggle-${Math.random().toString(36).substring(2, 11)}`;
+    const { toggleId, stateTextId } = this;
     const gridClasses = 'slds-checkbox_toggle slds-grid';
 
     const htmlLabel = html`
@@ -35,12 +45,16 @@ class SLDSToggle extends LitElement {
         type="checkbox"
         name="${this.name}"
         id="${toggleId}"
-        aria-describedby="${toggleId}"
+        aria-describedby="${stateTextId}"
         .checked="${this.checked}"
         @change="${this._handleToggle}"
         ?disabled="${this.disabled}"
       />
-      <span class="slds-checkbox_faux_container" aria-live="assertive">
+      <span
+        id="${stateTextId}"
+        class="slds-checkbox_faux_container"
+        aria-live="assertive"
+      >
         <span class="slds-checkbox_faux"></span>
         <span class="slds-checkbox_on">${this.enabledLabel}</span>
         <span class="slds-checkbox_off">${this.disabledLabel}</span>
