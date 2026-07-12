@@ -219,9 +219,16 @@ class SLDSModal extends LitElement {
     );
   }
 
-  // Bei Fokus im ShadowDOM meldet document.activeElement nur den Host.
+  // `document.activeElement` retargetet: Liegt der Fokus in einem Shadow Root,
+  // meldet es nur dessen aeussersten Host. Bei verschachtelten Komponenten
+  // (custom-navigation-modal > slds-modal > geslotteter Button) waere das
+  // `app-bookstore` statt des Buttons. Deshalb bis zum echten Element absteigen.
   _activeElement() {
-    return this.shadowRoot.activeElement ?? document.activeElement;
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) {
+      active = active.shadowRoot.activeElement;
+    }
+    return active;
   }
 
   _setFocus() {
