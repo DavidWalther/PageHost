@@ -82,7 +82,7 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       );
 
       headerEntries.push(
-        '<script type="module" src="slds-components/slds-toggle/toggle.js"></script>'
+        '<script type="module" src="slds-components/slds-toggle/slds-toggle.js"></script>'
       );
       headerEntries.push(
         '<script type="module" src="slds-components/slds-input/slds-input.js"></script>'

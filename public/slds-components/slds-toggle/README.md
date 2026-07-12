@@ -8,7 +8,10 @@ a `<slds-toggle>` custom element that emits a `toggle` event on change.
 ## Usage
 
 ```html
-<script type="module" src="/slds-components/slds-toggle/toggle.js"></script>
+<script
+  type="module"
+  src="/slds-components/slds-toggle/slds-toggle.js"
+></script>
 
 <slds-toggle
   label="Enable feature"
