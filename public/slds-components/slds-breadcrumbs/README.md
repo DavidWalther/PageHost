@@ -7,21 +7,24 @@ A Web Component (LitElement) that renders a Salesforce Lightning Design System (
 ## Import
 
 ```html
-<script type="module" src="/slds-components/slds-breadcrumbs/slds-breadcrumbs.js"></script>
+<script
+  type="module"
+  src="/slds-components/slds-breadcrumbs/slds-breadcrumbs.js"
+></script>
 ```
 
 ---
 
 ## Attributes
 
-| Attribute           | Type    | Required | Default         | Description                                                        |
-|---------------------|---------|----------|-----------------|--------------------------------------------------------------------|
-| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see [Item shape](#item-shape))   |
-| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                           |
-| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                           |
-| `card-container`    | Boolean | No       | `false`         | Wraps the breadcrumbs inside an `slds-card`                        |
-| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; collapses middle items into `…`           |
-| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored without `overflow`) |
+| Attribute           | Type    | Required | Default         | Description                                                                |
+| ------------------- | ------- | -------- | --------------- | -------------------------------------------------------------------------- |
+| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see [Item shape](#item-shape))           |
+| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                                   |
+| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                                   |
+| `card-container`    | Boolean | No       | `false`         | Wraps the breadcrumbs inside an `slds-card`                                |
+| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; collapses middle items into `…`                   |
+| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored without `overflow`)     |
 | `last-item-as-link` | Boolean | No       | `false`         | Renders the last (current) item as a clickable `<a>` instead of a `<span>` |
 
 ---
@@ -38,19 +41,28 @@ Each entry in the `items` array must be an object with the following fields:
 }
 ```
 
-| Field   | Type   | Required | Description                                                  |
-|---------|--------|----------|--------------------------------------------------------------|
-| `key`   | String | Yes      | Unique identifier; passed through in the `click` event       |
-| `label` | String | Yes      | Text shown in the breadcrumb item                            |
-| `href`  | String | No       | Navigation URL; omit to render the anchor without an `href`  |
+| Field   | Type   | Required | Description                                                 |
+| ------- | ------ | -------- | ----------------------------------------------------------- |
+| `key`   | String | Yes      | Unique identifier; passed through in the `click` event      |
+| `label` | String | Yes      | Text shown in the breadcrumb item                           |
+| `href`  | String | No       | Navigation URL; omit to render the anchor without an `href` |
 
 ---
 
 ## Events
 
-| Event   | Detail                        | Description                                                                                                 |
-|---------|-------------------------------|-------------------------------------------------------------------------------------------------------------|
+| Event   | Detail                        | Description                                                                                                   |
+| ------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `click` | `{ key, label, href, index }` | Fired when a breadcrumb link is clicked. The last item fires this event only when `last-item-as-link` is set. |
+
+> **Caveat — `click` collides with the native event.** The component dispatches a
+> `CustomEvent` literally named `click`, which bubbles. Clicks that do _not_ hit a
+> link (padding, the `li`, the last item's `<span>`) still produce a **native**
+> `click` that is retargeted to the host. A listener on `click` therefore receives
+> both kinds, and on the native one `event.detail` is the browser's click **count**
+> (`1`), not the item object — so `event.detail.key` is silently `undefined`.
+> Guard accordingly, or check `event instanceof CustomEvent`. Tracked in
+> `EPC/Missed.md` (A-2).
 
 ---
 
@@ -58,11 +70,11 @@ Each entry in the `items` array must be an object with the following fields:
 
 The `size` attribute controls the text size and the spacing between items.
 
-| Value    | SLDS class applied          |
-|----------|-----------------------------|
-| `small`  | `slds-text-heading_small`   |
-| `medium` | `slds-text-heading_medium`  |
-| `large`  | `slds-text-heading_large`   |
+| Value    | SLDS class applied         |
+| -------- | -------------------------- |
+| `small`  | `slds-text-heading_small`  |
+| `medium` | `slds-text-heading_medium` |
+| `large`  | `slds-text-heading_large`  |
 
 ---
 
@@ -79,6 +91,12 @@ Example with 5 items and `overflow_limit="3"`:
 ```
 Home  ›  …  ›  Contacts  ›  ACME Corp
 ```
+
+> **Caveat — `overflow_limit` must be 2 or higher.** With `overflow_limit="1"` the
+> component renders the first item, the `…`, and then the **entire list again**
+> (the first item appears twice); `overflow_limit="0"` collapses nothing. The cause
+> is an off-by-one: the tail is computed as `slice(-(limit - 1))`, and `slice(-0)`
+> is `slice(0)` — the whole array. Tracked in `EPC/Missed.md` (A-1).
 
 ---
 
@@ -126,19 +144,18 @@ Home  ›  …  ›  Contacts  ›  ACME Corp
 ### Listening to click events
 
 ```javascript
-document.querySelector('slds-breadcrumbs').addEventListener('click', (event) => {
-  const { key, label, href, index } = event.detail;
-  console.log(`Clicked: ${label} (key: ${key}, index: ${index})`);
-});
+document
+  .querySelector('slds-breadcrumbs')
+  .addEventListener('click', (event) => {
+    const { key, label, href, index } = event.detail;
+    console.log(`Clicked: ${label} (key: ${key}, index: ${index})`);
+  });
 ```
 
 ### Custom `aria-label`
 
 ```html
-<slds-breadcrumbs
-  aria-label="Page navigation"
-  items='[...]'
-></slds-breadcrumbs>
+<slds-breadcrumbs aria-label="Page navigation" items="[...]"></slds-breadcrumbs>
 ```
 
 ### Last item as link
