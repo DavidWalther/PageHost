@@ -89,6 +89,20 @@ test.describe('slds-progress-bar', () => {
     expect(small.barClass).toContain('slds-progress-bar_small');
   });
 
+  test('size: unbekannter Wert erzeugt keine Klasse', async ({ page }) => {
+    // Ein Tippfehler darf keine erfundene Klasse produzieren, die still nichts tut.
+    const res = await mountProgressBar(page, { size: 'smal' });
+    expect(res.barClass).toBe('slds-progress-bar');
+  });
+
+  test('percent: nicht-numerischer Wert fällt auf 0 zurück statt NaN', async ({
+    page,
+  }) => {
+    const res = await mountProgressBar(page, { percent: 'abc' });
+    expect(res.ariaNow).toBe('0');
+    expect(res.width).toBe('0%');
+  });
+
   test('circular setzt die Klasse für runde Enden', async ({ page }) => {
     const res = await mountProgressBar(page, { circular: true });
     expect(res.barClass).toContain('slds-progress-bar_circular');
