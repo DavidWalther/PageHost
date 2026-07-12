@@ -68,8 +68,8 @@ the event (that is the legacy contract).
 
 ## Known legacy quirks (reproduced on purpose)
 
-The port is faithful, so two visible oddities were kept and are tracked in
-`EPC/Missed.md` (fixing them would be a behaviour change → own issue):
+The port is faithful, so two visible oddities were kept as they were (fixing them
+would be a behaviour change → own issue):
 
 - Option labels do **not** truncate: the legacy overwrites the template's
   `slds-truncate` span via `textContent`, so it never reaches the DOM.

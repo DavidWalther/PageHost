@@ -159,15 +159,13 @@ inline validation.
 - **The `id` is regenerated on every render.** `render()` derives it from
   `Math.random()`, so `input.id`, `label[for]` and `aria-describedby` change with
   every update. The label association itself stays intact (both change together),
-  but the `id` cannot be referenced from the outside — do not rely on it. Tracked
-  in `EPC/Missed.md` (A-6).
+  but the `id` cannot be referenced from the outside — do not rely on it.
 - **`aria-describedby` points at the input itself**, which describes nothing. In
-  the SLDS blueprint it references a descriptive text element. Tracked in
-  `EPC/Missed.md` (A-7).
+  the SLDS blueprint it references a descriptive text element.
 - The `toggle` event name is a bare single word; project conventions prefer
   qualified, kebab-case event names (e.g. `toggle-change`). It is kept as-is
   because it is public API consumed by `custom-publishing`, `custom-chapter-edit`
   and the `bookstore` application via `@toggle`; renaming it is a separate,
   breaking change.
 - The file is named `toggle.js`, not `slds-toggle.js` as `doc/conventions.md`
-  requires (`<name>/<name>.js`). Tracked in `EPC/Missed.md` (A-10).
+  requires (`<name>/<name>.js`).

@@ -57,8 +57,8 @@ async function mountToggle(page, { attrs = {}, clicks = 0 } = {}) {
         inputName: input ? input.getAttribute('name') : null,
         inputChecked: input ? input.checked : null,
         inputDisabled: input ? input.disabled : null,
-        // Die id ist bei jedem Render neu gewürfelt (EPC/Missed.md, A-6), deshalb
-        // nur die Verknüpfung prüfen — nie einen konkreten Wert.
+        // Die id wird bei jedem Render neu gewürfelt, deshalb nur die Verknüpfung
+        // prüfen — nie einen konkreten Wert.
         labelFor: label ? label.getAttribute('for') : null,
         inputId: input ? input.id : null,
         hostCheckedAttr: el.hasAttribute('checked'),
@@ -105,7 +105,7 @@ test.describe('slds-toggle', () => {
   test('Label und Input sind über for/id verknüpft', async ({ page }) => {
     const res = await mountToggle(page);
     // Bewusst nur die Gleichheit: die id wird bei jedem Render neu erzeugt
-    // (Math.random() in render(), siehe EPC/Missed.md A-6) und ist kein Contract.
+    // (Math.random() in render()) und ist deshalb kein Contract.
     expect(res.inputId).toBeTruthy();
     expect(res.labelFor).toBe(res.inputId);
   });

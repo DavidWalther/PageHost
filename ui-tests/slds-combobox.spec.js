@@ -9,7 +9,7 @@ const { test, expect } = require('@playwright/test');
  * wird das gerenderte Shadow-DOM, das dem Legacy-Verhalten entspricht.
  *
  * Zwei Legacy-Eigenheiten werden hier bewusst als Contract festgehalten
- * (Benutzerentscheidung: strikt faithful, siehe `EPC/Missed.md` slds-combobox):
+ * (Benutzerentscheidung: strikt faithful):
  * - Test 4: die Option enthält **keinen** `slds-truncate`-Span — das Legacy
  *   zerstört ihn per `textContent` auf der `media__body`.
  * - Test 13: `aria-expanded` bleibt **immer** `"false"`; nur die Klasse

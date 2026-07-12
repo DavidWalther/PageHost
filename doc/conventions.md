@@ -87,20 +87,12 @@ auf und dürfen nicht wiederbelebt werden:
 - **SLDS-Preloader über `/modules/slds.js`** (`sharedStyleSheetConst`): existiert
   nicht mehr, ersetzt durch `/modules/global-styles.mjs`.
 
-## Bekannte, nicht behobene Findings
-
-`EPC/Missed.md` ist die **einzige Datenquelle** für bekannte Implementierungslücken
-und -fehler der Komponenten in `public/`. Die Datei sammelt zwei Sorten von Findings:
-
-- **Port-Altlasten** — latente Legacy-Eigenheiten, die bei den originalgetreuen
-  Lit-Portierungen bewusst 1:1 übernommen (oder bewusst nicht nachgebaut) wurden.
-- **Audit-Findings** — Fehler aus dem systematischen Durchgang durch den gesamten
-  SLDS-Komponentenbestand (2026-07-12).
-
-Nichts davon ist gefixt: Ein Fix ändert sichtbares Verhalten und gehört in ein
-eigenes Issue. Vor dem Anfassen einer Komponente dort nachsehen — mehrere
-Playwright-Tests halten ein Fehlverhalten **bewusst** als Ist-Zustand fest und
-schlagen um, sobald der jeweilige Bug behoben wird.
+Einige Komponenten tragen noch bekannte, nicht behobene Eigenheiten aus der
+Portierung. Wo eine davon für Consumer relevant ist, steht sie in der README der
+jeweiligen Komponente. Manche Playwright-Tests halten ein solches Fehlverhalten
+**bewusst** als Ist-Zustand fest (Testname beginnt mit `FEHLVERHALTEN`) und
+schlagen um, sobald der Bug behoben wird — das ist beabsichtigt: Der Fix umfasst
+dann auch die Anpassung des Tests.
 
 ## Allgemein
 

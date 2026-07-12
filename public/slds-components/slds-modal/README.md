@@ -38,8 +38,8 @@ this.shadowRoot.querySelector('slds-modal').hide();
 
 > **Caveat — `title` shadows the native attribute.** `title` is a _global_ HTML
 > attribute with a native property, so setting it also gives the host element a
-> browser tooltip. Renaming it would break all four consumers; tracked in
-> `EPC/Missed.md` (A-17).
+> browser tooltip. Renaming it would break all four consumers, so it is a known,
+> unfixed wart.
 
 ## Slots
 
@@ -76,8 +76,8 @@ Three paths close the dialog, and each one fires `close`:
 
 The dialog carries `role="dialog"`, `aria-modal="true"` and
 `aria-labelledby="modal-heading"`, and the close button has assistive text. Two
-pieces of the focus handling do **not** work, however — they are recorded in
-`EPC/Missed.md` (A-15, A-16) rather than silently papered over here:
+pieces of the focus handling do **not** work, however — named here rather than
+silently papered over:
 
 - **The focus trap never engages.** `_handleTabKey` looks for focusable elements
   inside `.slds-modal__content` in the _shadow_ root, but the content arrives as

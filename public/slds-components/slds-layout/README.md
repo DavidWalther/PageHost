@@ -32,8 +32,7 @@ Unlike every other `slds-*` component, both elements render into the **light DOM
 
 > **Note.** Both components additionally append an empty, functionless `<slot>`
 > element to themselves — a `<slot>` only projects inside a shadow root. It is
-> inert (`display: contents`), but it is dead markup; tracked in `EPC/Missed.md`
-> (A-12).
+> inert (`display: contents`), but it is dead markup.
 
 ---
 

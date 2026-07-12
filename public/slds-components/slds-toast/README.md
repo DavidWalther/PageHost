@@ -42,7 +42,7 @@ the utility icon (`…/utility-sprite/svg/symbols.svg#<state>` and
 - The legacy `debug` attribute was dropped — it had no effect.
 - The legacy component accumulated theme classes when `state` changed after
   creation (it never removed the old one); no consumer exercises that path, so
-  the Lit port does not reproduce it. See `EPC/Missed.md`.
+  the Lit port does not reproduce it.
 
 ## Styling
 
