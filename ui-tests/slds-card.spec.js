@@ -51,6 +51,15 @@ async function mountCard(page, { attrs = {}, slots = {} } = {}) {
           '.slds-card__body_inner slot:not([name])'
         ),
         hasFooter: !!root.querySelector('.slds-card__footer'),
+        // Text, den das Shadow-DOM des Footers selbst beisteuert (ohne den
+        // geslotteten Inhalt) — deckt versehentlich mitgerenderte Zeichen auf.
+        footerAssistiveText: root.querySelector(
+          '.slds-card__footer .slds-assistive-text'
+        )
+          ? root
+              .querySelector('.slds-card__footer .slds-assistive-text')
+              .textContent.trim()
+          : null,
         assigned,
       };
     },
@@ -79,6 +88,15 @@ test.describe('slds-card', () => {
     const res = await mountCard(page, { attrs: { 'no-footer': true } });
     expect(res.hasFooter).toBe(false);
     expect(res.hasHeaderBlock).toBe(true);
+  });
+
+  test('Footer: kein überzähliges Zeichen im Assistive-Text', async ({
+    page,
+  }) => {
+    // Das Markup trug hinter dem footer-Slot ein zweites ">", das als Textknoten
+    // im Assistive-Text landete und Screenreadern vorgelesen wurde.
+    const res = await mountCard(page);
+    expect(res.footerAssistiveText).toBe('');
   });
 
   test('no-border setzt die Klasse no-border am Article', async ({ page }) => {
