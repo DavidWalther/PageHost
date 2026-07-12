@@ -104,11 +104,15 @@ test.describe('slds-card', () => {
     expect(res.articleClass).toContain('no-border');
   });
 
-  test('no-header ist ein No-Op — Header bleibt gerendert', async ({
+  test('no-header entfernt den Header, Body und Footer bleiben', async ({
     page,
   }) => {
     const res = await mountCard(page, { attrs: { 'no-header': true } });
-    expect(res.hasHeaderBlock).toBe(true);
+    expect(res.hasHeaderBlock).toBe(false);
+    expect(res.hasHeaderSlot).toBe(false);
+    expect(res.hasActionsSlot).toBe(false);
+    expect(res.hasBodyInner).toBe(true);
+    expect(res.hasFooter).toBe(true);
   });
 
   test('Slot-Projektion: header/actions/footer/default', async ({ page }) => {

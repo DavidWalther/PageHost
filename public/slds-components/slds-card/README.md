@@ -18,22 +18,17 @@ pattern to Lit.
 </slds-card>
 ```
 
-The card always renders `<article class="slds-card">` with a header region, a
-body region (`slds-card__body_inner`), and — unless `no-footer` is set — a
-footer.
+The card renders `<article class="slds-card">` with a body region
+(`slds-card__body_inner`), a header region — unless `no-header` is set — and a
+footer — unless `no-footer` is set.
 
 ## Attributes
 
 | Attribute   | Type    | Default | Description                                                                    |
 | ----------- | ------- | ------- | ------------------------------------------------------------------------------ |
-| `no-header` | Boolean | `false` | **No-Op** — the header is always rendered (see note below).                    |
+| `no-header` | Boolean | `false` | Omits the header region (title and actions).                                   |
 | `no-footer` | Boolean | `false` | Omits the footer region.                                                       |
 | `no-border` | Boolean | `false` | Adds the `no-border` class to the `<article>` (removes border and box-shadow). |
-
-> **Note — `no-header` is a no-op.** In the legacy component `no-header` never
-> had any effect (the header was always rendered), and this Lit port keeps that
-> behaviour deliberately to stay a faithful port. Making `no-header` actually
-> hide the header would be a behaviour change and needs its own issue.
 
 ## Slots
 

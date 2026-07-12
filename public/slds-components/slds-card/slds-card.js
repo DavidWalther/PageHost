@@ -7,7 +7,6 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 
 class Card extends LitElement {
   static properties = {
-    // Legacy-API: `no-header` (No-Op wie Legacy), `no-footer`, `no-border`.
     noHeader: { type: Boolean, attribute: 'no-header' },
     noFooter: { type: Boolean, attribute: 'no-footer' },
     noBorder: { type: Boolean, attribute: 'no-border' },
@@ -41,21 +40,28 @@ class Card extends LitElement {
       .filter(Boolean)
       .join(' ');
 
-    // Header wird immer gerendert — `no-header` ist ein No-Op (wie Legacy).
     return html`
       <article class="${articleClasses}">
-        <div class="slds-card__header slds-grid">
-          <header class="slds-media slds-media_center slds-has-flexi-truncate">
-            <div class="slds-media__body">
-              <h2 class="slds-card__header-title">
-                <span><slot name="header"></slot></span>
-              </h2>
-            </div>
-            <div class="slds-no-flex">
-              <slot name="actions"></slot>
-            </div>
-          </header>
-        </div>
+        ${
+          this.noHeader
+            ? ''
+            : html`
+                <div class="slds-card__header slds-grid">
+                  <header
+                    class="slds-media slds-media_center slds-has-flexi-truncate"
+                  >
+                    <div class="slds-media__body">
+                      <h2 class="slds-card__header-title">
+                        <span><slot name="header"></slot></span>
+                      </h2>
+                    </div>
+                    <div class="slds-no-flex">
+                      <slot name="actions"></slot>
+                    </div>
+                  </header>
+                </div>
+              `
+        }
         <div class="slds-card__body slds-card__body_inner"><slot></slot></div>
         ${
           this.noFooter
