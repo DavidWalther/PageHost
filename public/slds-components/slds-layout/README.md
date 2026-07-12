@@ -20,6 +20,45 @@ Unlike every other `slds-*` component, both elements render into the **light DOM
   are styled by whatever stylesheet applies in the surrounding scope — the document
   for top-level usage, or the enclosing component's shadow root.
 
+### Why light DOM, and not a shadow root?
+
+Not an oversight — a shadow root **cannot** work here as long as the components reuse
+the SLDS grid classes, for two reasons:
+
+1. **A CSS selector never crosses a shadow boundary.** SLDS styles columns
+   contextually (`.slds-gutters .slds-col`). Put `.slds-gutters` inside a shadow root
+   and `.slds-col` outside, and the rule can never match — gutters would silently die.
+2. **The element carrying `slds-col` must _be_ the flex item.** Give both components a
+   shadow root with inner `<div>`s and the flex item becomes the `<slds-layout-item>`
+   host, while `slds-col` sits on a `div` one level deeper — `flex` and `width` would
+   apply to the wrong box.
+
+Both constraints disappear only if the components stop reusing SLDS's grid CSS and own
+the rules themselves. That was decided against: SLDS is battle-tested.
+
+### The `class` attribute belongs to the component
+
+Because these components render into the light DOM, their `classList` is technically
+open — but it is **managed by the component**. Only the documented attributes should
+have an effect.
+
+> **Do not put SLDS classes on a layout host.** Need a margin or padding? Put it on
+> your own element inside the item:
+>
+> ```html
+> <!-- nein -->
+> <slds-layout-item size="1-of-1" class="slds-m-bottom_medium"
+>   >…</slds-layout-item
+> >
+>
+> <!-- ja -->
+> <slds-layout-item size="1-of-1">
+>   <div class="slds-m-bottom_medium">…</div>
+> </slds-layout-item>
+> ```
+>
+> `ui-tests/layout-classlist-contract.spec.js` enforces this against the running app.
+
 ```html
 <!-- what you write -->
 <slds-layout wrap gutters-small>
