@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { gotoComponentPage } = require('./support/component-page');
+const { gotoComponentPage } = require('../../support/component-page');
 
 /**
  * Attribut-, Event- und Struktur-Tests für die Lit-Komponente `slds-toggle`.

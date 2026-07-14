@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { gotoComponentPage } = require('./support/component-page');
+const { gotoComponentPage } = require('../../support/component-page');
 
 /**
  * Attribut-Effekt-Tests für die Lit-Komponente `slds-progress-bar`.
