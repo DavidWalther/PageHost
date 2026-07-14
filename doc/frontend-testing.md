@@ -5,10 +5,60 @@ Jest-Backend-Suite getrennt.
 
 ## Verzeichnis & Namen
 
-- Tests liegen in **`ui-tests/`**, Dateiendung **`*.spec.js`**.
-- Hilfsmodule unter `ui-tests/support/`.
-- Jest ignoriert `ui-tests/` (`jest.config.js` → `testPathIgnorePatterns`),
-  damit `*.spec.js` nicht versehentlich von Jest eingesammelt wird.
+Tests liegen in **`ui-tests/`**, Dateiendung **`*.spec.js`**. `ui-tests/`
+**spiegelt die Struktur von `public/`** — zu jedem Komponentenordner dort gehört
+der gleichnamige Ordner hier:
+
+```
+ui-tests/
+  support/                                 Hilfsmodule (flach, nicht gespiegelt)
+  applications/
+    bookstore/bookstore.smoke.spec.js
+  components/
+    custom-navigation-modal/navigation-modal.spec.js
+    custom-story/story-chapter-combobox.spec.js
+  slds-components/
+    slds-layout/slds-layout.spec.js
+    slds-layout/layout-classlist-contract.spec.js
+    slds-modal/slds-modal.spec.js
+    …
+```
+
+Die Specs liegen **nicht** in `public/`: Alles unterhalb von `public/` wird vom
+Server statisch ausgeliefert (`server.js`, `express.static('public')`). Aus
+`ui-tests/` heraus kann das nicht passieren — deshalb braucht es keinen Filter
+und keine Guard-Middleware.
+
+### Wo gehört ein neuer Spec hin?
+
+**Nach Gegenstand, nicht nach Mechanismus.** Ein Spec liegt im Ordner der
+Komponente, die er **prüft** — auch wenn er dafür die ganze App bootet.
+`layout-classlist-contract.spec.js` navigiert auf `/` und läuft durch die
+laufende App, prüft damit aber den classList-Contract von `slds-layout`: Er liegt
+deshalb in `slds-components/slds-layout/`, nicht in einem App-Ordner.
+
+**Ein Ordner darf mehrere Specs halten.** Der **Ordner** benennt den Gegenstand,
+der **Dateiname** den Aspekt. `slds-layout/` enthält `slds-layout.spec.js` (die
+Komponente selbst) und `layout-classlist-contract.spec.js` (ihr Contract gegenüber
+Consumern). Aus demselben Grund heißt der Spec in `custom-story/` weiterhin
+`story-chapter-combobox.spec.js` — er prüft die Kapitelauswahl, nicht `custom-story`
+in Gänze.
+
+### Support-Module
+
+Hilfsmodule liegen flach unter `ui-tests/support/` und werden **nicht** gespiegelt.
+Da jeder Spec drei Ebenen tief liegt, ist der Import überall gleich:
+
+```js
+const { gotoComponentPage } = require('../../support/component-page');
+const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+```
+
+### Abgrenzung zu Jest
+
+Jest ignoriert `ui-tests/` (`jest.config.js` → `testPathIgnorePatterns`), damit
+`*.spec.js` nicht versehentlich von Jest eingesammelt wird. Das Muster ist ein
+Regex auf den vollen Pfad und greift deshalb auch für die Unterordner.
 
 ## Ausführen
 
