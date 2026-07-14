@@ -13,7 +13,8 @@ overlay closes the panel.
 > **No consumer at the moment.** The last consumer was removed in
 > `981eb3b bookstore: remove sidebar button and panel markup` (2026-06-22). The
 > component is still loaded on every page and precached by the service worker.
-> `ui-tests/slds-panel.spec.js` is the only description of its contract.
+> `ui-tests/slds-components/slds-panel/slds-panel.spec.js` is the only description
+> of its contract.
 
 ## Usage
 

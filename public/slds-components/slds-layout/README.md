@@ -57,7 +57,8 @@ have an effect.
 > </slds-layout-item>
 > ```
 >
-> `ui-tests/layout-classlist-contract.spec.js` enforces this against the running app.
+> `ui-tests/slds-components/slds-layout/layout-classlist-contract.spec.js` enforces
+> this against the running app.
 
 ```html
 <!-- what you write -->
