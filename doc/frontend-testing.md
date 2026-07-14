@@ -75,7 +75,10 @@ npx playwright install chromium
 ```
 
 Konfiguration: `playwright.config.js` (nur Chromium, `testDir: ui-tests`,
-`baseURL: http://localhost:3000`).
+`baseURL: http://localhost:3000`). `testDir` wird **rekursiv** gescannt, das
+Default-`testMatch` greift `**/*.spec.js` — die gespiegelte Ordnerstruktur
+brauchte deshalb keine Config-Änderung. Die Helfer in `support/` matchen das
+Muster nicht und werden nicht als Tests eingesammelt.
 
 ## Kein Backend nötig — Callout-Interception
 
@@ -93,7 +96,7 @@ die Datenschicht. Der zentrale Helper ist
 Mock-Formen orientieren sich am echten Datenmodell (Story → Chapter → Paragraph).
 
 ```js
-const { mockBookstoreCallouts } = require('./support/mock-callouts');
+const { mockBookstoreCallouts } = require('../../support/mock-callouts');
 
 test.beforeEach(async ({ page }) => {
   await mockBookstoreCallouts(page); // vor page.goto registrieren
@@ -102,17 +105,28 @@ test.beforeEach(async ({ page }) => {
 
 ## Zwei Testarten — und warum das wichtig ist
 
-| Art                  | Specs                                 | Seite                                 |
-| :------------------- | :------------------------------------ | :------------------------------------ |
-| **App-Tests**        | `bookstore.smoke`, `navigation-modal` | echte App (`page.goto('/')`)          |
-| **Komponententests** | `slds-*.spec.js`                      | **leere Seite** (`gotoComponentPage`) |
+Diese Unterscheidung betrifft den **Mechanismus** (welche Seite der Test lädt),
+**nicht** den Ablageort: Wo ein Spec liegt, entscheidet sein Gegenstand (siehe
+„Wo gehört ein neuer Spec hin?"). Ein App-Test kann sehr wohl im Ordner einer
+Komponente liegen.
+
+| Art                  | Specs                                                                                        | Seite                                 |
+| :------------------- | :------------------------------------------------------------------------------------------- | :------------------------------------ |
+| **App-Tests**        | `bookstore.smoke`, `navigation-modal`, `story-chapter-combobox`, `layout-classlist-contract` | echte App (`page.goto('/')`)          |
+| **Komponententests** | die 13 `slds-<name>.spec.js`                                                                 | **leere Seite** (`gotoComponentPage`) |
+
+Ein App-Test ist nötig, wenn der Gegenstand **nur im Zusammenspiel** existiert:
+`layout-classlist-contract` prüft, dass kein Consumer Klassen an einem
+Layout-Host ablegt — das ist ohne die Consumer nicht prüfbar.
+`story-chapter-combobox` prüft einen Pfad, den erst der Consumer auslöst
+(`custom-story` rendert die Combobox nur ab genügend Kapiteln).
 
 Ein Komponententest mountet eine Webkomponente isoliert und prüft ihr Shadow-DOM.
 Er braucht dafür **keine laufende App** — nur eine Seite auf demselben Origin, von
 der aus sich `/slds-components/…` als Modul importieren lässt. Deshalb:
 
 ```js
-const { gotoComponentPage } = require('./support/component-page');
+const { gotoComponentPage } = require('../../support/component-page');
 
 test.beforeEach(async ({ page }) => {
   await gotoComponentPage(page); // statt page.goto('/')
