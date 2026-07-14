@@ -29,8 +29,17 @@ public/                       Frontend (statisch ausgeliefert)
   slds-components/            Wiederverwendbare SLDS-Bausteine, Präfix slds-*
   modules/                    Frontend-Util (global-styles, authTokenManager …)
   applications/               Einstiegsseiten (z. B. bookstore)
+ui-tests/                     Playwright-UI-Tests — spiegelt public/
+  components/                 Specs zu public/components/
+  slds-components/            Specs zu public/slds-components/
+  applications/               Specs zu public/applications/
+  support/                    Test-Helfer (Callout-Mocks, Seiten-Setup)
 doc/                          Dokumentation (diese Datei, authentication.md …)
 ```
+
+`ui-tests/` liegt bewusst **außerhalb** von `public/`: Alles unterhalb von
+`public/` wird statisch ausgeliefert — Testdateien dort bräuchten einen Filter im
+Server. Die Spiegelung erreicht dieselbe Nähe zur Komponente ohne dieses Risiko.
 
 ## Datenmodell
 
