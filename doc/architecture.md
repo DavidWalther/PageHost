@@ -101,8 +101,9 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
 - **Integrationstests**: so wenig Mocking wie möglich (nur externe I/O:
   DataStorage, DataCache, Logging, OpenIdConnectClient).
 - **Unit-Tests**: starkes Mocking erlaubt, um die Einheit zu isolieren.
-- **Frontend/UI**: Playwright-Tests in `ui-tests/*.spec.js` (`npm run test:frontend`),
-  Callouts gemockt, kein echtes Postgres/Redis nötig. Details: **`doc/frontend-testing.md`**.
+- **Frontend/UI**: Playwright-Tests in `ui-tests/**/*.spec.js` (`npm run test:frontend`),
+  Callouts gemockt, kein echtes Postgres/Redis nötig. `ui-tests/` spiegelt die
+  Struktur von `public/`. Details: **`doc/frontend-testing.md`**.
 - Ablauf/Reihenfolge der Test- und Implementierungsschritte:
   **`.github/instructions/epc.instructions.md`**.
 
