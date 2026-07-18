@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('./support/mock-callouts');
-const { cacheLitBundle } = require('./support/component-page');
+const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const { cacheLitBundle } = require('../../support/component-page');
 
 /**
  * UI-Tests für das Navigations-Modal (`custom-navigation-modal`).

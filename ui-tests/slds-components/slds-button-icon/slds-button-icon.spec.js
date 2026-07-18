@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { gotoComponentPage } = require('./support/component-page');
+const { gotoComponentPage } = require('../../support/component-page');
 
 /**
  * Attribut-, Icon- und Klick-Contract-Tests für die Lit-Komponente

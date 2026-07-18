@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('./support/mock-callouts');
-const { cacheLitBundle } = require('./support/component-page');
+const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const { cacheLitBundle } = require('../../support/component-page');
 
 /**
  * App-Test für den classList-Contract von `slds-layout` / `slds-layout-item`.

@@ -99,5 +99,7 @@ dann auch die Anpassung des Tests.
 - Mobile-first.
 - Formatter: Prettier (`.prettierrc`) — nur die im Teilschritt geänderte Datei
   formatieren (Commit-Disziplin, siehe EPC-Workflow).
-- Frontend wird mit **Playwright**-UI-Tests abgesichert (`ui-tests/*.spec.js`).
-  Setup und Muster: **`doc/frontend-testing.md`**.
+- Frontend wird mit **Playwright**-UI-Tests abgesichert (`ui-tests/**/*.spec.js`).
+  `ui-tests/` spiegelt die Struktur von `public/`: Der Spec einer Komponente liegt
+  im gleichnamigen Ordner (z. B. `ui-tests/slds-components/slds-card/`).
+  Setup und Ablage-Regel: **`doc/frontend-testing.md`**.

@@ -80,7 +80,7 @@ das heißt:
 
 ### Arbeitsstruktur für Frontend-Änderungen
 
-- Frontend wird mit **Playwright-UI-Tests** abgesichert (`ui-tests/*.spec.js`, `npm run test:frontend`). Setup, Callout-Mocking und Auth-Muster: `doc/frontend-testing.md`.
+- Frontend wird mit **Playwright-UI-Tests** abgesichert (`ui-tests/**/*.spec.js`, `npm run test:frontend`). `ui-tests/` spiegelt die Struktur von `public/` — ein Spec liegt im Ordner der Komponente, die er prüft. Ablage-Regel, Setup, Callout-Mocking und Auth-Muster: `doc/frontend-testing.md`.
 - Neue oder geänderte UI-Flows brauchen mindestens einen Smoke-Test. Eine feste Schritt-0/Integration/Unit-Staffelung wie im Backend ist nicht vorgeschrieben; verpflichtend ist eine grüne Playwright-Suite als Abschlusskriterium (siehe „Branching pro Schritt").
 - Bei gemischten Front-/Backend-Änderungen gilt zusätzlich die Backend-Arbeitsstruktur inklusive Schritt 0.
 
@@ -128,7 +128,7 @@ das heißt:
 
 7. Lit-Komponenten in `public/components/` — Skill `lit-web-components` nutzen
 8. SLDS-Klassen für Styling verwenden — Skill `slds-v1` nutzen
-9. UI-Tests mit Playwright schreiben/aktualisieren (`ui-tests/*.spec.js`) — Setup und Muster: `doc/frontend-testing.md`
+9. UI-Tests mit Playwright schreiben/aktualisieren (`ui-tests/**/*.spec.js`, im Ordner der geprüften Komponente) — Ablage-Regel, Setup und Muster: `doc/frontend-testing.md`
 
 ### Allgemein
 

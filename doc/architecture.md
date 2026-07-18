@@ -29,8 +29,17 @@ public/                       Frontend (statisch ausgeliefert)
   slds-components/            Wiederverwendbare SLDS-Bausteine, Präfix slds-*
   modules/                    Frontend-Util (global-styles, authTokenManager …)
   applications/               Einstiegsseiten (z. B. bookstore)
+ui-tests/                     Playwright-UI-Tests — spiegelt public/
+  components/                 Specs zu public/components/
+  slds-components/            Specs zu public/slds-components/
+  applications/               Specs zu public/applications/
+  support/                    Test-Helfer (Callout-Mocks, Seiten-Setup)
 doc/                          Dokumentation (diese Datei, authentication.md …)
 ```
+
+`ui-tests/` liegt bewusst **außerhalb** von `public/`: Alles unterhalb von
+`public/` wird statisch ausgeliefert — Testdateien dort bräuchten einen Filter im
+Server. Die Spiegelung erreicht dieselbe Nähe zur Komponente ohne dieses Risiko.
 
 ## Datenmodell
 
@@ -101,8 +110,9 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
 - **Integrationstests**: so wenig Mocking wie möglich (nur externe I/O:
   DataStorage, DataCache, Logging, OpenIdConnectClient).
 - **Unit-Tests**: starkes Mocking erlaubt, um die Einheit zu isolieren.
-- **Frontend/UI**: Playwright-Tests in `ui-tests/*.spec.js` (`npm run test:frontend`),
-  Callouts gemockt, kein echtes Postgres/Redis nötig. Details: **`doc/frontend-testing.md`**.
+- **Frontend/UI**: Playwright-Tests in `ui-tests/**/*.spec.js` (`npm run test:frontend`),
+  Callouts gemockt, kein echtes Postgres/Redis nötig. `ui-tests/` spiegelt die
+  Struktur von `public/`. Details: **`doc/frontend-testing.md`**.
 - Ablauf/Reihenfolge der Test- und Implementierungsschritte:
   **`.github/instructions/epc.instructions.md`**.
 
