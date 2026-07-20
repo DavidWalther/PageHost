@@ -1,0 +1,205 @@
+--============================
+-- Setup
+--============================
+
+--
+-- Name: generate_custom_id(character varying, integer); Type: FUNCTION; Schema: public; Owner: walthdav
+--
+
+CREATE OR REPLACE FUNCTION public.generate_custom_id(objectprefix character varying, recordnumber integer) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    custom_id VARCHAR(18);
+BEGIN
+    -- Ensure objectPrefix is exactly 4 characters
+    IF LENGTH(objectPrefix) != 4 THEN
+        RAISE EXCEPTION 'objectPrefix must be exactly 4 characters';
+    END IF;
+
+    -- Generate the custom ID
+    custom_id := objectPrefix || LPAD(recordNumber::TEXT, 14, '0');
+
+    -- Ensure the custom ID is exactly 18 characters
+    IF LENGTH(custom_id) != 18 THEN
+        RAISE EXCEPTION 'Generated ID must be exactly 18 characters';
+    END IF;
+
+    RETURN custom_id;
+END;
+$$;
+
+
+-- ALTER FUNCTION public.generate_custom_id(objectprefix character varying, recordnumber integer) OWNER TO walthdav;
+
+--
+-- Name: set_table_id(); Type: FUNCTION; Schema: public; Owner: walthdav
+--
+
+CREATE OR REPLACE FUNCTION public.set_table_id() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    table_prefix TEXT;
+BEGIN
+    -- Get the prefix for the current table
+    SELECT prefix INTO table_prefix
+    FROM table_prefixes
+    WHERE table_name = TG_TABLE_NAME;
+
+    -- If no prefix found, use a default
+    IF table_prefix IS NULL THEN
+        table_prefix := '000x';
+    END IF;
+
+    NEW.id := generate_custom_id(table_prefix, NEW.recordnumber);
+    RETURN NEW;
+END;
+$$;
+
+
+-- ALTER FUNCTION public.set_table_id() OWNER TO walthdav;
+
+
+------------------
+-- Create Tables
+------------------
+
+CREATE TABLE app  (
+  id character varying(18) PRIMARY KEY NOT NULL,
+  name Text,
+  recordnumber SERIAL  NOT NULL,
+  createddate timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE node  (
+  id character varying(18) PRIMARY KEY NOT NULL,
+  name Text,
+  isParentControllsVisibility BOOLEAN,
+  recordnumber SERIAL  NOT NULL,
+  createddate timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  publishedDate timestamp without time zone
+);
+
+
+CREATE TABLE app_node  (
+  id character varying(18) PRIMARY KEY NOT NULL,
+  recordnumber SERIAL  NOT NULL,
+  createddate timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE contentNode  (
+  id character varying(18) PRIMARY KEY NOT NULL,
+  isParentControllsVisibility BOOLEAN,
+  name Text,
+  recordnumber SERIAL  NOT NULL,
+  createddate timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  publishedDate timestamp without time zone
+
+);
+
+
+CREATE TABLE contentItem  (
+  id character varying(18) PRIMARY KEY NOT NULL,
+  content Text,
+  Type Text,
+  recordnumber SERIAL  NOT NULL,
+  createddate timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+------------------
+--  Create Relationships
+------------------
+
+ALTER TABLE node ADD COLUMN parentNodeId TEXT REFERENCES node(id);
+ALTER TABLE app_node ADD COLUMN nodeId TEXT REFERENCES node(id);
+ALTER TABLE app_node ADD COLUMN appId TEXT REFERENCES app(id);
+ALTER TABLE contentNode ADD COLUMN nodeId TEXT REFERENCES node(id);
+ALTER TABLE contentNode ADD COLUMN activeContentItem TEXT REFERENCES contentItem(id);
+ALTER TABLE contentItem ADD COLUMN contentnodeId TEXT REFERENCES contentNode(id);
+
+------------------
+-- Setup prefixes
+------------------
+
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'app', '00ap');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'app_node', '00an');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'node', '000n');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'contentnode', '00cn');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'contentitem', '00ci');
+
+------------------
+-- Logic for initializing Id
+------------------
+
+CREATE TRIGGER set_app_id
+BEFORE INSERT ON app FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_node_id
+BEFORE INSERT ON node FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_appNode_id
+BEFORE INSERT ON app_node FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_contentItem_id
+BEFORE INSERT ON contentItem FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_contentNode_id
+BEFORE INSERT ON contentNode FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+------------------
+-- Create Testdata
+------------------
+
+DO $$
+DECLARE
+  appId TEXT;
+  node1Id TEXT;
+  node2Id TEXT;
+  cn1Id TEXT;
+  ci1Id TEXT;
+BEGIN
+  insert into app (name) values ('testApp2') RETURNING id INTO appId;
+  insert into node (name) values ('firstNode') RETURNING id INTO node1Id;
+  insert into app_node (appId, nodeId) values (appId, node1Id);
+  insert into node (name, parentNodeId, isParentControllsVisibility ) values ('SecondNode', node1Id, true) RETURNING id INTO node2Id;
+  insert into contentNode (name, nodeId, isParentControllsVisibility) values ('First ContentNode', node1Id, true) RETURNING id INTO cn1Id;
+  insert into contentItem (content, type, contentNodeId) values ('Some random content', 'Text', cn1Id) RETURNING id INTO ci1Id;
+  update contentnode SET activecontentitem = ci1Id;
+END $$;
+
+------------------
+-- Query created Data
+------------------
+
+SELECT * FROM app;
+SELECT * FROM node;
+SELECT * FROM app_node;
+SELECT * FROM contentNode;
+SELECT * FROM contentItem;
+
+
+--============================
+-- TEAR_DOWN
+--============================
+
+------------------
+-- drop Tables
+------------------
+
+DROP TABLE app_node;
+DROP TABLE app CASCADE;
+DROP TABLE node CASCADE;
+DROP TABLE contentNode CASCADE;
+DROP TABLE contentItem CASCADE;
+
+------------------
+-- Delete prefixes
+------------------
+
+DELETE FROM table_prefixes WHERE table_name = 'app_node';
+DELETE FROM table_prefixes WHERE table_name = 'app';
+DELETE FROM table_prefixes WHERE table_name = 'node';
+DELETE FROM table_prefixes WHERE table_name = 'contentitem';
+DELETE FROM table_prefixes WHERE table_name = 'contentnode';
+
