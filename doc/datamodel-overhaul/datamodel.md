@@ -18,20 +18,23 @@ Die heutigen Tabellen `story`, `chapter` und `paragraph` werden durch ein
 
 ## 2. Ablösung: Mapping alt → neu
 
-| Alt (heute)                     | Neu (Ziel)                                   | Bemerkung                                                                                                    |
-| :------------------------------ | :------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| `story` + `chapter`             | `node`                                       | Beide Ebenen werden Knoten im selben rekursiven Baum (`parent_node_id`).                                     |
-| `paragraph`                     | `content_node`                               | Content-Halter, hängt an genau einem `node`.                                                                 |
-| Spalten `content`/`htmlcontent` | `content_item` (mehrere Zeilen)              | Eine Zeile je Repräsentation statt zwei feste Spalten — erweiterbar (z. B. `markdown`, `mermaid`).           |
-| „html gewinnt, wenn gefüllt"    | `content_node.active_content_item`           | Die bisher **implizite** Auswahl wird ein **expliziter** Zeiger auf die aktive Repräsentation.               |
-| `included`/`excluded` (pro App) | `app_node` (`relation`+Wildcard, nur `node`) | App-Zugehörigkeit nur auf `node`-Ebene; `content_node` app-frei. Auflösung + Herleitung: Abschnitte 5 und 8. |
+| Alt (heute)                         | Neu (Ziel)                                   | Bemerkung                                                                                                           |
+| :---------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| `story` + `chapter`                 | `node`                                       | Beide Ebenen werden Knoten im selben rekursiven Baum (`parent_node_id`) — **ohne** Typunterscheidung (Abschnitt 3). |
+| `story.coverid`, `chapter.reversed` | `node.cover_node_id`, `node.reversed`        | Typspezifische Felder werden optionale Eigenschaften **jedes** Knotens (nullable).                                  |
+| `paragraph`                         | `content_node`                               | Content-Halter, hängt an genau einem `node`.                                                                        |
+| Spalten `content`/`htmlcontent`     | `content_item` (mehrere Zeilen)              | Eine Zeile je Repräsentation statt zwei feste Spalten — erweiterbar (z. B. `markdown`, `mermaid`).                  |
+| „html gewinnt, wenn gefüllt"        | `content_node.active_content_item`           | Die bisher **implizite** Auswahl wird ein **expliziter** Zeiger auf die aktive Repräsentation.                      |
+| `included`/`excluded` (pro App)     | `app_node` (`relation`+Wildcard, nur `node`) | App-Zugehörigkeit nur auf `node`-Ebene; `content_node` app-frei. Auflösung + Herleitung: Abschnitte 5 und 8.        |
 
 ## 3. Tabellen (konzeptionell)
 
 - **`app`** — eine Anwendung. Mehrere Apps sind gleichzeitig produktiv aktiv.
 - **`node`** — Knoten im Inhaltsbaum (ersetzt `story` + `chapter`). Trägt
   `parent_node_id` (Selbstbezug), `published_date`, `is_parent_controls_visibility`
-  und `sortnumber` (Geschwister-Reihenfolge).
+  und `sortnumber` (Geschwister-Reihenfolge). Dazu die beiden bisher
+  typspezifischen Felder als **optionale** Eigenschaften: `cover_node_id`
+  (heute `story.coverid`) und `reversed` (heute `chapter.reversed`).
 - **`app_node`** — M:N-Verknüpfung `app` ↔ `node` mit `relation`
   (`include`/`exclude`) und Wildcard (`app_id IS NULL`). Ersetzt die heutige
   `included`/`excluded`-Logik — **nur auf `node`-Ebene** (Details: Abschnitt 5).
@@ -43,6 +46,66 @@ Die heutigen Tabellen `story`, `chapter` und `paragraph` werden durch ein
   Ersetzt die Spalten `content`/`htmlcontent`. Mehrere Items je `content_node`
   möglich (je `type` eines); welches gilt, bestimmt `content_node.active_content_item`.
   **Keine eigene Sichtbarkeits-/Publish-Spalte** — reiner Payload.
+
+### Knoten sind typfrei (entschieden)
+
+Ein `node` trägt **keine** `type`/`level`-Spalte. Es gibt im Zielmodell keinen
+Unterschied zwischen „Story" und „Kapitel" — nur Knoten, deren Darstellung sich
+aus Tiefe und Kontext ergibt. `cover_node_id` und `reversed` sind damit keine
+Typmerkmale, sondern optionale Eigenschaften jedes Knotens.
+
+Verworfen wurden: eine explizite `type`-Spalte (hätte den Typ konserviert, aber
+den ganzen Sinn des rekursiven Baums verwässert) und die Ableitung aus der
+Baumposition („Wurzel = story"), die nur bei genau zwei Ebenen trägt und die
+angestrebte beliebige Verschachtelung faktisch wieder einfriert.
+
+**Konsequenzen im Code** (nicht Teil dieses Dokuments, aber durch die
+Entscheidung erzwungen):
+
+- Das Frontend leitet den Record-Typ heute aus dem **Id-Präfix** ab
+  (`000s`/`000c`/`000p` → story/chapter/paragraph, `bookstore.js`,
+  `createInitializationParameterObject`) und schaltet darüber den Init-Modus.
+  Diese Typisierung entfällt.
+- `custom-story` und `custom-chapter` sind heute zwei Komponenten für zwei feste
+  Ebenen. Mit typfreien Knoten müssen sie zu einer knoten-Darstellung
+  zusammengeführt oder über Tiefe/Kontext parametrisiert werden.
+- Deep-Links auf bestehende `000s…`/`000c…`/`000p…`-Ids bleiben trotzdem
+  funktional: die Migration legt Referenzen `story → node`, `chapter → node`
+  und `paragraph → content_node` an, über die eine alte Id auf den neuen
+  Datensatz aufgelöst wird. Die konkrete Form (Spalte `legacy_id` je Tabelle vs.
+  eigene Mapping-Tabelle) gehört zur Migrationsplanung und ist hier bewusst
+  offen — im DDL-Entwurf steht sie als Vorschlag mit `legacy_id`.
+
+### Löschverhalten (`ON DELETE`) — entschieden: durchgängig `RESTRICT`
+
+**Keine** Fremdschlüsselbeziehung kaskadiert. Gelöscht wird strikt **bottom-up**;
+die Datenbank verweigert jedes Löschen, das etwas verwaisen ließe.
+
+Damit ist ausgeschlossen, dass ein einzelnes `DELETE … WHERE id = …` still einen
+ganzen Subtree mitnimmt. Der Preis: der Schreibpfad muss das mehrstufige Löschen
+selbst orchestrieren — heute existiert das nicht (`ActionDelete` setzt ein
+einstufiges `DELETE FROM {tablename} WHERE id = '{recordId}'` ab, und zwischen
+`story`/`chapter`/`paragraph` gibt es überhaupt keine FK-Constraints, verwaiste
+Absätze entstehen also unbemerkt).
+
+Nötige Löschreihenfolge:
+
+| Ziel           | Reihenfolge                                                                                                           |
+| :------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| `content_item` | `content_node.active_content_item` auf `NULL` setzen bzw. umbiegen → dann löschen                                     |
+| `content_node` | `active_content_item` auf `NULL` → alle `content_item` löschen → `content_node` löschen                               |
+| `node`         | alle `content_node` (wie oben) → alle Kind-`node` rekursiv von unten → `app_node`-Zeilen des Knotens → `node` löschen |
+| `app`          | alle `app_node`-Zeilen der App → `app` löschen                                                                        |
+
+Der zirkuläre Zeiger `content_node ↔ content_item` ist der Grund, warum das
+Nullen von `active_content_item` immer der erste Schritt ist: unter `RESTRICT`
+blockiert der Zeiger das Löschen des Items, auf das er zeigt.
+
+Postgres-Detail dazu: `DEFERRABLE INITIALLY DEFERRED` verschiebt nur die
+Existenzprüfung beim `INSERT`/`UPDATE` — `ON DELETE RESTRICT` ist **nicht**
+aufschiebbar und greift sofort. Wer Löschen und Nullen in derselben Transaktion
+in beliebiger Reihenfolge erlauben will, nimmt für genau diese Spalte
+`ON DELETE NO ACTION`: blockiert genauso, wird aber erst beim `COMMIT` geprüft.
 
 ## 4. Sichtbarkeitsmodell (Kern)
 
@@ -156,6 +219,18 @@ Der Umstieg muss das heutige Verhalten **verlustfrei** abbilden:
   vorhanden" exakt und macht es ab dann explizit umschaltbar.
 - **`story`/`chapter` → `node`:** Story-Knoten werden Wurzeln (Verknüpfung über
   `app_node`), Kapitel deren Kinder (`parent_node_id`). Reihenfolge → `sortnumber`.
+  Ein Typmerkmal wandert **nicht** mit (Abschnitt 3).
+- **Typspezifische Felder:** `story.coverid` → `node.cover_node_id`,
+  `chapter.reversed` → `node.reversed`; jeweils `NULL` für Knoten, die das Feld
+  nicht führen.
+- **Deep-Link-Referenzen:** die Migration legt `story → node`, `chapter → node`
+  und `paragraph → content_node` als auflösbare Referenz an, damit bestehende
+  `000s…`/`000c…`/`000p…`-URLs weiterhin funktionieren. Das erfordert eine
+  Dereferenzierung im Lesepfad; die konkrete Ausgestaltung gehört in die
+  Migrationsplanung.
+- **`LastUpdate` entfällt:** die Spalte existiert heute auf `story`, `chapter`
+  und `paragraph`, wird aber **nirgends gelesen** (nur Tabellen-Definitionen und
+  Test-SQL). Sie wird nicht übernommen.
 - **`included`/`excluded` → `app_node` (`relation` + Wildcard) auf `node`-Ebene:**
   Herleitung in der Ist-Analyse unten; `content_node` erhält **keine** App-Zugehörigkeit.
 
@@ -224,37 +299,50 @@ werden — es gibt keine kapitelübergreifende Wirkung.
       (`app_id IS NULL`); Auflösungsregel „spezifisch schlägt Wildcard, `exclude`
       schlägt `include`" (Abschnitt 5). `content_node` **ohne** App-Zugehörigkeit
       (Herleitung Abschnitt 8). Verbleibende Altfälle → separate Migrations-Session.
-- [ ] **`story` vs. `chapter` unterscheiden.** Über „Wurzel via `app_node` = story,
-      alles darunter = chapter" ableiten, oder eine explizite `type`/`level`-Spalte
-      am `node`? (Relevant, falls Frontend/Backend einen echten Typunterschied
-      braucht: eigene Landing-Page, Breadcrumb-Wurzel, Metadaten.)
+- [x] **`story` vs. `chapter` unterscheiden — entschieden: gar nicht.** Knoten sind
+      typfrei, ohne `type`/`level`-Spalte; `cover_node_id` und `reversed` sind
+      optionale Eigenschaften jedes Knotens (Abschnitt 3). Die heutige Typisierung
+      über das Id-Präfix im Frontend entfällt, Deep-Links bleiben über die
+      Migrations-Referenzen funktional.
+- [x] **Löschverhalten — entschieden: durchgängig `RESTRICT`** (Abschnitt 3).
+- [x] **`LastUpdate` — entschieden: entfällt** (nirgends gelesen, Abschnitt 8).
 
 ## 10. Offene Entscheidungen (technisch)
 
-- [ ] FK-Spalten als `varchar(18)` statt `TEXT` (Typangleich an die PKs).
-- [ ] Namenskonvention festlegen: `snake_case` (lesbar, hier verwendet) vs. die
-      heutige zusammengeschriebene Kleinschreibung (`recordnumber`, `createddate`).
-      Wichtig: unquotierte Identifier faltet Postgres auf lowercase — reines
-      camelCase (`isParentControllsVisibility`) ist eine Illusion.
-- [ ] Indizes auf allen FK-Spalten, v. a. `node.parent_node_id` (rekursive
-      Baum-/Sichtbarkeitsabfrage).
-- [ ] `content_node.active_content_item` `NULL`-fähig **und**
+- [x] **FK-Spalten als `varchar(18)`** statt `TEXT` (Typangleich an die PKs) — entschieden.
+- [x] **Namenskonvention: `snake_case`** — entschieden. Lesbarkeit schlägt die
+      Konsistenz mit der heutigen zusammengeschriebenen Kleinschreibung
+      (`recordnumber`, `createddate`); die alten Tabellen verschwinden nach der
+      Umstellung ohnehin. Wichtig: unquotierte Identifier faltet Postgres auf
+      lowercase — reines camelCase (`isParentControllsVisibility`) ist eine Illusion.
+      Bereits vergebene Bestandsnamen (`recordnumber`, `createddate`) bleiben
+      unverändert, um Trigger und `table_prefixes` nicht anzufassen.
+- [x] Indizes auf allen FK-Spalten, v. a. `node.parent_node_id` (rekursive
+      Baum-/Sichtbarkeitsabfrage) — im DDL-Entwurf enthalten.
+- [x] `content_node.active_content_item` `NULL`-fähig **und**
       `DEFERRABLE INITIALLY DEFERRED` (zirkulärer Zeiger `content_node ↔ content_item`).
-- [ ] `ON DELETE`-Verhalten je Beziehung bewusst festlegen (Cascade/Restrict).
-- [ ] `app_node`: Spalte `relation` (`CHECK (relation IN ('include', 'exclude'))`)
-      und Wildcard über `app_id IS NULL`. Eindeutigkeit inkl. Wildcard-Zeilen:
-      `UNIQUE NULLS NOT DISTINCT (app_id, node_id, relation)` (ab PG 15) **oder** zwei
-      partielle Indizes (`WHERE app_id IS NULL` / `WHERE app_id IS NOT NULL`).
-- [ ] `type` auf `content_item` als `CHECK`/Enum (`text`/`html`/`markdown`/`mermaid`).
-- [ ] `UNIQUE(content_node_id, type)` (solange keine Versionierung).
+- [x] **`ON DELETE`: durchgängig `RESTRICT`** — entschieden, Löschreihenfolge in
+      Abschnitt 3.
+- [x] `app_node`: Spalte `relation` (`CHECK (relation IN ('include', 'exclude'))`)
+      und Wildcard über `app_id IS NULL`. Eindeutigkeit inkl. Wildcard-Zeilen über
+      zwei partielle Indizes (`WHERE app_id IS NULL` / `WHERE app_id IS NOT NULL`) —
+      im DDL-Entwurf enthalten, funktioniert auch vor PG 15
+      (`UNIQUE NULLS NOT DISTINCT` wäre die Alternative ab PG 15).
+- [x] `type` auf `content_item` als `CHECK` (`text`/`html`/`markdown`/`mermaid`) —
+      im DDL-Entwurf enthalten.
+- [x] `UNIQUE(content_node_id, type)` (solange keine Versionierung) — im
+      DDL-Entwurf enthalten.
 - [ ] Zyklen im Baum (`parent_node_id`) im Schreibpfad bzw. in der rekursiven CTE
       abfangen (Cycle-Detection).
-- [ ] Tippfehler aus dem Entwurf: `isParentControllsVisibility` → `..._controls_...`.
+- [x] Tippfehler aus dem Entwurf: `isParentControllsVisibility` →
+      `is_parent_controls_visibility` (mit der `snake_case`-Entscheidung erledigt).
 
 ## 11. Referenz-DDL (Entwurf, Ziel-Stand)
 
-> Entwurf mit eingearbeiteten Entscheidungen aus Abschnitt 10 — **noch nicht
-> final** (offene Punkte oben zuerst klären). `snake_case` als vorgeschlagener
+> Entwurf mit eingearbeiteten Entscheidungen aus den Abschnitten 9 und 10.
+> Alle Schema-Entscheidungen sind gefallen; offen ist nur noch die
+> Cycle-Detection (Schreibpfad/CTE, kein Schema-Thema) sowie die Ausgestaltung
+> der `legacy_id`-Referenzen, die zur Migrationsplanung gehört. `snake_case` als
 > Namensstandard; Prefixe wie im Bestand über `table_prefixes`.
 
 ```sql
@@ -270,7 +358,13 @@ CREATE TABLE node (
   name                          text,
   is_parent_controls_visibility boolean,
   sortnumber                    integer,
-  parent_node_id                varchar(18) REFERENCES node(id),
+  parent_node_id                varchar(18) REFERENCES node(id) ON DELETE RESTRICT,
+  -- typfrei: keine type/level-Spalte. Die beiden bisher typspezifischen Felder
+  -- sind optionale Eigenschaften jedes Knotens:
+  cover_node_id                 varchar(18) REFERENCES node(id) ON DELETE RESTRICT,
+  reversed                      boolean,
+  -- Vorschlag (Migrationsplanung): Auflösung alter Deep-Links auf 000s…/000c…
+  legacy_id                     varchar(18) UNIQUE,
   recordnumber                  serial NOT NULL,
   createddate                   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   published_date                timestamp without time zone
@@ -278,8 +372,8 @@ CREATE TABLE node (
 
 CREATE TABLE app_node (
   id            varchar(18) PRIMARY KEY NOT NULL,
-  node_id       varchar(18) NOT NULL REFERENCES node(id),
-  app_id        varchar(18) REFERENCES app(id), -- NULL = Wildcard: alle Apps
+  node_id       varchar(18) NOT NULL REFERENCES node(id) ON DELETE RESTRICT,
+  app_id        varchar(18) REFERENCES app(id) ON DELETE RESTRICT, -- NULL = Wildcard: alle Apps
   relation      text NOT NULL CHECK (relation IN ('include', 'exclude')),
   recordnumber  serial NOT NULL,
   createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -293,9 +387,13 @@ CREATE TABLE content_node (
   id                  varchar(18) PRIMARY KEY NOT NULL,
   name                text,
   sortnumber          integer,
-  node_id             varchar(18) REFERENCES node(id),
-  -- NULL-fähig + DEFERRABLE wegen des zirkulären Zeigers zu content_item:
-  active_content_item varchar(18) REFERENCES content_item(id) DEFERRABLE INITIALLY DEFERRED,
+  node_id             varchar(18) REFERENCES node(id) ON DELETE RESTRICT,
+  -- NULL-fähig + DEFERRABLE wegen des zirkulären Zeigers zu content_item.
+  -- RESTRICT: das aktive Item lässt sich erst löschen, wenn der Zeiger umgebogen
+  -- oder auf NULL gesetzt wurde (siehe Löschreihenfolge, Abschnitt 3).
+  active_content_item varchar(18) REFERENCES content_item(id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
+  -- Vorschlag (Migrationsplanung): Auflösung alter Deep-Links auf 000p…
+  legacy_id           varchar(18) UNIQUE,
   recordnumber        serial NOT NULL,
   createddate         timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   published_date      timestamp without time zone
@@ -305,7 +403,7 @@ CREATE TABLE content_item (
   id               varchar(18) PRIMARY KEY NOT NULL,
   content          text,
   type             text CHECK (type IN ('text', 'html', 'markdown', 'mermaid')),
-  content_node_id  varchar(18) REFERENCES content_node(id),
+  content_node_id  varchar(18) REFERENCES content_node(id) ON DELETE RESTRICT,
   recordnumber     serial NOT NULL,
   createddate      timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
   UNIQUE (content_node_id, type)
@@ -313,6 +411,7 @@ CREATE TABLE content_item (
 
 -- Indizes auf FK-Spalten (Postgres legt sie nicht automatisch an):
 CREATE INDEX idx_node_parent          ON node(parent_node_id);
+CREATE INDEX idx_node_cover           ON node(cover_node_id);
 CREATE INDEX idx_app_node_node        ON app_node(node_id);
 CREATE INDEX idx_app_node_app         ON app_node(app_id);
 CREATE INDEX idx_content_node_node    ON content_node(node_id);
