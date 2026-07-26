@@ -87,11 +87,13 @@ CREATE TABLE app (
   createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
--- Typfrei: keine type/level-Spalte. cover_node_id und reversed sind optionale
--- Eigenschaften JEDES Knotens (frueher story.coverid bzw. chapter.reversed).
+-- Typfrei: keine type/level-Spalte. cover_node_id, reversed und description sind
+-- optionale Eigenschaften JEDES Knotens (frueher story.coverid, chapter.reversed
+-- bzw. story.description).
 CREATE TABLE node (
   id                            varchar(18) PRIMARY KEY NOT NULL,
   name                          text,
+  description                   text,
   is_parent_controls_visibility boolean,
   sortnumber                    integer,
   reversed                      boolean,

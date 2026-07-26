@@ -18,14 +18,15 @@ Die heutigen Tabellen `story`, `chapter` und `paragraph` werden durch ein
 
 ## 2. Ablösung: Mapping alt → neu
 
-| Alt (heute)                         | Neu (Ziel)                                   | Bemerkung                                                                                                           |
-| :---------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
-| `story` + `chapter`                 | `node`                                       | Beide Ebenen werden Knoten im selben rekursiven Baum (`parent_node_id`) — **ohne** Typunterscheidung (Abschnitt 3). |
-| `story.coverid`, `chapter.reversed` | `node.cover_node_id`, `node.reversed`        | Typspezifische Felder werden optionale Eigenschaften **jedes** Knotens (nullable).                                  |
-| `paragraph`                         | `content_node`                               | Content-Halter, hängt an genau einem `node`.                                                                        |
-| Spalten `content`/`htmlcontent`     | `content_item` (mehrere Zeilen)              | Eine Zeile je Repräsentation statt zwei feste Spalten — erweiterbar (z. B. `markdown`, `mermaid`).                  |
-| „html gewinnt, wenn gefüllt"        | `content_node.active_content_item`           | Die bisher **implizite** Auswahl wird ein **expliziter** Zeiger auf die aktive Repräsentation.                      |
-| `included`/`excluded` (pro App)     | `app_node` (`relation`+Wildcard, nur `node`) | App-Zugehörigkeit nur auf `node`-Ebene; `content_node` app-frei. Auflösung + Herleitung: Abschnitte 5 und 8.        |
+| Alt (heute)                         | Neu (Ziel)                                   | Bemerkung                                                                                                                                               |
+| :---------------------------------- | :------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `story` + `chapter`                 | `node`                                       | Beide Ebenen werden Knoten im selben rekursiven Baum (`parent_node_id`) — **ohne** Typunterscheidung (Abschnitt 3).                                     |
+| `story.coverid`, `chapter.reversed` | `node.cover_node_id`, `node.reversed`        | Typspezifische Felder werden optionale Eigenschaften **jedes** Knotens (nullable).                                                                      |
+| `story.description`                 | `node.description`                           | Existiert heute nur physisch — keine `tableFields`-Eintragung, wird vom Backend nie selektiert. Wird mitgenommen, damit die Daten nicht verloren gehen. |
+| `paragraph`                         | `content_node`                               | Content-Halter, hängt an genau einem `node`.                                                                                                            |
+| Spalten `content`/`htmlcontent`     | `content_item` (mehrere Zeilen)              | Eine Zeile je Repräsentation statt zwei feste Spalten — erweiterbar (z. B. `markdown`, `mermaid`).                                                      |
+| „html gewinnt, wenn gefüllt"        | `content_node.active_content_item`           | Die bisher **implizite** Auswahl wird ein **expliziter** Zeiger auf die aktive Repräsentation.                                                          |
+| `included`/`excluded` (pro App)     | `app_node` (`relation`+Wildcard, nur `node`) | App-Zugehörigkeit nur auf `node`-Ebene; `content_node` app-frei. Auflösung + Herleitung: Abschnitte 5 und 8.                                            |
 
 ## 3. Tabellen (konzeptionell)
 
@@ -34,7 +35,8 @@ Die heutigen Tabellen `story`, `chapter` und `paragraph` werden durch ein
   `parent_node_id` (Selbstbezug), `published_date`, `is_parent_controls_visibility`
   und `sortnumber` (Geschwister-Reihenfolge). Dazu die beiden bisher
   typspezifischen Felder als **optionale** Eigenschaften: `cover_node_id`
-  (heute `story.coverid`) und `reversed` (heute `chapter.reversed`).
+  (heute `story.coverid`), `reversed` (heute `chapter.reversed`) und
+  `description` (heute `story.description`).
 - **`app_node`** — M:N-Verknüpfung `app` ↔ `node` mit `relation`
   (`include`/`exclude`) und Wildcard (`app_id IS NULL`). Ersetzt die heutige
   `included`/`excluded`-Logik — **nur auf `node`-Ebene** (Details: Abschnitt 5).
@@ -374,10 +376,11 @@ CREATE TABLE app (
 CREATE TABLE node (
   id                            varchar(18) PRIMARY KEY NOT NULL,
   name                          text,
+  description                   text,
   is_parent_controls_visibility boolean,
   sortnumber                    integer,
   parent_node_id                varchar(18) REFERENCES node(id) ON DELETE RESTRICT,
-  -- typfrei: keine type/level-Spalte. Die beiden bisher typspezifischen Felder
+  -- typfrei: keine type/level-Spalte. Die bisher typspezifischen Felder
   -- sind optionale Eigenschaften jedes Knotens:
   cover_node_id                 varchar(18) REFERENCES node(id) ON DELETE RESTRICT,
   reversed                      boolean,
