@@ -174,6 +174,25 @@ describe('Charakterisierung: GET /data/query/story', () => {
       expect(harness.lastStatement()).toContain('PublishDate <=');
     });
 
+    it('vergleicht gegen Mitternacht des heutigen Tages, nicht gegen NOW()', async () => {
+      harness.queueResults([]);
+
+      await runEndpoint();
+
+      // `DataStorage.queryStory` übergibt `new Date().toISOString().split('T')[0]`,
+      // also das reine Datum — daraus wird '<heute> 00:00:00'. Der Kapitel-Pfad
+      // vergleicht dagegen gegen NOW() (siehe ChapterEndpoint-Charakterisierung).
+      // Eine heute um 09:00 veröffentlichte Story ist deshalb erst am Folgetag
+      // sichtbar, ihre gleichzeitig veröffentlichten Kapitel sofort.
+      // Ist-Zustand, hier bewusst festgehalten.
+      expect(harness.lastStatement()).toMatch(
+        /PublishDate <= '\d{4}-\d{2}-\d{2} 00:00:00'/
+      );
+      expect(harness.lastStatement()).not.toContain(
+        'Story.PublishDate <= NOW()'
+      );
+    });
+
     it('lässt den Publish-Filter mit edit-Scope vollständig weg', async () => {
       harness.queueResults([]);
 
