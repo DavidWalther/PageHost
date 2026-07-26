@@ -156,6 +156,21 @@ Entscheidung nach Analyse des heutigen `applicationincluded`/`applicationexclude
 `content_node` bekommt **keine** eigene App-Zugehörigkeit und folgt seinem `node`
 (Herleitung in Abschnitt 8).
 
+### `app.name` ist der App-Schlüssel (entschieden)
+
+`app.name` trägt den Wert aus **`APPLICATION_APPLICATION_KEY`** — es ist der
+Lookup-Schlüssel der App, **kein Anzeigename**. Daher `UNIQUE NOT NULL`, und ein
+Umbenennen ist eine **Migration** (Env-Dateien, Cache-Präfixe), kein Edit. Eine
+zusätzliche Spalte für den Env-Schlüssel gibt es bewusst nicht; ein separates
+Anzeige-Label kann später additiv ergänzt werden, wenn es gebraucht wird — das
+Altmodell hat ebenfalls keins.
+
+Damit trägt das Modell mehrere Apps in **einer** Datenbank. Dass heute nur eine
+App pro Serverinstanz bedient wird, liegt allein an der prozessweiten Herkunft
+des Schlüssels (`APPLICATION_APPLICATION_KEY`, ebenso `CACHE_KEY_PREFIX`) — nicht
+am Datenmodell. Lesecode sollte den Schlüssel deshalb als Parameter bekommen,
+statt ihn selbst aus der Umgebung zu lesen.
+
 `app_node` ist **M:N** und trägt dafür zwei Zusätze:
 
 - **Relationstyp** `relation IN ('include', 'exclude')` — eine Zeile drückt
@@ -332,6 +347,9 @@ werden — es gibt keine kapitelübergreifende Wirkung.
       im DDL-Entwurf enthalten.
 - [x] `UNIQUE(content_node_id, type)` (solange keine Versionierung) — im
       DDL-Entwurf enthalten.
+- [x] **`app.name` als App-Schlüssel** (`UNIQUE NOT NULL`), keine separate
+      `application_key`-Spalte und kein Anzeige-Label — entschieden, Begründung in
+      Abschnitt 5.
 - [ ] Zyklen im Baum (`parent_node_id`) im Schreibpfad bzw. in der rekursiven CTE
       abfangen (Cycle-Detection).
 - [x] Tippfehler aus dem Entwurf: `isParentControllsVisibility` →
@@ -348,7 +366,7 @@ werden — es gibt keine kapitelübergreifende Wirkung.
 ```sql
 CREATE TABLE app (
   id            varchar(18) PRIMARY KEY NOT NULL,
-  name          text,
+  name          text UNIQUE NOT NULL,   -- = APPLICATION_APPLICATION_KEY, siehe 5
   recordnumber  serial NOT NULL,
   createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

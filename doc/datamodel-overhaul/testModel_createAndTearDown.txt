@@ -77,9 +77,12 @@ $$;
 -- aufeinander, eine der beiden Tabellen existiert beim CREATE also noch nicht.
 --
 
+-- name traegt den Wert aus APPLICATION_APPLICATION_KEY und ist damit der
+-- Lookup-Schluessel der App, kein Anzeigename -> UNIQUE NOT NULL. Ein
+-- Umbenennen ist eine Migration (Env-Dateien, Cache-Praefixe), kein Edit.
 CREATE TABLE app (
   id            varchar(18) PRIMARY KEY NOT NULL,
-  name          text,
+  name          text UNIQUE NOT NULL,
   recordnumber  serial NOT NULL,
   createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
