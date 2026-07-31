@@ -74,9 +74,8 @@ Entscheidung erzwungen):
 - Deep-Links auf bestehende `000s…`/`000c…`/`000p…`-Ids bleiben trotzdem
   funktional: die Migration legt Referenzen `story → node`, `chapter → node`
   und `paragraph → content_node` an, über die eine alte Id auf den neuen
-  Datensatz aufgelöst wird. Die konkrete Form (Spalte `legacy_id` je Tabelle vs.
-  eigene Mapping-Tabelle) gehört zur Migrationsplanung und ist hier bewusst
-  offen — im DDL-Entwurf steht sie als Vorschlag mit `legacy_id`.
+  Datensatz aufgelöst wird. Form: **Spalte `legacy_id`** je Zieltabelle
+  (entschieden, Abschnitt 8).
 
 ### Löschverhalten (`ON DELETE`) — entschieden: durchgängig `RESTRICT`
 
@@ -108,6 +107,33 @@ Existenzprüfung beim `INSERT`/`UPDATE` — `ON DELETE RESTRICT` ist **nicht**
 aufschiebbar und greift sofort. Wer Löschen und Nullen in derselben Transaktion
 in beliebiger Reihenfolge erlauben will, nimmt für genau diese Spalte
 `ON DELETE NO ACTION`: blockiert genauso, wird aber erst beim `COMMIT` geprüft.
+
+### Zyklen im Baum — entschieden: doppelt abgesichert
+
+`parent_node_id` ist ein Selbstbezug; ein Zyklus (`A → B → A`) ist damit
+darstellbar und von der Datenbank **nicht** per Constraint verhinderbar — ein
+`CHECK` sieht nur die eigene Zeile. Abgesichert wird deshalb an **beiden** Enden:
+
+1. **Schreibpfad — Vorbeugung.** Ein Zyklus kann nur entstehen, wenn
+   `parent_node_id` gesetzt oder umgehängt wird. Genau dort wird geprüft: der
+   künftige Parent darf weder der Knoten selbst sein noch in dessen Subtree
+   liegen. Geprüft wird **aufwärts** vom künftigen Parent — trifft die Kette auf
+   den Knoten, wird abgelehnt. Das läuft über eine Vorfahrenkette statt über den
+   ganzen Subtree und ist damit die billigere Richtung.
+2. **Lesepfad — Schadensbegrenzung.** Jede rekursive CTE über den Baum führt ein
+   `path`-Array mit und bricht mit `WHERE NOT c.id = ANY(t.path)` ab (Form im
+   Setup-Skript). Ohne diesen Schutz wird ein Zyklus — gleich welcher Herkunft —
+   zur Endlosschleife in einem **öffentlich erreichbaren** Lesepfad.
+
+Keins der beiden ersetzt das andere: Der `path`-Guard verhindert die Schleife,
+aber nicht die kaputten Daten — ein Zyklus hängt seinen Teilbaum still von der
+Wurzel ab, der Inhalt verschwindet ohne Fehlermeldung. Und die Schreibpfad-Prüfung
+deckt nur den Weg über die Anwendung ab; von Hand per `psql` wird ebenfalls
+geschrieben (die Migration selbst ist so gelaufen).
+
+**Kein** DB-Trigger für die Prüfung: er bräuchte dieselbe rekursive Abfrage ein
+zweites Mal in PL/pgSQL. Bei einem Schreibweg lohnt die Doppelung nicht — sie
+lässt sich später additiv nachrüsten, wenn es mehrere werden.
 
 ## 4. Sichtbarkeitsmodell (Kern)
 
@@ -242,14 +268,56 @@ Der Umstieg muss das heutige Verhalten **verlustfrei** abbilden:
   nicht führen.
 - **Deep-Link-Referenzen:** die Migration legt `story → node`, `chapter → node`
   und `paragraph → content_node` als auflösbare Referenz an, damit bestehende
-  `000s…`/`000c…`/`000p…`-URLs weiterhin funktionieren. Das erfordert eine
-  Dereferenzierung im Lesepfad; die konkrete Ausgestaltung gehört in die
-  Migrationsplanung.
+  `000s…`/`000c…`/`000p…`-URLs weiterhin funktionieren. Form und Lebensdauer
+  stehen im folgenden Abschnitt.
 - **`LastUpdate` entfällt:** die Spalte existiert heute auf `story`, `chapter`
   und `paragraph`, wird aber **nirgends gelesen** (nur Tabellen-Definitionen und
   Test-SQL). Sie wird nicht übernommen.
 - **`included`/`excluded` → `app_node` (`relation` + Wildcard) auf `node`-Ebene:**
   Herleitung in der Ist-Analyse unten; `content_node` erhält **keine** App-Zugehörigkeit.
+
+### `legacy_id` ist verbindlich (entschieden)
+
+Die Auflösung alter Ids läuft über eine **Spalte `legacy_id varchar(18) UNIQUE`**
+auf `node` und `content_node` — **keine** eigene Mapping-Tabelle. Die Zuordnung
+ist 1:1 und wird nur in **einer** Richtung gelesen (alte Id → neuer Satz); eine
+eigene Tabelle wäre ein Join mehr ohne zusätzliche Aussage, und das `UNIQUE`
+erzwingt genau die Eindeutigkeit, die dort erst als Constraint nachgebaut werden
+müsste.
+
+- **Eingehend:** `000s…`/`000c…` treffen `node.legacy_id`, `000p…` trifft
+  `content_node.legacy_id`.
+- **Ausgehend** liefert die Kompat-Schicht weiterhin die **alte** Id, solange
+  eine vorhanden ist. Daran hängen Deep-Links, Cache-Keys und die
+  Präfix-Typisierung im Frontend.
+
+#### Kompat-Id-Vergabe für Neuanlagen
+
+Ein **nach** der Umstellung angelegter Datensatz hat naturgemäß keine
+`legacy_id`. Das ist kein Randfall: der Schreibpfad wechselt vor dem
+Frontend-Umbau auf das neue Modell, und ein Frontend, das den Record-Typ aus dem
+Id-Präfix ableitet, kann mit einer `000n…`-Id nichts anfangen — nicht nur der
+Deep-Link, der ganze Init-Weg bricht. Solange die Kompat-Schicht lebt, vergibt
+der Schreibpfad deshalb **zusätzlich** eine `legacy_id` im alten Präfix-Schema:
+
+| Neuer Satz                          | Präfix |
+| :---------------------------------- | :----- |
+| `node` mit `parent_node_id IS NULL` | `000s` |
+| `node` mit Parent                   | `000c` |
+| `content_node`                      | `000p` |
+
+Gebildet wie `generate_custom_id`, nur mit dem alten Präfix. Die Nummer kommt
+**nicht** aus `recordnumber` der neuen Zeile — die Nummernkreise der alten
+Tabellen sind bereits vergeben, es gäbe Kollisionen. Stattdessen zählt je Präfix
+eine eigene Sequenz weiter, die beim Maximum der jeweiligen Alt-Tabelle startet.
+Das `UNIQUE` auf `legacy_id` fängt einen Fehler dabei hart ab, statt ihn stillen
+Deep-Link-Verwechslungen zu überlassen.
+
+**Lebensdauer:** Die Vergabe endet mit dem Frontend-Umbau — sobald die Ids nicht
+mehr am Präfix typisiert werden, geht die neue Id nach außen. Die **Spalte**
+bleibt darüber hinaus bestehen: nach dem Wegfall der alten Tabellen ist sie der
+einzige verbliebene Ort, an dem eine alte Id noch auflösbar ist. Sie kostet eine
+Spalte und einen Unique-Index.
 
 ### Ist-Analyse: heutiges `applicationincluded`/`applicationexcluded`
 
@@ -352,17 +420,20 @@ werden — es gibt keine kapitelübergreifende Wirkung.
 - [x] **`app.name` als App-Schlüssel** (`UNIQUE NOT NULL`), keine separate
       `application_key`-Spalte und kein Anzeige-Label — entschieden, Begründung in
       Abschnitt 5.
-- [ ] Zyklen im Baum (`parent_node_id`) im Schreibpfad bzw. in der rekursiven CTE
-      abfangen (Cycle-Detection).
+- [x] **`legacy_id` als Spalte auf `node` und `content_node`** (`UNIQUE`), keine
+      Mapping-Tabelle; Kompat-Id-Vergabe für Neuanlagen inklusive Lebensdauer —
+      entschieden, Abschnitt 8.
+- [x] **Cycle-Detection: beides** — Prüfung im Schreibpfad (aufwärts vom künftigen
+      Parent) **und** `path`-Array in jeder rekursiven CTE. Begründung, warum
+      keins das andere ersetzt: Abschnitt 3.
 - [x] Tippfehler aus dem Entwurf: `isParentControllsVisibility` →
       `is_parent_controls_visibility` (mit der `snake_case`-Entscheidung erledigt).
 
 ## 11. Referenz-DDL (Entwurf, Ziel-Stand)
 
 > Entwurf mit eingearbeiteten Entscheidungen aus den Abschnitten 9 und 10.
-> Alle Schema-Entscheidungen sind gefallen; offen ist nur noch die
-> Cycle-Detection (Schreibpfad/CTE, kein Schema-Thema) sowie die Ausgestaltung
-> der `legacy_id`-Referenzen, die zur Migrationsplanung gehört. `snake_case` als
+> **Alle Entscheidungen sind gefallen**; die Cycle-Detection ist kein
+> Schema-Thema und lebt in Schreib- und Lesepfad (Abschnitt 3). `snake_case` als
 > Namensstandard; Prefixe wie im Bestand über `table_prefixes`.
 
 ```sql
@@ -384,7 +455,7 @@ CREATE TABLE node (
   -- sind optionale Eigenschaften jedes Knotens:
   cover_node_id                 varchar(18) REFERENCES node(id) ON DELETE RESTRICT,
   reversed                      boolean,
-  -- Vorschlag (Migrationsplanung): Auflösung alter Deep-Links auf 000s…/000c…
+  -- Auflösung alter Deep-Links auf 000s…/000c… (verbindlich, siehe 8)
   legacy_id                     varchar(18) UNIQUE,
   recordnumber                  serial NOT NULL,
   createddate                   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -413,7 +484,7 @@ CREATE TABLE content_node (
   -- RESTRICT: das aktive Item lässt sich erst löschen, wenn der Zeiger umgebogen
   -- oder auf NULL gesetzt wurde (siehe Löschreihenfolge, Abschnitt 3).
   active_content_item varchar(18) REFERENCES content_item(id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
-  -- Vorschlag (Migrationsplanung): Auflösung alter Deep-Links auf 000p…
+  -- Auflösung alter Deep-Links auf 000p… (verbindlich, siehe 8)
   legacy_id           varchar(18) UNIQUE,
   recordnumber        serial NOT NULL,
   createddate         timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
