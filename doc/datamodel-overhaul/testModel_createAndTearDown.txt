@@ -324,7 +324,14 @@ SELECT * FROM app_node;
 SELECT * FROM content_node;
 SELECT * FROM content_item;
 
--- Baum von der Wurzel aus, mit Zyklus-Schutz (parent_node_id ist ein Selbstbezug):
+-- Baum von der Wurzel aus, mit Zyklus-Schutz (parent_node_id ist ein Selbstbezug).
+--
+-- Das path-Array ist NICHT optional: es ist die verbindliche Form jeder
+-- rekursiven Baumabfrage (datamodel.md Abschnitt 3). Ohne den Guard wird ein
+-- Zyklus zur Endlosschleife in einem oeffentlich erreichbaren Lesepfad. Die
+-- zweite Haelfte der Absicherung liegt im Schreibpfad: beim Setzen/Umhaengen
+-- von parent_node_id wird aufwaerts geprueft, ob der kuenftige Parent im
+-- Subtree des Knotens liegt.
 WITH RECURSIVE tree AS (
   SELECT n.id, n.name, n.parent_node_id, 1 AS depth, ARRAY[n.id] AS path
   FROM node n

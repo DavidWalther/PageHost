@@ -108,6 +108,33 @@ aufschiebbar und greift sofort. Wer Löschen und Nullen in derselben Transaktion
 in beliebiger Reihenfolge erlauben will, nimmt für genau diese Spalte
 `ON DELETE NO ACTION`: blockiert genauso, wird aber erst beim `COMMIT` geprüft.
 
+### Zyklen im Baum — entschieden: doppelt abgesichert
+
+`parent_node_id` ist ein Selbstbezug; ein Zyklus (`A → B → A`) ist damit
+darstellbar und von der Datenbank **nicht** per Constraint verhinderbar — ein
+`CHECK` sieht nur die eigene Zeile. Abgesichert wird deshalb an **beiden** Enden:
+
+1. **Schreibpfad — Vorbeugung.** Ein Zyklus kann nur entstehen, wenn
+   `parent_node_id` gesetzt oder umgehängt wird. Genau dort wird geprüft: der
+   künftige Parent darf weder der Knoten selbst sein noch in dessen Subtree
+   liegen. Geprüft wird **aufwärts** vom künftigen Parent — trifft die Kette auf
+   den Knoten, wird abgelehnt. Das läuft über eine Vorfahrenkette statt über den
+   ganzen Subtree und ist damit die billigere Richtung.
+2. **Lesepfad — Schadensbegrenzung.** Jede rekursive CTE über den Baum führt ein
+   `path`-Array mit und bricht mit `WHERE NOT c.id = ANY(t.path)` ab (Form im
+   Setup-Skript). Ohne diesen Schutz wird ein Zyklus — gleich welcher Herkunft —
+   zur Endlosschleife in einem **öffentlich erreichbaren** Lesepfad.
+
+Keins der beiden ersetzt das andere: Der `path`-Guard verhindert die Schleife,
+aber nicht die kaputten Daten — ein Zyklus hängt seinen Teilbaum still von der
+Wurzel ab, der Inhalt verschwindet ohne Fehlermeldung. Und die Schreibpfad-Prüfung
+deckt nur den Weg über die Anwendung ab; von Hand per `psql` wird ebenfalls
+geschrieben (die Migration selbst ist so gelaufen).
+
+**Kein** DB-Trigger für die Prüfung: er bräuchte dieselbe rekursive Abfrage ein
+zweites Mal in PL/pgSQL. Bei einem Schreibweg lohnt die Doppelung nicht — sie
+lässt sich später additiv nachrüsten, wenn es mehrere werden.
+
 ## 4. Sichtbarkeitsmodell (Kern)
 
 Sichtbarkeit vererbt sich die `node`-Kette hinunter. `published_date` ist ein
@@ -396,16 +423,17 @@ werden — es gibt keine kapitelübergreifende Wirkung.
 - [x] **`legacy_id` als Spalte auf `node` und `content_node`** (`UNIQUE`), keine
       Mapping-Tabelle; Kompat-Id-Vergabe für Neuanlagen inklusive Lebensdauer —
       entschieden, Abschnitt 8.
-- [ ] Zyklen im Baum (`parent_node_id`) im Schreibpfad bzw. in der rekursiven CTE
-      abfangen (Cycle-Detection).
+- [x] **Cycle-Detection: beides** — Prüfung im Schreibpfad (aufwärts vom künftigen
+      Parent) **und** `path`-Array in jeder rekursiven CTE. Begründung, warum
+      keins das andere ersetzt: Abschnitt 3.
 - [x] Tippfehler aus dem Entwurf: `isParentControllsVisibility` →
       `is_parent_controls_visibility` (mit der `snake_case`-Entscheidung erledigt).
 
 ## 11. Referenz-DDL (Entwurf, Ziel-Stand)
 
 > Entwurf mit eingearbeiteten Entscheidungen aus den Abschnitten 9 und 10.
-> Alle Schema-Entscheidungen sind gefallen; offen ist nur noch die
-> Cycle-Detection (Schreibpfad/CTE, kein Schema-Thema). `snake_case` als
+> **Alle Entscheidungen sind gefallen**; die Cycle-Detection ist kein
+> Schema-Thema und lebt in Schreib- und Lesepfad (Abschnitt 3). `snake_case` als
 > Namensstandard; Prefixe wie im Bestand über `table_prefixes`.
 
 ```sql
