@@ -5,6 +5,11 @@
 -- Ausfuehren mit psql:
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f 001_create_schema.sql
 --
+-- BRAUCHT PSQL: Die Datei enthaelt Dollar-Quoting ($$) fuer die beiden
+-- Funktionen und drei DO-Bloecke. Werkzeuge, die Statements naiv an ';'
+-- trennen, zerlegen die Funktionsrümpfe und scheitern. Anders als 002 ist das
+-- hier nicht vermeidbar -- PL/pgSQL braucht Dollar-Quoting.
+--
 -- Diese Datei ist der schriftliche Stand dessen, was in der Datenbank bereits
 -- von Hand angelegt wurde. Sie ist bewusst durchgaengig wiederholbar
 -- (IF NOT EXISTS / WHERE NOT EXISTS): gegen eine Datenbank, in der das Schema

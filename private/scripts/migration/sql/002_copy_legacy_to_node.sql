@@ -5,6 +5,21 @@
 -- Ausfuehren mit psql (setzt 001 und die app-Zeilen voraus):
 --   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f 002_copy_legacy_to_node.sql
 --
+-- PORTABEL GEHALTEN: kein Dollar-Quoting, keine PL/pgSQL-Bloecke, keine
+-- temporaeren Objekte, keine psql-Metabefehle. Jedes Statement steht fuer sich.
+-- Damit laeuft die Datei auch durch Migrationswerkzeuge, die Statements selbst
+-- an ';' trennen oder ueber wechselnde Verbindungen schicken.
+--
+-- Nur BEGIN und COMMIT sind eine Annahme: Wer sein Werkzeug die Transaktion
+-- fuehren laesst, entfernt die beiden Zeilen. Ohne sie bleibt die Datei
+-- brauchbar, weil jedes Statement fuer sich idempotent ist -- ein Abbruch
+-- mittendrin wird durch einen erneuten Lauf geheilt.
+--
+-- KEIN '--' innerhalb von Zeichenketten. Werkzeuge, die Kommentare zeilenweise
+-- entfernen, bevor sie Zeichenketten verstehen, erzeugen daraus ein
+-- unabgeschlossenes Anfuehrungszeichen und verschieben alle folgenden
+-- Statement-Grenzen.
+--
 -- Eigenschaften:
 --   * READ-ONLY auf story/chapter/paragraph. Die alten Tabellen werden nicht
 --     angefasst -- ein Rollback betrifft nur die neuen Tabellen.
@@ -27,12 +42,12 @@
 
 BEGIN;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM app) THEN
-    RAISE EXCEPTION 'Tabelle app ist leer -- die App-Schluessel muessen vor der Kopie eingetragen sein';
-  END IF;
-END $$;
+-- Abbruch, wenn die app-Zeilen fehlen: dann faenden die JOINs weiter unten
+-- nichts, und die Kopie waere still unvollstaendig. Die Division durch Null
+-- bricht die Transaktion ab, bevor irgendetwas geschrieben wird
+-- (ERROR: division by zero). Absicht, kein Versehen -- ein RAISE EXCEPTION
+-- braeuchte PL/pgSQL und damit Dollar-Quoting.
+SELECT count(*) AS app_zeilen, 1 / count(*) AS abbruch_wenn_leer FROM app;
 
 ------------------------------------------------------------------------------
 -- 1. node <- story (Wurzelknoten)
@@ -104,18 +119,22 @@ ON CONFLICT (legacy_id) DO NOTHING;
 -- is_parent_controls_visibility = false erbt kein Knoten von seinem Parent.
 --
 
-CREATE TEMP VIEW legacy_app_columns AS
-SELECT n.id AS node_id,
-       s.applicationincluded AS included,
-       s.applicationexcluded AS excluded
-  FROM node n
-  JOIN story s ON s.id = n.legacy_id
-UNION ALL
-SELECT n.id, c.applicationincluded, c.applicationexcluded
-  FROM node n
-  JOIN chapter c ON c.id = n.legacy_id;
+-- Die Quelle steht dreimal als CTE statt einmal als temporaere View: eine
+-- TEMP-View gehoert zur Sitzung, und Werkzeuge, die Statements ueber wechselnde
+-- Verbindungen schicken, faenden sie im naechsten Statement nicht mehr.
 
 -- include, spezifisch
+WITH legacy_app_columns AS (
+  SELECT n.id AS node_id,
+         s.applicationincluded AS included,
+         s.applicationexcluded AS excluded
+    FROM node n
+    JOIN story s ON s.id = n.legacy_id
+  UNION ALL
+  SELECT n.id, c.applicationincluded, c.applicationexcluded
+    FROM node n
+    JOIN chapter c ON c.id = n.legacy_id
+)
 INSERT INTO app_node (app_id, node_id, relation)
 SELECT a.id, l.node_id, 'include'
   FROM legacy_app_columns l
@@ -124,6 +143,17 @@ SELECT a.id, l.node_id, 'include'
 ON CONFLICT (app_id, node_id, relation) WHERE app_id IS NOT NULL DO NOTHING;
 
 -- include, Wildcard ('*' -> app_id IS NULL)
+WITH legacy_app_columns AS (
+  SELECT n.id AS node_id,
+         s.applicationincluded AS included,
+         s.applicationexcluded AS excluded
+    FROM node n
+    JOIN story s ON s.id = n.legacy_id
+  UNION ALL
+  SELECT n.id, c.applicationincluded, c.applicationexcluded
+    FROM node n
+    JOIN chapter c ON c.id = n.legacy_id
+)
 INSERT INTO app_node (app_id, node_id, relation)
 SELECT NULL, l.node_id, 'include'
   FROM legacy_app_columns l
@@ -131,13 +161,22 @@ SELECT NULL, l.node_id, 'include'
 ON CONFLICT (node_id, relation) WHERE app_id IS NULL DO NOTHING;
 
 -- exclude (schlaegt include)
+WITH legacy_app_columns AS (
+  SELECT n.id AS node_id,
+         s.applicationincluded AS included,
+         s.applicationexcluded AS excluded
+    FROM node n
+    JOIN story s ON s.id = n.legacy_id
+  UNION ALL
+  SELECT n.id, c.applicationincluded, c.applicationexcluded
+    FROM node n
+    JOIN chapter c ON c.id = n.legacy_id
+)
 INSERT INTO app_node (app_id, node_id, relation)
 SELECT a.id, l.node_id, 'exclude'
   FROM legacy_app_columns l
   JOIN app a ON l.excluded LIKE '%' || a.name || '%'
 ON CONFLICT (app_id, node_id, relation) WHERE app_id IS NOT NULL DO NOTHING;
-
-DROP VIEW legacy_app_columns;
 
 ------------------------------------------------------------------------------
 -- 4. cover_node_id nachziehen
