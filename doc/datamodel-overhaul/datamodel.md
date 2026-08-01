@@ -347,6 +347,46 @@ bleibt darüber hinaus bestehen: nach dem Wegfall der alten Tabellen ist sie der
 einzige verbliebene Ort, an dem eine alte Id noch auflösbar ist. Sie kostet eine
 Spalte und einen Unique-Index.
 
+### Was sich beim Umschalten sichtbar ändert
+
+Der Lesepfad liefert nach dem Wechsel auf das neue Modell fast dieselbe Antwort
+wie vorher — gemessen durch einen direkten Vergleich beider Quellen gegen
+dieselbe Datenbank. Die verbleibenden Unterschiede sind **beabsichtigt** und
+stehen hier, damit sie später nicht als Fehler gesucht werden.
+
+| Änderung                                                               | Richtung                     |
+| :--------------------------------------------------------------------- | :--------------------------- |
+| `lastupdate` ist immer `null` — die Spalte wird nicht übernommen       | Feld ohne Leser, siehe oben  |
+| Der direkte Absatz-Zugriff filtert jetzt nach `published_date`         | liefert **weniger**          |
+| Ein Absatz folgt der Sichtbarkeit seines Knotens statt eigener Spalten | liefert in Einzelfällen mehr |
+| Publish-Vergleich überall gegen `NOW()`                                | Story wird früher sichtbar   |
+| Bei gleicher `sortnumber` ist die Reihenfolge festgelegt               | vorher zufällig              |
+
+Im Einzelnen:
+
+- **`lastupdate`.** Die Spalte wird nicht migriert (Begründung oben). Sie stand
+  bisher in jeder Antwort, wurde aber von keiner Zeile Frontend-Code gelesen.
+  Das Feld bleibt in der Antwort, trägt aber immer `null`.
+- **Publish-Filter beim Absatz.** Der alte direkte Zugriff hatte **gar keinen** —
+  ein unveröffentlichter Absatz wurde ausgeliefert, sobald seine Id bekannt war
+  (über sein Kapitel war er nicht erreichbar, über den Deep-Link schon). Das ist
+  behoben.
+- **Sichtbarkeit des Absatzes.** `content_node` hat keine eigene
+  App-Zugehörigkeit und folgt seinem `node` — so ist das Modell gebaut. Wo die
+  App-Spalten eines Absatzes von denen seines Kapitels abwichen, ändert sich die
+  Sichtbarkeit dadurch. Betroffen sind ausschließlich Absätze in Kapiteln, die
+  in der jeweiligen App **ohnehin sichtbar** sind und dort heute als **leeres
+  Kapitel** erscheinen.
+- **Vergleichszeit.** Das Altmodell verglich im Story-Pfad gegen Mitternacht des
+  heutigen Tages, im Kapitel-Pfad gegen `NOW()`. Eine heute um 09:00
+  veröffentlichte Story war deshalb erst am Folgetag sichtbar, ihre gleichzeitig
+  veröffentlichten Kapitel sofort. Jetzt gilt überall `NOW()`.
+- **Reihenfolge bei gleicher `sortnumber`.** Das Altmodell sortierte nur nach
+  `sortnumber`; bei Gleichstand entschied die physische Zeilenreihenfolge, also
+  Zufall — nachgemessen an einem Kapitel mit zwei solchen Paaren, einmal
+  aufsteigend, einmal absteigend nach Id. Das neue Modell bricht den Gleichstand
+  mit der alten Id auf, die der Anlagereihenfolge folgt.
+
 ### Ist-Analyse: heutiges `applicationincluded`/`applicationexcluded`
 
 Quelle: `private/database2/DataStorage/actions/get.js`
