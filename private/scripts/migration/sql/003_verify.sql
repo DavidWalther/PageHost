@@ -80,6 +80,11 @@ SELECT n.id, n.legacy_id, n.parent_node_id
 -- Das Altmodell kennt keine Vererbung. is_parent_controls_visibility = true
 -- waere hier eine Verhaltensaenderung, keine Kopie.
 --
+-- ACHTUNG: Diese Pruefung und der Sichtbarkeitsvergleich in Abschnitt 5 setzen
+-- beide voraus, dass NICHT geerbt wird. Werden die Bestandsknoten spaeter auf
+-- Vererbung umgestellt, muessen beide auf die rekursive Form gezogen werden --
+-- sie pruefen die Kopie, nicht das Laufzeitverhalten.
+--
 SELECT n.id, n.legacy_id, n.is_parent_controls_visibility
   FROM node n
  WHERE n.legacy_id IS NOT NULL
