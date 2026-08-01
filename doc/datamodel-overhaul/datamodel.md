@@ -162,6 +162,26 @@ unsichtbar. `is_parent_controls_visibility` erlaubt, die Kette gezielt zu
   ist selbst per `app_node` verankert → das ist der **Exclude**.
 - **`published_date`** wirkt **quer** dazu: immer erforderlich, sonst unsichtbar.
 
+### Default für neue Knoten: `true` (entschieden)
+
+Ein neu angelegter Knoten bekommt `is_parent_controls_visibility = true`.
+Vererbung ist der Normalfall; `false` ist die Ausnahme und bedeutet „die Kette
+bewusst durchbrechen".
+
+**Die migrierten Bestandsknoten weichen davon bewusst ab** — sie tragen
+durchgehend `false` plus eigene `app_node`-Zeilen. Grund: das Altmodell kennt
+keine Vererbung, dort trägt jede Zeile ihre eigenen App-Spalten. `false` + eigene
+Zeilen ist die wörtliche, zeilenweise prüfbare Übersetzung davon; `true` wäre
+eine Verhaltensänderung, die sich in einer Kopie nicht mehr von einem Fehler
+unterscheiden ließe.
+
+Die Umstellung der Bestandsknoten auf Vererbung ist deshalb ein **eigener
+Schritt**, und er muss erfolgen, **solange die alten Tabellen noch stehen** —
+danach fehlt die Referenz, gegen die sich das Ergebnis prüfen lässt. Dabei fallen
+nur `include`-Zeilen weg: `exclude` wirkt unabhängig vom Flag (Auflösungsregel in
+Abschnitt 5). Der reale Fall „Story überall sichtbar, ein Kapitel für App X
+ausgenommen" ist danach `true` **plus** `exclude`-Zeile.
+
 ### `content_node`
 
 > `content_node` sichtbar ⟺ eigenes `published_date` gesetzt **und** zugehöriger

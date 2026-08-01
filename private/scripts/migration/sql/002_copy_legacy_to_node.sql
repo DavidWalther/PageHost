@@ -43,6 +43,11 @@ END $$;
 -- App-Spalten. false plus eigene app_node-Zeilen reproduziert die Sichtbarkeit
 -- exakt; true waere eine Verhaltensaenderung.
 --
+-- Im Zielmodell ist true der Default fuer NEUE Knoten -- Vererbung ist dort der
+-- Normalfall. Die Umstellung der hier kopierten Knoten darauf ist bewusst ein
+-- eigener, spaeterer Schritt und muss laufen, solange die alten Tabellen als
+-- Referenz noch stehen (datamodel.md Abschnitt 4).
+--
 -- createddate wird uebernommen, nicht dem DEFAULT ueberlassen. recordnumber
 -- dagegen NICHT: daraus leitet set_table_id() die neue Id ab. Das ORDER BY
 -- sorgt dafuer, dass die neuen Ids in der Reihenfolge der urspruenglichen
