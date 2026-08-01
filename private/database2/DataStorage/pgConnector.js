@@ -37,6 +37,31 @@ class PostgresActions {
     this.sql = PostgresActions.connect(environmentObject);
   }
 
+  /**
+   * Führt ein Statement mit gebundenen Parametern aus (`$1`, `$2`, …).
+   *
+   * Bewusst eine eigene Methode statt einer Erweiterung von `executeSql`: dort
+   * ist der zweite Parameter historisch das Options-Objekt und wird vom Treiber
+   * im Parameter-Slot entgegengenommen. Die Signatur zu ändern hieße, jeden
+   * bestehenden Aufruf anzufassen.
+   *
+   * Neuer Code baut seine Statements über diesen Weg — Werte gehören gebunden,
+   * nicht in den String konkateniert.
+   */
+  async executeParameterizedSql(sqlStatement, parameters = [], options = {}) {
+    try {
+      return await this.sql.unsafe(sqlStatement, parameters);
+    } catch (error) {
+      console.error('Error executing parameterized SQL statement:', error);
+      throw error;
+    } finally {
+      // Wie bei executeSql: die Verbindung bleibt standardmäßig offen.
+      if (options?.closeConnection) {
+        this.sql.end();
+      }
+    }
+  }
+
   executeSql(sqlStatement, options) {
     return new Promise(async (resolve, reject) => {
       try {

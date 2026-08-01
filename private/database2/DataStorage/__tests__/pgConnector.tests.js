@@ -81,6 +81,61 @@ describe('PostgresActions', () => {
     });
   });
 
+  describe('executeParameterizedSql', () => {
+    it('bindet die Parameter, statt sie in den String zu setzen', async () => {
+      const postgresActions = new PostgresActions(MOCK_ENVIRONMENT);
+      const TEST_SQL = 'SELECT * FROM app WHERE name = $1';
+
+      const result = await postgresActions.executeParameterizedSql(TEST_SQL, [
+        'testApp',
+      ]);
+
+      expect(mockUnsafe).toHaveBeenCalledWith(TEST_SQL, ['testApp']);
+      expect(result).toStrictEqual(mockQueryResult);
+    });
+
+    it('kommt ohne Parameter aus', async () => {
+      const postgresActions = new PostgresActions(MOCK_ENVIRONMENT);
+
+      await postgresActions.executeParameterizedSql('SELECT 1');
+
+      expect(mockUnsafe).toHaveBeenCalledWith('SELECT 1', []);
+    });
+
+    it('lässt die Verbindung standardmäßig offen', async () => {
+      const postgresActions = new PostgresActions(MOCK_ENVIRONMENT);
+
+      await postgresActions.executeParameterizedSql('SELECT 1');
+
+      expect(mockEnd).not.toHaveBeenCalled();
+    });
+
+    it('schließt die Verbindung nur auf Anforderung', async () => {
+      const postgresActions = new PostgresActions(MOCK_ENVIRONMENT);
+
+      await postgresActions.executeParameterizedSql('SELECT 1', [], {
+        closeConnection: true,
+      });
+
+      expect(mockEnd).toHaveBeenCalled();
+    });
+
+    it('schließt die Verbindung auch, wenn das Statement scheitert', async () => {
+      const postgresActions = new PostgresActions(MOCK_ENVIRONMENT);
+      mockUnsafe.mockRejectedValueOnce(new Error('syntax error'));
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await expect(
+        postgresActions.executeParameterizedSql('SELECT', [], {
+          closeConnection: true,
+        })
+      ).rejects.toThrow('syntax error');
+      expect(mockEnd).toHaveBeenCalled();
+
+      console.error.mockRestore();
+    });
+  });
+
   describe('executeSql', () => {
     it('should return a Promise', () => {
       const postgresActions = new PostgresActions(MOCK_ENVIRONMENT);
