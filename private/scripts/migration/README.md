@@ -25,6 +25,30 @@ und ein `'*'` darf dabei **keine** `app`-Zeile erzeugen — er wird im neuen
 Modell zu `app_id IS NULL` (Wildcard). Eine App namens `*` würde mit der Regel
 „spezifisch schlägt Wildcard" kollidieren.
 
+## Welche Datei welches Werkzeug braucht
+
+| Datei | läuft durch ein Migrationswerkzeug? | warum                                                                                                                                                                       |
+| :---- | :---------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `001` | **nein**, nur `psql`                | Dollar-Quoting (`$$`) für zwei Funktionen und drei `DO`-Blöcke. Werkzeuge, die Statements naiv an `;` trennen, zerlegen die Funktionsrümpfe. Bei PL/pgSQL nicht vermeidbar. |
+| `002` | **ja**                              | Bewusst portabel gehalten: kein Dollar-Quoting, keine `DO`-Blöcke, keine temporären Objekte, keine `\`-Metabefehle. Jedes Statement steht für sich.                         |
+| `003` | **nein**, `psql` oder SQL-Konsole   | Die Aussage steckt in den **Ergebnismengen**; Migrationswerkzeuge verwerfen sie.                                                                                            |
+
+Zwei Regeln, die `002` portabel halten und beim Ändern gelten:
+
+- **Kein `--` innerhalb von Zeichenketten.** Werkzeuge, die Kommentare
+  zeilenweise entfernen, bevor sie Zeichenketten verstehen, erzeugen daraus ein
+  unabgeschlossenes Anführungszeichen — und verschieben damit **alle** folgenden
+  Statement-Grenzen. Der Fehler zeigt sich dann irgendwo weit hinten als
+  `syntax error at end of input`.
+- **Keine temporären Objekte.** Eine `TEMP VIEW` gehört zur Sitzung. Ein
+  Werkzeug, das Statements über wechselnde Verbindungen schickt, findet sie im
+  nächsten Statement nicht mehr. Gemeinsame Teilabfragen stehen deshalb als CTE
+  in jedem Statement, auch wenn das Wiederholung bedeutet.
+
+`BEGIN`/`COMMIT` in `002` sind die einzige Annahme: Wer sein Werkzeug die
+Transaktion führen lässt, entfernt die beiden Zeilen. Die Datei bleibt auch ohne
+sie brauchbar, weil jedes Statement für sich idempotent ist.
+
 ## Warum reines SQL und kein Node-Skript
 
 Es gibt eine Datenbank und eine Kopie. Ein Runner mit Konfiguration,

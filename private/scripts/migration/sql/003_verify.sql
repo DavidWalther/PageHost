@@ -5,6 +5,12 @@
 -- Ausfuehren mit psql:
 --   psql "$DATABASE_URL" -f 003_verify.sql
 --
+-- BRAUCHT PSQL oder eine SQL-Konsole: Die Datei besteht aus Abfragen, deren
+-- ERGEBNIS die Aussage ist. Migrationswerkzeuge verwerfen Ergebnismengen und
+-- kennen die \echo-Zeilen nicht. Wer kein psql hat, laesst die \echo-Zeilen weg
+-- und liest die Abfragen der Reihe nach -- die Abschnittsnummern stehen als
+-- Kommentar darueber.
+--
 -- Rein lesend. Bis auf die beiden ausdruecklich als "protokolliert"
 -- gekennzeichneten Abschnitte (Waisen, Absatz-Abweichungen) muss JEDE Abfrage
 -- eine LEERE Ergebnismenge liefern. Jede Zeile ist ein Befund.
@@ -172,42 +178,72 @@ SELECT p.id, ci.type AS aktiv,
 -- Erreichbarkeit eines Kapitels ueber seine Story bleiben aussen vor.
 --
 
-CREATE TEMP VIEW legacy_visible AS
-SELECT a.name AS app, s.id AS legacy_id
-  FROM app a
-  JOIN story s
-    ON (s.applicationincluded LIKE '%' || a.name || '%' OR s.applicationincluded = '*')
-   AND (s.applicationexcluded IS NULL OR s.applicationexcluded NOT LIKE '%' || a.name || '%')
-UNION ALL
-SELECT a.name, c.id
-  FROM app a
-  JOIN chapter c
-    ON (c.applicationincluded LIKE '%' || a.name || '%' OR c.applicationincluded = '*')
-   AND (c.applicationexcluded IS NULL OR c.applicationexcluded NOT LIKE '%' || a.name || '%');
-
-CREATE TEMP VIEW node_visible AS
-SELECT a.name AS app, n.legacy_id
-  FROM app a
-  JOIN node n ON n.legacy_id IS NOT NULL
- WHERE EXISTS (
-         SELECT 1 FROM app_node i
-          WHERE i.node_id = n.id AND i.relation = 'include'
-            AND (i.app_id = a.id OR i.app_id IS NULL)
-       )
-   AND NOT EXISTS (
-         SELECT 1 FROM app_node e
-          WHERE e.node_id = n.id AND e.relation = 'exclude'
-            AND (e.app_id = a.id OR e.app_id IS NULL)
-       );
+-- Beide Seiten stehen als CTE in jedem der zwei Statements, nicht als
+-- temporaere View: eine TEMP-View gehoert zur Sitzung und waere fuer ein
+-- Werkzeug, das ueber wechselnde Verbindungen arbeitet, im naechsten Statement
+-- verschwunden.
 
 \echo '-- 5a. alt sichtbar, neu nicht (erwartet: leer)'
+WITH legacy_visible AS (
+  SELECT a.name AS app, s.id AS legacy_id
+    FROM app a
+    JOIN story s
+      ON (s.applicationincluded LIKE '%' || a.name || '%' OR s.applicationincluded = '*')
+     AND (s.applicationexcluded IS NULL OR s.applicationexcluded NOT LIKE '%' || a.name || '%')
+  UNION ALL
+  SELECT a.name, c.id
+    FROM app a
+    JOIN chapter c
+      ON (c.applicationincluded LIKE '%' || a.name || '%' OR c.applicationincluded = '*')
+     AND (c.applicationexcluded IS NULL OR c.applicationexcluded NOT LIKE '%' || a.name || '%')
+),
+node_visible AS (
+  SELECT a.name AS app, n.legacy_id
+    FROM app a
+    JOIN node n ON n.legacy_id IS NOT NULL
+   WHERE EXISTS (
+           SELECT 1 FROM app_node i
+            WHERE i.node_id = n.id AND i.relation = 'include'
+              AND (i.app_id = a.id OR i.app_id IS NULL)
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM app_node e
+            WHERE e.node_id = n.id AND e.relation = 'exclude'
+              AND (e.app_id = a.id OR e.app_id IS NULL)
+         )
+)
 SELECT * FROM legacy_visible EXCEPT SELECT * FROM node_visible;
 
 \echo '-- 5b. neu sichtbar, alt nicht (erwartet: leer)'
+WITH legacy_visible AS (
+  SELECT a.name AS app, s.id AS legacy_id
+    FROM app a
+    JOIN story s
+      ON (s.applicationincluded LIKE '%' || a.name || '%' OR s.applicationincluded = '*')
+     AND (s.applicationexcluded IS NULL OR s.applicationexcluded NOT LIKE '%' || a.name || '%')
+  UNION ALL
+  SELECT a.name, c.id
+    FROM app a
+    JOIN chapter c
+      ON (c.applicationincluded LIKE '%' || a.name || '%' OR c.applicationincluded = '*')
+     AND (c.applicationexcluded IS NULL OR c.applicationexcluded NOT LIKE '%' || a.name || '%')
+),
+node_visible AS (
+  SELECT a.name AS app, n.legacy_id
+    FROM app a
+    JOIN node n ON n.legacy_id IS NOT NULL
+   WHERE EXISTS (
+           SELECT 1 FROM app_node i
+            WHERE i.node_id = n.id AND i.relation = 'include'
+              AND (i.app_id = a.id OR i.app_id IS NULL)
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM app_node e
+            WHERE e.node_id = n.id AND e.relation = 'exclude'
+              AND (e.app_id = a.id OR e.app_id IS NULL)
+         )
+)
 SELECT * FROM node_visible EXCEPT SELECT * FROM legacy_visible;
-
-DROP VIEW node_visible;
-DROP VIEW legacy_visible;
 
 \echo '== 6. Protokoll: erwartet NICHT leer ====================================='
 --
