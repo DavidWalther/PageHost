@@ -6,17 +6,36 @@ aller Entscheidungen stehen in `doc/datamodel-overhaul/datamodel.md`.
 
 ## Reihenfolge
 
-| Datei                             | Wirkung                                                       |
-| :-------------------------------- | :------------------------------------------------------------ |
-| `sql/001_create_schema.sql`       | legt die neuen Tabellen an — additiv, alte bleiben stehen     |
-| _(von Hand)_                      | `app`-Zeilen eintragen, eine je `APPLICATION_APPLICATION_KEY` |
-| `sql/002_copy_legacy_to_node.sql` | kopiert die Bestandsdaten — read-only auf den alten Tabellen  |
-| `sql/003_verify.sql`              | prüft die Kopie — rein lesend                                 |
+| Datei                       | Wirkung                                                       |
+| :-------------------------- | :------------------------------------------------------------ |
+| `sql/001_create_schema.sql` | legt die neuen Tabellen an — additiv, alte bleiben stehen     |
+| _(von Hand)_                | `app`-Zeilen eintragen, eine je `APPLICATION_APPLICATION_KEY` |
+| `sql/002_1` … `sql/002_7`   | kopiert die Bestandsdaten — read-only auf den alten Tabellen  |
+| `sql/003_verify.sql`        | prüft die Kopie — rein lesend                                 |
+
+Die Kopie liegt in **sieben Teilen**, die in dieser Reihenfolge laufen müssen:
+
+| Teil    | Inhalt                                             |
+| :------ | :------------------------------------------------- |
+| `002_1` | `node` aus `story` — die Wurzelknoten              |
+| `002_2` | `node` aus `chapter` — als Kinder ihrer Story      |
+| `002_3` | `app_node` aus den App-Spalten beider Ebenen       |
+| `002_4` | `cover_node_id` nachziehen (zeigt auf ein Kapitel) |
+| `002_5` | `content_node` aus `paragraph`                     |
+| `002_6` | `content_item` aus `content` und `htmlcontent`     |
+| `002_7` | `active_content_item` setzen                       |
+
+Die Reihenfolge ist erzwungen, nicht kosmetisch: `parent_node_id` ist ein
+Fremdschlüssel, und die Ids entstehen erst im `BEFORE INSERT`-Trigger. Jeder
+Teil trägt seine eigene Transaktion und ist für sich idempotent — ein Abbruch
+mittendrin wird durch einen erneuten Lauf desselben Teils geheilt.
 
 ```sh
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f private/scripts/migration/sql/001_create_schema.sql
 # app-Zeilen eintragen
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f private/scripts/migration/sql/002_copy_legacy_to_node.sql
+for teil in private/scripts/migration/sql/002_?_*.sql; do
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$teil" || break
+done
 psql "$DATABASE_URL"                    -f private/scripts/migration/sql/003_verify.sql
 ```
 
@@ -33,7 +52,14 @@ Modell zu `app_id IS NULL` (Wildcard). Eine App namens `*` würde mit der Regel
 | `002` | **ja**                              | Bewusst portabel gehalten: kein Dollar-Quoting, keine `DO`-Blöcke, keine temporären Objekte, keine `\`-Metabefehle. Jedes Statement steht für sich.                         |
 | `003` | **nein**, `psql` oder SQL-Konsole   | Die Aussage steckt in den **Ergebnismengen**; Migrationswerkzeuge verwerfen sie.                                                                                            |
 
-Zwei Regeln, die `002` portabel halten und beim Ändern gelten:
+Drei Regeln, die `002` portabel halten und beim Ändern gelten:
+
+- **Klein bleiben.** Gemessen an einem Werkzeug, das die Datei nach **8981
+  Bytes** abgeschnitten hat — zweimal an genau dieser Position, bei völlig
+  unterschiedlichem Inhalt. Das Fehlerbild ist tückisch, weil der Abbruch
+  irgendwo mitten in einem Statement liegt und wie ein Syntaxfehler aussieht
+  (`column p.chapter does not exist`, `syntax error at end of input`). Deshalb
+  sieben Teile statt einer Datei; der größte liegt bei gut 3 KB.
 
 - **Kein `--` innerhalb von Zeichenketten.** Werkzeuge, die Kommentare
   zeilenweise entfernen, bevor sie Zeichenketten verstehen, erzeugen daraus ein
