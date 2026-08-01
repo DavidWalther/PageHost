@@ -120,16 +120,24 @@ darstellbar und von der Datenbank **nicht** per Constraint verhinderbar — ein
    liegen. Geprüft wird **aufwärts** vom künftigen Parent — trifft die Kette auf
    den Knoten, wird abgelehnt. Das läuft über eine Vorfahrenkette statt über den
    ganzen Subtree und ist damit die billigere Richtung.
-2. **Lesepfad — Schadensbegrenzung.** Jede rekursive CTE über den Baum führt ein
+2. **Lesepfad — Vorsorge.** Jede rekursive CTE über den Baum führt ein
    `path`-Array mit und bricht mit `WHERE NOT c.id = ANY(t.path)` ab (Form im
-   Setup-Skript). Ohne diesen Schutz wird ein Zyklus — gleich welcher Herkunft —
-   zur Endlosschleife in einem **öffentlich erreichbaren** Lesepfad.
+   Setup-Skript).
 
-Keins der beiden ersetzt das andere: Der `path`-Guard verhindert die Schleife,
-aber nicht die kaputten Daten — ein Zyklus hängt seinen Teilbaum still von der
-Wurzel ab, der Inhalt verschwindet ohne Fehlermeldung. Und die Schreibpfad-Prüfung
-deckt nur den Weg über die Anwendung ab; von Hand per `psql` wird ebenfalls
-geschrieben (die Migration selbst ist so gelaufen).
+**Was ein Zyklus wirklich anrichtet** (gemessen am 2026-08-01 gegen Postgres):
+Solange die Rekursion an den Wurzeln verankert ist (`parent_node_id IS NULL`),
+kann der `path`-Guard gar nicht auslösen. Jeder Knoten hat **genau einen**
+Parent, ein Zyklus bildet damit eine **abgeschlossene Komponente**, die von
+keiner Wurzel aus erreichbar ist. Die Abfrage bleibt also nicht hängen — sie
+liefert sofort, und der Zyklus samt allem darunter fehlt **still** im Ergebnis.
+
+Daraus folgt die Rollenverteilung: Die **Schreibpfad-Prüfung ist die eigentliche
+Verteidigung**, denn nur sie verhindert den Schaden — stillschweigend
+verschwindender Inhalt. Der `path`-Guard ist Vorsorge für jede Abfrage, die
+**anders verankert** ist (etwa „Teilbaum ab Knoten X"); dort greift er sofort und
+verhindert die Endlosschleife. Und weil die Schreibpfad-Prüfung nur den Weg über
+die Anwendung abdeckt — von Hand per `psql` wird ebenfalls geschrieben, die
+Migration selbst ist so gelaufen — bleibt der Guard trotzdem Pflicht.
 
 **Kein** DB-Trigger für die Prüfung: er bräuchte dieselbe rekursive Abfrage ein
 zweites Mal in PL/pgSQL. Bei einem Schreibweg lohnt die Doppelung nicht — sie

@@ -332,8 +332,13 @@ SELECT * FROM content_item;
 -- zweite Haelfte der Absicherung liegt im Schreibpfad: beim Setzen/Umhaengen
 -- von parent_node_id wird aufwaerts geprueft, ob der kuenftige Parent im
 -- Subtree des Knotens liegt.
+--
+-- Der Cast auf varchar[] ist noetig, nicht kosmetisch: ohne ihn hat der
+-- nicht-rekursive Term den Typ varchar(18)[], der rekursive dagegen varchar[],
+-- und Postgres lehnt die Abfrage ab.
+--
 WITH RECURSIVE tree AS (
-  SELECT n.id, n.name, n.parent_node_id, 1 AS depth, ARRAY[n.id] AS path
+  SELECT n.id, n.name, n.parent_node_id, 1 AS depth, ARRAY[n.id]::varchar[] AS path
   FROM node n
   WHERE n.parent_node_id IS NULL
   UNION ALL
