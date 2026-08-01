@@ -1,7 +1,9 @@
 const { Logging } = require('../modules/logging.js');
 const { DataCache2 } = require('./DataCache/DataCache.js');
 const { DataStorage } = require('./DataStorage/DataStorage.js');
-const { DataCleaner } = require('../modules/DataCleaner.js');
+const {
+  LegacyContentRepository,
+} = require('./repositories/LegacyContentRepository.js');
 
 class DataFacadePromise {
   constructor(environmentObject) {
@@ -72,6 +74,21 @@ class DataFacadeSync {
   }
   getSkipCache() {
     return this._skipCache === true ? true : false; // this enforces a boolean value
+  }
+
+  /**
+   * Quelle der Inhalte (story/chapter/paragraph bzw. der Baum).
+   *
+   * Hier — und nur hier — steht, aus welchem Datenmodell gelesen wird. Der
+   * Wechsel auf das neue Modell ist ein Austausch dieser einen Zeile.
+   *
+   * `configuration` und `identity` laufen bewusst nicht darüber: beide sind von
+   * der Umstellung nicht betroffen und sprechen weiter direkt mit `DataStorage`.
+   */
+  createContentRepository() {
+    return new LegacyContentRepository(this.environment).setApplicationKey(
+      this.environment.APPLICATION_APPLICATION_KEY
+    );
   }
 
   async getData(parameterObject) {
@@ -319,11 +336,7 @@ class DataFacadeSync {
         location: LOCATION,
         message: `No paragraphs in cache, querying database`,
       });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryParagraphs(recordId);
+      product = await this.createContentRepository().getParagraph(recordId);
       cache.set(recordId, product);
     } else {
       Logging.debugMessage({
@@ -344,14 +357,11 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
     });
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
+    const repository = this.createContentRepository();
     if (publishDate !== undefined) {
-      dataStorage.setConditionPublishDate(publishDate);
+      repository.setPublishDate(publishDate);
     }
-    let product = await dataStorage.queryParagraphs(recordId);
+    let product = await repository.getParagraph(recordId);
     if (!product) {
       Logging.debugMessage({
         severity: 'FINEST',
@@ -406,45 +416,15 @@ class DataFacadeSync {
   }
 
   /**
-   * Assembles the full node tree (stories with nested chapters) from flat,
-   * per-level queries. The tree is intentionally unfiltered (published and
-   * unpublished alike); the publish filter runs later, at delivery time.
+   * Vollständiger Inhaltsbaum, bewusst ungefiltert (veröffentlicht und
+   * unveröffentlicht) — der Publish-Filter läuft erst bei der Auslieferung.
+   *
+   * Der Zusammenbau selbst liegt im Repository: er hängt am Datenmodell und
+   * sieht in der neuen Quelle grundlegend anders aus (rekursive CTE statt
+   * flacher Abfragen je Ebene).
    */
   async buildContentsTree() {
-    // Each query runs with closeConnection, so it ends its DataStorage's
-    // connection. Use a fresh DataStorage (= fresh connection) per query to
-    // avoid writing to an already-closed connection (CONNECTION_ENDED).
-    const createDataStorage = () => {
-      const dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      return dataStorage;
-    };
-
-    let stories = await createDataStorage().queryAllStories();
-    let chapters = await createDataStorage().queryAllChapters();
-
-    let chaptersByStory = {};
-    chapters.forEach((chapter) => {
-      let storyId = chapter.storyid;
-      if (!chaptersByStory[storyId]) {
-        chaptersByStory[storyId] = [];
-      }
-      chaptersByStory[storyId].push(chapter);
-    });
-
-    stories.forEach((story) => {
-      let storyChapters = chaptersByStory[story.id] || [];
-      storyChapters.sort(
-        (first, second) => first.sortnumber - second.sortnumber
-      );
-      story.chapters = storyChapters;
-    });
-    stories.sort((first, second) => first.sortnumber - second.sortnumber);
-
-    new DataCleaner().removeApplicationKeys(stories);
-    return stories;
+    return this.createContentRepository().getContentsTree();
   }
 
   async getStory(recordId) {
@@ -462,11 +442,7 @@ class DataFacadeSync {
         location: LOCATION,
         message: `No story in cache, querying database`,
       });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryStory(recordId);
+      product = await this.createContentRepository().getStory(recordId);
       cache.set(recordId, product);
     } else {
       Logging.debugMessage({
@@ -487,22 +463,19 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
     });
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
+    const repository = this.createContentRepository();
 
     // Check if 'edit' scope is present to skip publishDate filtering
     const hasEditScope = this.scopes && this.scopes.includes('edit');
 
     if (publishDate !== undefined) {
-      dataStorage.setConditionPublishDate(publishDate);
+      repository.setPublishDate(publishDate);
     } else if (hasEditScope) {
       // Skip publishDate filtering if edit scope is present by setting publishDate to null
-      dataStorage.setConditionPublishDate(null);
+      repository.setPublishDate(null);
     }
 
-    let product = await dataStorage.queryStory(recordId);
+    let product = await repository.getStory(recordId);
     if (!product) {
       Logging.debugMessage({
         severity: 'FINEST',
@@ -534,11 +507,7 @@ class DataFacadeSync {
         location: LOCATION,
         message: `No chapter in cache, querying database`,
       });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryChapter(recordId);
+      product = await this.createContentRepository().getChapter(recordId);
       cache.set(recordId, product);
     } else {
       Logging.debugMessage({
@@ -558,15 +527,12 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
     });
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
+    const repository = this.createContentRepository();
     let publishDate = parameterObject?.request?.publishDate;
     if (publishDate !== undefined) {
-      dataStorage.setConditionPublishDate(publishDate);
+      repository.setPublishDate(publishDate);
     }
-    let product = await dataStorage.queryChapter(recordId);
+    let product = await repository.getChapter(recordId);
     if (!product) {
       Logging.debugMessage({
         severity: 'FINEST',
