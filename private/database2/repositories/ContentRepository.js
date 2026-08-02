@@ -23,7 +23,22 @@
  * blockiert, ist allein die prozessweite Herkunft des Schlüssels. Hier kostet
  * es nichts, das nicht zu verbauen.
  */
+/**
+ * Objekte, für die diese Schnittstelle zuständig ist.
+ *
+ * Alles andere — `configuration`, `identity` — gehört nicht zur Umstellung und
+ * spricht weiter direkt mit `DataStorage`. Die Liste steht hier und nicht in
+ * der `DataFacade`, weil sie zur Schnittstelle gehört: wer sie erweitert, muss
+ * beide Quellen bedienen.
+ */
+const CONTENT_OBJECTS = ['story', 'chapter', 'paragraph'];
+
 class ContentRepository {
+  /** Ist dieses Objekt Sache der Inhaltsquelle? */
+  static owns(object) {
+    return CONTENT_OBJECTS.includes(String(object).toLowerCase());
+  }
+
   constructor(environment) {
     if (!environment) {
       throw new Error('Environment object is required');
@@ -102,4 +117,4 @@ class ContentRepository {
   }
 }
 
-module.exports = { ContentRepository };
+module.exports = { ContentRepository, CONTENT_OBJECTS };

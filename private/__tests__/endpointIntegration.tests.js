@@ -779,6 +779,12 @@ const ENV_WITH_LOGIN = {
   APPLICATION_ACTIVE_ACTIONS: JSON.stringify(['login']),
   AUTH_REFRESH_TOKEN_LIFETIME_DAYS: '7',
   AUTH_CLOCK_SKEW_SECONDS: '5',
+  // KEIN CONTENT_SOURCE: der Auth-Fluss hat mit dem Inhaltsmodell nichts zu
+  // tun und muss auf der Standardquelle laufen. Der Pin oben gilt den
+  // Lese-/Schreibtests der Inhalte; ihn hierher zu erben hat eine echte
+  // Regression verdeckt — das Speichern des Refresh-Tokens lief über die
+  // Inhaltsquelle und landete dort in der falschen Tabelle.
+  CONTENT_SOURCE: undefined,
 };
 
 // Minimal fake id_token: header.payload.signature (base64url encoded)

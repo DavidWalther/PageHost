@@ -7,6 +7,7 @@ const {
 const {
   LegacyContentRepository,
 } = require('./repositories/LegacyContentRepository.js');
+const { ContentRepository } = require('./repositories/ContentRepository.js');
 
 class DataFacadePromise {
   constructor(environmentObject) {
@@ -100,7 +101,9 @@ class DataFacadeSync {
    * Tabellen wieder weg.
    *
    * `configuration` und `identity` laufen bewusst nicht darüber: beide sind von
-   * der Umstellung nicht betroffen und sprechen weiter direkt mit `DataStorage`.
+   * der Umstellung nicht betroffen und sprechen weiter direkt mit `DataStorage`
+   * (`createDirectStorage`). Wer zuständig ist, entscheidet
+   * `ContentRepository.owns()` — beim Lesen wie beim Schreiben.
    */
   createContentRepository() {
     const Repository =
@@ -114,15 +117,32 @@ class DataFacadeSync {
   }
 
   /**
-   * `DataStorage` für `configuration` — der einzige Schreibfall, der nicht über
-   * das Repository läuft. Die Tabelle ist von der Umstellung nicht betroffen.
+   * `DataStorage` für alles, was **nicht** Inhalt ist: `configuration` und
+   * `identity`.
+   *
+   * Beide Tabellen sind von der Umstellung nicht betroffen und bleiben
+   * unverändert beschreibbar — `identity` trägt den Refresh-Token und ist damit
+   * Teil der Anmeldung, nicht des Inhaltsmodells.
    */
-  createConfigurationStorage() {
+  createDirectStorage() {
     const dataStorage = new DataStorage(this.environment);
     dataStorage.setConditionApplicationKey(
       this.environment.APPLICATION_APPLICATION_KEY
     );
     return dataStorage;
+  }
+
+  /**
+   * Tabellen-Definition für die Objekte, die nicht zum Inhalt gehören.
+   * `identity` wird nirgends angelegt — nur gelesen und geändert.
+   */
+  createDirectTable(object) {
+    switch (String(object).toLowerCase()) {
+      case 'configuration':
+        return new (require('./tables/configuration').TableConfiguration)();
+      default:
+        throw new Error(`Invalid table name: ${object}`);
+    }
   }
 
   async getData(parameterObject) {
@@ -193,10 +213,9 @@ class DataFacadeSync {
     try {
       // the id vanishes on saving to postgres, so we need to save it again
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      let updatedData = await this.createContentRepository().updateRecord(
-        object,
-        payload
-      );
+      let updatedData = ContentRepository.owns(object)
+        ? await this.createContentRepository().updateRecord(object, payload)
+        : await this.createDirectStorage().updateData(object, payload);
 
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);
@@ -238,13 +257,12 @@ class DataFacadeSync {
     });
     try {
       // Always skip cache for creation
-      const createdRecord =
-        object === 'configuration'
-          ? await this.createConfigurationStorage().createRecord(
-              new (require('./tables/configuration').TableConfiguration)(),
-              payload
-            )
-          : await this.createContentRepository().createRecord(object, payload);
+      const createdRecord = ContentRepository.owns(object)
+        ? await this.createContentRepository().createRecord(object, payload)
+        : await this.createDirectStorage().createRecord(
+            this.createDirectTable(object),
+            payload
+          );
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
@@ -274,7 +292,11 @@ class DataFacadeSync {
       message: `Deleting data for object: ${object}, id: ${id}`,
     });
     try {
-      await this.createContentRepository().deleteRecord(object, id);
+      if (ContentRepository.owns(object)) {
+        await this.createContentRepository().deleteRecord(object, id);
+      } else {
+        await this.createDirectStorage().deleteData(object, id);
+      }
       // Optionally, remove from cache
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);

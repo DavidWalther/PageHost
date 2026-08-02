@@ -69,6 +69,13 @@ beforeEach(() => {
       const match = responses.find((entry) => sql.includes(entry.pattern));
       return match ? match.rows : [];
     }),
+    // `DataStorage` setzt seine Statements über den alten Weg ab — nötig für
+    // die Objekte, die nicht zum Inhalt gehören (identity, configuration).
+    executeSql: jest.fn(async (sql) => {
+      executed.push({ sql, parameters: [] });
+      const match = responses.find((entry) => sql.includes(entry.pattern));
+      return match ? match.rows : [];
+    }),
   }));
 
   cacheDel = jest.fn();
@@ -96,6 +103,50 @@ async function runEndpoint(EndpointClass, request) {
 }
 
 describe('Schreibpfad auf dem neuen Datenmodell', () => {
+  describe('Zuständigkeit', () => {
+    // Die Umstellung betrifft Inhalte. `identity` trägt den Refresh-Token und
+    // gehört zur Anmeldung, `configuration` zu den App-Metadaten — beide
+    // Tabellen bleiben unverändert und müssen beschreibbar bleiben.
+    //
+    // Geprüft wird an der abgesetzten SQL, nicht am Aufruf einer Klasse: die
+    // Frage lautet, in welche TABELLE geschrieben wird.
+    const { DataFacade } = require('../database2/DataFacade.js');
+
+    it('schreibt identity in die identity-Tabelle', async () => {
+      await new DataFacade(ENVIRONMENT).setSkipCache(true).updateData({
+        object: 'identity',
+        payload: { id: 'identity-1', refreshtoken: '{"token":"abc"}' },
+      });
+
+      expect(statementsMatching('UPDATE identity')).toHaveLength(1);
+      expect(statementsMatching('content_node')).toHaveLength(0);
+      expect(statementsMatching('UPDATE node')).toHaveLength(0);
+    });
+
+    it('schreibt configuration in die configuration-Tabelle', async () => {
+      await new DataFacade(ENVIRONMENT).setSkipCache(true).updateData({
+        object: 'configuration',
+        payload: { id: 'conf-1', value: 'x' },
+      });
+
+      expect(statementsMatching('UPDATE configuration')).toHaveLength(1);
+      expect(statementsMatching('content_node')).toHaveLength(0);
+    });
+
+    it('weist ein unbekanntes Objekt ab, statt es irgendwo abzulegen', async () => {
+      // Der Kern des Fehlers, der die Anmeldung zerlegt hat: „Knoten? sonst
+      // content_node" hat jedes fremde Objekt in die Inhaltstabelle geschickt.
+      const { NodeWriteMapping } = require('../modules/NodeWriteMapping.js');
+
+      expect(() => NodeWriteMapping.tableFor('identity')).toThrow(
+        'has no table in the node model'
+      );
+      expect(() => NodeWriteMapping.tableFor('content_item')).toThrow(
+        'has no table in the node model'
+      );
+    });
+  });
+
   describe('Anlegen', () => {
     beforeEach(() => {
       respondWith('AS legacy_id', [{ legacy_id: '000c00000000000099' }]);
