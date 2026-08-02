@@ -146,6 +146,50 @@ class NodeContentRepository extends ContentRepository {
   }
 
   /**
+   * Inhaltsbaum in der heutigen Form: Wurzelknoten als Storys, ihre Kinder unter
+   * `chapters`.
+   *
+   * **Kein Publish-Filter.** Der Baum enthält veröffentlichte wie
+   * unveröffentlichte Knoten; gefiltert wird erst bei der Auslieferung durch den
+   * `ContentVisibilityFilter`. Nur so bleibt dieselbe Quelle auch für andere
+   * Zwecke — etwa `sitemap.xml` — brauchbar. Die App-Zugehörigkeit ist dagegen
+   * bereits aufgelöst, genau wie im Altmodell, wo sie in der WHERE-Klausel saß.
+   *
+   * **Zwei Ebenen.** Der neue Baum kann tiefer sein, die Kompat-Form kann es
+   * nicht: Enkel werden weggelassen. Das deckt sich mit `MAX_DEPTH = 2` im
+   * `ContentsEndpoint` und fällt mit dem Frontend-Umbau weg.
+   */
+  async getContentsTree() {
+    const visibility = await this.loadVisibility();
+    const visible = visibility.visibleNodes(this.applicationKey);
+    const visibleIds = new Set(visible.map((node) => node.id));
+
+    return sortSiblings(visible.filter((node) => !node.parent_node_id)).map(
+      (root) => ({
+        id: outwardId(root),
+        name: root.name ?? null,
+        lastupdate: null,
+        sortnumber: root.sortnumber ?? null,
+        publishdate: root.published_date ?? null,
+        coverid: coverIdOf(root, visibility),
+        chapters: sortSiblings(
+          visibility
+            .childrenOf(root.id)
+            .filter((child) => visibleIds.has(child.id))
+        ).map((child) => ({
+          id: outwardId(child),
+          storyid: outwardId(root),
+          name: child.name ?? null,
+          lastupdate: null,
+          sortnumber: child.sortnumber ?? null,
+          reversed: child.reversed ?? null,
+          publishdate: child.published_date ?? null,
+        })),
+      })
+    );
+  }
+
+  /**
    * Story: der Knoten selbst plus seine Kind-Knoten als Kapitel-Kopfdaten.
    *
    * Die eingehende Id darf die **alte** (`000s…`, über `legacy_id`) oder die
@@ -164,8 +208,6 @@ class NodeContentRepository extends ContentRepository {
         .childrenOf(storyNode.id)
         .filter((child) => this.isDeliverable(child, visibility))
     );
-    const coverNode = visibility.getNode(storyNode.cover_node_id);
-
     return {
       id: outwardId(storyNode),
       name: storyNode.name ?? null,
@@ -174,9 +216,7 @@ class NodeContentRepository extends ContentRepository {
       lastupdate: null,
       sortnumber: storyNode.sortnumber ?? null,
       publishdate: storyNode.published_date ?? null,
-      coverid: coverNode
-        ? outwardId(coverNode)
-        : (storyNode.cover_node_id ?? null),
+      coverid: coverIdOf(storyNode, visibility),
       chapters: chapters.map((child) =>
         headData({
           id: outwardId(child),
@@ -288,6 +328,17 @@ class NodeContentRepository extends ContentRepository {
 /** Nach außen gilt die alte Id, solange es eine gibt. */
 function outwardId(row) {
   return row.legacy_id || row.id;
+}
+
+/**
+ * `coverid` in der alten Form. `story.coverid` zeigt auf ein Kapitel, also gilt
+ * auch hier die alte Id des Zielknotens. Ist der Zielknoten unbekannt — etwa
+ * weil er für diese App nicht sichtbar ist — bleibt die rohe Referenz stehen,
+ * statt sie stillschweigend zu verschlucken.
+ */
+function coverIdOf(node, visibility) {
+  const coverNode = visibility.getNode(node.cover_node_id);
+  return coverNode ? outwardId(coverNode) : (node.cover_node_id ?? null);
 }
 
 /**
