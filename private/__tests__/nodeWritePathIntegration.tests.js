@@ -237,7 +237,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       ]);
     });
 
-    it('räumt den Teilbaum ab und leert den Cache-Eintrag', async () => {
+    it('räumt den ganzen Teilbaum ab', async () => {
       const response = await runEndpoint(DeleteEndpoint, {
         query: { object: 'story', id: '000s00000000000011' },
       });
@@ -245,6 +245,20 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.status).toHaveBeenCalledWith(200);
       expect(statementsMatching('DELETE FROM content_item')).toHaveLength(1);
       expect(statementsMatching('DELETE FROM node WHERE id')).toHaveLength(2);
+    });
+
+    it('FEHLVERHALTEN: räumt den Cache dabei nicht auf', async () => {
+      // `DeleteEndpoint` setzt `skipCache(true)`, weshalb `DataFacade` das
+      // `cache.del` überspringt. Schon vor der Umstellung so; durch das
+      // Löschen ganzer Teilbäume bleiben jetzt mehr Einträge stehen — die des
+      // Knotens UND die seiner Kinder und Absätze. Geparkt in `EPC/Missed.md`;
+      // dieser Test hält den Ist-Zustand fest und schlägt um, sobald er
+      // behoben wird.
+      await runEndpoint(DeleteEndpoint, {
+        query: { object: 'story', id: '000s00000000000011' },
+      });
+
+      expect(cacheDel).not.toHaveBeenCalled();
     });
 
     it('verweigert das Löschen, wenn die Aktion nicht freigeschaltet ist', async () => {
