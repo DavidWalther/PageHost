@@ -18,6 +18,12 @@ jest.mock('../DataStorage/pgConnector.js');
 const MOCK_ENVIRONMENT = {
   APPLICATION_APPLICATION_KEY: 'test-key',
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
+  // Der beschriebene Absturz gehört zur alten Quelle: dort setzt jede Query
+  // `closeConnection: true`, weshalb die zweite Abfrage eine eigene Verbindung
+  // braucht. Die neue Quelle holt beide Baum-Abfragen bewusst über EINE
+  // Verbindung und schließt erst danach — ein anderes Muster, für das dieser
+  // Test keine Aussage trifft. Er bleibt daher auf der Altquelle.
+  CONTENT_SOURCE: 'legacy',
 };
 
 Environment.mockImplementation(() => ({

@@ -69,6 +69,32 @@ function lastStatement() {
 }
 
 /**
+ * Umgebung für einen Charakterisierungstest — festgenagelt auf die ALTE Quelle.
+ *
+ * Diese Tests beschreiben den Lesepfad über `story` / `chapter` / `paragraph`,
+ * bis hinunter zum erzeugten SQL. Seit der Umstellung liest die `DataFacade`
+ * standardmäßig aus dem neuen Modell; ohne diesen Pin würden die Tests Aussagen
+ * über ein Modell treffen, aus dem sie gar nicht mehr lesen — sie würden nicht
+ * etwa strenger, sondern gegenstandslos.
+ *
+ * Der Ist-Zustand der NEUEN Quelle steht anderswo: die Gleichheit beider
+ * Antworten im gemeinsamen Vertrag
+ * (`repositories/__tests__/contentRepositoryContract.tests.js`), das
+ * Zusammenspiel mit Cache und Scopes in
+ * `private/__tests__/nodeSourceIntegration.tests.js`.
+ *
+ * Diese Datei und die Tests, die sie benutzt, fallen zusammen mit den alten
+ * Tabellen weg.
+ */
+function legacyEnvironment(applicationKey, additionalVariables = {}) {
+  return {
+    APPLICATION_APPLICATION_KEY: applicationKey,
+    CONTENT_SOURCE: 'legacy',
+    ...additionalVariables,
+  };
+}
+
+/**
  * Zeile eines `story LEFT JOIN chapter`-Ergebnisses.
  *
  * Die Spaltennamen entsprechen den Aliassen aus `ActionGet.getFieldString()`
@@ -110,6 +136,7 @@ module.exports = {
   resetHarness,
   statements,
   lastStatement,
+  legacyEnvironment,
   storyJoinChapterRow,
   chapterJoinParagraphRow,
 };

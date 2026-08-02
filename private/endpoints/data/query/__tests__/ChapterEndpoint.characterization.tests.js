@@ -23,7 +23,7 @@ const APPLICATION_KEY = 'charApp';
 function runEndpoint({ id = '000c00000000000022', scopes } = {}) {
   const responseObject = { json: jest.fn() };
   const endpoint = new ChapterEndpoint()
-    .setEnvironment({ APPLICATION_APPLICATION_KEY: APPLICATION_KEY })
+    .setEnvironment(harness.legacyEnvironment(APPLICATION_KEY))
     .setRequestObject({ query: { id } })
     .setResponseObject(responseObject);
   if (scopes) {

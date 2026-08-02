@@ -33,7 +33,7 @@ const MORGEN = '2999-01-01T00:00:00.000Z';
 function runEndpoint({ depth, scopes } = {}) {
   const responseObject = { json: jest.fn() };
   const endpoint = new ContentsEndpoint()
-    .setEnvironment({ APPLICATION_APPLICATION_KEY: APPLICATION_KEY })
+    .setEnvironment(harness.legacyEnvironment(APPLICATION_KEY))
     .setRequestObject({ query: depth === undefined ? {} : { depth } })
     .setResponseObject(responseObject);
   if (scopes) {

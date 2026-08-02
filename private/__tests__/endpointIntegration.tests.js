@@ -32,6 +32,12 @@ const ENVIRONMENT = Object.freeze({
   AUTH_SERVER_SECRET: 'test-secret',
   GOOGLE_CLIENT_ID: 'test-google-client-id',
   GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
+  // Der Lesepfad wird hier über die `DataStorage`-Mocks geprüft
+  // (`queryStory`, `queryChapter`, `queryParagraphs`) — diesen Seam benutzt nur
+  // die alte Quelle. Das Gegenstück für die neue Quelle steht in
+  // `nodeSourceIntegration.tests.js`; die Schreib- und Auth-Pfade in dieser
+  // Datei sind von der Umstellung nicht betroffen.
+  CONTENT_SOURCE: 'legacy',
 });
 
 function createResMock() {
