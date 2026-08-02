@@ -79,6 +79,42 @@ class LegacyContentRepository extends ContentRepository {
     new DataCleaner().removeApplicationKeys(stories);
     return stories;
   }
+
+  // ─── Schreibpfad ─────────────────────────────────────────────────────────
+  //
+  // Wie beim Lesen 1:1 das, was die `DataFacade` bisher selbst getan hat —
+  // ohne jede Verbesserung. Die bekannten Schwächen (String-Konkatenation im
+  // SQL, einstufiges Löschen ohne Rücksicht auf Kinder) bleiben hier stehen:
+  // sie sind Teil des Bezugspunkts und verschwinden mit der Klasse.
+
+  /** Tabellen-Definition zum alten Objektnamen. */
+  createTable(object) {
+    switch (object) {
+      case 'paragraph':
+        return new (require('../tables/paragraph').TableParagraph)();
+      case 'story':
+        return new (require('../tables/story').TableStory)();
+      case 'chapter':
+        return new (require('../tables/chapter').TableChapter)();
+      default:
+        throw new Error(`Invalid table name: ${object}`);
+    }
+  }
+
+  async createRecord(object, payload) {
+    return this.createDataStorage().createRecord(
+      this.createTable(object),
+      payload
+    );
+  }
+
+  async updateRecord(object, payload) {
+    return this.createDataStorage().updateData(object, payload);
+  }
+
+  async deleteRecord(object, id) {
+    return this.createDataStorage().deleteData(object, id);
+  }
 }
 
 module.exports = { LegacyContentRepository };

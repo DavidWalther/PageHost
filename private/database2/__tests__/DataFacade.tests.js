@@ -601,7 +601,13 @@ describe('updateData', () => {
   let mockDataStorageUpdateData;
 
   beforeEach(() => {
-    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+    // Schreibpfad ueber den DataStorage-Seam: nur die alte Quelle. Die neue
+    // schreibt in node / content_node / content_item und wird in
+    // nodeWritePath.tests.js geprueft.
+    mockEnvironment = {
+      APPLICATION_APPLICATION_KEY: 'test-key',
+      CONTENT_SOURCE: 'legacy',
+    };
 
     mockDataStorage = {
       setConditionApplicationKey: jest.fn(),
@@ -736,7 +742,13 @@ describe('createData', () => {
   let mockCreateRecord;
 
   beforeEach(() => {
-    mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
+    // Schreibpfad ueber den DataStorage-Seam: nur die alte Quelle. Die neue
+    // schreibt in node / content_node / content_item und wird in
+    // nodeWritePath.tests.js geprueft.
+    mockEnvironment = {
+      APPLICATION_APPLICATION_KEY: 'test-key',
+      CONTENT_SOURCE: 'legacy',
+    };
     mockCreateRecord = jest.fn();
     mockDataStorage = {
       setConditionApplicationKey: jest.fn(),

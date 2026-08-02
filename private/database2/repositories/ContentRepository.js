@@ -1,14 +1,15 @@
 /**
- * Schnittstelle für die Inhaltsquelle des Lesepfads.
+ * Schnittstelle für die Inhaltsquelle — Lesen **und** Schreiben.
  *
  * Zweck: die Umstellung vom alten Datenmodell (`story`/`chapter`/`paragraph`)
  * auf das neue (`node`/`content_node`/`content_item`) so vorzubereiten, dass
  * **dieselben** Charakterisierungstests gegen beide Quellen laufen können.
  * Solange sie für beide grün sind, ist der Wechsel von außen nicht beobachtbar.
  *
- * Bewusst KEIN Laufzeitschalter, keine Factory, keine Env-Variable: es gibt
- * genau einen Umschaltpunkt, und der ist eine Zeile in der `DataFacade`. Die
- * alte Implementierung verschwindet danach.
+ * Es gibt genau einen Umschaltpunkt: `DataFacadeSync.createContentRepository()`.
+ * Der wählt seit der Umstellung über `CONTENT_SOURCE` — Standard ist das neue
+ * Modell, `legacy` der Rückweg. Schalter und alte Implementierung verschwinden
+ * gemeinsam mit den alten Tabellen.
  *
  * Abgrenzung:
  * - **Caching gehört nicht hierher.** Ein Repository liefert immer aus der
@@ -70,6 +71,34 @@ class ContentRepository {
    */
   async getContentsTree() {
     throw new Error('ContentRepository.getContentsTree is not implemented');
+  }
+
+  // ─── Schreibpfad ─────────────────────────────────────────────────────────
+  //
+  // Dieselbe Aufteilung wie beim Lesen: das Repository schreibt, die
+  // `DataFacade` kümmert sich um den Cache. `object` ist weiterhin einer der
+  // alten Namen (`story`, `chapter`, `paragraph`) — die Übersetzung auf
+  // Knoten und Inhalte ist Sache der jeweiligen Quelle, nicht des Aufrufers.
+  //
+  // `configuration` läuft auch hier nicht mit: nicht Teil der Umstellung.
+
+  /** Legt einen Datensatz an und liefert ihn zurück. */
+  async createRecord() {
+    throw new Error('ContentRepository.createRecord is not implemented');
+  }
+
+  /**
+   * Aktualisiert die im Payload enthaltenen Felder. Der Payload trägt die Id;
+   * alles andere sind zu setzende Werte — auch `publishDate`, worüber
+   * Veröffentlichen und Zurückziehen laufen.
+   */
+  async updateRecord() {
+    throw new Error('ContentRepository.updateRecord is not implemented');
+  }
+
+  /** Löscht einen Datensatz samt allem, was ohne ihn keinen Bestand hat. */
+  async deleteRecord() {
+    throw new Error('ContentRepository.deleteRecord is not implemented');
   }
 }
 
