@@ -24,6 +24,22 @@ const LEGACY_PREFIX = {
 const NODE_OBJECTS = ['story', 'chapter'];
 
 /**
+ * Zieltabelle je Objekt — **abschließend**.
+ *
+ * Bewusst eine Zuordnung und keine Ja/Nein-Frage: „Knoten? sonst
+ * `content_node`" hält nur, solange es genau zwei Arten gibt. Ein Objekt, das
+ * hier nicht steht, hat im neuen Modell keine Tabelle und darf nicht in
+ * irgendeiner landen — weder `identity` noch `configuration`, und auch kein
+ * künftiges `content_item`, sollte es je direkt beschreibbar werden. Dann
+ * kommt es hier dazu, und bis dahin fliegt der Aufruf.
+ */
+const TABLE_BY_OBJECT = {
+  story: 'node',
+  chapter: 'node',
+  paragraph: 'content_node',
+};
+
+/**
  * Feldabbildung je Objekt: eingehender Name (klein) → Spalte im neuen Modell.
  *
  * Absichtlich **nicht** enthalten:
@@ -73,6 +89,18 @@ class NodeWriteMapping {
   /** Schreibt dieses Objekt eine Zeile in `node`? */
   static isNodeObject(object) {
     return NODE_OBJECTS.includes(String(object).toLowerCase());
+  }
+
+  /**
+   * Zieltabelle des Objekts. Wirft, wenn es keine gibt — lieber ein Fehler als
+   * eine Zeile in der falschen Tabelle.
+   */
+  static tableFor(object) {
+    const table = TABLE_BY_OBJECT[String(object).toLowerCase()];
+    if (!table) {
+      throw new Error(`Object "${object}" has no table in the node model`);
+    }
+    return table;
   }
 
   /** Altes Id-Präfix des Objekts (`000s`, `000c`, `000p`). */

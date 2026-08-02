@@ -337,9 +337,7 @@ class NodeContentRepository extends ContentRepository {
     if (!incomingId) {
       return null;
     }
-    const table = NodeWriteMapping.isNodeObject(object)
-      ? 'node'
-      : 'content_node';
+    const table = NodeWriteMapping.tableFor(object);
     const rows = await run(
       `SELECT id FROM ${table} WHERE legacy_id = $1 OR id = $1`,
       [incomingId]
@@ -507,8 +505,8 @@ class NodeContentRepository extends ContentRepository {
 
     return this.createConnector().transaction(
       async (run) => {
+        const table = NodeWriteMapping.tableFor(object);
         const isNode = NodeWriteMapping.isNodeObject(object);
-        const table = isNode ? 'node' : 'content_node';
         const recordId = await this.resolveId(run, object, payload.id);
         if (!recordId) {
           throw new Error(`Record not found: ${payload.id}`);
