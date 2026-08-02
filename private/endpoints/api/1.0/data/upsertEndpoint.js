@@ -161,9 +161,10 @@ class UpsertEndpoint extends EndpointLogic {
         location: LOCATION,
       });
 
+      // Die App-Zugehörigkeit setzt die Datenschicht: im alten Modell als
+      // Spalte `applicationincluded`, im neuen als Zeile in `app_node`. Der
+      // Endpoint kennt den Unterschied nicht mehr.
       const data = this.requestObject.body; // Assuming data is sent in the request body
-      data.payload.applicationIncluded =
-        this.environment.APPLICATION_APPLICATION_KEY;
 
       let dataFacade = new DataFacade(this.environment).setSkipCache(true);
       let result = await dataFacade.createData(data);

@@ -1,6 +1,7 @@
 const { ContentRepository } = require('./ContentRepository.js');
 const { PostgresActions } = require('../DataStorage/pgConnector.js');
 const { NodeVisibility } = require('../../modules/NodeVisibility.js');
+const { NodeWriteMapping } = require('../../modules/NodeWriteMapping.js');
 const { Logging } = require('../../modules/logging.js');
 
 /**
@@ -323,11 +324,374 @@ class NodeContentRepository extends ContentRepository {
       publishdate: first.published_date ?? null,
     };
   }
+
+  // ─── Schreibpfad ─────────────────────────────────────────────────────────
+
+  /**
+   * Löst eine eingehende Id auf die Id im neuen Modell auf.
+   *
+   * Herein kommt beides: die alte Id aus einem Deep-Link oder einem gelesenen
+   * Datensatz, oder die neue. Nach innen gilt immer die neue.
+   */
+  async resolveId(run, object, incomingId) {
+    if (!incomingId) {
+      return null;
+    }
+    const table = NodeWriteMapping.isNodeObject(object)
+      ? 'node'
+      : 'content_node';
+    const rows = await run(
+      `SELECT id FROM ${table} WHERE legacy_id = $1 OR id = $1`,
+      [incomingId]
+    );
+    return rows.length ? rows[0].id : null;
+  }
+
+  /**
+   * Löst die Referenz-Spalten eines Payloads auf.
+   *
+   * `parent_node_id` und `cover_node_id` zeigen auf Knoten, `node_id` eines
+   * Absatzes ebenfalls — hereinkommen kann dort überall eine alte Id.
+   */
+  async resolveReferences(run, columns) {
+    const resolved = { ...columns };
+    for (const column of NodeWriteMapping.referenceColumns(columns)) {
+      const value = resolved[column];
+      if (!value) {
+        continue;
+      }
+      const target = await this.resolveId(run, 'story', value);
+      if (!target) {
+        throw new Error(`Referenced node not found: ${value}`);
+      }
+      resolved[column] = target;
+    }
+    return resolved;
+  }
+
+  async createRecord(object, payload) {
+    const LOCATION = 'NodeContentRepository.createRecord';
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Creating ${object}`,
+    });
+
+    return this.createConnector().transaction(
+      async (run) =>
+        NodeWriteMapping.isNodeObject(object)
+          ? this.createNode(run, object, payload)
+          : this.createContent(run, object, payload),
+      { closeConnection: true }
+    );
+  }
+
+  /** Story oder Kapitel: eine Zeile in `node`, dazu ihre App-Zugehörigkeit. */
+  async createNode(run, object, payload) {
+    const columns = await this.resolveReferences(
+      run,
+      NodeWriteMapping.columnsFor(object, payload)
+    );
+
+    const [{ legacy_id: legacyId }] = await run(mintLegacyIdSql('node'), [
+      NodeWriteMapping.legacyPrefix(object),
+    ]);
+
+    // Vererbung ist der Normalfall (`datamodel.md` Abschnitt 4). Die
+    // Bestandsknoten tragen bis Schritt 13a `false`, weil die Kopie die alten
+    // App-Spalten Knoten für Knoten abgebildet hat — für Neuanlagen gilt die
+    // Regel des Zielmodells.
+    const withDefaults = {
+      ...columns,
+      legacy_id: legacyId,
+      is_parent_controls_visibility: true,
+    };
+    const insert = insertClause(withDefaults);
+    const [node] = await run(
+      `INSERT INTO node (${insert.names}) VALUES (${insert.placeholders}) RETURNING *`,
+      insert.values
+    );
+
+    // Ein Wurzelknoten hat keinen Parent, von dem er erben könnte, und wäre
+    // ohne eigene Zeile in keiner App sichtbar. Die Entsprechung des alten
+    // `applicationIncluded = <eigener Schlüssel>`.
+    if (!withDefaults.parent_node_id) {
+      await this.addAppInclude(run, node.id);
+    }
+
+    return this.outwardRecord(object, node);
+  }
+
+  /** Absatz: `content_node` plus je Repräsentation eine `content_item`-Zeile. */
+  async createContent(run, object, payload) {
+    const columns = await this.resolveReferences(
+      run,
+      NodeWriteMapping.columnsFor(object, payload)
+    );
+    if (!columns.node_id) {
+      throw new Error('Creating a paragraph requires a chapter reference');
+    }
+
+    const [{ legacy_id: legacyId }] = await run(
+      mintLegacyIdSql('content_node'),
+      [NodeWriteMapping.legacyPrefix(object)]
+    );
+
+    const insert = insertClause({ ...columns, legacy_id: legacyId });
+    const [contentNode] = await run(
+      `INSERT INTO content_node (${insert.names}) VALUES (${insert.placeholders}) RETURNING *`,
+      insert.values
+    );
+
+    await this.writeContentItems(run, contentNode.id, payload);
+    return this.outwardRecord(object, contentNode);
+  }
+
+  /**
+   * Schreibt die Repräsentationen eines Absatzes und setzt den Zeiger auf die
+   * aktive.
+   *
+   * Je `content_node` höchstens eine Zeile pro Typ — das erzwingt
+   * `content_item_node_type_unique`, weshalb hier `ON CONFLICT` greift statt
+   * einer Vorab-Abfrage. Trägt der Payload gar keinen Inhalt (etwa beim reinen
+   * Umbenennen), bleibt alles, wie es ist.
+   */
+  async writeContentItems(run, contentNodeId, payload) {
+    const { items, activeType } = NodeWriteMapping.contentItemsFor(payload);
+    if (activeType === null) {
+      return;
+    }
+
+    for (const [type, content] of Object.entries(items)) {
+      await run(
+        `INSERT INTO content_item (content_node_id, type, content)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (content_node_id, type) DO UPDATE SET content = EXCLUDED.content`,
+        [contentNodeId, type, content]
+      );
+    }
+
+    await run(
+      `UPDATE content_node SET active_content_item = (
+         SELECT id FROM content_item WHERE content_node_id = $1 AND type = $2
+       ) WHERE id = $1`,
+      [contentNodeId, activeType]
+    );
+  }
+
+  /** `include`-Zeile für die eigene App; doppelte Aufrufe bleiben wirkungslos. */
+  async addAppInclude(run, nodeId) {
+    if (!this.applicationKey) {
+      throw new Error('Application key is required');
+    }
+    await run(
+      `INSERT INTO app_node (node_id, app_id, relation)
+       SELECT $1, a.id, 'include' FROM app a WHERE a.name = $2
+       ON CONFLICT (app_id, node_id, relation) WHERE app_id IS NOT NULL
+       DO NOTHING`,
+      [nodeId, this.applicationKey]
+    );
+  }
+
+  async updateRecord(object, payload) {
+    const LOCATION = 'NodeContentRepository.updateRecord';
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Updating ${object} ${payload?.id}`,
+    });
+
+    if (!payload || !payload.id) {
+      throw new Error('Update requires an id');
+    }
+
+    return this.createConnector().transaction(
+      async (run) => {
+        const isNode = NodeWriteMapping.isNodeObject(object);
+        const table = isNode ? 'node' : 'content_node';
+        const recordId = await this.resolveId(run, object, payload.id);
+        if (!recordId) {
+          throw new Error(`Record not found: ${payload.id}`);
+        }
+
+        const columns = await this.resolveReferences(
+          run,
+          NodeWriteMapping.columnsFor(object, payload)
+        );
+
+        let record;
+        if (Object.keys(columns).length > 0) {
+          const update = updateClause(columns);
+          [record] = await run(
+            `UPDATE ${table} SET ${update.assignments} WHERE id = $${
+              update.values.length + 1
+            } RETURNING *`,
+            [...update.values, recordId]
+          );
+        } else {
+          // Ein Payload ohne setzbare Felder ist kein Fehler — der Absatz
+          // schickt auch dann seinen ganzen Datensatz, wenn sich nur der
+          // Inhalt geändert hat.
+          [record] = await run(`SELECT * FROM ${table} WHERE id = $1`, [
+            recordId,
+          ]);
+        }
+
+        if (!isNode) {
+          await this.writeContentItems(run, recordId, payload);
+        }
+
+        return this.outwardRecord(object, record);
+      },
+      { closeConnection: true }
+    );
+  }
+
+  /**
+   * Löscht mehrstufig in der Reihenfolge, die `ON DELETE RESTRICT` erzwingt.
+   *
+   * Beim Knoten gehört der **ganze Teilbaum** dazu: Kinder, deren Inhalte und
+   * die App-Zeilen. Das ist eine bewusste Änderung gegenüber dem alten
+   * einstufigen `DELETE`, das Kinder verwaisen ließ — im neuen Modell würde es
+   * schlicht am Fremdschlüssel scheitern.
+   *
+   * `cover_node_id` wird auch **außerhalb** des Teilbaums genullt: ein
+   * Geschwisterknoten darf nicht auf einen gelöschten Knoten zeigen.
+   */
+  async deleteRecord(object, id) {
+    const LOCATION = 'NodeContentRepository.deleteRecord';
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Deleting ${object} ${id}`,
+    });
+
+    return this.createConnector().transaction(
+      async (run) => {
+        const recordId = await this.resolveId(run, object, id);
+        if (!recordId) {
+          throw new Error(`Record not found: ${id}`);
+        }
+
+        if (!NodeWriteMapping.isNodeObject(object)) {
+          await this.deleteContentNodes(run, [recordId]);
+          return;
+        }
+
+        // Teilbaum, tiefste Ebene zuerst — Kinder vor Eltern.
+        const subtree = await run(
+          `WITH RECURSIVE descendants AS (
+             SELECT id, 0 AS depth FROM node WHERE id = $1
+             UNION ALL
+             SELECT n.id, d.depth + 1
+             FROM node n JOIN descendants d ON n.parent_node_id = d.id
+           )
+           SELECT id FROM descendants ORDER BY depth DESC`,
+          [recordId]
+        );
+        const nodeIds = subtree.map((row) => row.id);
+
+        const contentNodes = await run(
+          `SELECT id FROM content_node WHERE node_id = ANY($1)`,
+          [nodeIds]
+        );
+        await this.deleteContentNodes(
+          run,
+          contentNodes.map((row) => row.id)
+        );
+
+        await run(
+          `UPDATE node SET cover_node_id = NULL WHERE cover_node_id = ANY($1)`,
+          [nodeIds]
+        );
+        await run(`DELETE FROM app_node WHERE node_id = ANY($1)`, [nodeIds]);
+
+        // Einzeln in Tiefenreihenfolge: parent_node_id ist RESTRICT, ein
+        // Sammel-DELETE prüft die Bedingung je Zeile und träfe die Eltern
+        // womöglich zuerst.
+        for (const nodeId of nodeIds) {
+          await run(`DELETE FROM node WHERE id = $1`, [nodeId]);
+        }
+      },
+      { closeConnection: true }
+    );
+  }
+
+  /** `active_content_item` lösen, dann Items, dann die Halter. */
+  async deleteContentNodes(run, contentNodeIds) {
+    if (contentNodeIds.length === 0) {
+      return;
+    }
+    await run(
+      `UPDATE content_node SET active_content_item = NULL WHERE id = ANY($1)`,
+      [contentNodeIds]
+    );
+    await run(`DELETE FROM content_item WHERE content_node_id = ANY($1)`, [
+      contentNodeIds,
+    ]);
+    await run(`DELETE FROM content_node WHERE id = ANY($1)`, [contentNodeIds]);
+  }
+
+  /**
+   * Antwort eines Schreibvorgangs in der Form, die der Aufrufer erwartet.
+   *
+   * Nach außen gilt weiterhin die alte Id — das Frontend liest den Typ am
+   * Präfix und legt sie in seinen Cache.
+   */
+  outwardRecord(object, record) {
+    if (!record) {
+      return {};
+    }
+    return { ...record, id: outwardId(record) };
+  }
 }
 
 /** Nach außen gilt die alte Id, solange es eine gibt. */
 function outwardId(row) {
   return row.legacy_id || row.id;
+}
+
+/**
+ * Nächste freie `legacy_id` im alten Präfix-Schema.
+ *
+ * Neuanlagen bekommen zusätzlich eine alte Id, weil das Frontend den Typ noch
+ * am Präfix liest und Deep-Links darauf zeigen. Die Nummer wird aus dem
+ * Höchststand **desselben Präfixes** abgeleitet — `000s` und `000c` liegen
+ * beide in `node`, dürfen sich aber nicht ins Gehege kommen. Läuft in derselben
+ * Transaktion wie das INSERT; bei einer Kollision greift die UNIQUE-Bedingung.
+ *
+ * Fällt mit Phase D weg, zusammen mit der Präfix-Typisierung im Frontend.
+ */
+function mintLegacyIdSql(tableName) {
+  return `
+SELECT $1 || LPAD(
+  (COALESCE(MAX(SUBSTRING(legacy_id FROM 5)::bigint), 0) + 1)::text, 14, '0'
+) AS legacy_id
+FROM ${tableName}
+WHERE legacy_id LIKE $1 || '%'
+`;
+}
+
+/** Wert-Liste für ein INSERT: Spaltennamen und gebundene Platzhalter. */
+function insertClause(columns, firstPlaceholder = 1) {
+  const names = Object.keys(columns);
+  const placeholders = names.map((_, index) => `$${firstPlaceholder + index}`);
+  return {
+    names: names.join(', '),
+    placeholders: placeholders.join(', '),
+    values: names.map((name) => columns[name]),
+  };
+}
+
+/** SET-Liste für ein UPDATE: `spalte = $n`, Werte gebunden. */
+function updateClause(columns, firstPlaceholder = 1) {
+  const names = Object.keys(columns);
+  return {
+    assignments: names
+      .map((name, index) => `${name} = $${firstPlaceholder + index}`)
+      .join(', '),
+    values: names.map((name) => columns[name]),
+  };
 }
 
 /**

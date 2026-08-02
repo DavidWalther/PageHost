@@ -62,6 +62,34 @@ class PostgresActions {
     }
   }
 
+  /**
+   * Führt mehrere Statements in **einer** Transaktion aus.
+   *
+   * Nötig, weil `executeParameterizedSql` jedes Statement aus dem Pool bedient:
+   * ein `BEGIN` landete dort womöglich auf einer anderen Verbindung als das
+   * folgende `DELETE`. `sql.begin` des Treibers hält eine Verbindung fest und
+   * setzt `COMMIT` bzw. bei einem Fehler `ROLLBACK`.
+   *
+   * Der Callback bekommt eine Funktion `run(statement, parameters)`, die an
+   * genau diese Verbindung gebunden ist.
+   */
+  async transaction(callback, options = {}) {
+    try {
+      return await this.sql.begin(async (sql) => {
+        return callback((statement, parameters = []) =>
+          sql.unsafe(statement, parameters)
+        );
+      });
+    } catch (error) {
+      console.error('Error executing transaction:', error);
+      throw error;
+    } finally {
+      if (options?.closeConnection) {
+        this.sql.end();
+      }
+    }
+  }
+
   executeSql(sqlStatement, options) {
     return new Promise(async (resolve, reject) => {
       try {

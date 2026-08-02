@@ -113,6 +113,18 @@ class DataFacadeSync {
     );
   }
 
+  /**
+   * `DataStorage` für `configuration` — der einzige Schreibfall, der nicht über
+   * das Repository läuft. Die Tabelle ist von der Umstellung nicht betroffen.
+   */
+  createConfigurationStorage() {
+    const dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(
+      this.environment.APPLICATION_APPLICATION_KEY
+    );
+    return dataStorage;
+  }
+
   async getData(parameterObject) {
     if (parameterObject.request.table == 'configuration') {
       return this.getConfigurations();
@@ -178,15 +190,13 @@ class DataFacadeSync {
       message: `Updating data for object: ${object}`,
     });
 
-    const dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
-
     try {
       // the id vanishes on saving to postgres, so we need to save it again
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      let updatedData = await dataStorage.updateData(object, payload);
+      let updatedData = await this.createContentRepository().updateRecord(
+        object,
+        payload
+      );
 
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);
@@ -226,31 +236,15 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Creating data for object: ${object}`,
     });
-    const dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
     try {
       // Always skip cache for creation
-      let tableName = object;
-      let table;
-      switch (tableName) {
-        case 'configuration':
-          table = new (require('./tables/configuration').TableConfiguration)();
-          break;
-        case 'paragraph':
-          table = new (require('./tables/paragraph').TableParagraph)();
-          break;
-        case 'story':
-          table = new (require('./tables/story').TableStory)();
-          break;
-        case 'chapter':
-          table = new (require('./tables/chapter').TableChapter)();
-          break;
-        default:
-          throw new Error(`Invalid table name: ${tableName}`);
-      }
-      const createdRecord = await dataStorage.createRecord(table, payload);
+      const createdRecord =
+        object === 'configuration'
+          ? await this.createConfigurationStorage().createRecord(
+              new (require('./tables/configuration').TableConfiguration)(),
+              payload
+            )
+          : await this.createContentRepository().createRecord(object, payload);
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
@@ -279,12 +273,8 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Deleting data for object: ${object}, id: ${id}`,
     });
-    const dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
     try {
-      await dataStorage.deleteData(object, id);
+      await this.createContentRepository().deleteRecord(object, id);
       // Optionally, remove from cache
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);
