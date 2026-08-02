@@ -9,6 +9,11 @@ const MOCK_ENVIRONMENT = {
   REDIS_PASSWORD: 'test-password',
   REDIS_HOST: 'test-host',
   REDIS_PORT: 'test-port',
+  // Diese Suite prüft das Zusammenspiel der Facade mit Cache und Scopes anhand
+  // der `DataStorage`-Aufrufe — ein Seam, den nur die alte Quelle benutzt.
+  // Dieselben Zusicherungen gegen die neue Quelle stehen in
+  // `private/__tests__/nodeSourceIntegration.tests.js`.
+  CONTENT_SOURCE: 'legacy',
 };
 const MOCK_CACHE = {
   metaTitle: 'Mock Tabtitle',

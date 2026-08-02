@@ -27,7 +27,7 @@ const APPLICATION_KEY = 'charApp';
 function runEndpoint({ id = '000p00000000000033', scopes } = {}) {
   const responseObject = { json: jest.fn() };
   const endpoint = new ParagraphEndpoint()
-    .setEnvironment({ APPLICATION_APPLICATION_KEY: APPLICATION_KEY })
+    .setEnvironment(harness.legacyEnvironment(APPLICATION_KEY))
     .setRequestObject({ query: { id } })
     .setResponseObject(responseObject);
   if (scopes) {
