@@ -27,6 +27,9 @@ beforeEach(() => {
       queryParagraphs: jest.fn().mockResolvedValue({ id: '000p1' }),
       queryAllStories: jest.fn().mockResolvedValue([]),
       queryAllChapters: jest.fn().mockResolvedValue([]),
+      createRecord: jest.fn().mockResolvedValue({ id: '000c1' }),
+      updateData: jest.fn().mockResolvedValue({ id: '000c1' }),
+      deleteData: jest.fn().mockResolvedValue(undefined),
     };
     instances.push(instance);
     return instance;
@@ -153,6 +156,52 @@ describe('LegacyContentRepository', () => {
       await newRepository().getContentsTree();
 
       expect(instances).toHaveLength(2);
+    });
+  });
+
+  describe('Schreibpfad', () => {
+    it('hängt beim Anlegen die eigene App an den Datensatz', async () => {
+      // Im alten Modell ist die App-Zugehörigkeit eine Spalte. Bis zur
+      // Umstellung setzte der `UpsertEndpoint` sie — eine Aussage über die
+      // Speicherung, die dort nicht hingehört.
+      await newRepository().createRecord('chapter', { name: 'Kapitel' });
+
+      const [, payload] = instances[0].createRecord.mock.calls[0];
+      expect(payload).toEqual({
+        name: 'Kapitel',
+        applicationIncluded: 'testApp',
+      });
+    });
+
+    it('reicht die Tabellen-Definition zum Objektnamen durch', async () => {
+      await newRepository().createRecord('story', { name: 'Story' });
+
+      const [table] = instances[0].createRecord.mock.calls[0];
+      expect(table.getTableName()()).toBe('Story');
+    });
+
+    it('reicht Änderungen unverändert an updateData weiter', async () => {
+      await newRepository().updateRecord('chapter', {
+        id: '000c1',
+        name: 'Neu',
+      });
+
+      expect(instances[0].updateData).toHaveBeenCalledWith('chapter', {
+        id: '000c1',
+        name: 'Neu',
+      });
+    });
+
+    it('löscht einstufig — wie bisher', async () => {
+      await newRepository().deleteRecord('chapter', '000c1');
+
+      expect(instances[0].deleteData).toHaveBeenCalledWith('chapter', '000c1');
+    });
+
+    it('wirft bei einem unbekannten Objekt', async () => {
+      await expect(
+        newRepository().createRecord('node', { name: 'x' })
+      ).rejects.toThrow('Invalid table name');
     });
   });
 });

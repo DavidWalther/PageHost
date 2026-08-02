@@ -101,11 +101,16 @@ class LegacyContentRepository extends ContentRepository {
     }
   }
 
+  /**
+   * Neuanlagen gehören der eigenen App — im alten Modell eine Spalte am
+   * Datensatz. Das stand bis zur Umstellung im `UpsertEndpoint`; dort war es
+   * eine Aussage über die Speicherung, die den Endpoint nichts angeht.
+   */
   async createRecord(object, payload) {
-    return this.createDataStorage().createRecord(
-      this.createTable(object),
-      payload
-    );
+    return this.createDataStorage().createRecord(this.createTable(object), {
+      ...payload,
+      applicationIncluded: this.applicationKey,
+    });
   }
 
   async updateRecord(object, payload) {
