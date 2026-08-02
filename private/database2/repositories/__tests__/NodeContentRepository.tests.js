@@ -499,6 +499,121 @@ describe('Publish-Filter', () => {
   });
 });
 
+describe('getContentsTree', () => {
+  it('liefert Wurzelknoten als Storys mit ihren Kindern unter chapters', async () => {
+    expect(await newRepository().getContentsTree()).toEqual([
+      {
+        id: '000s00000000000011',
+        name: 'Erste Story',
+        lastupdate: null,
+        sortnumber: 10,
+        publishdate: '2026-01-01T00:00:00.000Z',
+        coverid: '000c00000000000022',
+        chapters: [
+          {
+            id: '000c00000000000022',
+            storyid: '000s00000000000011',
+            name: 'Kapitel A',
+            lastupdate: null,
+            sortnumber: 1,
+            reversed: true,
+            publishdate: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('behält unveröffentlichte Knoten im Baum', async () => {
+    // Der Publish-Filter läuft erst bei der Auslieferung
+    // (ContentVisibilityFilter) — sonst wäre derselbe Baum nicht mehr für
+    // sitemap.xml verwendbar. Genauso hält es das Altmodell.
+    setSources({
+      nodes: [
+        { ...STORY_NODE, published_date: null },
+        { ...CHAPTER_NODE, published_date: null },
+      ],
+    });
+
+    const tree = await newRepository().getContentsTree();
+
+    expect(tree).toHaveLength(1);
+    expect(tree[0].publishdate).toBeNull();
+    expect(tree[0].chapters).toHaveLength(1);
+  });
+
+  it('lässt für die App unsichtbare Knoten heraus', async () => {
+    setSources({
+      appNodes: [
+        { node_id: '000n1', relation: 'include', app_name: 'testApp' },
+        { node_id: '000n2', relation: 'exclude', app_name: 'testApp' },
+      ],
+    });
+
+    expect((await newRepository().getContentsTree())[0].chapters).toEqual([]);
+  });
+
+  it('sortiert beide Ebenen nach sortnumber', async () => {
+    setSources({
+      nodes: [
+        { ...STORY_NODE, id: '000n9', legacy_id: '000s9', sortnumber: 20 },
+        STORY_NODE,
+        { ...CHAPTER_NODE, id: '000n3', legacy_id: '000c3', sortnumber: 2 },
+        { ...CHAPTER_NODE, id: '000n2', legacy_id: '000c2', sortnumber: 1 },
+      ],
+      appNodes: [
+        { node_id: '000n1', relation: 'include', app_name: 'testApp' },
+        { node_id: '000n9', relation: 'include', app_name: 'testApp' },
+      ],
+    });
+
+    const tree = await newRepository().getContentsTree();
+
+    expect(tree.map((story) => story.id)).toEqual([
+      '000s00000000000011',
+      '000s9',
+    ]);
+    expect(tree[0].chapters.map((chapter) => chapter.id)).toEqual([
+      '000c2',
+      '000c3',
+    ]);
+  });
+
+  it('lässt Enkel weg — die Kompat-Form kennt nur zwei Ebenen', async () => {
+    setSources({
+      nodes: [
+        STORY_NODE,
+        CHAPTER_NODE,
+        {
+          ...CHAPTER_NODE,
+          id: '000n3',
+          legacy_id: '000c3',
+          parent_node_id: '000n2',
+        },
+      ],
+    });
+
+    const tree = await newRepository().getContentsTree();
+
+    expect(tree[0].chapters.map((chapter) => chapter.id)).toEqual([
+      '000c00000000000022',
+    ]);
+  });
+
+  it('liefert einen leeren Baum, wenn nichts sichtbar ist', async () => {
+    setSources({ appNodes: [] });
+
+    expect(await newRepository().getContentsTree()).toEqual([]);
+  });
+
+  it('führt publishdate mit, damit der ContentVisibilityFilter greifen kann', async () => {
+    const tree = await newRepository().getContentsTree();
+
+    expect(tree[0]).toHaveProperty('publishdate');
+    expect(tree[0].chapters[0]).toHaveProperty('publishdate');
+  });
+});
+
 describe('queryVisibleNodes', () => {
   it('liefert die sichtbaren Knoten ungefiltert nach published_date', async () => {
     // Der Inhaltsbaum braucht auch die unveröffentlichten Knoten: der
