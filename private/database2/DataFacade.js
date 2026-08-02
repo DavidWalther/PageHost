@@ -2,6 +2,9 @@ const { Logging } = require('../modules/logging.js');
 const { DataCache2 } = require('./DataCache/DataCache.js');
 const { DataStorage } = require('./DataStorage/DataStorage.js');
 const {
+  NodeContentRepository,
+} = require('./repositories/NodeContentRepository.js');
+const {
   LegacyContentRepository,
 } = require('./repositories/LegacyContentRepository.js');
 
@@ -79,14 +82,33 @@ class DataFacadeSync {
   /**
    * Quelle der Inhalte (story/chapter/paragraph bzw. der Baum).
    *
-   * Hier — und nur hier — steht, aus welchem Datenmodell gelesen wird. Der
-   * Wechsel auf das neue Modell ist ein Austausch dieser einen Zeile.
+   * Hier — und nur hier — steht, aus welchem Datenmodell gelesen wird.
+   * Standard ist das neue Modell (`node` / `content_node` / `content_item`).
+   *
+   * `CONTENT_SOURCE=legacy` schaltet auf `story` / `chapter` / `paragraph`
+   * zurück. Der Schalter existiert aus zwei Gründen, beide auf Zeit:
+   *
+   * 1. **Rückfallebene.** Die Umstellung der Lesequelle ist die erste Änderung
+   *    mit sichtbarer Wirkung. Solange die alten Tabellen noch stehen, ist der
+   *    Rückweg eine Konfigurationsänderung statt eines Deployments.
+   * 2. **Testbarkeit.** Die Charakterisierungstests halten den Ist-Zustand des
+   *    ALTEN Lesepfads fest — bis hin zum erzeugten SQL. Sie wählen ihre Quelle
+   *    über diesen Schalter und bleiben damit gültig, statt Aussagen über ein
+   *    Modell zu treffen, aus dem sie gar nicht mehr lesen.
+   *
+   * Der Schalter fällt zusammen mit `LegacyContentRepository` und den alten
+   * Tabellen wieder weg.
    *
    * `configuration` und `identity` laufen bewusst nicht darüber: beide sind von
    * der Umstellung nicht betroffen und sprechen weiter direkt mit `DataStorage`.
    */
   createContentRepository() {
-    return new LegacyContentRepository(this.environment).setApplicationKey(
+    const Repository =
+      this.environment.CONTENT_SOURCE === 'legacy'
+        ? LegacyContentRepository
+        : NodeContentRepository;
+
+    return new Repository(this.environment).setApplicationKey(
       this.environment.APPLICATION_APPLICATION_KEY
     );
   }
@@ -654,4 +676,6 @@ class DataFacade {
   }
 }
 
-module.exports = { DataFacade };
+// `DataFacadeSync` wird mit exportiert, damit die Wahl der Lesequelle direkt
+// prüfbar ist, ohne den Umweg über eine Abfrage zu nehmen.
+module.exports = { DataFacade, DataFacadeSync };
