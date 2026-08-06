@@ -81,20 +81,20 @@ SELECT n.id, n.legacy_id, n.parent_node_id
  WHERE (n.legacy_id LIKE '000s%' AND n.parent_node_id IS NOT NULL)
     OR (n.legacy_id LIKE '000c%' AND n.parent_node_id IS NULL);
 
-\echo '-- 2e. Vererbung: kein kopierter Knoten darf vom Parent kontrolliert werden (erwartet: leer)'
+\echo '-- 2e. Kein Wurzelknoten darf vom Parent kontrolliert werden (erwartet: leer)'
 --
--- Das Altmodell kennt keine Vererbung. is_parent_controls_visibility = true
--- waere hier eine Verhaltensaenderung, keine Kopie.
+-- Ein Knoten ohne Parent kann von niemandem erben; stuende hier true, waere er
+-- in keiner App sichtbar.
 --
--- ACHTUNG: Diese Pruefung und der Sichtbarkeitsvergleich in Abschnitt 5 setzen
--- beide voraus, dass NICHT geerbt wird. Werden die Bestandsknoten spaeter auf
--- Vererbung umgestellt, muessen beide auf die rekursive Form gezogen werden --
--- sie pruefen die Kopie, nicht das Laufzeitverhalten.
+-- Diese Pruefung stand frueher schaerfer da: sie verbot Vererbung ueberhaupt,
+-- weil die Kopie durchgehend false setzt und das Altmodell keine Vererbung
+-- kennt. Mit 004 stellt ein Teil der Knoten auf Vererbung um -- die Pruefung
+-- der Kopie ist damit aufgebraucht, die des Modells bleibt.
 --
 SELECT n.id, n.legacy_id, n.is_parent_controls_visibility
   FROM node n
- WHERE n.legacy_id IS NOT NULL
-   AND n.is_parent_controls_visibility IS DISTINCT FROM false;
+ WHERE n.parent_node_id IS NULL
+   AND n.is_parent_controls_visibility;
 
 \echo '== 3. Felder ============================================================='
 
@@ -168,11 +168,10 @@ SELECT p.id, ci.type AS aktiv,
 \echo '== 5. Sichtbarkeit: beide Modelle je App, symmetrisch ====================='
 --
 -- Links das alte Praedikat aus actions/get.js, rechts die Aufloesungsregel des
--- neuen Modells (datamodel.md Abschnitt 5). Die Vererbung ueber
--- is_parent_controls_visibility ist hier bewusst NICHT abgebildet: alle
--- kopierten Knoten tragen false (geprueft in 2e), der rekursive Zweig traegt
--- also nichts bei. Sobald Vererbung produktiv genutzt wird, gilt dieser
--- Vergleich nicht mehr -- er prueft die Kopie, nicht das Laufzeitverhalten.
+-- neuen Modells (datamodel.md Abschnitt 5) -- vollstaendig, inklusive der
+-- Vererbung ueber is_parent_controls_visibility. Damit bleibt der Vergleich
+-- gueltig, nachdem 004 einen Teil der Knoten auf Vererbung umgestellt hat:
+-- geprueft wird die aufgeloeste Sichtbarkeit, nicht die Form der Zeilen.
 --
 -- Verglichen werden Rohzeilen, nicht der Lesepfad: der Publish-Filter und die
 -- Erreichbarkeit eines Kapitels ueber seine Story bleiben aussen vor.
@@ -184,7 +183,7 @@ SELECT p.id, ci.type AS aktiv,
 -- verschwunden.
 
 \echo '-- 5a. alt sichtbar, neu nicht (erwartet: leer)'
-WITH legacy_visible AS (
+WITH RECURSIVE legacy_visible AS (
   SELECT a.name AS app, s.id AS legacy_id
     FROM app a
     JOIN story s
@@ -197,10 +196,10 @@ WITH legacy_visible AS (
       ON (c.applicationincluded LIKE '%' || a.name || '%' OR c.applicationincluded = '*')
      AND (c.applicationexcluded IS NULL OR c.applicationexcluded NOT LIKE '%' || a.name || '%')
 ),
-node_visible AS (
-  SELECT a.name AS app, n.legacy_id
+reachable AS (
+  SELECT a.name AS app, n.id AS node_id, ARRAY[n.id]::varchar[] AS path
     FROM app a
-    JOIN node n ON n.legacy_id IS NOT NULL
+    JOIN node n ON TRUE
    WHERE EXISTS (
            SELECT 1 FROM app_node i
             WHERE i.node_id = n.id AND i.relation = 'include'
@@ -211,11 +210,29 @@ node_visible AS (
             WHERE e.node_id = n.id AND e.relation = 'exclude'
               AND (e.app_id = a.id OR e.app_id IS NULL)
          )
+  UNION ALL
+  SELECT r.app, c.id, r.path || c.id
+    FROM reachable r
+    JOIN node c ON c.parent_node_id = r.node_id
+    JOIN app a ON a.name = r.app
+   WHERE c.is_parent_controls_visibility
+     AND NOT c.id = ANY(r.path)
+     AND NOT EXISTS (
+           SELECT 1 FROM app_node e
+            WHERE e.node_id = c.id AND e.relation = 'exclude'
+              AND (e.app_id = a.id OR e.app_id IS NULL)
+         )
+),
+node_visible AS (
+  SELECT DISTINCT r.app, n.legacy_id
+    FROM reachable r
+    JOIN node n ON n.id = r.node_id
+   WHERE n.legacy_id IS NOT NULL
 )
 SELECT * FROM legacy_visible EXCEPT SELECT * FROM node_visible;
 
 \echo '-- 5b. neu sichtbar, alt nicht (erwartet: leer)'
-WITH legacy_visible AS (
+WITH RECURSIVE legacy_visible AS (
   SELECT a.name AS app, s.id AS legacy_id
     FROM app a
     JOIN story s
@@ -228,10 +245,10 @@ WITH legacy_visible AS (
       ON (c.applicationincluded LIKE '%' || a.name || '%' OR c.applicationincluded = '*')
      AND (c.applicationexcluded IS NULL OR c.applicationexcluded NOT LIKE '%' || a.name || '%')
 ),
-node_visible AS (
-  SELECT a.name AS app, n.legacy_id
+reachable AS (
+  SELECT a.name AS app, n.id AS node_id, ARRAY[n.id]::varchar[] AS path
     FROM app a
-    JOIN node n ON n.legacy_id IS NOT NULL
+    JOIN node n ON TRUE
    WHERE EXISTS (
            SELECT 1 FROM app_node i
             WHERE i.node_id = n.id AND i.relation = 'include'
@@ -242,6 +259,24 @@ node_visible AS (
             WHERE e.node_id = n.id AND e.relation = 'exclude'
               AND (e.app_id = a.id OR e.app_id IS NULL)
          )
+  UNION ALL
+  SELECT r.app, c.id, r.path || c.id
+    FROM reachable r
+    JOIN node c ON c.parent_node_id = r.node_id
+    JOIN app a ON a.name = r.app
+   WHERE c.is_parent_controls_visibility
+     AND NOT c.id = ANY(r.path)
+     AND NOT EXISTS (
+           SELECT 1 FROM app_node e
+            WHERE e.node_id = c.id AND e.relation = 'exclude'
+              AND (e.app_id = a.id OR e.app_id IS NULL)
+         )
+),
+node_visible AS (
+  SELECT DISTINCT r.app, n.legacy_id
+    FROM reachable r
+    JOIN node n ON n.id = r.node_id
+   WHERE n.legacy_id IS NOT NULL
 )
 SELECT * FROM node_visible EXCEPT SELECT * FROM legacy_visible;
 
