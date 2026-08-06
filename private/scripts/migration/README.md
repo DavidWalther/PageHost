@@ -6,12 +6,21 @@ aller Entscheidungen stehen in `doc/datamodel-overhaul/datamodel.md`.
 
 ## Reihenfolge
 
-| Datei                       | Wirkung                                                       |
-| :-------------------------- | :------------------------------------------------------------ |
-| `sql/001_create_schema.sql` | legt die neuen Tabellen an — additiv, alte bleiben stehen     |
-| _(von Hand)_                | `app`-Zeilen eintragen, eine je `APPLICATION_APPLICATION_KEY` |
-| `sql/002_1` … `sql/002_7`   | kopiert die Bestandsdaten — read-only auf den alten Tabellen  |
-| `sql/003_verify.sql`        | prüft die Kopie — rein lesend                                 |
+| Datei                            | Wirkung                                                          |
+| :------------------------------- | :--------------------------------------------------------------- |
+| `sql/001_create_schema.sql`      | legt die neuen Tabellen an — additiv, alte bleiben stehen        |
+| _(von Hand)_                     | `app`-Zeilen eintragen, eine je `APPLICATION_APPLICATION_KEY`    |
+| `sql/002_1` … `sql/002_7`        | kopiert die Bestandsdaten — read-only auf den alten Tabellen     |
+| `sql/003_verify.sql`             | prüft die Kopie — rein lesend                                    |
+| `sql/004_inherit_visibility.sql` | stellt Bestandsknoten auf Vererbung um — **ändert Daten**        |
+| `sql/005_drop_legacy_tables.sql` | entfernt `story`/`chapter`/`paragraph` — **Punkt ohne Rückkehr** |
+
+**`004` muss laufen, solange die alten Tabellen noch stehen.** Es stellt nur
+die Knoten um, deren aufgelöste Sichtbarkeit sich dadurch in **keiner** App
+ändert — und der Nachweis dafür ist der Vergleich beider Modelle in `003`,
+Abschnitt 5. Nach `005` gibt es diesen Vergleich nicht mehr.
+
+**`005` erst nach einem Backup**, das sich auch wirklich wiederherstellen lässt.
 
 Die Kopie liegt in **sieben Teilen**, die in dieser Reihenfolge laufen müssen:
 
@@ -37,6 +46,13 @@ for teil in private/scripts/migration/sql/002_?_*.sql; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$teil" || break
 done
 psql "$DATABASE_URL"                    -f private/scripts/migration/sql/003_verify.sql
+
+# Erst wenn 003 ohne Befund durchlaeuft:
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f private/scripts/migration/sql/004_inherit_visibility.sql
+psql "$DATABASE_URL"                    -f private/scripts/migration/sql/003_verify.sql
+
+# Erst nach einem geprueften Backup:
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f private/scripts/migration/sql/005_drop_legacy_tables.sql
 ```
 
 Die `app`-Zeilen entstehen bewusst von Hand: es sind eine Handvoll Schlüssel,
@@ -51,6 +67,8 @@ Modell zu `app_id IS NULL` (Wildcard). Eine App namens `*` würde mit der Regel
 | `001` | **nein**, nur `psql`                | Dollar-Quoting (`$$`) für zwei Funktionen und drei `DO`-Blöcke. Werkzeuge, die Statements naiv an `;` trennen, zerlegen die Funktionsrümpfe. Bei PL/pgSQL nicht vermeidbar. |
 | `002` | **ja**                              | Bewusst portabel gehalten: kein Dollar-Quoting, keine `DO`-Blöcke, keine temporären Objekte, keine `\`-Metabefehle. Jedes Statement steht für sich.                         |
 | `003` | **nein**, `psql` oder SQL-Konsole   | Die Aussage steckt in den **Ergebnismengen**; Migrationswerkzeuge verwerfen sie.                                                                                            |
+| `004` | **nein**, nur `psql`                | Temporäre Tabellen und `\echo`; die Zwischenstände sollen beim Lauf sichtbar sein.                                                                                          |
+| `005` | **nein**, nur `psql`                | `\echo` und eine Gegenprobe, deren Ergebnis vor dem `COMMIT` gelesen werden muss.                                                                                           |
 
 Drei Regeln, die `002` portabel halten und beim Ändern gelten:
 
