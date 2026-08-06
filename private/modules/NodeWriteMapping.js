@@ -241,6 +241,7 @@ class NodeWriteMapping {
    */
   static contentItemsFor(payload) {
     const items = {};
+    let requestedType = null;
     Object.entries(payload || {}).forEach(([field, value]) => {
       const lower = field.toLowerCase();
       if (lower === 'content') {
@@ -249,13 +250,23 @@ class NodeWriteMapping {
       if (lower === 'htmlcontent') {
         items.html = value ?? null;
       }
+      if (lower === 'active_type') {
+        requestedType = value;
+      }
     });
 
-    const activeType = items.html
-      ? 'html'
-      : items.text !== undefined
-        ? 'text'
-        : null;
+    // Sagt der Aufrufer, welche Fassung gilt, gilt sie — das ist der Zweck von
+    // `active_content_item`. Nur wenn er schweigt, greift die alte implizite
+    // Regel. Ein Typ ohne mitgeschickten Inhalt wird ignoriert: der Zeiger darf
+    // nicht auf etwas zeigen, das es hier nicht gibt.
+    const activeType =
+      requestedType && items[requestedType] !== undefined
+        ? requestedType
+        : items.html
+          ? 'html'
+          : items.text !== undefined
+            ? 'text'
+            : null;
     return { items, activeType };
   }
 }

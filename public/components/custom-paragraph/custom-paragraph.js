@@ -6,6 +6,41 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { deleteParagraph } from './delete-paragraph.api.js';
 
+/**
+ * Antwort des `content`-Endpunkts in die Felder, mit denen der Editor arbeitet.
+ *
+ * Der Endpunkt liefert **alle** Repräsentationen als Liste plus den Zeiger auf
+ * die aktive; die Bearbeitung kennt dagegen zwei Textfelder. Die Übersetzung
+ * steht hier und nur hier.
+ *
+ * **Ein Feld, das es nicht gibt, kommt nicht vor** — `htmlcontent` fehlt, wenn
+ * es keine HTML-Fassung gibt. Ein `htmlcontent: null` im Speichern-Payload
+ * würde sonst eine leere HTML-Zeile anlegen.
+ */
+function fromContentRecord(record) {
+  if (!record || !record.id) {
+    return record;
+  }
+  const items = record.items || [];
+  const mapped = {
+    id: record.id,
+    name: record.name ?? null,
+    sortnumber: record.sortnumber ?? null,
+    published_date: record.published_date ?? null,
+    node_id: record.node_id ?? null,
+    active_type: record.active_type ?? null,
+  };
+  items.forEach((item) => {
+    if (item.type === 'text') {
+      mapped.content = item.content ?? null;
+    }
+    if (item.type === 'html') {
+      mapped.htmlcontent = item.content ?? null;
+    }
+  });
+  return mapped;
+}
+
 class CustomParagraph extends LitElement {
   static properties = {
     id: { type: String },
@@ -151,7 +186,13 @@ class CustomParagraph extends LitElement {
           ? JSON.parse(localdraft)
           : this._paragraphData;
         const { name, content: textContent, htmlcontent } = paragraphData;
-        const displayOption = htmlcontent ? 'html-readonly' : 'text-readonly';
+        // Welche Fassung gilt, steht im Datensatz (`active_content_item` im
+        // Modell). Die alte Regel "html gewinnt, sobald gefuellt" ist nur noch
+        // Rueckfall fuer lokale Entwuerfe ohne den Zeiger.
+        const activeType =
+          paragraphData.active_type ?? (htmlcontent ? 'html' : 'text');
+        const displayOption =
+          activeType === 'html' ? 'html-readonly' : 'text-readonly';
         if (displayOption === 'text-readonly') {
           content = this.renderTextReadonly(name, textContent);
         } else if (displayOption === 'html-readonly') {
@@ -201,14 +242,21 @@ class CustomParagraph extends LitElement {
           ${content.split('\n').map((line) => html`${line}<br />`)}
         </p>
         <div style="display: flex; gap: 0.5em;">
-          ${canEdit
-            ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>`
-            : ''}
-          ${canDelete
-            ? html`<button @click=${this.handleDeleteClick} style="color:red;">
-                Löschen
-              </button>`
-            : ''}
+          ${
+            canEdit
+              ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>`
+              : ''
+          }
+          ${
+            canDelete
+              ? html`<button
+                  @click=${this.handleDeleteClick}
+                  style="color:red;"
+                >
+                  Löschen
+                </button>`
+              : ''
+          }
         </div>
       </div>
     `;
@@ -230,14 +278,21 @@ class CustomParagraph extends LitElement {
       >
         <div .innerHTML=${htmlcontent}></div>
         <div style="display: flex; gap: 0.5em;">
-          ${canEdit
-            ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>`
-            : ''}
-          ${canDelete
-            ? html`<button @click=${this.handleDeleteClick} style="color:red;">
-                Löschen
-              </button>`
-            : ''}
+          ${
+            canEdit
+              ? html`<button @click=${this.handleEditClick}>Bearbeiten</button>`
+              : ''
+          }
+          ${
+            canDelete
+              ? html`<button
+                  @click=${this.handleDeleteClick}
+                  style="color:red;"
+                >
+                  Löschen
+                </button>`
+              : ''
+          }
         </div>
       </div>
     `;
@@ -306,9 +361,9 @@ class CustomParagraph extends LitElement {
           <div class="slds-tabs_default">
             <ul class="slds-tabs_default__nav" role="tablist">
               <li
-                class="slds-tabs_default__item ${this.activeTab === 'text'
-                  ? 'slds-active slds-has-focus'
-                  : ''}"
+                class="slds-tabs_default__item ${
+                  this.activeTab === 'text' ? 'slds-active slds-has-focus' : ''
+                }"
                 title="Text Input"
                 role="presentation"
               >
@@ -324,9 +379,9 @@ class CustomParagraph extends LitElement {
                 >
               </li>
               <li
-                class="slds-tabs_default__item ${this.activeTab === 'html'
-                  ? 'slds-active slds-has-focus'
-                  : ''}"
+                class="slds-tabs_default__item ${
+                  this.activeTab === 'html' ? 'slds-active slds-has-focus' : ''
+                }"
                 title="HTML Input"
                 role="presentation"
               >
@@ -342,9 +397,11 @@ class CustomParagraph extends LitElement {
                 >
               </li>
               <li
-                class="slds-tabs_default__item ${this.activeTab === 'settings'
-                  ? 'slds-active slds-has-focus'
-                  : ''}"
+                class="slds-tabs_default__item ${
+                  this.activeTab === 'settings'
+                    ? 'slds-active slds-has-focus'
+                    : ''
+                }"
                 title="Settings"
                 role="presentation"
               >
@@ -362,9 +419,9 @@ class CustomParagraph extends LitElement {
             </ul>
             <div
               id="text-tab"
-              class="slds-tabs_default__content ${this.activeTab === 'text'
-                ? 'slds-show'
-                : 'slds-hide'}"
+              class="slds-tabs_default__content ${
+                this.activeTab === 'text' ? 'slds-show' : 'slds-hide'
+              }"
               role="tabpanel"
               aria-labelledby="text-tab-link"
             >
@@ -376,9 +433,9 @@ class CustomParagraph extends LitElement {
             </div>
             <div
               id="html-tab"
-              class="slds-tabs_default__content ${this.activeTab === 'html'
-                ? 'slds-show'
-                : 'slds-hide'}"
+              class="slds-tabs_default__content ${
+                this.activeTab === 'html' ? 'slds-show' : 'slds-hide'
+              }"
               role="tabpanel"
               aria-labelledby="html-tab-link"
             >
@@ -390,9 +447,9 @@ class CustomParagraph extends LitElement {
             </div>
             <div
               id="settings-tab"
-              class="slds-tabs_default__content ${this.activeTab === 'settings'
-                ? 'slds-show'
-                : 'slds-hide'}"
+              class="slds-tabs_default__content ${
+                this.activeTab === 'settings' ? 'slds-show' : 'slds-hide'
+              }"
               role="tabpanel"
               aria-labelledby="settings-tab-link"
             >
@@ -409,8 +466,8 @@ class CustomParagraph extends LitElement {
     return html`
       <custom-publishing
         record-id=${this.id}
-        object-name="paragraph"
-        publish-date=${paragraphData?.publishdate || ''}
+        object-name="content"
+        publish-date=${paragraphData?.published_date || ''}
         ?disabled=${this.draftMode}
       ></custom-publishing>
     `;
@@ -447,8 +504,15 @@ class CustomParagraph extends LitElement {
     const { id, value } = event.target;
     // Update the paragraph data with the new value
     const key = id.replace('edit-', ''); // Remove 'edit-' prefix from id
-    this._paragraphData[key] = value; // Update other fields
-    this._paragraphData = { ...this._paragraphData, [key]: value };
+    const changed = { ...this._paragraphData, [key]: value };
+
+    // Wer den Inhalt anfasst, bestimmt damit auch, welche Fassung gilt. Die
+    // Auswahl war frueher implizit und wurde beim Lesen jedes Mal neu geraten;
+    // jetzt steht sie im Datensatz und geht mit dem Speichern hinaus.
+    if (key === 'content' || key === 'htmlcontent') {
+      changed.active_type = changed.htmlcontent ? 'html' : 'text';
+    }
+    this._paragraphData = changed;
   }
 
   handleEditSaveClick() {
@@ -628,8 +692,9 @@ class CustomParagraph extends LitElement {
         console.error('Error refreshing paragraph data:', error);
         return;
       }
-      this._paragraphData = data;
-      this._paragraphDataBackup = { ...data };
+      const record = fromContentRecord(data);
+      this._paragraphData = record;
+      this._paragraphDataBackup = { ...record };
       this.requestUpdate();
     });
   }
@@ -653,7 +718,7 @@ class CustomParagraph extends LitElement {
 
   fireQueryEvent_Paragraph(paragraphid, callback) {
     if (!paragraphid) return;
-    const payload = { object: 'paragraph', id: paragraphid };
+    const payload = { object: 'content', id: paragraphid };
     this.dispatchEvent(
       new CustomEvent('query', {
         detail: { payload, callback },
@@ -668,8 +733,9 @@ class CustomParagraph extends LitElement {
       console.error(error);
       return;
     }
-    this._paragraphData = data;
-    this._paragraphDataBackup = { ...data }; // Backup the original data
+    const record = fromContentRecord(data);
+    this._paragraphData = record;
+    this._paragraphDataBackup = { ...record }; // Backup the original data
     // Dispatch loaded event
     this.dispatchEvent(
       new CustomEvent('loaded', {
@@ -690,7 +756,7 @@ class CustomParagraph extends LitElement {
     delete paragraphdataToSave.draft; // Remove draft flag if present
 
     let eventDetail = {};
-    eventDetail.object = 'paragraph';
+    eventDetail.object = 'content';
     eventDetail.payload = paragraphdataToSave;
     eventDetail.callback = this.saveEventCallback_Paragraph.bind(this);
 

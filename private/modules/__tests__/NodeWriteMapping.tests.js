@@ -294,3 +294,44 @@ describe('node und content', () => {
     });
   });
 });
+
+describe('contentItemsFor mit ausdrücklichem active_type', () => {
+  it('nimmt den mitgeschickten Typ, statt ihn abzuleiten', () => {
+    // Das ist der Zweck von `active_content_item`: die Auswahl steht im
+    // Datensatz und wird nicht bei jedem Schreiben neu geraten.
+    const { activeType } = NodeWriteMapping.contentItemsFor({
+      content: 'Text',
+      htmlcontent: '<p>Text</p>',
+      active_type: 'text',
+    });
+
+    expect(activeType).toBe('text');
+  });
+
+  it('ignoriert einen Typ, zu dem kein Inhalt mitkommt', () => {
+    // Der Zeiger darf nicht auf etwas zeigen, das gar nicht geschrieben wird.
+    const { activeType } = NodeWriteMapping.contentItemsFor({
+      content: 'Text',
+      active_type: 'html',
+    });
+
+    expect(activeType).toBe('text');
+  });
+
+  it('fällt ohne Angabe auf die alte implizite Regel zurück', () => {
+    expect(
+      NodeWriteMapping.contentItemsFor({
+        content: 'Text',
+        htmlcontent: '<p>Text</p>',
+      }).activeType
+    ).toBe('html');
+  });
+
+  it('legt keine Repräsentation an, die gar nicht mitkommt', () => {
+    // Ein `htmlcontent: null` würde eine leere HTML-Zeile schreiben; der
+    // Editor schickt das Feld deshalb gar nicht erst mit, wenn es sie nicht gibt.
+    const { items } = NodeWriteMapping.contentItemsFor({ content: 'Text' });
+
+    expect(Object.keys(items)).toEqual(['text']);
+  });
+});
