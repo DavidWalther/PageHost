@@ -4,9 +4,6 @@ const { DataStorage } = require('./DataStorage/DataStorage.js');
 const {
   NodeContentRepository,
 } = require('./repositories/NodeContentRepository.js');
-const {
-  LegacyContentRepository,
-} = require('./repositories/LegacyContentRepository.js');
 const { ContentRepository } = require('./repositories/ContentRepository.js');
 
 class DataFacadePromise {
@@ -81,37 +78,15 @@ class DataFacadeSync {
   }
 
   /**
-   * Quelle der Inhalte (story/chapter/paragraph bzw. der Baum).
+   * Quelle der Inhalte — Knoten, Inhalte und der Baum.
    *
-   * Hier — und nur hier — steht, aus welchem Datenmodell gelesen wird.
-   * Standard ist das neue Modell (`node` / `content_node` / `content_item`).
-   *
-   * `CONTENT_SOURCE=legacy` schaltet auf `story` / `chapter` / `paragraph`
-   * zurück. Der Schalter existiert aus zwei Gründen, beide auf Zeit:
-   *
-   * 1. **Rückfallebene.** Die Umstellung der Lesequelle ist die erste Änderung
-   *    mit sichtbarer Wirkung. Solange die alten Tabellen noch stehen, ist der
-   *    Rückweg eine Konfigurationsänderung statt eines Deployments.
-   * 2. **Testbarkeit.** Die Charakterisierungstests halten den Ist-Zustand des
-   *    ALTEN Lesepfads fest — bis hin zum erzeugten SQL. Sie wählen ihre Quelle
-   *    über diesen Schalter und bleiben damit gültig, statt Aussagen über ein
-   *    Modell zu treffen, aus dem sie gar nicht mehr lesen.
-   *
-   * Der Schalter fällt zusammen mit `LegacyContentRepository` und den alten
-   * Tabellen wieder weg.
-   *
-   * `configuration` und `identity` laufen bewusst nicht darüber: beide sind von
-   * der Umstellung nicht betroffen und sprechen weiter direkt mit `DataStorage`
+   * `configuration` und `identity` laufen bewusst nicht darüber: beide waren
+   * von der Umstellung nicht betroffen und sprechen direkt mit `DataStorage`
    * (`createDirectStorage`). Wer zuständig ist, entscheidet
    * `ContentRepository.owns()` — beim Lesen wie beim Schreiben.
    */
   createContentRepository() {
-    const Repository =
-      this.environment.CONTENT_SOURCE === 'legacy'
-        ? LegacyContentRepository
-        : NodeContentRepository;
-
-    return new Repository(this.environment).setApplicationKey(
+    return new NodeContentRepository(this.environment).setApplicationKey(
       this.environment.APPLICATION_APPLICATION_KEY
     );
   }
@@ -148,41 +123,6 @@ class DataFacadeSync {
   async getData(parameterObject) {
     if (parameterObject.request.table == 'configuration') {
       return this.getConfigurations();
-    }
-    if (parameterObject.request.table == 'paragraph') {
-      let recordId = parameterObject?.request?.id;
-
-      if (!this.getSkipCache()) {
-        return this.getParagraphs(recordId);
-      }
-      if (this.getSkipCache()) {
-        return this.getParagraphWithoutCache(parameterObject);
-      }
-    }
-    if (
-      parameterObject.request.table == 'story' &&
-      parameterObject.request.id
-    ) {
-      let recordId = parameterObject?.request?.id;
-
-      // Check if 'edit' scope is present to automatically skip cache
-      const hasEditScope = this.scopes && this.scopes.includes('edit');
-
-      if (!this.getSkipCache() && !hasEditScope) {
-        return this.getStory(recordId);
-      }
-      if (this.getSkipCache() || hasEditScope) {
-        return this.getStoryWithoutCache(parameterObject);
-      }
-    }
-    if (parameterObject.request.table == 'chapter') {
-      let recordId = parameterObject?.request?.id;
-      if (!this.getSkipCache()) {
-        return this.getChapter(recordId);
-      }
-      if (this.getSkipCache()) {
-        return this.getChapterWithoutCache(parameterObject);
-      }
     }
     if (
       parameterObject.request.table == 'node' ||
@@ -370,63 +310,6 @@ class DataFacadeSync {
     return product;
   }
 
-  async getParagraphs(recordId) {
-    const LOCATION = 'DataFacadeSync.getParagraphs';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No paragraphs in cache, querying database`,
-      });
-      product = await this.createContentRepository().getParagraph(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Paragraphs found in cache`,
-      });
-    }
-    return product;
-  }
-
-  async getParagraphWithoutCache(parameterObject) {
-    let recordId = parameterObject?.request?.id;
-    let publishDate = parameterObject?.request?.publishDate;
-    const LOCATION = 'DataFacadeSync.getParagraphWithoutCache';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    const repository = this.createContentRepository();
-    if (publishDate !== undefined) {
-      repository.setPublishDate(publishDate);
-    }
-    let product = await repository.getParagraph(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No paragraphs in database`,
-      });
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Paragraphs found in database`,
-      });
-    }
-    return product;
-  }
-
   async getContentsTree() {
     const LOCATION = 'DataFacadeSync.getContentsTree';
     Logging.debugMessage({
@@ -474,128 +357,6 @@ class DataFacadeSync {
    */
   async buildContentsTree() {
     return this.createContentRepository().getContentsTree();
-  }
-
-  async getStory(recordId) {
-    const LOCATION = 'DataFacadeSync.getStory';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No story in cache, querying database`,
-      });
-      product = await this.createContentRepository().getStory(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Story found in cache`,
-      });
-    }
-    return product;
-  }
-
-  async getStoryWithoutCache(parameterObject) {
-    let recordId = parameterObject?.request?.id;
-    let publishDate = parameterObject?.request?.publishDate;
-    const LOCATION = 'DataFacadeSync.getStoryWithoutCache';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    const repository = this.createContentRepository();
-
-    // Check if 'edit' scope is present to skip publishDate filtering
-    const hasEditScope = this.scopes && this.scopes.includes('edit');
-
-    if (publishDate !== undefined) {
-      repository.setPublishDate(publishDate);
-    } else if (hasEditScope) {
-      // Skip publishDate filtering if edit scope is present by setting publishDate to null
-      repository.setPublishDate(null);
-    }
-
-    let product = await repository.getStory(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No story found in database`,
-      });
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Story found in database`,
-      });
-    }
-    return product;
-  }
-
-  async getChapter(recordId) {
-    const LOCATION = 'DataFacadeSync.getChapter';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No chapter in cache, querying database`,
-      });
-      product = await this.createContentRepository().getChapter(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Chapter found in cache`,
-      });
-    }
-    return product;
-  }
-
-  async getChapterWithoutCache(parameterObject) {
-    let recordId = parameterObject?.request?.id;
-    const LOCATION = 'DataFacadeSync.getChapterWithoutCache';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    const repository = this.createContentRepository();
-    let publishDate = parameterObject?.request?.publishDate;
-    if (publishDate !== undefined) {
-      repository.setPublishDate(publishDate);
-    }
-    let product = await repository.getChapter(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No chapter in database`,
-      });
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Chapter found in database`,
-      });
-    }
-    return product;
   }
 
   /**

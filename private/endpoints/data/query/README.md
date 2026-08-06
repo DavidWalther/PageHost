@@ -1,20 +1,17 @@
 # `/data/query/*` — Lese-Endpunkte
 
-Zwei Antwortformen laufen hier nebeneinander: die **alte**, an drei feste Ebenen
-gebundene, und die **typfreie** des neuen Datenmodells. Die alte verschwindet,
-sobald das Frontend umgestellt ist.
+Es gibt genau **eine** Antwortform, die typfreie des Datenmodells. Die frühere
+Aufteilung in `story`, `chapter` und `paragraph` ist mit dem alten Modell
+weggefallen.
 
-| Route                       | Logik                   | Form                          |
-| :-------------------------- | :---------------------- | :---------------------------- |
-| `/data/query/story?id=`     | `SingleStoryEndpoint`   | alt (`chapters[]`)            |
-| `/data/query/chapter?id=`   | `ChapterEndpoint`       | alt (`paragraphs[]`)          |
-| `/data/query/paragraph?id=` | `ParagraphEndpoint`     | alt (`content`/`htmlcontent`) |
-| `/data/query/node?id=`      | `TypeFreeQueryEndpoint` | neu (`nodes[]`/`contents[]`)  |
-| `/data/query/content?id=`   | `TypeFreeQueryEndpoint` | neu (`items[]`)               |
+| Route                     | Logik                   | Form                     |
+| :------------------------ | :---------------------- | :----------------------- |
+| `/data/query/node?id=`    | `TypeFreeQueryEndpoint` | `nodes[]` / `contents[]` |
+| `/data/query/content?id=` | `TypeFreeQueryEndpoint` | `items[]`                |
 
-Alles andere landet im `FallbackEndpoint`.
+Alles andere landet im `FallbackEndpoint` — auch die alten Namen.
 
-## Typfreie Form
+## Die Antwortform
 
 Der Unterschied ist nicht kosmetisch: Es gibt keine Story und kein Kapitel mehr,
 nur Knoten. Ob ein Knoten Kinder hat, Inhalte, beides oder nichts, ergibt sich
@@ -72,26 +69,18 @@ Der Client bekommt **alle** Repräsentationen und den Zeiger auf die aktive,
 statt einer vorab getroffenen Auswahl. Ein künftiger Typ (`markdown`, `mermaid`)
 braucht damit keine Änderung an der Schnittstelle.
 
-## Regeln, die für beide Formen gelten
+## Regeln
 
 - **Ids gehen in beiden Fassungen herein.** Eine alte (`000s…`/`000c…`/`000p…`)
-  wird über `legacy_id` aufgelöst. Die typfreie Form gibt die **neue** Id zurück
-  und stellt die alte als `legacy_id` daneben; die alte Form gibt weiterhin die
-  alte zurück.
+  wird über `legacy_id` aufgelöst; zurück kommt die **neue** Id, die alte steht
+  als `legacy_id` daneben. Deep-Links von früher bleiben damit gültig.
 - **Unbekannt oder nicht sichtbar → `{}`.** Kein 404 — das ist der Ist-Zustand
   der alten Routen und bleibt so.
 - **App-Zugehörigkeit wird immer aufgelöst**, auch mit `edit`-Scope. Sie hängt
   am Knoten; ein Inhalt folgt seinem Knoten.
 - **`edit`-Scope** (Bearer-JWT) setzt den Publish-Filter aus und übergeht den
   Cache. Er setzt die App-Grenze **nicht** aus.
-- **Cache-Schlüsselräume sind getrennt**: `…-stories-<id>` gegen `…-nodes-<id>`.
-  Dieselbe alte Id kann über beide Formen angefragt werden und darf nicht die
-  Antwort der jeweils anderen bekommen.
-
-## Rückfallebene
-
-`CONTENT_SOURCE=legacy` schaltet die Inhaltsquelle auf `story`/`chapter`/
-`paragraph` zurück. Die **typfreien Routen sind dann nicht bedienbar** und
-antworten mit einem Fehler: Das Altmodell könnte die Form nur nachbauen, indem
-es den Typ wieder am Id-Präfix ablöst. Der Schalter deckt die alten Routen ab —
-dafür wurde er gebaut.
+- **Cache-Schlüsselräume**: `…-nodes-<id>` und `…-contents-<id>`. Der Marker im
+  Schlüssel stammt aus der Zeit, in der beide Formen nebeneinander liefen und
+  dieselbe Id in zwei Ausprägungen im Cache lag. Er bleibt, weil ein Knoten und
+  ein Inhalt sonst über dieselbe Id kollidieren könnten.

@@ -1,18 +1,15 @@
 /**
- * Integrationstests des Lesepfads auf dem NEUEN Datenmodell.
+ * Integrationstests des Lesepfads — Sichtbarkeit, Cache, Scopes, Inhaltsbaum.
  *
- * Gegenstück zu den Charakterisierungstests: die halten den alten Lesepfad fest
- * und lesen dafür ausdrücklich aus `story` / `chapter` / `paragraph`. Diese
- * Datei prüft, was ab der Umstellung tatsächlich läuft — Endpoint, `DataFacade`,
- * Cache-Verhalten, Scopes und `NodeContentRepository` echt, gemockt ist nur
- * externes I/O (`pgConnector`, `DataCache2`, Logging).
+ * Endpoint, `DataFacade` und `NodeContentRepository` laufen echt; gemockt ist
+ * nur externes I/O (`pgConnector`, `DataCache2`, Logging).
  *
- * Der gemeinsame Vertrag (`repositories/__tests__/contentRepositoryContract.tests.js`)
- * sichert zu, dass beide Quellen dieselbe Antwort bauen. Was er nicht abdeckt,
- * ist alles oberhalb der Quelle: dass die Facade den Cache zur richtigen Zeit
- * fragt, dass der `edit`-Scope Cache und Publish-Filter aussetzt und dass die
- * App-Zugehörigkeit greift, **bevor** ein Cache-Schlüssel entsteht. Genau das
- * steht hier.
+ * Abgrenzung zu `typeFreeEndpointsIntegration.tests.js`: dort geht es um die
+ * **Antwortform** der beiden Routen, hier um das Verhalten dahinter — dass die
+ * Facade den Cache zur richtigen Zeit fragt, dass der `edit`-Scope Cache und
+ * Publish-Filter aussetzt, dass die App-Zugehörigkeit greift, **bevor** ein
+ * Cache-Schlüssel entsteht, und dass der Inhaltsbaum erst bei der Auslieferung
+ * gefiltert wird.
  */
 
 jest.mock('../database2/DataStorage/pgConnector.js');
@@ -23,12 +20,8 @@ const { PostgresActions } = require('../database2/DataStorage/pgConnector.js');
 const { DataCache2 } = require('../database2/DataCache/DataCache.js');
 
 const {
-  SingleStoryEndpoint,
-} = require('../endpoints/data/query/SingleStoryEndpoint');
-const { ChapterEndpoint } = require('../endpoints/data/query/ChapterEndpoint');
-const {
-  ParagraphEndpoint,
-} = require('../endpoints/data/query/ParagraphEndpoint');
+  TypeFreeQueryEndpoint,
+} = require('../endpoints/data/query/TypeFreeQueryEndpoint');
 const ContentsEndpoint = require('../endpoints/api/1.0/contents/ContentsEndpoint');
 
 const APPLICATION_KEY = 'nodeApp';
@@ -41,7 +34,6 @@ const ENVIRONMENT = Object.freeze({
   CACHE_KEY_PREFIX: 'TEST',
   CACHE_DATA_INCREMENT: '1',
   CACHE_CONTAINER_EXPIRATION_SECONDS: 60,
-  // CONTENT_SOURCE bleibt bewusst ungesetzt: geprüft wird der Standard.
 });
 
 // ─── Zeilen des neuen Modells ───────────────────────────────────────────────
@@ -147,16 +139,15 @@ beforeEach(() => {
     del: jest.fn(),
   }));
 });
-
 // ─── Aufrufhilfen ───────────────────────────────────────────────────────────
 
-function runEndpoint(EndpointClass, { query = {}, scopes } = {}) {
+function runEndpoint(endpoint, { query = {}, scopes } = {}) {
   const responseObject = {
     json: jest.fn(),
     status: jest.fn(),
     send: jest.fn(),
   };
-  const endpoint = new EndpointClass()
+  endpoint
     .setEnvironment(ENVIRONMENT)
     .setRequestObject({ query })
     .setResponseObject(responseObject);
@@ -167,20 +158,21 @@ function runEndpoint(EndpointClass, { query = {}, scopes } = {}) {
   return endpoint.execute().then(() => responseObject.json.mock.calls[0][0]);
 }
 
-const getStory = (options) => runEndpoint(SingleStoryEndpoint, options);
-const getChapter = (options) => runEndpoint(ChapterEndpoint, options);
-const getParagraph = (options) => runEndpoint(ParagraphEndpoint, options);
-const getContents = (options) => runEndpoint(ContentsEndpoint, options);
+const getNode = (options) =>
+  runEndpoint(new TypeFreeQueryEndpoint('node'), options);
+const getContent = (options) =>
+  runEndpoint(new TypeFreeQueryEndpoint('content'), options);
+const getContents = (options) => runEndpoint(new ContentsEndpoint(), options);
 
 /** Wurde überhaupt gegen Postgres gefragt? */
 function queriedDatabase() {
   return executedStatements.length > 0;
 }
 
-describe('Lesepfad auf dem neuen Datenmodell', () => {
+describe('Lesepfad', () => {
   describe('Quelle', () => {
-    it('fragt node und app_node ab — nicht die alten Tabellen', async () => {
-      await getStory({ query: { id: '000s00000000000011' } });
+    it('fragt node und app_node ab — die alten Tabellen gibt es nicht mehr', async () => {
+      await getNode({ query: { id: 'n-story' } });
 
       expect(executedStatements.some((sql) => sql.includes('FROM node'))).toBe(
         true
@@ -193,29 +185,31 @@ describe('Lesepfad auf dem neuen Datenmodell', () => {
       );
     });
 
-    it('löst einen Deep-Link auf die alte Id auf und gibt sie zurück', async () => {
-      const story = await getStory({ query: { id: '000s00000000000011' } });
+    it('löst einen Deep-Link auf die alte Id auf', async () => {
+      // Die Spalte `legacy_id` bleibt, damit alte Links auflösbar sind —
+      // zurück kommt aber die neue Id.
+      const node = await getNode({ query: { id: '000s00000000000011' } });
 
-      expect(story.id).toBe('000s00000000000011');
-      expect(story.chapters[0].id).toBe('000c00000000000022');
+      expect(node.id).toBe('n-story');
+      expect(node.legacy_id).toBe('000s00000000000011');
     });
   });
 
   describe('Cache', () => {
-    it('schreibt die Story nach einem Cache-Miss in den Cache', async () => {
-      const story = await getStory({ query: { id: '000s00000000000011' } });
+    it('schreibt den Knoten nach einem Cache-Miss in den Cache', async () => {
+      const node = await getNode({ query: { id: 'n-story' } });
 
       expect(cacheGet).toHaveBeenCalled();
       expect(cacheSet).toHaveBeenCalled();
       const [, cachedValue] = cacheSet.mock.calls[0];
-      expect(cachedValue).toEqual(story);
+      expect(cachedValue).toEqual(node);
     });
 
     it('beantwortet den zweiten Aufruf aus dem Cache, ohne erneut abzufragen', async () => {
-      const erste = await getStory({ query: { id: '000s00000000000011' } });
+      const erste = await getNode({ query: { id: 'n-story' } });
 
       executedStatements = [];
-      const zweite = await getStory({ query: { id: '000s00000000000011' } });
+      const zweite = await getNode({ query: { id: 'n-story' } });
 
       expect(zweite).toEqual(erste);
       expect(queriedDatabase()).toBe(false);
@@ -234,32 +228,28 @@ describe('Lesepfad auf dem neuen Datenmodell', () => {
         },
       ];
 
-      await getStory({ query: { id: '000s00000000000011' } });
+      await getNode({ query: { id: 'n-story' } });
 
       const [, cachedValue] = cacheSet.mock.calls[0];
-      expect(cachedValue.chapters).toEqual([]);
+      expect(cachedValue.nodes).toEqual([]);
     });
   });
 
   describe('App-Zugehörigkeit', () => {
-    it('liefert nichts, wenn die Story einer anderen App gehört', async () => {
+    it('liefert nichts, wenn der Knoten einer anderen App gehört', async () => {
       rows.appNodes = [
         { node_id: 'n-story', relation: 'include', app_name: FREMDE_APP },
       ];
 
-      expect(await getStory({ query: { id: '000s00000000000011' } })).toEqual(
-        {}
-      );
+      expect(await getNode({ query: { id: 'n-story' } })).toEqual({});
     });
 
     it('erbt die Sichtbarkeit vom Parent, wo der Knoten es zulässt', async () => {
       // Das Kapitel hat keine eigene app_node-Zeile; sichtbar ist es allein,
       // weil `is_parent_controls_visibility` gesetzt ist.
-      const chapter = await getChapter({
-        query: { id: '000c00000000000022' },
-      });
+      const node = await getNode({ query: { id: 'n-kapitel' } });
 
-      expect(chapter.id).toBe('000c00000000000022');
+      expect(node.id).toBe('n-kapitel');
     });
 
     it('liefert nichts, wenn die Vererbungskette unterbrochen ist', async () => {
@@ -268,105 +258,94 @@ describe('Lesepfad auf dem neuen Datenmodell', () => {
         { ...KAPITEL_NODE, is_parent_controls_visibility: false },
       ];
 
-      expect(await getChapter({ query: { id: '000c00000000000022' } })).toEqual(
-        {}
-      );
+      expect(await getNode({ query: { id: 'n-kapitel' } })).toEqual({});
     });
   });
 
   describe('Publish-Filter', () => {
-    it('lässt unveröffentlichte Kapitel aus der Story heraus', async () => {
-      const story = await getStory({ query: { id: '000s00000000000011' } });
+    it('lässt unveröffentlichte Kind-Knoten heraus', async () => {
+      const node = await getNode({ query: { id: 'n-story' } });
 
-      expect(story.chapters.map((chapter) => chapter.id)).toEqual([
-        '000c00000000000022',
-      ]);
+      expect(node.nodes.map((child) => child.id)).toEqual(['n-kapitel']);
     });
 
-    it('liefert mit edit-Scope auch unveröffentlichte Kapitel', async () => {
-      const story = await getStory({
-        query: { id: '000s00000000000011' },
+    it('liefert mit edit-Scope auch unveröffentlichte Kind-Knoten', async () => {
+      const node = await getNode({
+        query: { id: 'n-story' },
         scopes: ['edit'],
       });
 
-      expect(story.chapters.map((chapter) => chapter.id)).toEqual([
-        '000c00000000000022',
-        '000c00000000000023',
+      expect(node.nodes.map((child) => child.id)).toEqual([
+        'n-kapitel',
+        'n-kapitel-morgen',
       ]);
     });
 
     it('umgeht mit edit-Scope den Cache', async () => {
-      await getStory({ query: { id: '000s00000000000011' }, scopes: ['edit'] });
+      await getNode({ query: { id: 'n-story' }, scopes: ['edit'] });
 
       expect(cacheGet).not.toHaveBeenCalled();
       expect(queriedDatabase()).toBe(true);
     });
 
-    it('hält einen unveröffentlichten Absatz zurück — anders als früher', async () => {
+    it('hält einen unveröffentlichten Inhalt zurück — anders als früher', async () => {
       // Der alte direkte Absatz-Zugriff kannte gar keinen Publish-Filter.
       rows.content = rows.content.map((row) => ({
         ...row,
         published_date: MORGEN,
       }));
 
-      expect(
-        await getParagraph({ query: { id: '000p00000000000033' } })
-      ).toEqual({});
+      expect(await getContent({ query: { id: 'cn-absatz' } })).toEqual({});
     });
   });
 
-  describe('Kapitel und Absatz', () => {
-    it('liefert die Absatz-Kopfdaten ohne Inhalt', async () => {
-      const chapter = await getChapter({
-        query: { id: '000c00000000000022' },
-      });
+  describe('Knoten und Inhalt', () => {
+    it('liefert die Inhalts-Kopfdaten ohne die Repräsentationen', async () => {
+      const node = await getNode({ query: { id: 'n-kapitel' } });
 
-      expect(chapter.paragraphs).toEqual([
-        { id: '000p00000000000033', name: 'Absatz 1', sortnumber: 1 },
+      expect(node.contents).toEqual([
+        {
+          id: 'cn-absatz',
+          legacy_id: '000p00000000000033',
+          name: 'Absatz 1',
+          sortnumber: 1,
+          published_date: GESTERN,
+        },
       ]);
     });
 
-    it('liefert den Absatz mit beiden Repräsentationen', async () => {
-      const paragraph = await getParagraph({
-        query: { id: '000p00000000000033' },
-      });
+    it('liefert den Inhalt mit allen Repräsentationen', async () => {
+      const content = await getContent({ query: { id: 'cn-absatz' } });
 
-      expect(paragraph).toEqual({
-        id: '000p00000000000033',
-        name: 'Absatz 1',
-        lastupdate: null,
-        content: 'Reiner Text',
-        htmlcontent: '<p>Reiner Text</p>',
-        sortnumber: 1,
-        chapterid: '000c00000000000022',
-        storyid: '000s00000000000011',
-        publishdate: GESTERN,
-      });
+      expect(content.items).toEqual([
+        { id: 'ci-text', type: 'text', content: 'Reiner Text' },
+        { id: 'ci-html', type: 'html', content: '<p>Reiner Text</p>' },
+      ]);
+      expect(content.active_type).toBe('html');
+      expect(content.node_id).toBe('n-kapitel');
     });
 
-    it('liefert htmlcontent nur, wenn die HTML-Fassung die aktive ist', async () => {
+    it('benennt die aktive Fassung, statt sie auszuwählen', async () => {
       rows.content = rows.content.map((row) => ({
         ...row,
         active_content_item: 'ci-text',
       }));
 
-      const paragraph = await getParagraph({
-        query: { id: '000p00000000000033' },
-      });
+      const content = await getContent({ query: { id: 'cn-absatz' } });
 
-      expect(paragraph.content).toBe('Reiner Text');
-      expect(paragraph.htmlcontent).toBeNull();
+      expect(content.active_type).toBe('text');
+      expect(content.items).toHaveLength(2);
     });
   });
 
   describe('Inhaltsbaum', () => {
-    it('liefert Stories mit ihren Kapiteln als childnodes', async () => {
+    it('liefert Wurzelknoten mit ihren Kindern als childnodes', async () => {
       const { result } = await getContents();
 
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('000s00000000000011');
+      expect(result[0].id).toBe('n-story');
       expect(result[0].childnodes.map((node) => node.id)).toEqual([
-        '000c00000000000022',
+        'n-kapitel',
       ]);
     });
 
@@ -377,8 +356,8 @@ describe('Lesepfad auf dem neuen Datenmodell', () => {
       const { result } = await getContents({ scopes: ['edit'] });
 
       expect(result[0].childnodes.map((node) => node.id)).toEqual([
-        '000c00000000000022',
-        '000c00000000000023',
+        'n-kapitel',
+        'n-kapitel-morgen',
       ]);
     });
 

@@ -1,64 +1,73 @@
 const { NodeWriteMapping } = require('../NodeWriteMapping.js');
 
 describe('NodeWriteMapping', () => {
-  describe('Objektart', () => {
-    it('erkennt Story und Kapitel als Knoten', () => {
-      expect(NodeWriteMapping.isNodeObject('story')).toBe(true);
-      expect(NodeWriteMapping.isNodeObject('chapter')).toBe(true);
+  describe('Objektart und Tabelle', () => {
+    it('erkennt den Knoten als Knoten und den Inhalt als Inhalt', () => {
+      expect(NodeWriteMapping.isNodeObject('node')).toBe(true);
+      expect(NodeWriteMapping.isNodeObject('content')).toBe(false);
     });
 
-    it('erkennt den Absatz nicht als Knoten — er ist ein Inhalt', () => {
-      expect(NodeWriteMapping.isNodeObject('paragraph')).toBe(false);
+    it('ordnet jedem Objekt genau eine Tabelle zu', () => {
+      expect(NodeWriteMapping.tableFor('node')).toBe('node');
+      expect(NodeWriteMapping.tableFor('content')).toBe('content_node');
     });
 
-    it('liefert die alten Präfixe, an denen das Frontend den Typ liest', () => {
-      expect(NodeWriteMapping.legacyPrefix('story')).toBe('000s');
-      expect(NodeWriteMapping.legacyPrefix('chapter')).toBe('000c');
-      expect(NodeWriteMapping.legacyPrefix('paragraph')).toBe('000p');
-    });
-
-    it('wirft bei unbekanntem Objekt', () => {
-      expect(() => NodeWriteMapping.legacyPrefix('node')).toThrow(
-        'Unknown object type'
+    it('wirft bei einem Objekt, das keine Tabelle hat', () => {
+      // Lieber ein Fehler als eine Zeile in der falschen Tabelle — genau das
+      // ist einmal passiert und hat die Anmeldung zerlegt.
+      ['identity', 'configuration', 'content_item', 'story'].forEach(
+        (object) => {
+          expect(() => NodeWriteMapping.tableFor(object)).toThrow(
+            'has no table in the node model'
+          );
+        }
       );
     });
   });
 
   describe('columnsFor — Schreibweise', () => {
-    it('bildet die camelCase-Namen der Editierkomponenten ab', () => {
-      const columns = NodeWriteMapping.columnsFor('chapter', {
-        id: '000c00000000000022',
-        storyId: '000s00000000000011',
-        name: 'Kapitel A',
-        sortNumber: 3,
+    it('nimmt die Spaltennamen unverändert entgegen', () => {
+      expect(
+        NodeWriteMapping.columnsFor('node', {
+          name: 'Knoten',
+          description: 'Text',
+          sortnumber: 2,
+          reversed: true,
+          parent_node_id: 'n-1',
+          cover_node_id: 'n-2',
+          published_date: '2026-01-01T00:00:00.000Z',
+        })
+      ).toEqual({
+        name: 'Knoten',
+        description: 'Text',
+        sortnumber: 2,
         reversed: true,
-        publishDate: '2026-01-01T00:00:00.000Z',
-      });
-
-      expect(columns).toEqual({
-        parent_node_id: '000s00000000000011',
-        name: 'Kapitel A',
-        sortnumber: 3,
-        reversed: true,
+        parent_node_id: 'n-1',
+        cover_node_id: 'n-2',
         published_date: '2026-01-01T00:00:00.000Z',
       });
     });
 
-    it('bildet die kleingeschriebenen Namen des gelesenen Datensatzes ab', () => {
-      // Der Absatz schickt zurück, was er gelesen hat — durchgehend klein.
-      const columns = NodeWriteMapping.columnsFor('paragraph', {
-        id: '000p00000000000033',
-        name: 'Absatz 1',
-        sortnumber: 2,
-        chapterid: '000c00000000000022',
-        storyid: '000s00000000000011',
-        publishdate: null,
-      });
+    it('ist unabhängig von der Groß-/Kleinschreibung', () => {
+      // Postgres faltet unquotierte Bezeichner ohnehin; eine abweichende
+      // Schreibweise darf nicht zu einem stillen Verlust führen.
+      expect(
+        NodeWriteMapping.columnsFor('node', { Name: 'Knoten', SortNumber: 3 })
+      ).toEqual({ name: 'Knoten', sortnumber: 3 });
+    });
 
-      expect(columns).toEqual({
-        name: 'Absatz 1',
+    it('kennt beim Inhalt nur seine eigenen Spalten', () => {
+      expect(
+        NodeWriteMapping.columnsFor('content', {
+          name: 'Absatz',
+          sortnumber: 2,
+          node_id: 'n-1',
+          published_date: null,
+        })
+      ).toEqual({
+        name: 'Absatz',
         sortnumber: 2,
-        node_id: '000c00000000000022',
+        node_id: 'n-1',
         published_date: null,
       });
     });
@@ -66,81 +75,74 @@ describe('NodeWriteMapping', () => {
 
   describe('columnsFor — was nicht geschrieben wird', () => {
     it('lässt die Id fallen: sie ist die Identität, kein Wert', () => {
-      const columns = NodeWriteMapping.columnsFor('story', {
-        id: '000s00000000000011',
-        name: 'Story',
-      });
-
-      expect(columns).toEqual({ name: 'Story' });
+      expect(
+        NodeWriteMapping.columnsFor('node', { id: 'n-1', name: 'Knoten' })
+      ).toEqual({ name: 'Knoten' });
     });
 
-    it('lässt lastupdate fallen — die Spalte gibt es nicht mehr', () => {
-      const columns = NodeWriteMapping.columnsFor('story', {
-        name: 'Story',
-        lastUpdate: '2026-01-01',
-      });
-
-      expect(columns).toEqual({ name: 'Story' });
+    it('lässt einen unveränderten gelesenen Datensatz durch', () => {
+      // Abgeleitete Felder und Kinderlisten dürfen nicht daran scheitern,
+      // dass der Editor seinen ganzen Datensatz zurückschickt.
+      expect(
+        NodeWriteMapping.columnsFor('node', {
+          id: 'n-1',
+          legacy_id: '000s1',
+          name: 'Knoten',
+          nodes: [],
+          contents: [],
+        })
+      ).toEqual({ name: 'Knoten' });
     });
 
     it('lässt die App-Spalten fallen — daraus wird eine app_node-Zeile', () => {
-      const columns = NodeWriteMapping.columnsFor('story', {
-        name: 'Story',
-        applicationincluded: 'meineApp',
-        applicationexcluded: null,
-      });
-
-      expect(columns).toEqual({ name: 'Story' });
-    });
-
-    it('lässt storyid beim Absatz fallen — die Story hängt am Kapitel', () => {
-      const columns = NodeWriteMapping.columnsFor('paragraph', {
-        storyId: '000s00000000000011',
-        chapterId: '000c00000000000022',
-      });
-
-      expect(columns).toEqual({ node_id: '000c00000000000022' });
-    });
-
-    it('schreibt storyid beim Kapitel dagegen als parent_node_id', () => {
-      const columns = NodeWriteMapping.columnsFor('chapter', {
-        storyId: '000s00000000000011',
-      });
-
-      expect(columns).toEqual({ parent_node_id: '000s00000000000011' });
+      expect(
+        NodeWriteMapping.columnsFor('node', {
+          name: 'Knoten',
+          applicationincluded: 'meineApp',
+          applicationexcluded: null,
+        })
+      ).toEqual({ name: 'Knoten' });
     });
 
     it('lässt content und htmlcontent fallen — eigene Zeilen in content_item', () => {
-      const columns = NodeWriteMapping.columnsFor('paragraph', {
-        name: 'Absatz',
-        content: 'Text',
-        htmlContent: '<p>Text</p>',
-      });
-
-      expect(columns).toEqual({ name: 'Absatz' });
+      expect(
+        NodeWriteMapping.columnsFor('content', {
+          name: 'Absatz',
+          content: 'Text',
+          htmlContent: '<p>Text</p>',
+        })
+      ).toEqual({ name: 'Absatz' });
     });
 
     it('wirft bei einem unbekannten Feld, statt es zu schlucken', () => {
       // Ein Tippfehler soll auffallen und nicht als verschwundene Änderung enden.
       expect(() =>
-        NodeWriteMapping.columnsFor('story', { sortnumbr: 1 })
+        NodeWriteMapping.columnsFor('node', { sortnumbr: 1 })
       ).toThrow('Field "sortnumbr" cannot be written');
     });
 
+    it('wirft bei einem Feld aus der alten Benennung', () => {
+      ['storyid', 'chapterid', 'publishdate', 'lastupdate'].forEach((field) => {
+        expect(() =>
+          NodeWriteMapping.columnsFor('node', { [field]: 'x' })
+        ).toThrow('cannot be written');
+      });
+    });
+
     it('wirft, wenn ein Feld zum Objekt nicht passt', () => {
-      // `reversed` gibt es am Kapitel, nicht an der Story.
+      // `reversed` gibt es am Knoten, nicht am Inhalt.
       expect(() =>
-        NodeWriteMapping.columnsFor('story', { reversed: true })
+        NodeWriteMapping.columnsFor('content', { reversed: true })
       ).toThrow('Field "reversed" cannot be written');
     });
   });
 
   describe('referenceColumns', () => {
     it('benennt die Spalten, deren Wert erst aufgelöst werden muss', () => {
-      const columns = NodeWriteMapping.columnsFor('chapter', {
-        storyId: '000s00000000000011',
-        coverId: '000c00000000000022',
-        name: 'Kapitel',
+      const columns = NodeWriteMapping.columnsFor('node', {
+        parent_node_id: 'n-1',
+        cover_node_id: 'n-2',
+        name: 'Knoten',
       });
 
       expect(NodeWriteMapping.referenceColumns(columns).sort()).toEqual([
@@ -150,7 +152,7 @@ describe('NodeWriteMapping', () => {
     });
 
     it('meldet nichts, wenn keine Referenz im Payload steckt', () => {
-      const columns = NodeWriteMapping.columnsFor('story', { name: 'Story' });
+      const columns = NodeWriteMapping.columnsFor('node', { name: 'Knoten' });
 
       expect(NodeWriteMapping.referenceColumns(columns)).toEqual([]);
     });
@@ -207,90 +209,6 @@ describe('NodeWriteMapping', () => {
 
       expect(items).toEqual({ text: null, html: null });
       expect(activeType).toBe('text');
-    });
-  });
-});
-
-// ─── Typfreie Objektnamen ──────────────────────────────────────────────────
-
-describe('node und content', () => {
-  it('führen auf dieselben Tabellen wie die alten Namen', () => {
-    expect(NodeWriteMapping.tableFor('node')).toBe('node');
-    expect(NodeWriteMapping.tableFor('content')).toBe('content_node');
-  });
-
-  it('zählen node zu den Knoten-Objekten', () => {
-    expect(NodeWriteMapping.isNodeObject('node')).toBe(true);
-    expect(NodeWriteMapping.isNodeObject('content')).toBe(false);
-  });
-
-  it('tragen die alte Id weder nach außen noch vergeben sie eine', () => {
-    ['story', 'chapter', 'paragraph'].forEach((object) => {
-      expect(NodeWriteMapping.usesLegacyIds(object)).toBe(true);
-    });
-    ['node', 'content'].forEach((object) => {
-      expect(NodeWriteMapping.usesLegacyIds(object)).toBe(false);
-    });
-  });
-
-  it('nehmen die Spaltennamen unverändert entgegen', () => {
-    // Kein Abbilden mehr, nur noch Benennen: das Feld heißt wie die Spalte.
-    expect(
-      NodeWriteMapping.columnsFor('node', {
-        name: 'Knoten',
-        description: 'Text',
-        sortnumber: 2,
-        reversed: true,
-        parent_node_id: 'n-1',
-        cover_node_id: 'n-2',
-        published_date: '2026-01-01',
-      })
-    ).toEqual({
-      name: 'Knoten',
-      description: 'Text',
-      sortnumber: 2,
-      reversed: true,
-      parent_node_id: 'n-1',
-      cover_node_id: 'n-2',
-      published_date: '2026-01-01',
-    });
-  });
-
-  it('lassen die Repräsentationen eines Inhalts als eigene Zeilen stehen', () => {
-    expect(
-      NodeWriteMapping.columnsFor('content', {
-        node_id: 'n-1',
-        content: 'Text',
-        htmlcontent: '<p>Text</p>',
-      })
-    ).toEqual({ node_id: 'n-1' });
-  });
-
-  it('lassen einen unveränderten gelesenen Datensatz durch', () => {
-    // Der Absatz-Editor schickt seinen ganzen Datensatz zurück. Abgeleitete
-    // Felder und Kinderlisten dürfen daran nicht scheitern.
-    expect(
-      NodeWriteMapping.columnsFor('node', {
-        id: 'n-1',
-        legacy_id: '000s1',
-        name: 'Knoten',
-        nodes: [],
-        contents: [],
-      })
-    ).toEqual({ name: 'Knoten' });
-  });
-
-  it('werfen weiterhin bei einem Feld, das es nicht gibt', () => {
-    expect(() =>
-      NodeWriteMapping.columnsFor('node', { storyid: 'n-1' })
-    ).toThrow('cannot be written');
-  });
-
-  it('kennen kein Präfix — die Kompat-Vergabe endet hier', () => {
-    ['node', 'content'].forEach((object) => {
-      expect(() => NodeWriteMapping.legacyPrefix(object)).toThrow(
-        'Unknown object type'
-      );
     });
   });
 });

@@ -3,7 +3,7 @@ const { EndpointLogic } = require('../../../EndpointLogic');
 const { DataFacade } = require('../../../../database2/DataFacade');
 const ContentVisibilityFilter = require('../../../../modules/ContentVisibilityFilter');
 
-// Currently available levels: stories -> chapters. Raised when deeper levels
+// Currently delivered levels: root nodes -> their children. Raised when deeper
 // (parent/grandparent stories) get a data model.
 const MAX_DEPTH = 2;
 
@@ -56,7 +56,8 @@ class ContentsEndpoint extends EndpointLogic {
         ? rawTree
         : new ContentVisibilityFilter()
             .setTree(rawTree)
-            .setChildrenKey('chapters')
+            .setChildrenKey('nodes')
+            .setDateField('published_date')
             .setDate(new Date())
             .getResult();
 
@@ -80,8 +81,8 @@ class ContentsEndpoint extends EndpointLogic {
   }
 
   /**
-   * Maps raw records (story/chapter) to Node objects. Allow-list mapping, so
-   * publishdate / application* fields never reach the response.
+   * Maps raw node records to Node objects. Allow-list mapping, so
+   * published_date and internal columns never reach the response.
    */
   static mapToNodes(records, depth) {
     if (!Array.isArray(records)) {
@@ -92,9 +93,7 @@ class ContentsEndpoint extends EndpointLogic {
       name: record.name,
       label: record.name,
       childnodes:
-        depth > 1
-          ? ContentsEndpoint.mapToNodes(record.chapters, depth - 1)
-          : [],
+        depth > 1 ? ContentsEndpoint.mapToNodes(record.nodes, depth - 1) : [],
     }));
   }
 }

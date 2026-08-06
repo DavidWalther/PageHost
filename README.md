@@ -4,12 +4,11 @@
 
 ### General Application Variables
 
-| Variable                    | Description                                                                                                                                                                                                                                                                                                                                                                |
-| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| APPLICATION_APPLICATION_KEY | Key to seperate different applications in cache and database                                                                                                                                                                                                                                                                                                               |
-| LOGGING_SEVERITY_LEVEL      | Level of Debug messages to show. <br> Messages with the given severity and above are printed. <br><br>Possible values: INFO, DEBUG, FINE, FINER, FINEST                                                                                                                                                                                                                    |
-| COMPRESSION_THRESHOLD_BYTES | Minimum response size in bytes before HTTP compression is applied. Required value (in bytes).                                                                                                                                                                                                                                                                              |
-| CONTENT_SOURCE              | Which data model the content is read from. Unset (default) reads `node` / `content_node` / `content_item`; `legacy` falls back to `story` / `chapter` / `paragraph`. Covers the `story`/`chapter`/`paragraph` routes only — `/data/query/node` and `/data/query/content` require the new source and fail under `legacy`. Temporary — removed together with the old tables. |
+| Variable                    | Description                                                                                                                                             |
+| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| APPLICATION_APPLICATION_KEY | Key to seperate different applications in cache and database                                                                                            |
+| LOGGING_SEVERITY_LEVEL      | Level of Debug messages to show. <br> Messages with the given severity and above are printed. <br><br>Possible values: INFO, DEBUG, FINE, FINER, FINEST |
+| COMPRESSION_THRESHOLD_BYTES | Minimum response size in bytes before HTTP compression is applied. Required value (in bytes).                                                           |
 
 ### Cache related Variables
 

@@ -37,7 +37,7 @@ native markup-caching pattern to Lit.
 The component dispatches **no custom event**. The inner `<button>` lives in the
 shadow root, so a native `click` bubbles and is retargeted to the host — attach a
 plain `click` listener on `<slds-button-icon>` (e.g. Lit `@click`), exactly as the
-consumers (`custom-chapter`, `custom-story`, `custom-chapter-edit`, `bookstore`)
+consumers (`custom-node`, `custom-chapter-edit`, `bookstore`)
 do. When `disabled` is set, the button fires no click.
 
 > Note: earlier documentation mentioned an `sldsbuttonclick` event — that event
