@@ -36,6 +36,8 @@ describe('ContentRepository', () => {
       'getChapter',
       'getParagraph',
       'getContentsTree',
+      'getNode',
+      'getContent',
     ];
 
     methods.forEach((method) => {
