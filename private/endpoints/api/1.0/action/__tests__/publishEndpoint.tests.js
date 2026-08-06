@@ -251,7 +251,7 @@ describe('PublishEndpoint', () => {
         setSkipCache: jest.fn().mockReturnThis(),
         getData: jest.fn().mockResolvedValue({
           id: '123',
-          publishDate: '2023-01-01T00:00:00.000Z',
+          publishdate: '2023-01-01T00:00:00.000Z',
         }),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
@@ -271,7 +271,7 @@ describe('PublishEndpoint', () => {
         setSkipCache: jest.fn().mockReturnThis(),
         getData: jest.fn().mockResolvedValue({
           id: '123',
-          publishDate: '2023-01-01T00:00:00.000Z',
+          publishdate: '2023-01-01T00:00:00.000Z',
         }),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);
@@ -292,7 +292,7 @@ describe('PublishEndpoint', () => {
         setSkipCache: jest.fn().mockReturnThis(),
         getData: jest.fn().mockResolvedValue({
           id: '123',
-          publishDate: '2023-01-01T00:00:00.000Z',
+          publishdate: '2023-01-01T00:00:00.000Z',
         }),
       };
       DataFacade.mockImplementation(() => mockDataFacadeInstance);

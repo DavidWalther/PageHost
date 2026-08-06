@@ -218,6 +218,23 @@ function fetchDatabase(eventpayload) {
           });
         break;
       }
+      // Typfreie Form: ein Knoten mit seinen Kindern, ein Inhalt mit seinen
+      // Repraesentationen. Anders als oben gibt es hier nichts auszupacken —
+      // der Endpunkt liefert genau einen Datensatz, und ein unbekannter oder
+      // nicht sichtbarer ist ein leeres Objekt, kein Fehler.
+      case 'node':
+      case 'content': {
+        doFetch(
+          `/data/query/${eventpayload.object}?id=${encodeURIComponent(
+            eventpayload.id
+          )}`,
+          preparedHeaders
+        )
+          .then((response) => response.json())
+          .then(resolve)
+          .catch(reject);
+        break;
+      }
       case 'contents': {
         doFetch(`/api/1.0/contents/all?depth=2`, preparedHeaders)
           .then((contentsResponse) => contentsResponse.json())
