@@ -21,9 +21,6 @@ const {
   TypeFreeQueryEndpoint,
 } = require('../endpoints/data/query/TypeFreeQueryEndpoint');
 const {
-  SingleStoryEndpoint,
-} = require('../endpoints/data/query/SingleStoryEndpoint');
-const {
   FallbackEndpoint,
 } = require('../endpoints/data/query/FallbackEndpoint');
 
@@ -184,14 +181,18 @@ describe('Routenwahl', () => {
     });
   });
 
-  it('lässt die alten Routen unberührt', () => {
-    const story = DataQueryLogicFactory.getProduct({
-      url: '/data/query/story',
-      params: ['story'],
-      query: { id: '000s00000000000011' },
-    });
+  it('kennt die alten Namen nicht mehr', () => {
+    // `story`, `chapter` und `paragraph` sind mit dem alten Datenmodell
+    // weggefallen und landen jetzt im Fallback wie jeder unbekannte Name.
+    ['story', 'chapter', 'paragraph'].forEach((name) => {
+      const endpoint = DataQueryLogicFactory.getProduct({
+        url: `/data/query/${name}`,
+        params: [name],
+        query: { id: '000s00000000000011' },
+      });
 
-    expect(story).toBeInstanceOf(SingleStoryEndpoint);
+      expect(endpoint).toBeInstanceOf(FallbackEndpoint);
+    });
   });
 
   it('landet für einen unbekannten Namen weiterhin im Fallback', () => {
@@ -300,19 +301,16 @@ describe('Cache', () => {
     expect(executedStatements).toEqual([]);
   });
 
-  it('hält alte und neue Form derselben Id auseinander', async () => {
-    // Der eigentliche Grund für den eigenen Schlüsselraum: dieselbe alte Id
-    // kann über beide Routen hereinkommen. Bekäme die zweite die Antwort der
-    // ersten, stünde die alte Form in der neuen Route.
-    await request('story', { query: { id: '000s00000000000011' } });
-    const node = await getNode({ query: { id: '000s00000000000011' } });
+  it('hält Knoten und Inhalt derselben Id auseinander', async () => {
+    // Der Grund für den Marker im Schlüssel: ein Knoten und ein Inhalt dürfen
+    // sich einen Eintrag nicht teilen, auch wenn dieselbe Id angefragt wird.
+    await getNode({ query: { id: '000s00000000000011' } });
+    await getContent({ query: { id: '000s00000000000011' } });
 
     expect([...cacheStore.keys()]).toEqual([
-      '000s00000000000011',
       'node:000s00000000000011',
+      'content:000s00000000000011',
     ]);
-    expect(node.nodes).toBeDefined();
-    expect(node.chapters).toBeUndefined();
   });
 
   it('legt einen für die App unsichtbaren Knoten gar nicht erst ab', async () => {

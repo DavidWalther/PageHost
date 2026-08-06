@@ -149,42 +149,38 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
 
   describe('Anlegen', () => {
     beforeEach(() => {
-      respondWith('AS legacy_id', [{ legacy_id: '000c00000000000099' }]);
       respondWith('SELECT id FROM node WHERE', [{ id: 'n-story' }]);
-      respondWith('INSERT INTO node', [
-        { id: 'n-neu', legacy_id: '000c00000000000099', name: 'Kapitel' },
-      ]);
+      respondWith('INSERT INTO node', [{ id: 'n-neu', name: 'Kapitel' }]);
     });
 
-    it('schreibt in node — nicht in die alten Tabellen', async () => {
+    it('schreibt in node', async () => {
       await runEndpoint(UpsertEndpoint, {
         body: {
-          object: 'chapter',
+          object: 'node',
           payload: {
-            storyId: '000s00000000000011',
+            parent_node_id: 'n-story',
             name: 'Kapitel',
-            sortNumber: 1,
+            sortnumber: 1,
             reversed: false,
-            publishDate: null,
+            published_date: null,
           },
         },
       });
 
       expect(statementsMatching('INSERT INTO node')).toHaveLength(1);
-      expect(statementsMatching('INSERT INTO Chapter')).toHaveLength(0);
     });
 
     it('nimmt den Payload der Editierkomponente unverändert an', async () => {
       // Genau die Felder, die `custom-chapter-edit` schickt.
       const response = await runEndpoint(UpsertEndpoint, {
         body: {
-          object: 'chapter',
+          object: 'node',
           payload: {
-            storyId: '000s00000000000011',
+            parent_node_id: 'n-story',
             name: 'Kapitel',
-            sortNumber: 1,
+            sortnumber: 1,
             reversed: false,
-            publishDate: null,
+            published_date: null,
           },
         },
       });
@@ -193,17 +189,16 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.json.mock.calls[0][0].success).toBe(true);
     });
 
-    it('gibt die alte Id zurück — das Frontend liest den Typ am Präfix', async () => {
+    it('gibt die Id des angelegten Datensatzes zurück', async () => {
       const response = await runEndpoint(UpsertEndpoint, {
         body: {
-          object: 'chapter',
-          payload: { storyId: '000s00000000000011', name: 'Kapitel' },
+          object: 'node',
+          payload: { parent_node_id: 'n-story', name: 'Kapitel' },
         },
       });
 
-      expect(response.json.mock.calls[0][0].result.id).toBe(
-        '000c00000000000099'
-      );
+      expect(response.json.mock.calls[0][0].result.id).toBe('n-neu');
+      expect(statementsMatching('AS legacy_id')).toEqual([]);
     });
 
     it('verweigert das Anlegen, wenn die Aktion nicht freigeschaltet ist', async () => {
@@ -215,7 +210,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
         })
         .setRequestObject({
           url: '/test',
-          body: { object: 'chapter', payload: { name: 'Kapitel' } },
+          body: { object: 'node', payload: { name: 'Kapitel' } },
         })
         .setResponseObject(response)
         .execute();
@@ -236,7 +231,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
     it('erkennt an der Id, dass es eine Änderung ist', async () => {
       await runEndpoint(UpsertEndpoint, {
         body: {
-          object: 'chapter',
+          object: 'node',
           payload: { id: '000c00000000000022', name: 'Neu' },
         },
       });
@@ -248,7 +243,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
     it('bindet die Werte, statt sie in den SQL-Text zu schreiben', async () => {
       await runEndpoint(UpsertEndpoint, {
         body: {
-          object: 'chapter',
+          object: 'node',
           payload: { id: '000c00000000000022', name: "O'Brien" },
         },
       });
@@ -264,7 +259,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
 
       const response = await runEndpoint(UpsertEndpoint, {
         body: {
-          object: 'chapter',
+          object: 'node',
           payload: { id: '000c99999999999999', name: 'Neu' },
         },
       });
@@ -290,7 +285,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
 
     it('räumt den ganzen Teilbaum ab', async () => {
       const response = await runEndpoint(DeleteEndpoint, {
-        query: { object: 'story', id: '000s00000000000011' },
+        query: { object: 'node', id: '000s00000000000011' },
       });
 
       expect(response.status).toHaveBeenCalledWith(200);
@@ -306,7 +301,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       // dieser Test hält den Ist-Zustand fest und schlägt um, sobald er
       // behoben wird.
       await runEndpoint(DeleteEndpoint, {
-        query: { object: 'story', id: '000s00000000000011' },
+        query: { object: 'node', id: '000s00000000000011' },
       });
 
       expect(cacheDel).not.toHaveBeenCalled();
@@ -321,7 +316,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
         })
         .setRequestObject({
           url: '/test',
-          query: { object: 'story', id: '000s00000000000011' },
+          query: { object: 'node', id: '000s00000000000011' },
         })
         .setResponseObject(response)
         .execute();
@@ -362,7 +357,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       seedRead({ published: false });
 
       const response = await runEndpoint(PublishEndpoint, {
-        body: { object: 'chapter', id: '000c00000000000022' },
+        body: { object: 'node', id: '000c00000000000022' },
       });
 
       expect(response.status).toHaveBeenCalledWith(200);
@@ -375,7 +370,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       seedRead({ published: true });
 
       const response = await runEndpoint(UnpublishEndpoint, {
-        body: { object: 'chapter', id: '000c00000000000022' },
+        body: { object: 'node', id: '000c00000000000022' },
       });
 
       expect(response.status).toHaveBeenCalledWith(200);
@@ -388,7 +383,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       seedRead({ published: false });
 
       const response = await runEndpoint(UnpublishEndpoint, {
-        body: { object: 'chapter', id: '000c00000000000022' },
+        body: { object: 'node', id: '000c00000000000022' },
       });
 
       expect(response.status).toHaveBeenCalledWith(400);
@@ -404,116 +399,11 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       seedRead({ published: true });
 
       const response = await runEndpoint(PublishEndpoint, {
-        body: { object: 'chapter', id: '000c00000000000022' },
+        body: { object: 'node', id: '000c00000000000022' },
       });
 
       expect(response.status).toHaveBeenCalledWith(400);
       expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
-    });
-  });
-});
-
-// ─── Typfreie Objektnamen ──────────────────────────────────────────────────
-
-describe('Schreibpfad unter node und content', () => {
-  it('legt einen Knoten ohne Kompat-Id an und gibt die neue Id zurück', async () => {
-    respondWith('INSERT INTO node', [{ id: 'n-neu', legacy_id: null }]);
-
-    const response = await runEndpoint(UpsertEndpoint, {
-      body: {
-        object: 'node',
-        payload: { name: 'Neuer Knoten', sortnumber: 1 },
-      },
-    });
-
-    expect(response.status).toHaveBeenCalledWith(200);
-    expect(statementsMatching('AS legacy_id')).toEqual([]);
-    expect(response.json.mock.calls[0][0].result.id).toBe('n-neu');
-  });
-
-  it('ändert einen Knoten über die Spaltennamen des neuen Modells', async () => {
-    respondWith('SELECT id FROM node WHERE', [{ id: 'n-1' }]);
-    respondWith('UPDATE node SET', [{ id: 'n-1', legacy_id: '000c1' }]);
-
-    await runEndpoint(UpsertEndpoint, {
-      body: {
-        object: 'node',
-        payload: { id: 'n-1', name: 'Umbenannt', published_date: null },
-      },
-    });
-
-    const [update] = statementsMatching('UPDATE node SET');
-    expect(update.sql).toContain('published_date = $');
-    expect(update.parameters).toContain('Umbenannt');
-  });
-
-  it('löscht einen Inhalt über content', async () => {
-    respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
-
-    const response = await runEndpoint(DeleteEndpoint, {
-      query: { object: 'content', id: 'cn-1' },
-    });
-
-    expect(response.status).toHaveBeenCalledWith(200);
-    expect(statementsMatching('DELETE FROM content_node')).toHaveLength(1);
-  });
-
-  describe('Veröffentlichen', () => {
-    function seedNodeRead({ published }) {
-      respondWith('FROM app_node', [
-        { node_id: 'n-1', relation: 'include', app_name: APPLICATION_KEY },
-      ]);
-      respondWith('FROM node', [
-        {
-          id: 'n-1',
-          name: 'Knoten',
-          sortnumber: 1,
-          parent_node_id: null,
-          legacy_id: null,
-          published_date: published ? '2020-01-01T00:00:00.000Z' : null,
-          is_parent_controls_visibility: false,
-        },
-      ]);
-      respondWith('SELECT id FROM node WHERE', [{ id: 'n-1' }]);
-      respondWith('UPDATE node SET', [{ id: 'n-1', legacy_id: null }]);
-    }
-
-    it('setzt published_date auch unter dem Namen node', async () => {
-      seedNodeRead({ published: false });
-
-      const response = await runEndpoint(PublishEndpoint, {
-        body: { object: 'node', id: 'n-1' },
-      });
-
-      expect(response.status).toHaveBeenCalledWith(200);
-      const [update] = statementsMatching('UPDATE node SET');
-      expect(update.sql).toContain('published_date = $1');
-      expect(update.parameters[0]).not.toBeNull();
-    });
-
-    it('erkennt den bereits veröffentlichten Knoten an published_date', async () => {
-      // Die neue Antwortform nennt das Feld anders als die alte. Ohne beide
-      // zu kennen, griffe die Prüfung für je eine der Generationen nicht.
-      seedNodeRead({ published: true });
-
-      const response = await runEndpoint(PublishEndpoint, {
-        body: { object: 'node', id: 'n-1' },
-      });
-
-      expect(response.status).toHaveBeenCalledWith(400);
-      expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
-    });
-
-    it('zieht einen Knoten unter dem Namen node zurück', async () => {
-      seedNodeRead({ published: true });
-
-      const response = await runEndpoint(UnpublishEndpoint, {
-        body: { object: 'node', id: 'n-1' },
-      });
-
-      expect(response.status).toHaveBeenCalledWith(200);
-      const [update] = statementsMatching('UPDATE node SET');
-      expect(update.parameters[0]).toBeNull();
     });
   });
 });

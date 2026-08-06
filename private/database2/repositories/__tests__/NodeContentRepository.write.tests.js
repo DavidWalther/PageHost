@@ -62,33 +62,19 @@ beforeEach(() => {
 });
 
 describe('NodeContentRepository — Schreibpfad', () => {
-  describe('createRecord: Story', () => {
+  describe('createRecord: Wurzelknoten', () => {
     beforeEach(() => {
-      respondWith('AS legacy_id', [{ legacy_id: '000s00000000000099' }]);
-      respondWith('INSERT INTO node', [
-        { id: 'n-neu', legacy_id: '000s00000000000099', name: 'Neue Story' },
-      ]);
+      respondWith('INSERT INTO node', [{ id: 'n-neu', name: 'Neuer Knoten' }]);
     });
 
     it('läuft in einer Transaktion', async () => {
-      await createRepository().createRecord('story', { name: 'Neue Story' });
+      await createRepository().createRecord('node', { name: 'Neuer Knoten' });
 
       expect(transactionUsed).toBe(true);
     });
 
-    it('vergibt eine Kompat-Id im alten Präfix-Schema', async () => {
-      await createRepository().createRecord('story', { name: 'Neue Story' });
-
-      const [mint] = statementsMatching('AS legacy_id');
-      expect(mint.parameters).toEqual(['000s']);
-
-      const [insert] = statementsMatching('INSERT INTO node');
-      expect(insert.sql).toContain('legacy_id');
-      expect(insert.parameters).toContain('000s00000000000099');
-    });
-
     it('legt den Knoten mit Vererbung an — Vererbung ist der Normalfall', async () => {
-      await createRepository().createRecord('story', { name: 'Neue Story' });
+      await createRepository().createRecord('node', { name: 'Neuer Knoten' });
 
       const [insert] = statementsMatching('INSERT INTO node');
       const position = insert.sql
@@ -99,7 +85,7 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('bindet die Werte, statt sie in den Text zu schreiben', async () => {
-      await createRepository().createRecord('story', {
+      await createRepository().createRecord('node', {
         name: "Robert'); DROP TABLE node;--",
       });
 
@@ -109,34 +95,31 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('hängt eine app_node-Zeile für die eigene App an', async () => {
-      await createRepository().createRecord('story', { name: 'Neue Story' });
+      await createRepository().createRecord('node', { name: 'Neuer Knoten' });
 
       const [appNode] = statementsMatching('INSERT INTO app_node');
       expect(appNode.sql).toContain("'include'");
       expect(appNode.parameters).toEqual(['n-neu', APPLICATION_KEY]);
     });
 
-    it('gibt die alte Id nach außen zurück', async () => {
-      const record = await createRepository().createRecord('story', {
-        name: 'Neue Story',
+    it('gibt die Id des angelegten Datensatzes zurück', async () => {
+      const record = await createRepository().createRecord('node', {
+        name: 'Neuer Knoten',
       });
 
-      expect(record.id).toBe('000s00000000000099');
+      expect(record.id).toBe('n-neu');
     });
   });
 
-  describe('createRecord: Kapitel', () => {
+  describe('createRecord: Kind-Knoten', () => {
     beforeEach(() => {
       respondWith('SELECT id FROM node WHERE legacy_id', [{ id: 'n-story' }]);
-      respondWith('AS legacy_id', [{ legacy_id: '000c00000000000099' }]);
-      respondWith('INSERT INTO node', [
-        { id: 'n-kapitel', legacy_id: '000c00000000000099' },
-      ]);
+      respondWith('INSERT INTO node', [{ id: 'n-kapitel' }]);
     });
 
-    it('löst die alte Story-Id auf die neue Parent-Id auf', async () => {
-      await createRepository().createRecord('chapter', {
-        storyId: '000s00000000000011',
+    it('löst eine alte Referenz auf die neue Id auf', async () => {
+      await createRepository().createRecord('node', {
+        parent_node_id: '000s00000000000011',
         name: 'Kapitel',
       });
 
@@ -148,9 +131,9 @@ describe('NodeContentRepository — Schreibpfad', () => {
       expect(insert.parameters).not.toContain('000s00000000000011');
     });
 
-    it('legt KEINE app_node-Zeile an — das Kapitel erbt vom Parent', async () => {
-      await createRepository().createRecord('chapter', {
-        storyId: '000s00000000000011',
+    it('legt KEINE app_node-Zeile an — das Kind erbt vom Parent', async () => {
+      await createRepository().createRecord('node', {
+        parent_node_id: '000s00000000000011',
         name: 'Kapitel',
       });
 
@@ -162,26 +145,23 @@ describe('NodeContentRepository — Schreibpfad', () => {
       respondWith('SELECT id FROM node WHERE', []);
 
       await expect(
-        createRepository().createRecord('chapter', {
-          storyId: '000s99999999999999',
+        createRepository().createRecord('node', {
+          parent_node_id: '000s99999999999999',
           name: 'Kapitel',
         })
       ).rejects.toThrow('Referenced node not found');
     });
   });
 
-  describe('createRecord: Absatz', () => {
+  describe('createRecord: Inhalt', () => {
     beforeEach(() => {
       respondWith('SELECT id FROM node WHERE', [{ id: 'n-kapitel' }]);
-      respondWith('AS legacy_id', [{ legacy_id: '000p00000000000099' }]);
-      respondWith('INSERT INTO content_node', [
-        { id: 'cn-neu', legacy_id: '000p00000000000099' },
-      ]);
+      respondWith('INSERT INTO content_node', [{ id: 'cn-neu' }]);
     });
 
     it('legt content_node und je Repräsentation eine content_item-Zeile an', async () => {
-      await createRepository().createRecord('paragraph', {
-        chapterId: '000c00000000000022',
+      await createRepository().createRecord('content', {
+        node_id: '000c00000000000022',
         name: 'Absatz',
         content: 'Reiner Text',
         htmlcontent: '<p>Reiner Text</p>',
@@ -196,8 +176,8 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('setzt den Zeiger auf die aktive Fassung', async () => {
-      await createRepository().createRecord('paragraph', {
-        chapterId: '000c00000000000022',
+      await createRepository().createRecord('content', {
+        node_id: '000c00000000000022',
         content: 'Reiner Text',
         htmlcontent: '<p>Reiner Text</p>',
       });
@@ -207,8 +187,8 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('macht Text zur aktiven Fassung, wenn HTML leer ist', async () => {
-      await createRepository().createRecord('paragraph', {
-        chapterId: '000c00000000000022',
+      await createRepository().createRecord('content', {
+        node_id: '000c00000000000022',
         content: 'Reiner Text',
         htmlcontent: '',
       });
@@ -217,9 +197,9 @@ describe('NodeContentRepository — Schreibpfad', () => {
       expect(pointer.parameters).toEqual(['cn-neu', 'text']);
     });
 
-    it('verlangt eine Kapitel-Referenz', async () => {
+    it('verlangt eine Knoten-Referenz', async () => {
       await expect(
-        createRepository().createRecord('paragraph', { name: 'Absatz' })
+        createRepository().createRecord('content', { name: 'Absatz' })
       ).rejects.toThrow('requires a chapter reference');
     });
   });
@@ -227,16 +207,14 @@ describe('NodeContentRepository — Schreibpfad', () => {
   describe('updateRecord', () => {
     beforeEach(() => {
       respondWith('SELECT id FROM node WHERE', [{ id: 'n-kapitel' }]);
-      respondWith('UPDATE node SET', [
-        { id: 'n-kapitel', legacy_id: '000c00000000000022', name: 'Neu' },
-      ]);
+      respondWith('UPDATE node SET', [{ id: 'n-kapitel', name: 'Neu' }]);
     });
 
     it('schreibt nur die übergebenen Felder, gebunden', async () => {
-      await createRepository().updateRecord('chapter', {
+      await createRepository().updateRecord('node', {
         id: '000c00000000000022',
         name: 'Neu',
-        sortNumber: 5,
+        sortnumber: 5,
       });
 
       const [update] = statementsMatching('UPDATE node SET');
@@ -245,10 +223,10 @@ describe('NodeContentRepository — Schreibpfad', () => {
       expect(update.parameters).toEqual(['Neu', 5, 'n-kapitel']);
     });
 
-    it('veröffentlicht über dasselbe publishDate-Feld', async () => {
-      await createRepository().updateRecord('chapter', {
+    it('veröffentlicht über dasselbe published_date-Feld', async () => {
+      await createRepository().updateRecord('node', {
         id: '000c00000000000022',
-        publishDate: '2026-08-02T10:00:00.000Z',
+        published_date: '2026-08-02T10:00:00.000Z',
       });
 
       const [update] = statementsMatching('UPDATE node SET');
@@ -256,10 +234,10 @@ describe('NodeContentRepository — Schreibpfad', () => {
       expect(update.parameters[0]).toBe('2026-08-02T10:00:00.000Z');
     });
 
-    it('zieht mit publishDate null zurück', async () => {
-      await createRepository().updateRecord('chapter', {
+    it('zieht mit published_date null zurück', async () => {
+      await createRepository().updateRecord('node', {
         id: '000c00000000000022',
-        publishDate: null,
+        published_date: null,
       });
 
       const [update] = statementsMatching('UPDATE node SET');
@@ -271,22 +249,22 @@ describe('NodeContentRepository — Schreibpfad', () => {
       respondWith('SELECT id FROM node WHERE', []);
 
       await expect(
-        createRepository().updateRecord('chapter', { id: '000c99999999999999' })
+        createRepository().updateRecord('node', { id: '000c99999999999999' })
       ).rejects.toThrow('Record not found');
     });
 
     it('verlangt eine Id', async () => {
       await expect(
-        createRepository().updateRecord('chapter', { name: 'Neu' })
+        createRepository().updateRecord('node', { name: 'Neu' })
       ).rejects.toThrow('Update requires an id');
     });
 
-    it('aktualisiert beim Absatz auch die Inhalte', async () => {
+    it('aktualisiert beim Inhalt auch die Repräsentationen', async () => {
       responses = [];
       respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
       respondWith('UPDATE content_node SET name', [{ id: 'cn-1' }]);
 
-      await createRepository().updateRecord('paragraph', {
+      await createRepository().updateRecord('content', {
         id: '000p00000000000033',
         name: 'Absatz',
         content: 'neuer Text',
@@ -299,15 +277,13 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('kommt mit einem Payload ohne setzbare Felder zurecht', async () => {
-      // Der Absatz schickt seinen ganzen Datensatz — auch wenn sich nur der
+      // Der Editor schickt seinen ganzen Datensatz — auch wenn sich nur der
       // Inhalt geändert hat.
       responses = [];
       respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
-      respondWith('SELECT * FROM content_node', [
-        { id: 'cn-1', legacy_id: '000p00000000000033' },
-      ]);
+      respondWith('SELECT * FROM content_node', [{ id: 'cn-1' }]);
 
-      const record = await createRepository().updateRecord('paragraph', {
+      const record = await createRepository().updateRecord('content', {
         id: '000p00000000000033',
         content: 'nur der Text',
       });
@@ -315,17 +291,17 @@ describe('NodeContentRepository — Schreibpfad', () => {
       expect(statementsMatching('UPDATE content_node SET name')).toHaveLength(
         0
       );
-      expect(record.id).toBe('000p00000000000033');
+      expect(record.id).toBe('cn-1');
     });
   });
 
-  describe('deleteRecord: Absatz', () => {
+  describe('deleteRecord: Inhalt', () => {
     beforeEach(() => {
       respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
     });
 
     it('löst erst den Zeiger, dann die Items, dann den Halter', async () => {
-      await createRepository().deleteRecord('paragraph', '000p00000000000033');
+      await createRepository().deleteRecord('content', '000p00000000000033');
 
       expect(positionOf('SET active_content_item = NULL')).toBeLessThan(
         positionOf('DELETE FROM content_item')
@@ -350,7 +326,7 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('räumt den ganzen Teilbaum ab, in RESTRICT-Reihenfolge', async () => {
-      await createRepository().deleteRecord('story', '000s00000000000011');
+      await createRepository().deleteRecord('node', '000s00000000000011');
 
       const reihenfolge = [
         'SET active_content_item = NULL',
@@ -366,7 +342,7 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('löscht die Knoten einzeln, Kinder vor Eltern', async () => {
-      await createRepository().deleteRecord('story', '000s00000000000011');
+      await createRepository().deleteRecord('node', '000s00000000000011');
 
       const deletes = statementsMatching('DELETE FROM node WHERE id');
       expect(deletes.map((entry) => entry.parameters[0])).toEqual([
@@ -376,7 +352,7 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
 
     it('nullt cover_node_id auch außerhalb des Teilbaums', async () => {
-      await createRepository().deleteRecord('story', '000s00000000000011');
+      await createRepository().deleteRecord('node', '000s00000000000011');
 
       const [cover] = statementsMatching('SET cover_node_id = NULL');
       expect(cover.sql).toContain('WHERE cover_node_id = ANY($1)');
@@ -388,7 +364,7 @@ describe('NodeContentRepository — Schreibpfad', () => {
       respondWith('SELECT id FROM node WHERE', []);
 
       await expect(
-        createRepository().deleteRecord('story', '000s99999999999999')
+        createRepository().deleteRecord('node', '000s99999999999999')
       ).rejects.toThrow('Record not found');
     });
   });

@@ -49,17 +49,15 @@ WHERE cn.legacy_id = $1 OR cn.id = $1
 `;
 
 /**
- * Inhaltsquelle auf dem NEUEN Datenmodell (`node` / `content_node` /
- * `content_item`).
- *
- * Tritt gegen `LegacyContentRepository` an: solange beide dieselbe Antwort
- * liefern, ist die Umschaltung von außen nicht beobachtbar. Die verbleibenden,
- * beabsichtigten Unterschiede stehen in `doc/datamodel-overhaul/datamodel.md`
- * unter „Was sich beim Umschalten sichtbar ändert".
+ * Die Inhaltsquelle: `node` / `content_node` / `content_item`.
  *
  * **Reihenfolge der Verarbeitung** — die Sichtbarkeit wird direkt nach der
  * Abfrage aufgelöst, noch vor dem Mapping und damit weit vor dem Cache: was die
  * `DataFacade` unter einem Cache-Schlüssel ablegt, ist bereits gefiltert.
+ *
+ * Nach außen gilt die Id des Datensatzes. Die Spalte `legacy_id` bleibt, weil
+ * sie der einzige Ort ist, an dem ein Deep-Link von früher noch auflösbar ist —
+ * eingehend wird sie mitgeprüft, ausgehend steht sie als Feld daneben.
  */
 class NodeContentRepository extends ContentRepository {
   createConnector() {
@@ -147,18 +145,16 @@ class NodeContentRepository extends ContentRepository {
   }
 
   /**
-   * Inhaltsbaum in der heutigen Form: Wurzelknoten als Storys, ihre Kinder unter
-   * `chapters`.
+   * Inhaltsbaum: Wurzelknoten mit ihren Kindern unter `nodes`.
    *
    * **Kein Publish-Filter.** Der Baum enthält veröffentlichte wie
    * unveröffentlichte Knoten; gefiltert wird erst bei der Auslieferung durch den
    * `ContentVisibilityFilter`. Nur so bleibt dieselbe Quelle auch für andere
    * Zwecke — etwa `sitemap.xml` — brauchbar. Die App-Zugehörigkeit ist dagegen
-   * bereits aufgelöst, genau wie im Altmodell, wo sie in der WHERE-Klausel saß.
+   * bereits aufgelöst.
    *
-   * **Zwei Ebenen.** Der neue Baum kann tiefer sein, die Kompat-Form kann es
-   * nicht: Enkel werden weggelassen. Das deckt sich mit `MAX_DEPTH = 2` im
-   * `ContentsEndpoint` und fällt mit dem Frontend-Umbau weg.
+   * **Zwei Ebenen.** Der Baum kann tiefer sein; hier werden Enkel weggelassen,
+   * passend zu `MAX_DEPTH = 2` im `ContentsEndpoint`.
    */
   async getContentsTree() {
     const visibility = await this.loadVisibility();
@@ -167,186 +163,22 @@ class NodeContentRepository extends ContentRepository {
 
     return sortSiblings(visible.filter((node) => !node.parent_node_id)).map(
       (root) => ({
-        id: outwardId(root),
-        name: root.name ?? null,
-        lastupdate: null,
-        sortnumber: root.sortnumber ?? null,
-        publishdate: root.published_date ?? null,
-        coverid: coverIdOf(root, visibility),
-        chapters: sortSiblings(
+        ...nodeFields(root),
+        nodes: sortSiblings(
           visibility
             .childrenOf(root.id)
             .filter((child) => visibleIds.has(child.id))
-        ).map((child) => ({
-          id: outwardId(child),
-          storyid: outwardId(root),
-          name: child.name ?? null,
-          lastupdate: null,
-          sortnumber: child.sortnumber ?? null,
-          reversed: child.reversed ?? null,
-          publishdate: child.published_date ?? null,
-        })),
+        ).map(nodeFields),
       })
     );
   }
 
   /**
-   * Story: der Knoten selbst plus seine Kind-Knoten als Kapitel-Kopfdaten.
-   *
-   * Die eingehende Id darf die **alte** (`000s…`, über `legacy_id`) oder die
-   * neue sein. Nach außen geht immer die alte zurück, solange es eine gibt —
-   * daran hängen Deep-Links, Cache-Keys und die Präfix-Typisierung im Frontend.
-   */
-  async getStory(storyId) {
-    const visibility = await this.loadVisibility();
-    const storyNode = visibility.findByAnyId(storyId);
-    if (!this.isDeliverable(storyNode, visibility)) {
-      return {};
-    }
-
-    const chapters = sortSiblings(
-      visibility
-        .childrenOf(storyNode.id)
-        .filter((child) => this.isDeliverable(child, visibility))
-    );
-    return {
-      id: outwardId(storyNode),
-      name: storyNode.name ?? null,
-      // Fehlende Werte kommen als null, nicht als undefined: undefined
-      // verschwindet beim Serialisieren spurlos aus der Antwort, null nicht.
-      lastupdate: null,
-      sortnumber: storyNode.sortnumber ?? null,
-      publishdate: storyNode.published_date ?? null,
-      coverid: coverIdOf(storyNode, visibility),
-      chapters: chapters.map((child) =>
-        headData({
-          id: outwardId(child),
-          name: child.name,
-          sortnumber: child.sortnumber,
-        })
-      ),
-    };
-  }
-
-  /**
-   * Kapitel: der Knoten plus die Kopfdaten seiner `content_node`-Zeilen —
-   * ausdrücklich **ohne** Inhalt, genau wie im Altmodell.
-   */
-  async getChapter(chapterId) {
-    const visibility = await this.loadVisibility();
-    const chapterNode = visibility.findByAnyId(chapterId);
-    if (!this.isDeliverable(chapterNode, visibility)) {
-      return {};
-    }
-
-    const contentNodes = await this.execute(CONTENT_NODES_SQL, [
-      chapterNode.id,
-    ]);
-    const parentNode = visibility.getNode(chapterNode.parent_node_id);
-
-    return {
-      id: outwardId(chapterNode),
-      storyid: parentNode
-        ? outwardId(parentNode)
-        : (chapterNode.parent_node_id ?? null),
-      name: chapterNode.name ?? null,
-      lastupdate: null,
-      sortnumber: chapterNode.sortnumber ?? null,
-      reversed: chapterNode.reversed ?? null,
-      publishdate: chapterNode.published_date ?? null,
-      // Der Content-Halter hat keine eigene App-Zugehörigkeit; er folgt seinem
-      // Knoten, und der ist an dieser Stelle bereits als sichtbar erwiesen.
-      paragraphs: sortSiblings(
-        contentNodes.filter((row) => this.isPublished(row))
-      ).map((row) =>
-        headData({
-          id: outwardId(row),
-          name: row.name,
-          sortnumber: row.sortnumber,
-        })
-      ),
-    };
-  }
-
-  /**
-   * Absatz mit vollem Inhalt.
-   *
-   * Zwei bewusste Abweichungen vom Altmodell, beide in Richtung „weniger
-   * ausliefern":
-   *
-   * 1. **Publish-Filter.** Der alte direkte Absatz-Zugriff hatte gar keinen —
-   *    ein unveröffentlichter Absatz wurde ausgeliefert, sobald seine Id bekannt
-   *    war. Hier gilt derselbe Filter wie überall sonst.
-   * 2. **Sichtbarkeit über den Knoten.** `content_node` trägt keine eigene
-   *    App-Zugehörigkeit, sie folgt ihrem `node` — so ist das Modell gebaut.
-   *    Das Altmodell prüfte allein die App-Spalten des Absatzes.
-   */
-  async getParagraph(paragraphId) {
-    const visibility = await this.loadVisibility();
-    const rows = await this.execute(CONTENT_SQL, [paragraphId]);
-    if (rows.length === 0) {
-      return {};
-    }
-
-    const first = rows[0];
-    const chapterNode = visibility.getNode(first.node_id);
-    if (!this.isDeliverable(chapterNode, visibility)) {
-      return {};
-    }
-    if (!this.isPublished(first)) {
-      return {};
-    }
-
-    const storyNode = visibility.getNode(chapterNode.parent_node_id);
-    const textItem = rows.find((row) => row.item_type === 'text');
-    const activeItem = rows.find(
-      (row) => row.item_id && row.item_id === first.active_content_item
-    );
-
-    return {
-      id: outwardId(first),
-      name: first.name ?? null,
-      lastupdate: null,
-      content: textItem ? (textItem.item_content ?? null) : null,
-      // `htmlcontent` nur, wenn die HTML-Fassung auch die aktive ist. Das
-      // Frontend entscheidet über `htmlcontent ? html : text` — damit setzt der
-      // explizite Zeiger `active_content_item` sich gegen die alte implizite
-      // Regel „html gewinnt, sobald gefüllt" durch.
-      htmlcontent:
-        activeItem && activeItem.item_type === 'html'
-          ? (activeItem.item_content ?? null)
-          : null,
-      sortnumber: first.sortnumber ?? null,
-      chapterid: outwardId(chapterNode),
-      storyid: storyNode
-        ? outwardId(storyNode)
-        : (chapterNode.parent_node_id ?? null),
-      publishdate: first.published_date ?? null,
-    };
-  }
-
-  // ─── Typfreie Antwortform ────────────────────────────────────────────────
-  //
-  // Was oben steht, ist Kompatibilität: drei feste Ebenen, alte Feldnamen, alte
-  // Ids. Was hier steht, ist das Modell selbst — ein Knoten mit seinen Kindern,
-  // ein Inhalt mit seinen Repräsentationen. Drei Unterschiede sind Absicht:
-  //
-  // 1. **Neue Ids nach außen.** `outwardId` gilt hier NICHT. Die alte Id steht
-  //    als `legacy_id` daneben, damit ein Deep-Link von früher auflösbar
-  //    bleibt, aber sie ist nicht mehr die Identität des Datensatzes.
-  // 2. **Spaltennamen des neuen Modells** (`published_date`, `parent_node_id`)
-  //    statt der zusammengeschriebenen alten (`publishdate`, `storyid`).
-  // 3. **Fehlende Werte sind `null`, nicht abwesend.** Die alte Form ließ
-  //    leere Felder ganz weg (`headData`); das war eine Eigenheit von
-  //    `DataStorage`, keine Aussage.
-
-  /**
    * Ein Knoten mit seinen Kind-Knoten und seinen Inhalts-Kopfdaten.
    *
-   * Das ist die Zusammenführung von `getStory` und `getChapter`: eine Story ist
-   * ein Knoten mit Kindern und ohne Inhalte, ein Kapitel einer mit Inhalten und
-   * (heute) ohne Kinder. Beides kann derselbe Aufruf beantworten, weil das
-   * Modell die Unterscheidung nicht mehr kennt.
+   * Ein Knoten mit Kindern und ohne Inhalte hieß früher Story, einer mit
+   * Inhalten und ohne Kinder Kapitel. Beides beantwortet derselbe Aufruf, weil
+   * das Modell die Unterscheidung nicht kennt.
    *
    * Die eingehende Id darf die neue oder die alte sein.
    */
@@ -377,11 +209,9 @@ class NodeContentRepository extends ContentRepository {
   /**
    * Ein Inhalt mit **allen** seinen Repräsentationen.
    *
-   * Der Unterschied zu `getParagraph` ist der Kern des neuen Modells: dort
-   * entschied die Datenschicht, welche Fassung gilt, und lieferte zwei feste
-   * Felder. Hier kommen alle Fassungen mit, dazu der Zeiger auf die aktive —
-   * ein künftiger Typ (`markdown`, `mermaid`) braucht dann keine Änderung an
-   * dieser Stelle mehr.
+   * Die Datenschicht entscheidet **nicht**, welche Fassung gilt — sie liefert
+   * alle und dazu den Zeiger auf die aktive. Ein künftiger Typ (`markdown`,
+   * `mermaid`) braucht damit keine Änderung an dieser Stelle.
    */
   async getContent(contentId) {
     const visibility = await this.loadVisibility();
@@ -448,30 +278,15 @@ class NodeContentRepository extends ContentRepository {
       if (!value) {
         continue;
       }
-      const target = await this.resolveId(run, 'story', value);
+      // Alle drei Referenz-Spalten zeigen auf einen Knoten — auch `node_id`
+      // eines Inhalts.
+      const target = await this.resolveId(run, 'node', value);
       if (!target) {
         throw new Error(`Referenced node not found: ${value}`);
       }
       resolved[column] = target;
     }
     return resolved;
-  }
-
-  /**
-   * Zusätzliche alte Id für eine Neuanlage — oder nichts.
-   *
-   * Nur die alten Objektnamen bekommen eine: dort liest das Frontend den Typ
-   * noch am Präfix. Wer über `node`/`content` schreibt, hat das hinter sich und
-   * bekommt allein die neue Id (`datamodel.md`, „Lebensdauer").
-   */
-  async mintLegacyId(run, object, tableName) {
-    if (!NodeWriteMapping.usesLegacyIds(object)) {
-      return {};
-    }
-    const [{ legacy_id: legacyId }] = await run(mintLegacyIdSql(tableName), [
-      NodeWriteMapping.legacyPrefix(object),
-    ]);
-    return { legacy_id: legacyId };
   }
 
   async createRecord(object, payload) {
@@ -504,7 +319,6 @@ class NodeContentRepository extends ContentRepository {
     // Regel des Zielmodells.
     const withDefaults = {
       ...columns,
-      ...(await this.mintLegacyId(run, object, 'node')),
       is_parent_controls_visibility: true,
     };
     const insert = insertClause(withDefaults);
@@ -533,10 +347,7 @@ class NodeContentRepository extends ContentRepository {
       throw new Error('Creating a paragraph requires a chapter reference');
     }
 
-    const insert = insertClause({
-      ...columns,
-      ...(await this.mintLegacyId(run, object, 'content_node')),
-    });
+    const insert = insertClause(columns);
     const [contentNode] = await run(
       `INSERT INTO content_node (${insert.names}) VALUES (${insert.placeholders}) RETURNING *`,
       insert.values
@@ -731,27 +542,10 @@ class NodeContentRepository extends ContentRepository {
     await run(`DELETE FROM content_node WHERE id = ANY($1)`, [contentNodeIds]);
   }
 
-  /**
-   * Antwort eines Schreibvorgangs in der Form, die der Aufrufer erwartet.
-   *
-   * Wer über die alten Objektnamen schreibt, bekommt die alte Id zurück — das
-   * Frontend liest dort den Typ am Präfix und legt sie in seinen Cache. Wer
-   * über `node`/`content` schreibt, bekommt die neue.
-   */
+  /** Antwort eines Schreibvorgangs — die Zeile, wie sie jetzt in der DB steht. */
   outwardRecord(object, record) {
-    if (!record) {
-      return {};
-    }
-    if (!NodeWriteMapping.usesLegacyIds(object)) {
-      return { ...record };
-    }
-    return { ...record, id: outwardId(record) };
+    return record ? { ...record } : {};
   }
-}
-
-/** Nach außen gilt die alte Id, solange es eine gibt. */
-function outwardId(row) {
-  return row.legacy_id || row.id;
 }
 
 /**
@@ -787,27 +581,6 @@ function contentHeadFields(row) {
   };
 }
 
-/**
- * Nächste freie `legacy_id` im alten Präfix-Schema.
- *
- * Neuanlagen bekommen zusätzlich eine alte Id, weil das Frontend den Typ noch
- * am Präfix liest und Deep-Links darauf zeigen. Die Nummer wird aus dem
- * Höchststand **desselben Präfixes** abgeleitet — `000s` und `000c` liegen
- * beide in `node`, dürfen sich aber nicht ins Gehege kommen. Läuft in derselben
- * Transaktion wie das INSERT; bei einer Kollision greift die UNIQUE-Bedingung.
- *
- * Fällt mit Phase D weg, zusammen mit der Präfix-Typisierung im Frontend.
- */
-function mintLegacyIdSql(tableName) {
-  return `
-SELECT $1 || LPAD(
-  (COALESCE(MAX(SUBSTRING(legacy_id FROM 5)::bigint), 0) + 1)::text, 14, '0'
-) AS legacy_id
-FROM ${tableName}
-WHERE legacy_id LIKE $1 || '%'
-`;
-}
-
 /** Wert-Liste für ein INSERT: Spaltennamen und gebundene Platzhalter. */
 function insertClause(columns, firstPlaceholder = 1) {
   const names = Object.keys(columns);
@@ -831,23 +604,11 @@ function updateClause(columns, firstPlaceholder = 1) {
 }
 
 /**
- * `coverid` in der alten Form. `story.coverid` zeigt auf ein Kapitel, also gilt
- * auch hier die alte Id des Zielknotens. Ist der Zielknoten unbekannt — etwa
- * weil er für diese App nicht sichtbar ist — bleibt die rohe Referenz stehen,
- * statt sie stillschweigend zu verschlucken.
- */
-function coverIdOf(node, visibility) {
-  const coverNode = visibility.getNode(node.cover_node_id);
-  return coverNode ? outwardId(coverNode) : (node.cover_node_id ?? null);
-}
-
-/**
  * Geschwister-Reihenfolge: `sortnumber` aufsteigend, leere Werte ans Ende.
  *
- * Der Tiebreaker ist nicht kosmetisch: bei gleicher `sortnumber` sortiert das
- * Altmodell gar nicht weiter, die Reihenfolge ist dort die physische
- * Zeilenreihenfolge und damit Zufall. Die alte Id folgt der Anlagereihenfolge
- * und macht das Ergebnis reproduzierbar.
+ * Der Tiebreaker ist nicht kosmetisch: bei gleicher `sortnumber` entschiede
+ * sonst die physische Zeilenreihenfolge, also Zufall. Die Id folgt der
+ * Anlagereihenfolge und macht das Ergebnis reproduzierbar.
  */
 function sortSiblings(records) {
   return [...records].sort((first, second) => {
@@ -856,26 +617,8 @@ function sortSiblings(records) {
     if (firstSort !== secondSort) {
       return firstSort - secondSort;
     }
-    return String(outwardId(first)).localeCompare(String(outwardId(second)));
+    return String(first.id).localeCompare(String(second.id));
   });
-}
-
-/**
- * Kopfdaten wie im Altmodell: Felder ohne Wert fehlen ganz.
- *
- * `DataStorage` baut die Kind-Datensätze mit `if (!row[fieldName]) return;` —
- * ein `sortnumber` von 0 oder ein leerer Name fällt damit heraus, statt als
- * `null` aufzutauchen. Wer das nicht nachbildet, ändert die Antwortform.
- */
-function headData(record) {
-  const result = {};
-  Object.entries(record).forEach(([key, value]) => {
-    if (!value) {
-      return;
-    }
-    result[key] = value;
-  });
-  return result;
 }
 
 module.exports = {

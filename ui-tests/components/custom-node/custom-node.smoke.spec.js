@@ -73,6 +73,22 @@ test.describe('custom-node', () => {
     expect(content.hasNavigation).toBe(false);
   });
 
+  test('der Inhalt wird in seiner aktiven Fassung angezeigt', async ({
+    page,
+  }) => {
+    // Der `content`-Endpunkt liefert alle Repräsentationen und den Zeiger auf
+    // die aktive (hier `html`). Wird der Zeiger ignoriert, stünde hier der
+    // reine Text.
+    const paragraph = page.locator(
+      'custom-node[data-role="content"] custom-paragraph'
+    );
+
+    await expect(paragraph.locator('#content p')).toHaveCount(1);
+    await expect(paragraph.locator('#content')).toContainText(
+      'Lorem ipsum dolor sit amet'
+    );
+  });
+
   test('ein Klick auf ein Kind schaltet den unteren Knoten um', async ({
     page,
   }) => {

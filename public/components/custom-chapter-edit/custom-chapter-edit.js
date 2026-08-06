@@ -282,7 +282,7 @@ class CustomChapterEdit extends LitElement {
     return html`
       <custom-publishing
         record-id="${this.chapterId}"
-        object-name="chapter"
+        object-name="node"
         publish-date="${this.publishDate || ''}"
       ></custom-publishing>
     `;
@@ -455,6 +455,23 @@ class CustomChapterEdit extends LitElement {
   // Private Methods
   // ==================================================
 
+  /**
+   * Die zu setzenden Spalten eines Knotens.
+   *
+   * Die Namen sind die des Datenmodells (`sortnumber`, `published_date`) —
+   * frueher standen hier `sortNumber`/`publishDate`, die die Datenschicht
+   * uebersetzen musste. Uebrig bleibt eine Uebersetzung: die Formularfelder
+   * heissen intern weiter wie bisher.
+   */
+  _nodeColumns() {
+    return {
+      name: this.chapterData.name,
+      sortnumber: this.chapterData.sortNumber,
+      reversed: this.chapterData.reversed || false,
+      published_date: this.chapterData.publishDate || null,
+    };
+  }
+
   _validate() {
     const name = this.chapterData?.name?.trim();
     if (!name) {
@@ -471,13 +488,10 @@ class CustomChapterEdit extends LitElement {
 
   _createChapter() {
     const eventDetail = {
-      object: 'chapter',
+      object: 'node',
       payload: {
-        storyId: this.storyId,
-        name: this.chapterData.name,
-        sortNumber: this.chapterData.sortNumber,
-        reversed: this.chapterData.reversed || false,
-        publishDate: this.chapterData.publishDate || null,
+        ...this._nodeColumns(),
+        parent_node_id: this.storyId,
       },
       callback: this._createEventCallback.bind(this),
     };
@@ -508,17 +522,21 @@ class CustomChapterEdit extends LitElement {
 
   _updateChapter() {
     const eventDetail = {
-      object: 'chapter',
+      object: 'node',
       payload: {
         id: this.chapterId,
-        storyId: this.chapterData.storyId || this.storyId,
-        name: this.chapterData.name,
-        sortNumber: this.chapterData.sortNumber,
-        reversed: this.chapterData.reversed || false,
-        publishDate: this.chapterData.publishDate || null,
+        ...this._nodeColumns(),
       },
       callback: this._updateEventCallback.bind(this),
     };
+
+    // `parent_node_id` nur mitschicken, wenn es einen Elternknoten gibt: bei
+    // einem Wurzelknoten waere `null` eine Aussage ("haenge ihn aus"), keine
+    // fehlende Angabe.
+    const parentId = this.chapterData.storyId || this.storyId;
+    if (parentId) {
+      eventDetail.payload.parent_node_id = parentId;
+    }
 
     this.dispatchEvent(
       new CustomEvent('save', {

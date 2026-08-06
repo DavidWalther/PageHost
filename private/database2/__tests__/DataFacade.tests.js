@@ -3,17 +3,16 @@ const { Environment } = require('../../modules/environment.js');
 const { DataCache2 } = require('../DataCache/DataCache.js');
 const { DataStorage } = require('../DataStorage/DataStorage.js');
 
+// Diese Suite prüft, was die Facade **neben** den Inhalten tut: Konfiguration,
+// Identity und die Schreibwege. Die Inhalte laufen über das
+// `NodeContentRepository` und sind in `typeFreeReadPath.tests.js` sowie
+// `private/__tests__/readPathIntegration.tests.js` abgedeckt.
 const MOCK_ENVIRONMENT = {
   APPLICATION_APPLICATION_KEY: 'test-key',
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
   REDIS_PASSWORD: 'test-password',
   REDIS_HOST: 'test-host',
   REDIS_PORT: 'test-port',
-  // Diese Suite prüft das Zusammenspiel der Facade mit Cache und Scopes anhand
-  // der `DataStorage`-Aufrufe — ein Seam, den nur die alte Quelle benutzt.
-  // Dieselben Zusicherungen gegen die neue Quelle stehen in
-  // `private/__tests__/nodeSourceIntegration.tests.js`.
-  CONTENT_SOURCE: 'legacy',
 };
 const MOCK_CACHE = {
   metaTitle: 'Mock Tabtitle',
@@ -51,11 +50,6 @@ DataCache2.mockImplementation(() => {
 // ---- DataStorage.js mock ----
 jest.mock('../DataStorage/DataStorage.js');
 let mockQueryConfiguration = jest.fn().mockReturnValue(MOCK_DATABASE);
-let mockQueryStory = jest.fn().mockReturnValue();
-let mockQueryAllStories = jest.fn().mockReturnValue();
-let mockQueryAllChapters = jest.fn().mockReturnValue([]);
-let mockQueryChapter = jest.fn().mockReturnValue();
-let mockQueryParagraphs = jest.fn().mockReturnValue();
 let mockQueryIdentityByKey = jest.fn().mockReturnValue();
 let setConditionApplicationKey = jest.fn();
 let setConditionPublishDate = jest.fn();
@@ -64,11 +58,6 @@ DataStorage.mockImplementation(() => {
     setConditionPublishDate: setConditionPublishDate,
     setConditionApplicationKey: setConditionApplicationKey,
     queryConfiguration: mockQueryConfiguration,
-    queryAllStories: mockQueryAllStories,
-    queryAllChapters: mockQueryAllChapters,
-    queryStory: mockQueryStory,
-    queryChapter: mockQueryChapter,
-    queryParagraphs: mockQueryParagraphs,
     queryIdentityByKey: mockQueryIdentityByKey,
   };
 });
@@ -119,139 +108,6 @@ describe('getData', () => {
       const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
       const result = dataFacade.getData({ request: { id: '1234' } });
       expect(result).toBeTruthy();
-    });
-  });
-
-  describe('Story', () => {
-    it("getData should trigger a query for a story if request.table is 'story' and an id is given", async () => {
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      mockCacheGet = jest.fn().mockReturnValue(null);
-      mockQueryStory = jest.fn().mockReturnValue({ id: '1234' });
-
-      const result = await dataFacade.getData({
-        request: { table: 'story', id: '1234' },
-      });
-      expect(DataStorage).toHaveBeenCalled();
-      expect(mockQueryStory).toHaveBeenCalled();
-      expect(result).toBeTruthy();
-      expect(result).toStrictEqual({ id: '1234' });
-    });
-  });
-
-  describe('Chapter', () => {
-    it("should call DataCache and DataStorage if request.table is 'chapter'", async () => {
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      mockCacheGet = jest.fn().mockReturnValue();
-
-      const result = await dataFacade.getData({
-        request: { table: 'chapter', id: '000c00000000000023' },
-      });
-      expect(DataCache2).toHaveBeenCalled();
-      expect(mockCacheGet).toHaveBeenCalledWith('000c00000000000023');
-      expect(DataStorage).toHaveBeenCalled();
-      expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
-    });
-
-    it('should return cache result if there was a hit', async () => {
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      mockCacheGet = jest
-        .fn()
-        .mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter' });
-
-      const result = await dataFacade.getData({
-        request: { table: 'chapter', id: '000c00000000000023' },
-      });
-      expect(DataCache2).toHaveBeenCalled();
-      expect(mockCacheGet).toHaveBeenCalledWith('000c00000000000023');
-      expect(DataStorage).not.toHaveBeenCalled();
-      expect(result.id).toBe('000c00000000000023');
-      expect(result.Name).toBe('Test Chapter');
-    });
-
-    it('should call DataStorage if there was no hit in cache', async () => {
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-      mockCacheGet = jest.fn().mockReturnValue(null);
-      mockQueryChapter = jest
-        .fn()
-        .mockReturnValue({ id: '000c00000000000023', Name: 'Test Chapter' });
-
-      const result = await dataFacade.getData({
-        request: { table: 'chapter', id: '000c00000000000023' },
-      });
-      expect(DataCache2).toHaveBeenCalled();
-      expect(mockCacheGet).toHaveBeenCalledWith('000c00000000000023');
-      expect(DataStorage).toHaveBeenCalled();
-      expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
-      expect(result.id).toBe('000c00000000000023');
-      expect(result.Name).toBe('Test Chapter');
-    });
-  });
-
-  describe('Contents', () => {
-    beforeEach(() => {
-      mockQueryAllStories = jest.fn().mockReturnValue([
-        { id: 's2', name: 'Story 2', sortnumber: 2, publishdate: '2020-01-01' },
-        { id: 's1', name: 'Story 1', sortnumber: 1, publishdate: '2020-01-01' },
-      ]);
-      mockQueryAllChapters = jest.fn().mockReturnValue([
-        { id: 'c-s1-2', storyid: 's1', name: 'C2', sortnumber: 2 },
-        { id: 'c-s1-1', storyid: 's1', name: 'C1', sortnumber: 1 },
-        { id: 'c-s2-1', storyid: 's2', name: 'C1', sortnumber: 1 },
-      ]);
-      mockCacheSet = jest.fn();
-    });
-
-    it('builds the full tree from flat queries on a cache miss and writes it to cache', async () => {
-      mockCacheGet = jest.fn().mockReturnValue(null);
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-
-      const result = await dataFacade.getData({
-        request: { table: 'contents', id: null },
-      });
-
-      expect(mockCacheGet).toHaveBeenCalledWith('contentsTree');
-      expect(mockQueryAllStories).toHaveBeenCalled();
-      expect(mockQueryAllChapters).toHaveBeenCalled();
-      expect(mockCacheSet).toHaveBeenCalledWith('contentsTree', result);
-
-      // sorted by sortnumber, chapters grouped by storyid and sorted
-      expect(result.map((story) => story.id)).toEqual(['s1', 's2']);
-      expect(result[0].chapters.map((chapter) => chapter.id)).toEqual([
-        'c-s1-1',
-        'c-s1-2',
-      ]);
-      // full tree keeps publishdate for the delivery-time filter
-      expect(result[0].publishdate).toBe('2020-01-01');
-    });
-
-    it('returns the cached tree on a hit without touching DataStorage', async () => {
-      const cachedTree = [{ id: 's1', name: 'Story 1', chapters: [] }];
-      mockCacheGet = jest.fn().mockReturnValue(cachedTree);
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-
-      const result = await dataFacade.getData({
-        request: { table: 'contents', id: null },
-      });
-
-      expect(mockCacheGet).toHaveBeenCalledWith('contentsTree');
-      expect(mockQueryAllStories).not.toHaveBeenCalled();
-      expect(mockQueryAllChapters).not.toHaveBeenCalled();
-      expect(result).toStrictEqual(cachedTree);
-    });
-
-    it('skips the cache entirely when skipCache is set (edit scope)', async () => {
-      mockCacheGet = jest.fn().mockReturnValue(null);
-      const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-
-      const result = await dataFacade
-        .setSkipCache(true)
-        .getData({ request: { table: 'contents', id: null } });
-
-      expect(mockCacheGet).not.toHaveBeenCalled();
-      expect(mockCacheSet).not.toHaveBeenCalled();
-      expect(mockQueryAllStories).toHaveBeenCalled();
-      expect(mockQueryAllChapters).toHaveBeenCalled();
-      expect(result.map((story) => story.id)).toEqual(['s1', 's2']);
     });
   });
 
@@ -311,229 +167,12 @@ describe('getData with specific scopes', () => {
     DataStorage.mockClear();
     DataCache2.mockClear();
     mockCacheGet = jest.fn();
-    mockQueryChapter = jest.fn();
-    mockQueryParagraphs = jest.fn();
     mockQueryIdentityByKey = jest.fn();
-    mockQueryStory = jest.fn();
     setConditionPublishDate.mockClear();
     setConditionApplicationKey.mockClear();
   });
 
   describe('skipping cache', () => {
-    describe('Chapter', () => {
-      it('should not call DataCache if scope is "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setSkipCache(true);
-
-        await dataFacade.getData({
-          request: { table: 'chapter', id: '000c00000000000023' },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-      });
-
-      it('should set publishDate to requested date if cache is skipped', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setSkipCache(true);
-        mockQueryChapter.mockReturnValue({
-          id: '000c00000000000023',
-          Name: 'Test Chapter',
-          publishDate: '2023-01-01',
-        });
-
-        const result = await dataFacade.getData({
-          request: {
-            table: 'chapter',
-            id: '000c00000000000023',
-            publishDate: null,
-          },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-        expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryChapter).toHaveBeenCalledWith('000c00000000000023');
-        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
-        expect(result.id).toBe('000c00000000000023');
-        expect(result.publishDate).toBe('2023-01-01');
-      });
-    });
-
-    describe('Paragraph', () => {
-      it('should not call DataCache if scope is "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setSkipCache(true);
-
-        await dataFacade.getData({
-          request: { table: 'paragraph', id: '000p00000000000045' },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-      });
-
-      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setSkipCache(true);
-        mockQueryParagraphs.mockReturnValue({
-          id: '000p00000000000045',
-          Name: 'Test Paragraph',
-          publishDate: '2023-01-01',
-        });
-
-        const result = await dataFacade.getData({
-          request: {
-            table: 'paragraph',
-            id: '000p00000000000045',
-            publishDate: null,
-          },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-        expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryParagraphs).toHaveBeenCalledWith('000p00000000000045');
-        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
-        expect(result.id).toBe('000p00000000000045');
-        expect(result.publishDate).toBe('2023-01-01');
-      });
-    });
-
-    describe('Story', () => {
-      it('should not call DataCache if scope is "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(['edit']);
-        mockQueryStory.mockReturnValue({
-          id: '000s00000000000012',
-          name: 'Test Story',
-          chapters: [
-            {
-              id: '000c00000000000023',
-              name: 'Chapter 1',
-              publishDate: '2026-06-01',
-            },
-            {
-              id: '000c00000000000024',
-              name: 'Chapter 2',
-              publishDate: '2026-12-01',
-            },
-          ],
-        });
-
-        await dataFacade.getData({
-          request: { table: 'story', id: '000s00000000000012' },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-      });
-
-      it('should set publishDate to null in DataStorage if scope is "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(['edit']);
-        mockQueryStory.mockReturnValue({
-          id: '000s00000000000012',
-          name: 'Test Story',
-          publishDate: '2026-03-15',
-          chapters: [
-            {
-              id: '000c00000000000023',
-              name: 'Chapter 1',
-              publishDate: '2026-06-01',
-            },
-            {
-              id: '000c00000000000024',
-              name: 'Chapter 2',
-              publishDate: '2026-12-01',
-            },
-          ],
-        });
-
-        const result = await dataFacade.getData({
-          request: { table: 'story', id: '000s00000000000012' },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-        expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryStory).toHaveBeenCalledWith('000s00000000000012');
-        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
-        expect(result.id).toBe('000s00000000000012');
-        expect(result.name).toBe('Test Story');
-        expect(result.chapters).toHaveLength(2);
-        expect(result.chapters[0].publishDate).toBe('2026-06-01');
-        expect(result.chapters[1].publishDate).toBe('2026-12-01');
-      });
-
-      it('should return all chapters including future publishDates when scope is "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        dataFacade.setScopes(['edit']);
-        mockQueryStory.mockReturnValue({
-          id: '000s00000000000012',
-          name: 'Test Story with Future Chapters',
-          publishDate: '2026-01-01',
-          chapters: [
-            {
-              id: '000c00000000000023',
-              name: 'Published Chapter',
-              publishDate: '2026-01-15',
-            },
-            {
-              id: '000c00000000000024',
-              name: 'Future Chapter 1',
-              publishDate: '2026-06-01',
-            },
-            {
-              id: '000c00000000000025',
-              name: 'Future Chapter 2',
-              publishDate: '2026-12-01',
-            },
-          ],
-        });
-
-        const result = await dataFacade.getData({
-          request: { table: 'story', id: '000s00000000000012' },
-        });
-
-        expect(mockCacheGet).not.toHaveBeenCalled();
-        expect(DataStorage).toHaveBeenCalled();
-        expect(mockQueryStory).toHaveBeenCalledWith('000s00000000000012');
-        expect(setConditionPublishDate).toHaveBeenCalledWith(null);
-        expect(result.chapters).toHaveLength(3);
-        // All chapters should be returned, including future ones
-        expect(
-          result.chapters.find((c) => c.id === '000c00000000000023')
-        ).toBeTruthy();
-        expect(
-          result.chapters.find((c) => c.id === '000c00000000000024')
-        ).toBeTruthy();
-        expect(
-          result.chapters.find((c) => c.id === '000c00000000000025')
-        ).toBeTruthy();
-      });
-
-      it('should use cache and apply publishDate filtering when scope is not "edit"', async () => {
-        const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
-        // No scopes set, so default behavior should apply
-        mockCacheGet.mockReturnValue({
-          id: '000s00000000000012',
-          name: 'Cached Story',
-          chapters: [
-            {
-              id: '000c00000000000023',
-              name: 'Published Chapter',
-              publishDate: '2026-01-15',
-            },
-          ],
-        });
-
-        const result = await dataFacade.getData({
-          request: { table: 'story', id: '000s00000000000012' },
-        });
-
-        expect(mockCacheGet).toHaveBeenCalledWith('000s00000000000012');
-        expect(DataStorage).not.toHaveBeenCalled();
-        expect(setConditionPublishDate).not.toHaveBeenCalled();
-        expect(result.id).toBe('000s00000000000012');
-        expect(result.name).toBe('Cached Story');
-      });
-    });
-
     describe('Identity', () => {
       it('should always bypass cache when querying identity', async () => {
         const dataFacade = new DataFacade(MOCK_ENVIRONMENT);
@@ -606,7 +245,6 @@ describe('updateData', () => {
     // nodeWritePath.tests.js geprueft.
     mockEnvironment = {
       APPLICATION_APPLICATION_KEY: 'test-key',
-      CONTENT_SOURCE: 'legacy',
     };
 
     mockDataStorage = {
@@ -747,7 +385,6 @@ describe('createData', () => {
     // nodeWritePath.tests.js geprueft.
     mockEnvironment = {
       APPLICATION_APPLICATION_KEY: 'test-key',
-      CONTENT_SOURCE: 'legacy',
     };
     mockCreateRecord = jest.fn();
     mockDataStorage = {

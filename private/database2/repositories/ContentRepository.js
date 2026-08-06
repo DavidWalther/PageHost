@@ -1,15 +1,10 @@
 /**
  * Schnittstelle für die Inhaltsquelle — Lesen **und** Schreiben.
  *
- * Zweck: die Umstellung vom alten Datenmodell (`story`/`chapter`/`paragraph`)
- * auf das neue (`node`/`content_node`/`content_item`) so vorzubereiten, dass
- * **dieselben** Charakterisierungstests gegen beide Quellen laufen können.
- * Solange sie für beide grün sind, ist der Wechsel von außen nicht beobachtbar.
- *
- * Es gibt genau einen Umschaltpunkt: `DataFacadeSync.createContentRepository()`.
- * Der wählt seit der Umstellung über `CONTENT_SOURCE` — Standard ist das neue
- * Modell, `legacy` der Rückweg. Schalter und alte Implementierung verschwinden
- * gemeinsam mit den alten Tabellen.
+ * Die Schnittstelle entstand als Naht zwischen altem und neuem Datenmodell und
+ * hat den Wechsel überlebt: sie hält den Zugriff auf die Inhalte an **einer**
+ * Stelle zusammen (`DataFacadeSync.createContentRepository()`) und trennt ihn
+ * von allem, was nicht Inhalt ist.
  *
  * Abgrenzung:
  * - **Caching gehört nicht hierher.** Ein Repository liefert immer aus der
@@ -31,16 +26,7 @@
  * der `DataFacade`, weil sie zur Schnittstelle gehört: wer sie erweitert, muss
  * beide Quellen bedienen.
  */
-const CONTENT_OBJECTS = [
-  'story',
-  'chapter',
-  'paragraph',
-  // Dieselben Daten unter der typfreien Benennung. Beide Sätze zeigen auf
-  // dieselben Tabellen; sie unterscheiden sich in den Feldnamen und darin, ob
-  // die alte Id nach außen gilt. Die vorderen drei fallen mit der Kompat-Schicht.
-  'node',
-  'content',
-];
+const CONTENT_OBJECTS = ['node', 'content'];
 
 class ContentRepository {
   /** Ist dieses Objekt Sache der Inhaltsquelle? */
@@ -72,23 +58,8 @@ class ContentRepository {
     return this;
   }
 
-  /** Story mit ihren Kapitel-Kopfdaten unter `chapters[]`. */
-  async getStory() {
-    throw new Error('ContentRepository.getStory is not implemented');
-  }
-
-  /** Kapitel mit den Kopfdaten seiner Absätze unter `paragraphs[]` (ohne Inhalt). */
-  async getChapter() {
-    throw new Error('ContentRepository.getChapter is not implemented');
-  }
-
-  /** Einzelner Absatz mit vollem Inhalt. */
-  async getParagraph() {
-    throw new Error('ContentRepository.getParagraph is not implemented');
-  }
-
   /**
-   * Vollständiger Inhaltsbaum (`stories[].chapters[]`), **ungefiltert** —
+   * Vollständiger Inhaltsbaum (Wurzelknoten mit `nodes[]`), **ungefiltert** —
    * veröffentlicht und unveröffentlicht. Der Publish-Filter läuft erst bei der
    * Auslieferung im `ContentVisibilityFilter`, damit dieselbe Baum-Quelle auch
    * für andere Zwecke (z. B. `sitemap.xml`) nutzbar bleibt.
@@ -97,17 +68,10 @@ class ContentRepository {
     throw new Error('ContentRepository.getContentsTree is not implemented');
   }
 
-  // ─── Typfreie Lesewege ───────────────────────────────────────────────────
+  // ─── Einzelne Datensätze ─────────────────────────────────────────────────
   //
-  // Die vier Methoden oben liefern die ALTE Antwortform: drei feste Ebenen,
-  // je eine eigene Methode. Die beiden folgenden liefern die **neue** — ein
-  // Knoten mit seinen Kindern, ein Inhalt mit seinen Repräsentationen. Damit
-  // fällt die Unterscheidung „Story oder Kapitel?" weg; sie ergibt sich aus
-  // der Position im Baum, nicht aus dem Aufruf.
-  //
-  // **Nur die neue Quelle bedient sie** (bewusst, siehe `LegacyContentRepository`):
-  // das Altmodell könnte die Form nur nachbauen, indem es den Typ wieder am
-  // Id-Präfix ablöst — genau das, was hier verschwinden soll.
+  // Es gibt keine Unterscheidung „Story oder Kapitel?" mehr: sie ergibt sich
+  // aus der Position im Baum, nicht aus dem Aufruf.
 
   /** Knoten mit Kind-Knoten (`nodes[]`) und Inhalts-Kopfdaten (`contents[]`). */
   async getNode() {

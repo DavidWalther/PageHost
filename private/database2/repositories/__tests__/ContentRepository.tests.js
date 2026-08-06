@@ -31,14 +31,7 @@ describe('ContentRepository', () => {
   });
 
   describe('Die Abfragemethoden sind abstrakt', () => {
-    const methods = [
-      'getStory',
-      'getChapter',
-      'getParagraph',
-      'getContentsTree',
-      'getNode',
-      'getContent',
-    ];
+    const methods = ['getContentsTree', 'getNode', 'getContent'];
 
     methods.forEach((method) => {
       it(`${method} wirft, solange es nicht implementiert ist`, async () => {

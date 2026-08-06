@@ -173,6 +173,16 @@ class CustomNode extends LitElement {
         <span id="node-name" slot="header">${this._nodeData.name || ''}</span>
         <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
           <div class="slds-col slds-grow-none slds-align_absolute-center">
+            <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
+                 Komponente im Anlege-Modus. -->
+            <custom-chapter-edit
+              story-id="${this.id}"
+              mode="create"
+              .chapters="${this.childNodeList}"
+              @chapter-created=${this._handleChildCreated}
+            ></custom-chapter-edit>
+          </div>
+          <div class="slds-col slds-grow-none slds-align_absolute-center">
             <custom-chapter-edit
               chapter-id="${this.id}"
               story-id="${this._nodeData.parent_node_id || ''}"
@@ -682,12 +692,19 @@ class CustomNode extends LitElement {
     const updated = event.detail?.chapterData;
     if (!updated) return;
 
-    // Die Id kommt bewusst NICHT mit: `custom-chapter-edit` schreibt noch
-    // unter dem alten Objektnamen und bekommt deshalb die alte Id zurück. Der
-    // Knoten kennt sich unter seiner neuen — sie hier zu überschreiben würde
-    // den nächsten Abruf auf eine andere Identität schicken.
-    const { id, legacy_id, ...fields } = updated;
-    this._nodeData = { ...this._nodeData, ...fields };
+    this._nodeData = { ...this._nodeData, ...updated };
+    this.requestUpdate();
+  }
+
+  /** Ein neu angelegter Kind-Knoten kommt in die Auswahl. */
+  _handleChildCreated(event) {
+    const created = event.detail?.chapterData;
+    if (!created?.id || !this._nodeData) return;
+
+    this._nodeData = {
+      ...this._nodeData,
+      nodes: [...this.childNodeList, created],
+    };
     this.requestUpdate();
   }
 
