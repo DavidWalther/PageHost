@@ -153,15 +153,21 @@ class Bookstore extends LitElement {
         @chapter-select="${this.handleChapterSelect}"
       ></custom-navigation-modal>
 
+      <!--
+        Zwei Knoten, nicht zwei Typen: oben der Knoten, dessen Kinder zur
+        Auswahl stehen, unten der ausgewählte Knoten mit seinen Inhalten.
+        Welche Rolle ein Knoten spielt, entscheidet allein seine Position hier
+        — die Komponente ist beide Male dieselbe.
+      -->
       <div
         id="bookshelf"
         class="slds-grid slds-grid_vertical slds-m-top--small"
       >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <custom-story></custom-story>
+          <custom-node data-role="navigation"></custom-node>
         </div>
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <custom-chapter></custom-chapter>
+          <custom-node data-role="content"></custom-node>
         </div>
       </div>
     `;
@@ -223,15 +229,15 @@ class Bookstore extends LitElement {
   handleChapterSelect(event) {
     const { storyId, chapterId } = event.detail;
 
-    const currentStoryId = this.storyElement.getAttribute('id');
-    if (currentStoryId !== storyId) {
-      // Suppress the cover-image override in handleLoadStory for this reload,
-      // so the explicitly selected chapter is kept.
+    const currentParentId = this.navigationNode.getAttribute('id');
+    if (currentParentId !== storyId) {
+      // Suppress the cover override in handleNavigationNodeLoaded for this
+      // reload, so the explicitly selected child is kept.
       this._pendingChapterSelection = chapterId;
-      this.storyElement.setAttribute('id', storyId);
+      this.navigationNode.setAttribute('id', storyId);
     }
-    this.chapterElement.setAttribute('id', chapterId);
-    this.storyElement.setAttribute('selectedChapter', chapterId);
+    this.contentNode.setAttribute('id', chapterId);
+    this.navigationNode.setAttribute('selected-child', chapterId);
     this._setCurrentLocation(chapterId);
 
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
@@ -245,22 +251,25 @@ class Bookstore extends LitElement {
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
     this.removeEventListener('navigation', this.handleNavigationEvent);
-    this.removeEventListener('chapter-updated', this._handleChapterUpdated);
-    this.removeEventListener('chapter-deleted', this._handleChapterDeleted);
+    this.removeEventListener('chapter-updated', this._handleChildUpdated);
+    this.removeEventListener('node-deleted', this._handleNodeDeleted);
   }
 
-  _handleChapterUpdated(event) {
-    const updatedChapter = event.detail?.chapterData;
-    if (updatedChapter && this.storyElement) {
-      this.storyElement.handleChapterUpdated(updatedChapter);
+  _handleChildUpdated(event) {
+    const updated = event.detail?.chapterData;
+    if (updated && this.navigationNode) {
+      this.navigationNode.applyChildUpdate(updated);
     }
   }
 
-  _handleChapterDeleted(event) {
-    const chapterId = event.detail?.chapterId;
-    if (chapterId && this.storyElement) {
-      this.storyElement.handleChapterDeleted(chapterId);
-      this.chapterElement.removeAttribute('id'); // Clear the id attribute of the chapter component
+  _handleNodeDeleted(event) {
+    const nodeId = event.detail?.nodeId;
+    if (!nodeId) return;
+    if (this.navigationNode) {
+      this.navigationNode.removeChildNode(nodeId);
+    }
+    if (this.contentNode?.getAttribute('id') === nodeId) {
+      this.contentNode.removeAttribute('id');
     }
   }
 
@@ -294,107 +303,102 @@ class Bookstore extends LitElement {
       }
 
       this.isHydrated = true;
-      if (this.storyElement) {
-        this.storyElement.setAttribute('chapter-buttons_number-max', 2);
+      if (this.navigationNode) {
+        this.navigationNode.setAttribute('child-buttons_number-max', 2);
       }
       this.addEventListener(
         'navigation',
         this.handleNavigationEvent.bind(this)
       );
+      // `custom-chapter-edit` meldet weiterhin `chapter-updated` — die
+      // Editierkomponente trägt ihren alten Namen noch.
       this.addEventListener(
         'chapter-updated',
-        this._handleChapterUpdated.bind(this)
+        this._handleChildUpdated.bind(this)
       );
-      this.addEventListener(
-        'chapter-deleted',
-        this._handleChapterDeleted.bind(this)
-      );
+      this.addEventListener('node-deleted', this._handleNodeDeleted.bind(this));
     }, 0);
   }
 
   initWithoutParameter() {
-    // navigation-/loaded eventlisteners are attacherd right away
-    this.storyElement.addEventListener(
-      'navigation',
-      this.handleNavigationEvent.bind(this)
-    );
-    this.storyElement.addEventListener('loaded', (event) => {
-      this.handleLoadStory(event);
-      this._initPara = null;
-    });
-    this.storyElement.setAttribute('id', '000s00000000000011');
+    this._attachNavigationNodeListeners();
+    this.navigationNode.setAttribute('id', '000s00000000000011');
     this._setCurrentLocation('000s00000000000011');
   }
 
-  initWithStoryId(storyId) {
-    // loaded eventlistener is attached right away
-    // navigation eventlistener is attached after the loaded event was received
-    this.storyElement.setAttribute('id', storyId);
-    this._setCurrentLocation(storyId);
-    this.storyElement.addEventListener('loaded', (event) => {
-      this.handleLoadStory(event);
-      this._initPara = null;
-    });
-    this.storyElement.addEventListener(
-      'navigation',
-      this.handleNavigationEvent.bind(this)
-    );
+  initWithStoryId(nodeId) {
+    this.navigationNode.setAttribute('id', nodeId);
+    this._setCurrentLocation(nodeId);
+    this._attachNavigationNodeListeners();
   }
 
-  initWithChapterId(chapterId) {
-    // chapter does not fire navigation events
-    // loaded eventlistener is attached right away
-    this.chapterElement.setAttribute('id', chapterId);
-    this._setCurrentLocation(chapterId);
+  /**
+   * Einstieg über einen Knoten, der Inhalte trägt.
+   *
+   * Welcher Knoten dann die Auswahl oben füllt, steht erst nach dem Laden fest:
+   * es ist der Elternknoten. Vorher ist er nicht bekannt — der Deep-Link nennt
+   * nur den einen Knoten.
+   */
+  initWithChapterId(nodeId) {
+    this.contentNode.setAttribute('id', nodeId);
+    this._setCurrentLocation(nodeId);
     if (this._initPara?.paragraphnumber) {
-      this.chapterElement.setAttribute(
-        'paragraphnumber',
+      this.contentNode.setAttribute(
+        'contentnumber',
         this._initPara.paragraphnumber
       );
     }
-    this.chapterElement.parentElement.addEventListener(
+    this.contentNode.addEventListener(
       'loaded',
       (event) => {
-        if (Array.isArray(event.detail.chapterData)) {
+        const nodeData = event.detail?.nodeData;
+        if (!nodeData?.id) {
           return;
         }
-        console.log('Custom chapter loaded event:', event.detail);
-        let storyId = event.detail.chapterData.storyid;
-        this.storyElement.setAttribute('id', storyId);
-        this.storyElement.setAttribute(
-          'selectedChapter',
-          event.detail.chapterData.id
-        );
-        this.storyElement.addEventListener(
-          'navigation',
-          this.handleNavigationEvent.bind(this)
-        );
-        this.storyElement.addEventListener('loaded', (event) => {
-          this.handleLoadStory(event);
+        const parentId = nodeData.parent_node_id;
+        if (!parentId) {
+          // Ein Wurzelknoten mit Inhalten: es gibt nichts darüber, also bleibt
+          // die Auswahl oben leer.
           this._initPara = null;
-        });
+          return;
+        }
+        this.navigationNode.setAttribute('id', parentId);
+        this.navigationNode.setAttribute('selected-child', nodeData.id);
+        this._attachNavigationNodeListeners();
       },
       { once: true }
     );
   }
 
-  handleLoadStory(event) {
-    if (Array.isArray(event.detail.bookData)) {
+  /** Auswahl-Knoten: Navigation und „geladen" hängen immer zusammen. */
+  _attachNavigationNodeListeners() {
+    this.navigationNode.addEventListener(
+      'navigation',
+      this.handleNavigationEvent.bind(this)
+    );
+    this.navigationNode.addEventListener('loaded', (event) => {
+      this.handleNavigationNodeLoaded(event);
+      this._initPara = null;
+    });
+  }
+
+  handleNavigationNodeLoaded(event) {
+    const nodeData = event.detail?.nodeData;
+    if (!nodeData?.id) {
       return;
     }
-    console.log('Custom story loaded event:', event.detail);
 
     if (this._pendingChapterSelection) {
-      // A chapter was selected directly (e.g. from the navigation modal);
-      // keep that selection instead of falling back to the cover chapter.
+      // Ein Kind wurde ausdrücklich gewählt (etwa im Navigations-Modal); diese
+      // Wahl schlägt den Titel-Knoten.
       this._pendingChapterSelection = null;
       return;
     }
 
-    let coverChapterId = event.detail.bookData.coverid;
-    if (coverChapterId && this._initPara?.initmode !== 'chapter') {
-      this.storyElement.setAttribute('selectedChapter', coverChapterId);
-      this.chapterElement.setAttribute('id', coverChapterId);
+    const coverId = nodeData.cover_node_id;
+    if (coverId && this._initPara?.initmode !== 'chapter') {
+      this.navigationNode.setAttribute('selected-child', coverId);
+      this.contentNode.setAttribute('id', coverId);
     }
   }
 
@@ -502,19 +506,21 @@ class Bookstore extends LitElement {
     }
 
     const { type, value } = event.detail;
-    let isEventSourceStory = event.srcElement.tagName === 'CUSTOM-STORY';
-    let isEventSourcePanel = event.srcElement.tagName === 'APP-BOOKSTORE';
+    // Beide Knoten sind dieselbe Komponente — der Tag-Name unterscheidet sie
+    // nicht mehr. Maßgeblich ist, WELCHER der beiden gemeldet hat.
+    const fromNavigationNode = event.target === this.navigationNode;
+    const fromPanel = event.target === this;
 
-    if (isEventSourcePanel && type === 'story') {
-      this.storyElement.setAttribute('id', value);
-      this.chapterElement.removeAttribute('id');
-      this.storyElement.removeAttribute('selectedChapter');
+    if (fromPanel && type === 'story') {
+      this.navigationNode.setAttribute('id', value);
+      this.contentNode.removeAttribute('id');
+      this.navigationNode.removeAttribute('selected-child');
       this._setCurrentLocation(value);
       return;
     }
-    if (isEventSourceStory && type === 'chapter') {
-      this.chapterElement.setAttribute('id', value);
-      this.storyElement.setAttribute('selectedChapter', value);
+    if (fromNavigationNode && type === 'node') {
+      this.contentNode.setAttribute('id', value);
+      this.navigationNode.setAttribute('selected-child', value);
       this._setCurrentLocation(value);
       return;
     }
@@ -588,12 +594,7 @@ class Bookstore extends LitElement {
     }
   }
 
-  // ========== Story Container methods ===========
-  /**
-   * If a custom storyElement exists, update the 'story-id' attribute and remove the 'chapter-id' attribute
-   * If not, create a new custom story element, set the 'story-id' attribute and append it to the storyContainer,
-   * This method will pass the storyId to the custom-story element
-   */
+  // ========== Container methods ===========
 
   // add content of 'template-story_not_found' into container
   showStoryNotFound() {
@@ -617,12 +618,14 @@ class Bookstore extends LitElement {
     return this.shadowRoot.querySelector('span#page-header-headline');
   }
 
-  get chapterElement() {
-    return this.shadowRoot.querySelector('custom-chapter');
+  /** Der Knoten, dessen Kinder zur Auswahl stehen. */
+  get navigationNode() {
+    return this.shadowRoot.querySelector('custom-node[data-role="navigation"]');
   }
 
-  get storyElement() {
-    return this.shadowRoot.querySelector('custom-story');
+  /** Der ausgewählte Knoten, dessen Inhalte gezeigt werden. */
+  get contentNode() {
+    return this.shadowRoot.querySelector('custom-node[data-role="content"]');
   }
 
   get storyContainer() {
