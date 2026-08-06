@@ -18,7 +18,10 @@ This document describes how the `DataFacade`, `DataCache`, and `DataStorage` cla
 ### DataStorage
 
 - Interacts with the database to fetch data.
-- Contains methods to query different types of data (e.g., paragraphs, configurations, stories, chapters).
+- Interacts with the database for everything that is **not** content:
+  `configuration` and `identity`. Content is read and written through
+  `repositories/NodeContentRepository`, which `DataFacade` selects via
+  `ContentRepository.owns()`.
 - Uses `ActionGet` to execute database queries and `DataCleaner` to clean up the data before returning it.
 
 ### Example Workflow
@@ -32,7 +35,8 @@ This document describes how the `DataFacade`, `DataCache`, and `DataStorage` cla
 
 3. **Database Query**:
    - If the data is not in the cache, `DataStorage` is used to query the database.
-   - `DataStorage` methods (e.g., `queryConfiguration`, `queryParagraphs`) fetch data from the database.
+   - For content, `NodeContentRepository` queries `node` / `content_node` /
+     `content_item`; for `configuration` and `identity`, `DataStorage` does.
 
 4. **Cache Update**:
    - The fetched data is then cached using `DataCache2.set(key, value)` for future requests.

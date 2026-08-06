@@ -1,7 +1,9 @@
-# Ziel-Datenmodell: Hierarchischer Content + zentrale Sichtbarkeit
+# Datenmodell: Hierarchischer Content + zentrale Sichtbarkeit
 
-> **Status: KONZEPT — noch nicht implementiert.** Beschreibt das geplante
-> Ziel-Modell, nicht den laufenden Stand (der steht in `doc/architecture.md`).
+> **Status: umgesetzt.** Beschreibt das Modell, auf dem der Code läuft, und die
+> Entscheidungen, die dorthin geführt haben. Die alten Tabellen stehen noch in
+> der Datenbank, bis `005_drop_legacy_tables.sql` ausgeführt ist — im Code
+> kommen sie nicht mehr vor.
 
 ## 1. Ziel
 

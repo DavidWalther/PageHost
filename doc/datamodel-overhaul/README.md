@@ -1,11 +1,18 @@
-# Datenmodell-Umstellung (geplant)
+# Datenmodell-Umstellung
 
-> **Status: KONZEPT — noch nicht implementiert.**
-> Dieses Verzeichnis beschreibt das **Ziel**-Datenmodell, das die heutigen
-> Tabellen `story`/`chapter`/`paragraph` ablösen soll. Es ist die konzeptionelle
-> Grundlage für die kommende Implementierung und Migration, **nicht** eine
-> Beschreibung des aktuellen Standes. Der aktuell implementierte Stand steht in
-> `doc/architecture.md` (Abschnitt „Datenmodell").
+> **Status: umgesetzt.** Der Code liest und schreibt ausschließlich über
+> `node` / `content_node` / `content_item`; `story`, `chapter` und `paragraph`
+> kommen darin nicht mehr vor. Dieses Verzeichnis beschreibt damit den
+> **laufenden** Stand des Inhaltsmodells und die Entscheidungen, die dorthin
+> geführt haben.
+>
+> **Offen bleibt die Datenbank selbst:** die alten Tabellen stehen, bis
+> `private/scripts/migration/sql/005_drop_legacy_tables.sql` ausgeführt wurde.
+> Vorher muss `004_inherit_visibility.sql` gelaufen sein — danach fehlt die
+> Referenz, gegen die es sich prüfen lässt.
+>
+> Der Überblick über das laufende System steht weiterhin in
+> `doc/architecture.md`.
 
 ## Inhalt
 
@@ -16,7 +23,6 @@
 ## Warum ein eigenes Verzeichnis
 
 Die Definitionen und Entscheidungen hier gehen über eine reine EXPLORE-Notiz
-hinaus und werden Grundlage für mehrere Implementierungsschritte. Sie sollen
-dauerhaft dokumentiert, aber klar als **zukünftiger** Stand erkennbar sein —
-solange die Umstellung nicht abgeschlossen ist, bleibt `doc/architecture.md` die
-maßgebliche Beschreibung des laufenden Systems.
+hinaus: sie tragen mehrere Implementierungsschritte und erklären, **warum** das
+Modell so aussieht, wie es aussieht. `doc/architecture.md` beschreibt den
+Aufbau des Systems, dieses Verzeichnis die Begründung des Inhaltsmodells.
