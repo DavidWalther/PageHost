@@ -184,6 +184,21 @@ class DataFacadeSync {
         return this.getChapterWithoutCache(parameterObject);
       }
     }
+    if (
+      parameterObject.request.table == 'node' ||
+      parameterObject.request.table == 'content'
+    ) {
+      if (!this.getSkipCache()) {
+        return this.getTypeFree(
+          parameterObject.request.table,
+          parameterObject?.request?.id
+        );
+      }
+      return this.getTypeFreeWithoutCache(
+        parameterObject.request.table,
+        parameterObject
+      );
+    }
     if (parameterObject.request.table == 'identity') {
       // Identity queries always bypass cache for data freshness
       return this.getIdentityByKeyWithoutCache(parameterObject);
@@ -581,6 +596,69 @@ class DataFacadeSync {
       });
     }
     return product;
+  }
+
+  /**
+   * Lesepfad der typfreien Antwortform (`node` / `content`).
+   *
+   * Eine Methode für beide, weil sich die alte Dreiteilung genau hier auflöst:
+   * ein Knoten ist ein Knoten, gleich ob er früher Story oder Kapitel hieß.
+   * Was bleibt, ist die Unterscheidung Knoten/Inhalt — und die ist eine Zeile.
+   *
+   * Der Cache-Schlüssel trägt die Form im Namen (`node:<id>`). Ohne das würde
+   * ein alter Deep-Link, der über beide Wege hereinkommt, sich seinen Eintrag
+   * mit der alten Form teilen.
+   */
+  cacheKeyFor(table, recordId) {
+    return `${table}:${recordId}`;
+  }
+
+  async readTypeFree(table, recordId, publishDate) {
+    const repository = this.createContentRepository();
+    if (publishDate !== undefined) {
+      repository.setPublishDate(publishDate);
+    }
+    return table === 'node'
+      ? repository.getNode(recordId)
+      : repository.getContent(recordId);
+  }
+
+  async getTypeFree(table, recordId) {
+    const LOCATION = 'DataFacadeSync.getTypeFree';
+    const cacheKey = this.cacheKeyFor(table, recordId);
+    const cache = new DataCache2(this.environment);
+    let product = await cache.get(cacheKey);
+    if (!product) {
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `No ${table} in cache, querying database: ${recordId}`,
+      });
+      product = await this.readTypeFree(table, recordId);
+      cache.set(cacheKey, product);
+    } else {
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `${table} found in cache: ${recordId}`,
+      });
+    }
+    return product;
+  }
+
+  async getTypeFreeWithoutCache(table, parameterObject) {
+    const LOCATION = 'DataFacadeSync.getTypeFreeWithoutCache';
+    const recordId = parameterObject?.request?.id;
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Querying ${table} ${recordId} for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
+    });
+    return this.readTypeFree(
+      table,
+      recordId,
+      parameterObject?.request?.publishDate
+    );
   }
 
   async getIdentityByKeyWithoutCache(parameterObject) {

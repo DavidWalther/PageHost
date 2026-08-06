@@ -204,4 +204,16 @@ describe('LegacyContentRepository', () => {
       ).rejects.toThrow('Invalid table name');
     });
   });
+
+  describe('Typfreie Antwortform', () => {
+    // Die Verweigerung ist Absicht und muss sichtbar sein: eine stille
+    // Leerantwort würde als "Datensatz existiert nicht" gelesen werden.
+    ['getNode', 'getContent'].forEach((method) => {
+      it(`${method} wirft mit einer Begründung statt leer zu antworten`, async () => {
+        await expect(newRepository()[method]('000s1')).rejects.toThrow(
+          `LegacyContentRepository.${method} is not available`
+        );
+      });
+    });
+  });
 });

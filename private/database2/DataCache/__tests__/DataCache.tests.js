@@ -174,6 +174,66 @@ describe('Cache Keys', () => {
   });
 });
 
+describe('Cache Keys der typfreien Antwortform', () => {
+  const PREFIX = `${MOCK_ENVIRONMENT.CACHE_KEY_PREFIX}-${MOCK_ENVIRONMENT.APPLICATION_APPLICATION_KEY}-${MOCK_ENVIRONMENT.CACHE_DATA_INCREMENT}`;
+
+  beforeEach(() => {
+    RedisConnector.mockClear();
+    mockGet.mockClear();
+    mockSetEx.mockClear();
+    valueIsReady = false;
+  });
+
+  it('legt einen Knoten in einem eigenen Schlüsselraum ab', async () => {
+    await new DataCache2(MOCK_ENVIRONMENT).get('node:000n00000000000011');
+
+    expect(mockGet).toHaveBeenCalledWith(`${PREFIX}-nodes-000n00000000000011`);
+  });
+
+  it('legt einen Inhalt in einem eigenen Schlüsselraum ab', async () => {
+    await new DataCache2(MOCK_ENVIRONMENT).get('content:00cn00000000000033');
+
+    expect(mockGet).toHaveBeenCalledWith(
+      `${PREFIX}-contents-00cn00000000000033`
+    );
+  });
+
+  it('trennt dieselbe Id in alter und neuer Form', async () => {
+    // Ein alter Deep-Link kann über beide Wege hereinkommen. Ohne eigenen Raum
+    // bekäme der zweite Aufruf die Antwort des ersten — in der falschen Form.
+    const cache = new DataCache2(MOCK_ENVIRONMENT);
+
+    await cache.get('000s00000000000011');
+    await cache.get('node:000s00000000000011');
+
+    expect(mockGet).toHaveBeenCalledWith(
+      `${PREFIX}-stories-000s00000000000011`
+    );
+    expect(mockGet).toHaveBeenCalledWith(`${PREFIX}-nodes-000s00000000000011`);
+  });
+
+  it('fragt keinen abgelösten Schlüssel ab — die Form ist neu', async () => {
+    await new DataCache2(MOCK_ENVIRONMENT).get('node:000n00000000000011');
+
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('schreibt mit der regulären Lebensdauer', async () => {
+    const value = { id: '000n00000000000011' };
+
+    await new DataCache2(MOCK_ENVIRONMENT).set(
+      'node:000n00000000000011',
+      value
+    );
+
+    expect(mockSetEx).toHaveBeenCalledWith(
+      `${PREFIX}-nodes-000n00000000000011`,
+      MOCK_ENVIRONMENT.CACHE_CONTAINER_EXPIRATION_SECONDS,
+      JSON.stringify(value)
+    );
+  });
+});
+
 describe('Cache Deletion', () => {
   beforeEach(() => {
     RedisConnector.mockClear();

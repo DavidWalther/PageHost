@@ -80,6 +80,33 @@ class LegacyContentRepository extends ContentRepository {
     return stories;
   }
 
+  // ─── Typfreie Lesewege: bewusst nicht bedient ────────────────────────────
+  //
+  // `getNode`/`getContent` liefern die neue Antwortform. Das Altmodell könnte
+  // sie nur nachbauen, indem es am Id-Präfix entscheidet, ob eine Story oder
+  // ein Kapitel gemeint ist — also genau die Typisierung wiederholt, die diese
+  // Form abschafft. Solcher Code stünde bis Phase E und würde dann gelöscht.
+  //
+  // **Folge für die Rückfallebene:** `CONTENT_SOURCE=legacy` deckt die alten
+  // Routen ab, für die der Schalter gebaut wurde. Die neuen Routen
+  // (`/data/query/node`, `/data/query/content`) antworten dort mit einem
+  // Fehler statt mit einer stillen Leerantwort.
+
+  refuseTypeFreeFormat(method) {
+    throw new Error(
+      `LegacyContentRepository.${method} is not available: the legacy source ` +
+        'serves the old response format only'
+    );
+  }
+
+  async getNode() {
+    this.refuseTypeFreeFormat('getNode');
+  }
+
+  async getContent() {
+    this.refuseTypeFreeFormat('getContent');
+  }
+
   // ─── Schreibpfad ─────────────────────────────────────────────────────────
   //
   // Wie beim Lesen 1:1 das, was die `DataFacade` bisher selbst getan hat —

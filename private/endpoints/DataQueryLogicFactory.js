@@ -3,6 +3,7 @@ const { SingleStoryEndpoint } = require('./data/query/SingleStoryEndpoint');
 const { ChapterEndpoint } = require('./data/query/ChapterEndpoint');
 const { ParagraphEndpoint } = require('./data/query/ParagraphEndpoint');
 const { FallbackEndpoint } = require('./data/query/FallbackEndpoint');
+const { TypeFreeQueryEndpoint } = require('./data/query/TypeFreeQueryEndpoint');
 
 class DataQueryLogicFactory {
   static getProduct(requestObject) {
@@ -27,6 +28,11 @@ class DataQueryLogicFactory {
     const postgresTable = query.split('/')[0].toLowerCase();
 
     switch (postgresTable) {
+      // Typfreie Antwortform. Steht bewusst neben den alten Routen, statt sie
+      // zu ersetzen: bis das Frontend umgestellt ist, laufen beide Formen.
+      case 'node':
+      case 'content':
+        return new TypeFreeQueryEndpoint(postgresTable);
       case 'story':
         if (requestObject.query.id) {
           return new SingleStoryEndpoint();

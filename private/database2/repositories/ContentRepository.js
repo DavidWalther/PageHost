@@ -88,6 +88,28 @@ class ContentRepository {
     throw new Error('ContentRepository.getContentsTree is not implemented');
   }
 
+  // ─── Typfreie Lesewege ───────────────────────────────────────────────────
+  //
+  // Die vier Methoden oben liefern die ALTE Antwortform: drei feste Ebenen,
+  // je eine eigene Methode. Die beiden folgenden liefern die **neue** — ein
+  // Knoten mit seinen Kindern, ein Inhalt mit seinen Repräsentationen. Damit
+  // fällt die Unterscheidung „Story oder Kapitel?" weg; sie ergibt sich aus
+  // der Position im Baum, nicht aus dem Aufruf.
+  //
+  // **Nur die neue Quelle bedient sie** (bewusst, siehe `LegacyContentRepository`):
+  // das Altmodell könnte die Form nur nachbauen, indem es den Typ wieder am
+  // Id-Präfix ablöst — genau das, was hier verschwinden soll.
+
+  /** Knoten mit Kind-Knoten (`nodes[]`) und Inhalts-Kopfdaten (`contents[]`). */
+  async getNode() {
+    throw new Error('ContentRepository.getNode is not implemented');
+  }
+
+  /** Inhalt mit allen Repräsentationen (`items[]`) und der aktiven darunter. */
+  async getContent() {
+    throw new Error('ContentRepository.getContent is not implemented');
+  }
+
   // ─── Schreibpfad ─────────────────────────────────────────────────────────
   //
   // Dieselbe Aufteilung wie beim Lesen: das Repository schreibt, die
