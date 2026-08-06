@@ -48,10 +48,17 @@ function setSources(overrides = {}) {
 
 beforeEach(() => {
   setSources();
-  executeParameterizedSql = jest.fn(async (statement) => {
+  executeParameterizedSql = jest.fn(async (statement, parameters = []) => {
     if (statement.includes('FROM app_node')) return sources.appNodes;
     if (statement.includes('FROM content_node cn')) return sources.content;
-    if (statement.includes('FROM content_node')) return sources.contentNodes;
+    // Die Abfrage der Inhalts-Kopfdaten hängt an genau einem Knoten
+    // (`WHERE node_id = $1`). Der Mock bildet das nach, sonst bekäme jeder
+    // Knoten die Inhalte aller anderen mit.
+    if (statement.includes('FROM content_node')) {
+      return sources.contentNodes.filter(
+        (row) => row.node_id === parameters[0]
+      );
+    }
     return sources.nodes;
   });
   PostgresActions.mockReset();
@@ -631,5 +638,251 @@ describe('queryVisibleNodes', () => {
     setSources({ appNodes: [] });
 
     expect(await newRepository().queryVisibleNodes()).toEqual([]);
+  });
+});
+
+// ─── Typfreie Antwortform ──────────────────────────────────────────────────
+
+describe('getNode', () => {
+  const CONTENT_HEAD = {
+    id: '00cn1',
+    name: 'Absatz 1',
+    sortnumber: 1,
+    legacy_id: '000p00000000000033',
+    published_date: '2026-01-01T00:00:00.000Z',
+    node_id: '000n2',
+  };
+
+  it('liefert den Knoten mit neuer Id und der alten daneben', async () => {
+    // Der Unterschied zu getStory/getChapter: die Identität ist ab hier die
+    // neue Id. Die alte bleibt als Feld erhalten, damit ein Deep-Link von
+    // früher noch auflösbar ist — sie ist aber nicht mehr der Schlüssel.
+    const node = await newRepository().getNode('000n1');
+
+    expect(node.id).toBe('000n1');
+    expect(node.legacy_id).toBe('000s00000000000011');
+  });
+
+  it('nimmt auch die alte Id entgegen', async () => {
+    const node = await newRepository().getNode('000s00000000000011');
+
+    expect(node.id).toBe('000n1');
+  });
+
+  it('liefert Kind-Knoten und Inhalts-Kopfdaten nebeneinander', async () => {
+    setSources({ contentNodes: [CONTENT_HEAD] });
+
+    const node = await newRepository().getNode('000n1');
+
+    expect(node.nodes.map((child) => child.id)).toEqual(['000n2']);
+    expect(node.contents).toEqual([]);
+  });
+
+  it('liefert für einen Knoten mit Inhalten dieselbe Form', async () => {
+    // Story und Kapitel unterscheiden sich nur darin, welche der beiden Listen
+    // gefüllt ist — genau das ist der Sinn der typfreien Antwort.
+    setSources({ contentNodes: [CONTENT_HEAD] });
+
+    const node = await newRepository().getNode('000n2');
+
+    expect(node.nodes).toEqual([]);
+    expect(node.contents).toEqual([
+      {
+        id: '00cn1',
+        legacy_id: '000p00000000000033',
+        name: 'Absatz 1',
+        sortnumber: 1,
+        published_date: '2026-01-01T00:00:00.000Z',
+      },
+    ]);
+  });
+
+  it('benennt die Felder wie das neue Modell', async () => {
+    const node = await newRepository().getNode('000n2');
+
+    expect(node).toMatchObject({
+      parent_node_id: '000n1',
+      published_date: '2026-01-01T00:00:00.000Z',
+      reversed: true,
+      description: null,
+    });
+    expect(node.publishdate).toBeUndefined();
+    expect(node.storyid).toBeUndefined();
+  });
+
+  it('lässt fehlende Werte als null stehen, statt sie wegzulassen', async () => {
+    // Die alte Form ließ leere Felder ganz weg (Eigenheit von DataStorage).
+    // Hier ist jeder Schlüssel vorhanden — der Client kann sich darauf stützen.
+    const node = await newRepository().getNode('000n1');
+
+    expect(Object.keys(node).sort()).toEqual([
+      'contents',
+      'cover_node_id',
+      'description',
+      'id',
+      'legacy_id',
+      'name',
+      'nodes',
+      'parent_node_id',
+      'published_date',
+      'reversed',
+      'sortnumber',
+    ]);
+  });
+
+  it('lässt unveröffentlichte Kind-Knoten heraus', async () => {
+    setSources({
+      nodes: [STORY_NODE, { ...CHAPTER_NODE, published_date: null }],
+    });
+
+    const node = await newRepository().getNode('000n1');
+
+    expect(node.nodes).toEqual([]);
+  });
+
+  it('lässt unveröffentlichte Inhalte heraus', async () => {
+    setSources({
+      contentNodes: [{ ...CONTENT_HEAD, published_date: null }],
+    });
+
+    const node = await newRepository().getNode('000n2');
+
+    expect(node.contents).toEqual([]);
+  });
+
+  it('liefert ein leeres Objekt für einen unsichtbaren Knoten', async () => {
+    setSources({ appNodes: [] });
+
+    expect(await newRepository().getNode('000n1')).toEqual({});
+  });
+
+  it('liefert ein leeres Objekt für eine unbekannte Id', async () => {
+    expect(await newRepository().getNode('000n99')).toEqual({});
+  });
+});
+
+describe('getContent', () => {
+  const base = {
+    id: '00cn1',
+    name: 'Absatz 1',
+    sortnumber: 1,
+    legacy_id: '000p00000000000033',
+    published_date: '2026-01-01T00:00:00.000Z',
+    node_id: '000n2',
+    active_content_item: '00ci2',
+  };
+
+  it('liefert alle Repräsentationen statt zweier fester Felder', async () => {
+    setSources({
+      content: [
+        { ...base, item_id: '00ci1', item_type: 'text', item_content: 'Text' },
+        {
+          ...base,
+          item_id: '00ci2',
+          item_type: 'html',
+          item_content: '<p>Text</p>',
+        },
+      ],
+    });
+
+    expect(await newRepository().getContent('00cn1')).toEqual({
+      id: '00cn1',
+      legacy_id: '000p00000000000033',
+      name: 'Absatz 1',
+      sortnumber: 1,
+      published_date: '2026-01-01T00:00:00.000Z',
+      node_id: '000n2',
+      active_content_item: '00ci2',
+      active_type: 'html',
+      items: [
+        { id: '00ci1', type: 'text', content: 'Text' },
+        { id: '00ci2', type: 'html', content: '<p>Text</p>' },
+      ],
+    });
+  });
+
+  it('benennt die aktive Fassung, statt sie auszuwählen', async () => {
+    // getParagraph hat die Auswahl selbst getroffen und nur das Ergebnis
+    // geliefert. Hier bekommt der Client beide Fassungen und den Zeiger.
+    setSources({
+      content: [
+        {
+          ...base,
+          active_content_item: '00ci1',
+          item_id: '00ci1',
+          item_type: 'text',
+          item_content: 'Text',
+        },
+        {
+          ...base,
+          active_content_item: '00ci1',
+          item_id: '00ci2',
+          item_type: 'html',
+          item_content: '<p>Text</p>',
+        },
+      ],
+    });
+
+    const content = await newRepository().getContent('00cn1');
+
+    expect(content.active_type).toBe('text');
+    expect(content.items).toHaveLength(2);
+  });
+
+  it('liefert eine leere Item-Liste, wenn es keine Repräsentation gibt', async () => {
+    setSources({
+      content: [
+        { ...base, active_content_item: null, item_id: null, item_type: null },
+      ],
+    });
+
+    const content = await newRepository().getContent('00cn1');
+
+    expect(content.items).toEqual([]);
+    expect(content.active_type).toBeNull();
+    expect(content.active_content_item).toBeNull();
+  });
+
+  it('nimmt auch die alte Id entgegen', async () => {
+    setSources({
+      content: [
+        { ...base, item_id: '00ci1', item_type: 'text', item_content: 'Text' },
+      ],
+    });
+
+    const content = await newRepository().getContent('000p00000000000033');
+
+    expect(content.id).toBe('00cn1');
+  });
+
+  it('folgt der Sichtbarkeit seines Knotens', async () => {
+    setSources({
+      appNodes: [],
+      content: [
+        { ...base, item_id: '00ci1', item_type: 'text', item_content: 'Text' },
+      ],
+    });
+
+    expect(await newRepository().getContent('00cn1')).toEqual({});
+  });
+
+  it('liefert ein leeres Objekt, wenn der Inhalt nicht veröffentlicht ist', async () => {
+    setSources({
+      content: [
+        {
+          ...base,
+          published_date: null,
+          item_id: '00ci1',
+          item_type: 'text',
+          item_content: 'Text',
+        },
+      ],
+    });
+
+    expect(await newRepository().getContent('00cn1')).toEqual({});
+  });
+
+  it('liefert ein leeres Objekt für eine unbekannte Id', async () => {
+    expect(await newRepository().getContent('00cn99')).toEqual({});
   });
 });

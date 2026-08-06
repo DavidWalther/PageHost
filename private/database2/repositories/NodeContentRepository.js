@@ -325,6 +325,96 @@ class NodeContentRepository extends ContentRepository {
     };
   }
 
+  // ─── Typfreie Antwortform ────────────────────────────────────────────────
+  //
+  // Was oben steht, ist Kompatibilität: drei feste Ebenen, alte Feldnamen, alte
+  // Ids. Was hier steht, ist das Modell selbst — ein Knoten mit seinen Kindern,
+  // ein Inhalt mit seinen Repräsentationen. Drei Unterschiede sind Absicht:
+  //
+  // 1. **Neue Ids nach außen.** `outwardId` gilt hier NICHT. Die alte Id steht
+  //    als `legacy_id` daneben, damit ein Deep-Link von früher auflösbar
+  //    bleibt, aber sie ist nicht mehr die Identität des Datensatzes.
+  // 2. **Spaltennamen des neuen Modells** (`published_date`, `parent_node_id`)
+  //    statt der zusammengeschriebenen alten (`publishdate`, `storyid`).
+  // 3. **Fehlende Werte sind `null`, nicht abwesend.** Die alte Form ließ
+  //    leere Felder ganz weg (`headData`); das war eine Eigenheit von
+  //    `DataStorage`, keine Aussage.
+
+  /**
+   * Ein Knoten mit seinen Kind-Knoten und seinen Inhalts-Kopfdaten.
+   *
+   * Das ist die Zusammenführung von `getStory` und `getChapter`: eine Story ist
+   * ein Knoten mit Kindern und ohne Inhalte, ein Kapitel einer mit Inhalten und
+   * (heute) ohne Kinder. Beides kann derselbe Aufruf beantworten, weil das
+   * Modell die Unterscheidung nicht mehr kennt.
+   *
+   * Die eingehende Id darf die neue oder die alte sein.
+   */
+  async getNode(nodeId) {
+    const visibility = await this.loadVisibility();
+    const node = visibility.findByAnyId(nodeId);
+    if (!this.isDeliverable(node, visibility)) {
+      return {};
+    }
+
+    const contentNodes = await this.execute(CONTENT_NODES_SQL, [node.id]);
+
+    return {
+      ...nodeFields(node),
+      nodes: sortSiblings(
+        visibility
+          .childrenOf(node.id)
+          .filter((child) => this.isDeliverable(child, visibility))
+      ).map(nodeFields),
+      // Der Inhalts-Halter hat keine eigene App-Zugehörigkeit; er folgt seinem
+      // Knoten, und der ist an dieser Stelle bereits als sichtbar erwiesen.
+      contents: sortSiblings(
+        contentNodes.filter((row) => this.isPublished(row))
+      ).map(contentHeadFields),
+    };
+  }
+
+  /**
+   * Ein Inhalt mit **allen** seinen Repräsentationen.
+   *
+   * Der Unterschied zu `getParagraph` ist der Kern des neuen Modells: dort
+   * entschied die Datenschicht, welche Fassung gilt, und lieferte zwei feste
+   * Felder. Hier kommen alle Fassungen mit, dazu der Zeiger auf die aktive —
+   * ein künftiger Typ (`markdown`, `mermaid`) braucht dann keine Änderung an
+   * dieser Stelle mehr.
+   */
+  async getContent(contentId) {
+    const visibility = await this.loadVisibility();
+    const rows = await this.execute(CONTENT_SQL, [contentId]);
+    if (rows.length === 0) {
+      return {};
+    }
+
+    const first = rows[0];
+    const node = visibility.getNode(first.node_id);
+    if (!this.isDeliverable(node, visibility) || !this.isPublished(first)) {
+      return {};
+    }
+
+    // Ein Halter ohne Repräsentation ist möglich (LEFT JOIN): dann trägt die
+    // einzige Zeile leere Item-Spalten und `items` bleibt leer.
+    const items = rows.filter((row) => row.item_id);
+
+    return {
+      ...contentHeadFields(first),
+      node_id: first.node_id,
+      active_content_item: first.active_content_item ?? null,
+      active_type:
+        items.find((row) => row.item_id === first.active_content_item)
+          ?.item_type ?? null,
+      items: items.map((row) => ({
+        id: row.item_id,
+        type: row.item_type,
+        content: row.item_content ?? null,
+      })),
+    };
+  }
+
   // ─── Schreibpfad ─────────────────────────────────────────────────────────
 
   /**
@@ -647,6 +737,39 @@ class NodeContentRepository extends ContentRepository {
 /** Nach außen gilt die alte Id, solange es eine gibt. */
 function outwardId(row) {
   return row.legacy_id || row.id;
+}
+
+/**
+ * Ein Knoten in der neuen Antwortform — für den angefragten Knoten und für
+ * seine Kinder dieselbe Auswahl, damit ein Kind ohne zweiten Aufruf schon
+ * darstellbar ist.
+ *
+ * `is_parent_controls_visibility` fehlt bewusst: die Sichtbarkeit ist an dieser
+ * Stelle bereits aufgelöst, die Regel dahinter geht den Client nichts an.
+ */
+function nodeFields(node) {
+  return {
+    id: node.id,
+    legacy_id: node.legacy_id ?? null,
+    name: node.name ?? null,
+    description: node.description ?? null,
+    sortnumber: node.sortnumber ?? null,
+    reversed: node.reversed ?? null,
+    parent_node_id: node.parent_node_id ?? null,
+    cover_node_id: node.cover_node_id ?? null,
+    published_date: node.published_date ?? null,
+  };
+}
+
+/** Kopfdaten eines Inhalts-Halters — ohne die Repräsentationen. */
+function contentHeadFields(row) {
+  return {
+    id: row.id,
+    legacy_id: row.legacy_id ?? null,
+    name: row.name ?? null,
+    sortnumber: row.sortnumber ?? null,
+    published_date: row.published_date ?? null,
+  };
 }
 
 /**
