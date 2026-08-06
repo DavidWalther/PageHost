@@ -8,11 +8,14 @@ import OIDCComponent from '/modules/oIdcComponent.js';
 
 console.log('Bookstore.js file loaded');
 
-const recordIdPrefixToPostgresTableName = {
-  '000s': 'Story',
-  '000c': 'Chapter',
-  '000p': 'Paragraph',
-};
+/**
+ * Einstieg ohne Deep-Link.
+ *
+ * Trägt noch eine alte Id: der Inhaltsbaum liefert sie so, und das Backend
+ * löst sie über `legacy_id` auf. Sobald es hier eine Konfiguration gibt
+ * (Startknoten je App), fällt die Konstante weg.
+ */
+const DEFAULT_ENTRY_NODE_ID = '000s00000000000011';
 
 class Bookstore extends LitElement {
   static properties = {
@@ -28,7 +31,7 @@ class Bookstore extends LitElement {
     // Initialize component state
     this.isHydrated = false;
     this._initPara = null;
-    this._pendingChapterSelection = null;
+    this._pendingChildSelection = null;
     this._currentLocation = null;
   }
 
@@ -210,8 +213,25 @@ class Bookstore extends LitElement {
     this.shadowRoot.querySelector('custom-navigation-modal').show();
   }
 
-  _setCurrentLocation(id) {
-    this._currentLocation = id;
+  /**
+   * Merkt sich, wo der Nutzer gerade steht — in der Id-Form des
+   * **Inhaltsbaums**.
+   *
+   * Der Baum (`/api/1.0/contents/*`) liefert weiterhin die alten Ids; das
+   * Navigations-Modal vergleicht dagegen. Die neue Id des Knotens würde dort
+   * nie treffen, und die aktuelle Stelle bliebe unmarkiert. Deshalb nimmt
+   * diese Stelle einen Datensatz entgegen und wählt daraus die alte Id, solange
+   * es eine gibt. Fällt die Kompat-Id weg, bleibt automatisch die neue übrig.
+   */
+  _setCurrentLocation(record) {
+    if (!record) {
+      this._currentLocation = null;
+      return;
+    }
+    this._currentLocation =
+      typeof record === 'string'
+        ? record
+        : (record.legacy_id ?? record.id ?? null);
   }
 
   handleStorySelect(event) {
@@ -233,7 +253,7 @@ class Bookstore extends LitElement {
     if (currentParentId !== storyId) {
       // Suppress the cover override in handleNavigationNodeLoaded for this
       // reload, so the explicitly selected child is kept.
-      this._pendingChapterSelection = chapterId;
+      this._pendingChildSelection = chapterId;
       this.navigationNode.setAttribute('id', storyId);
     }
     this.contentNode.setAttribute('id', chapterId);
@@ -280,94 +300,132 @@ class Bookstore extends LitElement {
     if (this.isHydrated) {
       return;
     }
-    // Hydrate the component
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
 
-    // Use setTimeout to ensure elements are rendered before accessing them
-    setTimeout(() => {
-      // Initialize the story container
-      switch (this._initPara.initmode) {
-        case 'story':
-          this.initWithStoryId(this._initPara.initId);
-          break;
-        case 'chapter':
-          this.initWithChapterId(this._initPara.initId);
-          break;
-        case 'none':
-          this.initWithoutParameter();
-          break;
-        default:
-          this.initWithoutParameter();
-          break;
-      }
+    // Die Knoten müssen im Shadow-DOM stehen, bevor sie Attribute bekommen.
+    await this.updateComplete;
 
-      this.isHydrated = true;
-      if (this.navigationNode) {
-        this.navigationNode.setAttribute('child-buttons_number-max', 2);
-      }
-      this.addEventListener(
-        'navigation',
-        this.handleNavigationEvent.bind(this)
-      );
-      // `custom-chapter-edit` meldet weiterhin `chapter-updated` — die
-      // Editierkomponente trägt ihren alten Namen noch.
-      this.addEventListener(
-        'chapter-updated',
-        this._handleChildUpdated.bind(this)
-      );
-      this.addEventListener('node-deleted', this._handleNodeDeleted.bind(this));
-    }, 0);
-  }
+    const entry = await this.resolveEntryPoint(this._initPara.initId);
+    this.applyEntryPoint(entry);
 
-  initWithoutParameter() {
-    this._attachNavigationNodeListeners();
-    this.navigationNode.setAttribute('id', '000s00000000000011');
-    this._setCurrentLocation('000s00000000000011');
-  }
-
-  initWithStoryId(nodeId) {
-    this.navigationNode.setAttribute('id', nodeId);
-    this._setCurrentLocation(nodeId);
-    this._attachNavigationNodeListeners();
+    this.isHydrated = true;
+    if (this.navigationNode) {
+      this.navigationNode.setAttribute('child-buttons_number-max', 2);
+    }
+    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
+    // `custom-chapter-edit` meldet weiterhin `chapter-updated` — die
+    // Editierkomponente trägt ihren alten Namen noch.
+    this.addEventListener(
+      'chapter-updated',
+      this._handleChildUpdated.bind(this)
+    );
+    this.addEventListener('node-deleted', this._handleNodeDeleted.bind(this));
   }
 
   /**
-   * Einstieg über einen Knoten, der Inhalte trägt.
+   * Was ist das für eine Id in der URL?
    *
-   * Welcher Knoten dann die Auswahl oben füllt, steht erst nach dem Laden fest:
-   * es ist der Elternknoten. Vorher ist er nicht bekannt — der Deep-Link nennt
-   * nur den einen Knoten.
+   * **Gefragt wird das Backend, nicht das Präfix.** Früher entschied
+   * `000s`/`000c`/`000p`, welcher Einstieg gewählt wird. Das Präfix war eine
+   * Typangabe in einer Id — es funktionierte nur, solange es genau drei Typen
+   * gab, und eine nach der Umstellung angelegte Id hätte gar keins mehr
+   * getragen. Jetzt zählt allein, was hinter der Id steckt.
+   *
+   * Alte Deep-Links bleiben damit gültig: das Backend löst `000s…`/`000c…`
+   * über `node.legacy_id` auf und `000p…` über `content_node.legacy_id`.
    */
-  initWithChapterId(nodeId) {
-    this.contentNode.setAttribute('id', nodeId);
-    this._setCurrentLocation(nodeId);
+  async resolveEntryPoint(recordId) {
+    if (!recordId) {
+      return { kind: 'none' };
+    }
+
+    const node = await this.queryRecord({ object: 'node', id: recordId });
+    if (node?.id) {
+      return { kind: 'node', node };
+    }
+
+    // Kein Knoten — dann vielleicht ein Inhalt. Ein Deep-Link auf einen Absatz
+    // landete früher stillschweigend auf der Startseite.
+    const content = await this.queryRecord({ object: 'content', id: recordId });
+    if (content?.id) {
+      return { kind: 'content', content };
+    }
+
+    return { kind: 'none' };
+  }
+
+  /** Setzt die beiden Knoten entsprechend dem aufgelösten Einstieg. */
+  applyEntryPoint(entry) {
+    if (entry.kind === 'node') {
+      const { id, parent_node_id: parentId } = entry.node;
+      if (parentId) {
+        // Ein Knoten mit Eltern: er füllt den Inhalt, sein Elternknoten die
+        // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
+        this.showChildOf(parentId, entry.node);
+      } else {
+        this.navigationNode.setAttribute('id', id);
+        this._setCurrentLocation(entry.node);
+        this._attachNavigationNodeListeners();
+      }
+      return;
+    }
+
+    if (entry.kind === 'content') {
+      // Deep-Link auf einen Inhalt: gezeigt wird der Knoten, an dem er hängt,
+      // und darin wird zu ihm gesprungen.
+      this.contentNode.setAttribute(
+        'contentnumber',
+        this._initPara?.paragraphnumber ?? entry.content.sortnumber
+      );
+      this.resolveEntryPoint(entry.content.node_id).then((nodeEntry) =>
+        this.applyEntryPoint(nodeEntry)
+      );
+      return;
+    }
+
+    this.initWithoutParameter();
+  }
+
+  /** Auswahl oben, Inhalt unten — der Regelfall nach einem Deep-Link. */
+  showChildOf(parentId, childNode) {
+    const childId = childNode.id;
+    this.contentNode.setAttribute('id', childId);
     if (this._initPara?.paragraphnumber) {
       this.contentNode.setAttribute(
         'contentnumber',
         this._initPara.paragraphnumber
       );
     }
-    this.contentNode.addEventListener(
-      'loaded',
-      (event) => {
-        const nodeData = event.detail?.nodeData;
-        if (!nodeData?.id) {
-          return;
-        }
-        const parentId = nodeData.parent_node_id;
-        if (!parentId) {
-          // Ein Wurzelknoten mit Inhalten: es gibt nichts darüber, also bleibt
-          // die Auswahl oben leer.
-          this._initPara = null;
-          return;
-        }
-        this.navigationNode.setAttribute('id', parentId);
-        this.navigationNode.setAttribute('selected-child', nodeData.id);
-        this._attachNavigationNodeListeners();
-      },
-      { once: true }
-    );
+    this.navigationNode.setAttribute('id', parentId);
+    this.navigationNode.setAttribute('selected-child', childId);
+    // Der Titel-Knoten des Elternteils darf die ausdrückliche Wahl nicht
+    // überschreiben.
+    this._pendingChildSelection = childId;
+    this._setCurrentLocation(childNode);
+    this._attachNavigationNodeListeners();
+  }
+
+  initWithoutParameter() {
+    this._attachNavigationNodeListeners();
+    this.navigationNode.setAttribute('id', DEFAULT_ENTRY_NODE_ID);
+    this._setCurrentLocation(DEFAULT_ENTRY_NODE_ID);
+  }
+
+  /** Einen Datensatz über den Callout-Layer holen, als Promise. */
+  queryRecord(payload) {
+    return new Promise((resolve) => {
+      this.dispatchEvent(
+        new CustomEvent('query', {
+          detail: {
+            payload,
+            callback: (error, data) => resolve(error ? null : data),
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    });
   }
 
   /** Auswahl-Knoten: Navigation und „geladen" hängen immer zusammen. */
@@ -376,10 +434,9 @@ class Bookstore extends LitElement {
       'navigation',
       this.handleNavigationEvent.bind(this)
     );
-    this.navigationNode.addEventListener('loaded', (event) => {
-      this.handleNavigationNodeLoaded(event);
-      this._initPara = null;
-    });
+    this.navigationNode.addEventListener('loaded', (event) =>
+      this.handleNavigationNodeLoaded(event)
+    );
   }
 
   handleNavigationNodeLoaded(event) {
@@ -388,15 +445,15 @@ class Bookstore extends LitElement {
       return;
     }
 
-    if (this._pendingChapterSelection) {
-      // Ein Kind wurde ausdrücklich gewählt (etwa im Navigations-Modal); diese
-      // Wahl schlägt den Titel-Knoten.
-      this._pendingChapterSelection = null;
+    if (this._pendingChildSelection) {
+      // Ein Kind wurde ausdrücklich gewählt — im Navigations-Modal oder über
+      // einen Deep-Link. Diese Wahl schlägt den Titel-Knoten.
+      this._pendingChildSelection = null;
       return;
     }
 
     const coverId = nodeData.cover_node_id;
-    if (coverId && this._initPara?.initmode !== 'chapter') {
+    if (coverId) {
       this.navigationNode.setAttribute('selected-child', coverId);
       this.contentNode.setAttribute('id', coverId);
     }
@@ -521,7 +578,7 @@ class Bookstore extends LitElement {
     if (fromNavigationNode && type === 'node') {
       this.contentNode.setAttribute('id', value);
       this.navigationNode.setAttribute('selected-child', value);
-      this._setCurrentLocation(value);
+      this._setCurrentLocation(event.detail.node ?? value);
       return;
     }
   }
@@ -541,22 +598,20 @@ class Bookstore extends LitElement {
     );
   }
 
+  /**
+   * Liest die URL — mehr nicht.
+   *
+   * Hier stand früher die Präfix-Typisierung (`000s` → story, `000c` →
+   * chapter, …) und damit die Entscheidung über den Einstieg. Die ist
+   * ersatzlos entfallen: **was** eine Id bezeichnet, weiß das Backend
+   * (`resolveEntryPoint`), nicht der Aufbau der Zeichenkette.
+   */
   createInitializationParameterObject() {
-    const typeMape = new Map();
-    typeMape.set('000s', 'story');
-    typeMape.set('000c', 'chapter');
-    typeMape.set('000p', 'paragraph');
-
     const initParameter = {};
     initParameter.firstUrlParameter = window.location.pathname.split('/').pop();
     initParameter.isFirstUrlParameterSet =
       initParameter.firstUrlParameter.length > 0;
     initParameter.initId = initParameter.firstUrlParameter;
-
-    let initmode = typeMape.get(
-      initParameter.firstUrlParameter.substring(0, 4)
-    );
-    initParameter.initmode = initmode || 'none';
 
     // Read optional paragraphnumber query parameter
     const urlParams = new URLSearchParams(window.location.search);

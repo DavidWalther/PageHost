@@ -68,8 +68,8 @@ test.describe('custom-node', () => {
       .toBeGreaterThan(0);
 
     const { content } = await readNodes(page);
-    expect(content.recordId).toBe('000c00000000000001');
-    expect(content.contentIds).toEqual(['000p00000000000001']);
+    expect(content.recordId).toBe('000n00000000000001');
+    expect(content.contentIds).toEqual(['00cn00000000000001']);
     expect(content.hasNavigation).toBe(false);
   });
 
@@ -86,14 +86,14 @@ test.describe('custom-node', () => {
         'custom-node[data-role="navigation"]'
       );
       navigation.shadowRoot
-        .querySelector('button[data-node-id="000c00000000000002"]')
+        .querySelector('button[data-node-id="000n00000000000002"]')
         .click();
     });
 
     // Der Consumer hört auf `navigation` mit `type: 'node'`.
     await expect
       .poll(async () => (await readNodes(page)).content?.recordId)
-      .toBe('000c00000000000002');
+      .toBe('000n00000000000002');
 
     const { navigation, content } = await readNodes(page);
     expect(navigation.name).toBe('Mock Story 1');

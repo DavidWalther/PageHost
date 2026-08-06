@@ -629,7 +629,15 @@ class CustomNode extends LitElement {
     this.selectedChild = childId;
     this.dispatchEvent(
       new CustomEvent('navigation', {
-        detail: { type: 'node', value: childId },
+        // Der ganze Datensatz kommt mit, nicht nur die Id: der Consumer hat
+        // ihn sonst nicht und müsste ihn nachladen, um etwa seine alte Id zu
+        // kennen. Angezeigt wurde er hier ohnehin schon.
+        detail: {
+          type: 'node',
+          value: childId,
+          node:
+            this.childNodeList.find((child) => child.id === childId) ?? null,
+        },
         bubbles: true,
         composed: true,
       })

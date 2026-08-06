@@ -33,17 +33,19 @@ Ein Knoten weiß nicht, ob er einmal eine Story war.
 
 ## Ereignisse
 
-| Ereignis       | `detail`                          | Anlass                              |
-| :------------- | :-------------------------------- | :---------------------------------- |
-| `navigation`   | `{ type: 'node', value: <id> }`   | Ein Kind wurde ausgewählt           |
-| `loaded`       | `{ nodeData }`                    | Der Knoten ist geladen              |
-| `node-deleted` | `{ nodeId }`                      | Der Knoten wurde gelöscht           |
-| `toast`        | `{ message, variant }`            | Rückmeldung an den Nutzer           |
-| `query`        | `{ payload: { object: 'node' } }` | Datenabruf (beantwortet `index.js`) |
-| `create`       | `{ object: 'content', payload }`  | Neuer Inhalt an diesem Knoten       |
+| Ereignis       | `detail`                              | Anlass                              |
+| :------------- | :------------------------------------ | :---------------------------------- |
+| `navigation`   | `{ type: 'node', value: <id>, node }` | Ein Kind wurde ausgewählt           |
+| `loaded`       | `{ nodeData }`                        | Der Knoten ist geladen              |
+| `node-deleted` | `{ nodeId }`                          | Der Knoten wurde gelöscht           |
+| `toast`        | `{ message, variant }`                | Rückmeldung an den Nutzer           |
+| `query`        | `{ payload: { object: 'node' } }`     | Datenabruf (beantwortet `index.js`) |
+| `create`       | `{ object: 'content', payload }`      | Neuer Inhalt an diesem Knoten       |
 
 `navigation` meldet `type: 'node'` — nicht `story`/`chapter`. Wer den Ausschnitt
-umschaltet, entscheidet der Consumer, nicht der Knoten.
+umschaltet, entscheidet der Consumer, nicht der Knoten. Der **ganze Datensatz**
+des Kindes kommt unter `node` mit: der Consumer hat ihn sonst nicht und müsste
+ihn nachladen, etwa um die alte Id zu kennen.
 
 ## Bekannte Altlasten
 

@@ -19,7 +19,7 @@ const { cacheLitBundle } = require('../../support/component-page');
  * gewandert.
  */
 
-const ROOT = MOCK_NODES['000s00000000000011'];
+const ROOT = MOCK_NODES.wurzel;
 
 const NODE_WITH_MANY_CHILDREN = {
   ...ROOT,
@@ -43,12 +43,13 @@ test.describe('Knoten: Auswahl eines Kindes per Combobox', () => {
     // Mehr Kinder als child-buttons_number-max (2) -> die Combobox erscheint.
     await page.route('**/data/query/node**', (route) => {
       const id = new URL(route.request().url()).searchParams.get('id');
-      return route.fulfill({
-        json:
-          id === '000s00000000000011'
-            ? NODE_WITH_MANY_CHILDREN
-            : MOCK_NODES[id] || {},
-      });
+      const match =
+        id === ROOT.id || id === ROOT.legacy_id
+          ? NODE_WITH_MANY_CHILDREN
+          : Object.values(MOCK_NODES).find(
+              (node) => node.id === id || node.legacy_id === id
+            );
+      return route.fulfill({ json: match || {} });
     });
 
     await page.goto('/');
