@@ -393,3 +393,142 @@ describe('NodeContentRepository — Schreibpfad', () => {
     });
   });
 });
+
+// ─── Typfreie Objektnamen ──────────────────────────────────────────────────
+
+describe('Schreibpfad unter den Namen node und content', () => {
+  describe('createRecord: node', () => {
+    beforeEach(() => {
+      respondWith('INSERT INTO node', [{ id: 'n-neu', legacy_id: null }]);
+    });
+
+    it('vergibt keine Kompat-Id mehr', async () => {
+      // Die Vergabe endet mit dem Frontend-Umbau (`datamodel.md`, Abschnitt 8):
+      // wer über `node` schreibt, liest den Typ nicht mehr am Präfix.
+      await createRepository().createRecord('node', { name: 'Neuer Knoten' });
+
+      expect(statementsMatching('AS legacy_id')).toEqual([]);
+      const [insert] = statementsMatching('INSERT INTO node');
+      expect(insert.sql).not.toContain('legacy_id');
+    });
+
+    it('gibt die neue Id nach außen zurück', async () => {
+      const record = await createRepository().createRecord('node', {
+        name: 'Neuer Knoten',
+      });
+
+      expect(record.id).toBe('n-neu');
+    });
+
+    it('nimmt die Spaltennamen des neuen Modells entgegen', async () => {
+      respondWith('SELECT id FROM node WHERE legacy_id', [{ id: 'n-eltern' }]);
+
+      await createRepository().createRecord('node', {
+        name: 'Kind',
+        sortnumber: 3,
+        parent_node_id: 'n-eltern',
+        published_date: '2026-01-01',
+      });
+
+      const [insert] = statementsMatching('INSERT INTO node');
+      expect(insert.sql).toContain('parent_node_id');
+      expect(insert.sql).toContain('published_date');
+      expect(insert.parameters).toContain('n-eltern');
+    });
+
+    it('hängt nur bei einem Wurzelknoten eine app_node-Zeile an', async () => {
+      respondWith('SELECT id FROM node WHERE legacy_id', [{ id: 'n-eltern' }]);
+
+      await createRepository().createRecord('node', {
+        name: 'Kind',
+        parent_node_id: 'n-eltern',
+      });
+
+      expect(statementsMatching('INSERT INTO app_node')).toEqual([]);
+    });
+  });
+
+  describe('createRecord: content', () => {
+    beforeEach(() => {
+      respondWith('SELECT id FROM node WHERE legacy_id', [{ id: 'n-knoten' }]);
+      respondWith('INSERT INTO content_node', [
+        { id: 'cn-neu', legacy_id: null },
+      ]);
+      respondWith('SELECT id FROM content_node WHERE legacy_id', [
+        { id: 'cn-neu' },
+      ]);
+    });
+
+    it('legt den Halter ohne Kompat-Id an', async () => {
+      await createRepository().createRecord('content', {
+        node_id: 'n-knoten',
+        name: 'Neuer Inhalt',
+      });
+
+      expect(statementsMatching('AS legacy_id')).toEqual([]);
+      const [insert] = statementsMatching('INSERT INTO content_node');
+      expect(insert.sql).not.toContain('legacy_id');
+    });
+
+    it('schreibt die Repräsentationen wie beim Absatz', async () => {
+      await createRepository().createRecord('content', {
+        node_id: 'n-knoten',
+        content: 'Text',
+        htmlcontent: '<p>Text</p>',
+      });
+
+      const items = statementsMatching('INSERT INTO content_item');
+      expect(items.map((entry) => entry.parameters[1])).toEqual([
+        'text',
+        'html',
+      ]);
+      const [pointer] = statementsMatching('SET active_content_item = (');
+      expect(pointer.parameters).toEqual(['cn-neu', 'html']);
+    });
+
+    it('verlangt einen Knoten', async () => {
+      await expect(
+        createRepository().createRecord('content', { name: 'Ohne Knoten' })
+      ).rejects.toThrow('requires a chapter reference');
+    });
+  });
+
+  describe('updateRecord und deleteRecord', () => {
+    it('ändert einen Knoten über seine neue Id', async () => {
+      respondWith('SELECT id FROM node WHERE legacy_id', [{ id: 'n-1' }]);
+      respondWith('UPDATE node SET', [{ id: 'n-1', legacy_id: '000s1' }]);
+
+      const record = await createRepository().updateRecord('node', {
+        id: 'n-1',
+        name: 'Neuer Name',
+      });
+
+      // Auch wenn der Bestandsknoten noch eine alte Id trägt: unter dem Namen
+      // `node` geht die neue nach außen.
+      expect(record.id).toBe('n-1');
+    });
+
+    it('löscht einen Knoten samt Teilbaum wie unter dem alten Namen', async () => {
+      respondWith('SELECT id FROM node WHERE legacy_id', [{ id: 'n-1' }]);
+      respondWith('WITH RECURSIVE', [{ id: 'n-kind' }, { id: 'n-1' }]);
+
+      await createRepository().deleteRecord('node', 'n-1');
+
+      expect(positionOf('DELETE FROM app_node')).toBeLessThan(
+        positionOf('DELETE FROM node')
+      );
+    });
+
+    it('löscht einen Inhalt über content', async () => {
+      respondWith('SELECT id FROM content_node WHERE legacy_id', [
+        { id: 'cn-1' },
+      ]);
+
+      await createRepository().deleteRecord('content', 'cn-1');
+
+      expect(positionOf('DELETE FROM content_item')).toBeLessThan(
+        positionOf('DELETE FROM content_node')
+      );
+    });
+  });
+});

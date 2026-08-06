@@ -457,6 +457,23 @@ class NodeContentRepository extends ContentRepository {
     return resolved;
   }
 
+  /**
+   * Zusätzliche alte Id für eine Neuanlage — oder nichts.
+   *
+   * Nur die alten Objektnamen bekommen eine: dort liest das Frontend den Typ
+   * noch am Präfix. Wer über `node`/`content` schreibt, hat das hinter sich und
+   * bekommt allein die neue Id (`datamodel.md`, „Lebensdauer").
+   */
+  async mintLegacyId(run, object, tableName) {
+    if (!NodeWriteMapping.usesLegacyIds(object)) {
+      return {};
+    }
+    const [{ legacy_id: legacyId }] = await run(mintLegacyIdSql(tableName), [
+      NodeWriteMapping.legacyPrefix(object),
+    ]);
+    return { legacy_id: legacyId };
+  }
+
   async createRecord(object, payload) {
     const LOCATION = 'NodeContentRepository.createRecord';
     Logging.debugMessage({
@@ -481,17 +498,13 @@ class NodeContentRepository extends ContentRepository {
       NodeWriteMapping.columnsFor(object, payload)
     );
 
-    const [{ legacy_id: legacyId }] = await run(mintLegacyIdSql('node'), [
-      NodeWriteMapping.legacyPrefix(object),
-    ]);
-
     // Vererbung ist der Normalfall (`datamodel.md` Abschnitt 4). Die
     // Bestandsknoten tragen bis Schritt 13a `false`, weil die Kopie die alten
     // App-Spalten Knoten für Knoten abgebildet hat — für Neuanlagen gilt die
     // Regel des Zielmodells.
     const withDefaults = {
       ...columns,
-      legacy_id: legacyId,
+      ...(await this.mintLegacyId(run, object, 'node')),
       is_parent_controls_visibility: true,
     };
     const insert = insertClause(withDefaults);
@@ -520,12 +533,10 @@ class NodeContentRepository extends ContentRepository {
       throw new Error('Creating a paragraph requires a chapter reference');
     }
 
-    const [{ legacy_id: legacyId }] = await run(
-      mintLegacyIdSql('content_node'),
-      [NodeWriteMapping.legacyPrefix(object)]
-    );
-
-    const insert = insertClause({ ...columns, legacy_id: legacyId });
+    const insert = insertClause({
+      ...columns,
+      ...(await this.mintLegacyId(run, object, 'content_node')),
+    });
     const [contentNode] = await run(
       `INSERT INTO content_node (${insert.names}) VALUES (${insert.placeholders}) RETURNING *`,
       insert.values
@@ -723,12 +734,16 @@ class NodeContentRepository extends ContentRepository {
   /**
    * Antwort eines Schreibvorgangs in der Form, die der Aufrufer erwartet.
    *
-   * Nach außen gilt weiterhin die alte Id — das Frontend liest den Typ am
-   * Präfix und legt sie in seinen Cache.
+   * Wer über die alten Objektnamen schreibt, bekommt die alte Id zurück — das
+   * Frontend liest dort den Typ am Präfix und legt sie in seinen Cache. Wer
+   * über `node`/`content` schreibt, bekommt die neue.
    */
   outwardRecord(object, record) {
     if (!record) {
       return {};
+    }
+    if (!NodeWriteMapping.usesLegacyIds(object)) {
+      return { ...record };
     }
     return { ...record, id: outwardId(record) };
   }
