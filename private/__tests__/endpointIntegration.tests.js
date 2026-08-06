@@ -614,9 +614,11 @@ describe('PublishEndpoint Integration', () => {
   });
 
   it('should return 400 when the record is already published', async () => {
+    // Postgres liefert `publishdate` (kleingeschrieben) — dass hier lange
+    // `publishDate` stand, war der Grund, warum die Prüfung nie griff.
     mockQueryStory.mockResolvedValue({
       id: '000s001',
-      publishDate: '2025-01-01',
+      publishdate: '2025-01-01',
     });
 
     const req = {

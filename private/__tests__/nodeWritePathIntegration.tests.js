@@ -395,21 +395,125 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
     });
 
-    it('FEHLVERHALTEN: veröffentlicht erneut, statt 400 zu melden', async () => {
-      // `publishEndpoint` prüft `existingRecord.publishDate` (camelCase), der
-      // Lesepfad liefert aber `publishdate`. Die Prüfung greift deshalb nie und
-      // ein bereits veröffentlichter Datensatz bekommt ein neues Datum.
-      // `unpublishEndpoint` macht es richtig — siehe Test darüber.
-      // Der Befund ist geparkt; dieser Test hält den Ist-Zustand fest und
-      // schlägt um, sobald er behoben wird.
+    it('meldet 400, wenn bereits veröffentlicht wurde', async () => {
+      // War lange ein FEHLVERHALTEN-Test: `publishEndpoint` prüfte
+      // `existingRecord.publishDate` (camelCase), der Lesepfad liefert aber
+      // `publishdate` — die Prüfung griff nie. Behoben, als die beiden
+      // Endpunkte für `node`/`content` geöffnet wurden: seitdem liest
+      // `PublishFields.valueOf` das Datum aus **beiden** Antwortformen.
       seedRead({ published: true });
 
       const response = await runEndpoint(PublishEndpoint, {
         body: { object: 'chapter', id: '000c00000000000022' },
       });
 
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
+    });
+  });
+});
+
+// ─── Typfreie Objektnamen ──────────────────────────────────────────────────
+
+describe('Schreibpfad unter node und content', () => {
+  it('legt einen Knoten ohne Kompat-Id an und gibt die neue Id zurück', async () => {
+    respondWith('INSERT INTO node', [{ id: 'n-neu', legacy_id: null }]);
+
+    const response = await runEndpoint(UpsertEndpoint, {
+      body: {
+        object: 'node',
+        payload: { name: 'Neuer Knoten', sortnumber: 1 },
+      },
+    });
+
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(statementsMatching('AS legacy_id')).toEqual([]);
+    expect(response.json.mock.calls[0][0].result.id).toBe('n-neu');
+  });
+
+  it('ändert einen Knoten über die Spaltennamen des neuen Modells', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-1' }]);
+    respondWith('UPDATE node SET', [{ id: 'n-1', legacy_id: '000c1' }]);
+
+    await runEndpoint(UpsertEndpoint, {
+      body: {
+        object: 'node',
+        payload: { id: 'n-1', name: 'Umbenannt', published_date: null },
+      },
+    });
+
+    const [update] = statementsMatching('UPDATE node SET');
+    expect(update.sql).toContain('published_date = $');
+    expect(update.parameters).toContain('Umbenannt');
+  });
+
+  it('löscht einen Inhalt über content', async () => {
+    respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
+
+    const response = await runEndpoint(DeleteEndpoint, {
+      query: { object: 'content', id: 'cn-1' },
+    });
+
+    expect(response.status).toHaveBeenCalledWith(200);
+    expect(statementsMatching('DELETE FROM content_node')).toHaveLength(1);
+  });
+
+  describe('Veröffentlichen', () => {
+    function seedNodeRead({ published }) {
+      respondWith('FROM app_node', [
+        { node_id: 'n-1', relation: 'include', app_name: APPLICATION_KEY },
+      ]);
+      respondWith('FROM node', [
+        {
+          id: 'n-1',
+          name: 'Knoten',
+          sortnumber: 1,
+          parent_node_id: null,
+          legacy_id: null,
+          published_date: published ? '2020-01-01T00:00:00.000Z' : null,
+          is_parent_controls_visibility: false,
+        },
+      ]);
+      respondWith('SELECT id FROM node WHERE', [{ id: 'n-1' }]);
+      respondWith('UPDATE node SET', [{ id: 'n-1', legacy_id: null }]);
+    }
+
+    it('setzt published_date auch unter dem Namen node', async () => {
+      seedNodeRead({ published: false });
+
+      const response = await runEndpoint(PublishEndpoint, {
+        body: { object: 'node', id: 'n-1' },
+      });
+
       expect(response.status).toHaveBeenCalledWith(200);
-      expect(statementsMatching('UPDATE node SET')).toHaveLength(1);
+      const [update] = statementsMatching('UPDATE node SET');
+      expect(update.sql).toContain('published_date = $1');
+      expect(update.parameters[0]).not.toBeNull();
+    });
+
+    it('erkennt den bereits veröffentlichten Knoten an published_date', async () => {
+      // Die neue Antwortform nennt das Feld anders als die alte. Ohne beide
+      // zu kennen, griffe die Prüfung für je eine der Generationen nicht.
+      seedNodeRead({ published: true });
+
+      const response = await runEndpoint(PublishEndpoint, {
+        body: { object: 'node', id: 'n-1' },
+      });
+
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
+    });
+
+    it('zieht einen Knoten unter dem Namen node zurück', async () => {
+      seedNodeRead({ published: true });
+
+      const response = await runEndpoint(UnpublishEndpoint, {
+        body: { object: 'node', id: 'n-1' },
+      });
+
+      expect(response.status).toHaveBeenCalledWith(200);
+      const [update] = statementsMatching('UPDATE node SET');
+      expect(update.parameters[0]).toBeNull();
     });
   });
 });

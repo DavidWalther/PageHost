@@ -21,7 +21,19 @@ const LEGACY_PREFIX = {
 };
 
 /** Knoten-Objekte (eine Zeile in `node`) gegenüber Inhalts-Objekten. */
-const NODE_OBJECTS = ['story', 'chapter'];
+const NODE_OBJECTS = ['story', 'chapter', 'node'];
+
+/**
+ * Objekte der **alten** Benennung.
+ *
+ * Sie sind an die Kompat-Schicht gebunden: Neuanlagen bekommen zusätzlich eine
+ * `legacy_id` im alten Präfix-Schema, und nach außen gilt diese alte Id. Für
+ * `node` und `content` gilt beides nicht — dort ist die neue Id die Identität,
+ * und eine alte wird gar nicht erst vergeben. Das ist die in `datamodel.md`
+ * (Abschnitt 8) festgehaltene Lebensdauer der Vergabe: Sie endet mit dem
+ * Frontend-Umbau, nicht erst mit den alten Tabellen.
+ */
+const LEGACY_OBJECTS = ['story', 'chapter', 'paragraph'];
 
 /**
  * Zieltabelle je Objekt — **abschließend**.
@@ -37,6 +49,8 @@ const TABLE_BY_OBJECT = {
   story: 'node',
   chapter: 'node',
   paragraph: 'content_node',
+  node: 'node',
+  content: 'content_node',
 };
 
 /**
@@ -73,6 +87,24 @@ const FIELD_MAP = {
     publishdate: 'published_date',
     chapterid: 'node_id',
   },
+  // Die typfreie Benennung. Sie bildet nicht mehr ab, sondern benennt: die
+  // Felder heißen wie die Spalten. Was hier fehlt, ist keine Umbenennung wert —
+  // es gibt schlicht keine Entsprechung mehr für `storyid` bei einem Absatz.
+  node: {
+    name: 'name',
+    description: 'description',
+    sortnumber: 'sortnumber',
+    reversed: 'reversed',
+    published_date: 'published_date',
+    parent_node_id: 'parent_node_id',
+    cover_node_id: 'cover_node_id',
+  },
+  content: {
+    name: 'name',
+    sortnumber: 'sortnumber',
+    published_date: 'published_date',
+    node_id: 'node_id',
+  },
 };
 
 /**
@@ -82,8 +114,25 @@ const FIELD_MAP = {
  */
 const REFERENCE_COLUMNS = ['parent_node_id', 'cover_node_id', 'node_id'];
 
-/** Felder, die stillschweigend fallen gelassen werden (siehe FIELD_MAP). */
-const DROPPED_FIELDS = ['id', 'lastupdate', 'storyid'];
+/**
+ * Felder, die stillschweigend fallen gelassen werden (siehe FIELD_MAP).
+ *
+ * Die hinteren fünf sind Felder der typfreien **Antwort**: `legacy_id` ist
+ * abgeleitet, `nodes`/`contents`/`items` sind Kinder und keine Spalten, und
+ * `active_content_item` setzt der Schreibpfad selbst aus dem Inhalt. Ein Client,
+ * der einen gelesenen Datensatz unverändert zurückschickt, soll daran nicht
+ * scheitern — das tut der Absatz-Editor heute schon.
+ */
+const DROPPED_FIELDS = [
+  'id',
+  'lastupdate',
+  'legacy_id',
+  'nodes',
+  'contents',
+  'items',
+  'active_content_item',
+  'active_type',
+];
 
 class NodeWriteMapping {
   /** Schreibt dieses Objekt eine Zeile in `node`? */
@@ -101,6 +150,15 @@ class NodeWriteMapping {
       throw new Error(`Object "${object}" has no table in the node model`);
     }
     return table;
+  }
+
+  /**
+   * Trägt dieses Objekt noch die alte Id nach außen — und bekommt eine neu
+   * vergeben? Für `node` und `content` nicht: dort ist die neue Id die
+   * Identität.
+   */
+  static usesLegacyIds(object) {
+    return LEGACY_OBJECTS.includes(String(object).toLowerCase());
   }
 
   /** Altes Id-Präfix des Objekts (`000s`, `000c`, `000p`). */
@@ -132,7 +190,7 @@ class NodeWriteMapping {
     Object.entries(payload || {}).forEach(([field, value]) => {
       const lower = field.toLowerCase();
       if (
-        key === 'paragraph' &&
+        !NodeWriteMapping.isNodeObject(key) &&
         (lower === 'content' || lower === 'htmlcontent')
       ) {
         return; // eigene Zeilen in content_item
@@ -141,10 +199,14 @@ class NodeWriteMapping {
         return; // eigene Zeilen in app_node
       }
       if (DROPPED_FIELDS.includes(lower)) {
-        // `storyid` ist nur beim Kapitel ein echtes Feld (dort parent_node_id).
-        if (!(key === 'chapter' && lower === 'storyid')) {
-          return;
-        }
+        return;
+      }
+      // `storyid` hat drei Bedeutungen: beim Kapitel ist es ein echtes Feld
+      // (`parent_node_id`, steht in FIELD_MAP), beim Absatz ist es redundant —
+      // die Story hängt dort am Kapitel. Unter den typfreien Namen gibt es sie
+      // gar nicht mehr, und dort soll sie auffallen statt zu verschwinden.
+      if (lower === 'storyid' && key === 'paragraph') {
+        return;
       }
       const column = map[lower];
       if (!column) {

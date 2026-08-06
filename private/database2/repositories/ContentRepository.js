@@ -31,7 +31,16 @@
  * der `DataFacade`, weil sie zur Schnittstelle gehört: wer sie erweitert, muss
  * beide Quellen bedienen.
  */
-const CONTENT_OBJECTS = ['story', 'chapter', 'paragraph'];
+const CONTENT_OBJECTS = [
+  'story',
+  'chapter',
+  'paragraph',
+  // Dieselben Daten unter der typfreien Benennung. Beide Sätze zeigen auf
+  // dieselben Tabellen; sie unterscheiden sich in den Feldnamen und darin, ob
+  // die alte Id nach außen gilt. Die vorderen drei fallen mit der Kompat-Schicht.
+  'node',
+  'content',
+];
 
 class ContentRepository {
   /** Ist dieses Objekt Sache der Inhaltsquelle? */

@@ -210,3 +210,87 @@ describe('NodeWriteMapping', () => {
     });
   });
 });
+
+// ─── Typfreie Objektnamen ──────────────────────────────────────────────────
+
+describe('node und content', () => {
+  it('führen auf dieselben Tabellen wie die alten Namen', () => {
+    expect(NodeWriteMapping.tableFor('node')).toBe('node');
+    expect(NodeWriteMapping.tableFor('content')).toBe('content_node');
+  });
+
+  it('zählen node zu den Knoten-Objekten', () => {
+    expect(NodeWriteMapping.isNodeObject('node')).toBe(true);
+    expect(NodeWriteMapping.isNodeObject('content')).toBe(false);
+  });
+
+  it('tragen die alte Id weder nach außen noch vergeben sie eine', () => {
+    ['story', 'chapter', 'paragraph'].forEach((object) => {
+      expect(NodeWriteMapping.usesLegacyIds(object)).toBe(true);
+    });
+    ['node', 'content'].forEach((object) => {
+      expect(NodeWriteMapping.usesLegacyIds(object)).toBe(false);
+    });
+  });
+
+  it('nehmen die Spaltennamen unverändert entgegen', () => {
+    // Kein Abbilden mehr, nur noch Benennen: das Feld heißt wie die Spalte.
+    expect(
+      NodeWriteMapping.columnsFor('node', {
+        name: 'Knoten',
+        description: 'Text',
+        sortnumber: 2,
+        reversed: true,
+        parent_node_id: 'n-1',
+        cover_node_id: 'n-2',
+        published_date: '2026-01-01',
+      })
+    ).toEqual({
+      name: 'Knoten',
+      description: 'Text',
+      sortnumber: 2,
+      reversed: true,
+      parent_node_id: 'n-1',
+      cover_node_id: 'n-2',
+      published_date: '2026-01-01',
+    });
+  });
+
+  it('lassen die Repräsentationen eines Inhalts als eigene Zeilen stehen', () => {
+    expect(
+      NodeWriteMapping.columnsFor('content', {
+        node_id: 'n-1',
+        content: 'Text',
+        htmlcontent: '<p>Text</p>',
+      })
+    ).toEqual({ node_id: 'n-1' });
+  });
+
+  it('lassen einen unveränderten gelesenen Datensatz durch', () => {
+    // Der Absatz-Editor schickt seinen ganzen Datensatz zurück. Abgeleitete
+    // Felder und Kinderlisten dürfen daran nicht scheitern.
+    expect(
+      NodeWriteMapping.columnsFor('node', {
+        id: 'n-1',
+        legacy_id: '000s1',
+        name: 'Knoten',
+        nodes: [],
+        contents: [],
+      })
+    ).toEqual({ name: 'Knoten' });
+  });
+
+  it('werfen weiterhin bei einem Feld, das es nicht gibt', () => {
+    expect(() =>
+      NodeWriteMapping.columnsFor('node', { storyid: 'n-1' })
+    ).toThrow('cannot be written');
+  });
+
+  it('kennen kein Präfix — die Kompat-Vergabe endet hier', () => {
+    ['node', 'content'].forEach((object) => {
+      expect(() => NodeWriteMapping.legacyPrefix(object)).toThrow(
+        'Unknown object type'
+      );
+    });
+  });
+});
