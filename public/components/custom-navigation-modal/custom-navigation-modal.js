@@ -106,12 +106,23 @@ class NavigationModal extends LitElement {
     );
   }
 
+  /**
+   * Steht die aktuelle Stelle auf der obersten Ebene des Baums?
+   *
+   * Früher entschied das Id-Präfix (`000s`). Gefragt wird jetzt der Baum
+   * selbst: Wer dort ganz oben steht, ist oben — unabhängig davon, wie seine
+   * Id aussieht. Ids ohne Präfix gibt es seit der Umstellung.
+   */
+  _isTopLevelLocation() {
+    return this._tree.some((story) => story.id === this.currentLocation);
+  }
+
   _storyIdForLocation() {
     const location = this.currentLocation;
     if (!location) {
       return null;
     }
-    if (location.startsWith('000s')) {
+    if (this._isTopLevelLocation()) {
       return location;
     }
     const parentStory = this._tree.find((story) =>
@@ -121,9 +132,9 @@ class NavigationModal extends LitElement {
   }
 
   _resolveInitialStory() {
-    // Only a chapter location pre-opens the chapter list of its parent story;
-    // a story location (or none) keeps the modal on the story level.
-    if (!this.currentLocation || this.currentLocation.startsWith('000s')) {
+    // Only a child location pre-opens the list of its parent; a top-level
+    // location (or none) keeps the modal on the upper level.
+    if (!this.currentLocation || this._isTopLevelLocation()) {
       return null;
     }
     const storyId = this._storyIdForLocation();
