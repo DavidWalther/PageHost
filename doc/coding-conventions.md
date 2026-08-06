@@ -64,6 +64,11 @@ Anfassen angleichen; eine gesammelte Migration ist optional.
   - `private/modules/oAuth2/__tests__/OpenIdConnectClient.test.js`
   - `private/database2/DataCache/__tests__/RedisConnector.test.js`
   - `private/database2/DataStorage/__tests__/sanitizer.test.js`
+
+- **Namen aus dem alten Datenmodell** in Komponenten, die es überlebt haben:
+  `custom-chapter-edit` bearbeitet Knoten und meldet weiterhin
+  `chapter-updated`; `custom-paragraph` stellt einen `content` dar. Beide
+  funktionieren, tragen aber Begriffe, die es im Modell nicht mehr gibt.
 - **`test()` statt `it()`:** 2 Testdateien (bei nächster Berührung umstellen).
 - **`.then`/`await` gemischt** in einer Datei:
   - `private/database2/DataFacade.js`
