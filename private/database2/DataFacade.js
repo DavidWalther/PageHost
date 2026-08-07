@@ -247,27 +247,16 @@ class DataFacadeSync {
       message: `Deleting data for object: ${object}, id: ${id}`,
     });
     try {
-      if (ContentRepository.owns(object)) {
-        await this.createContentRepository().deleteRecord(object, id);
-      } else {
+      if (!ContentRepository.owns(object)) {
         await this.createDirectStorage().deleteData(object, id);
+        return;
       }
-      // Optionally, remove from cache
-      if (!this.getSkipCache()) {
-        const cache = new DataCache2(this.environment);
-        await cache.del(id);
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Data deleted and cache cleared for id: ${id}`,
-        });
-      } else {
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Skipping cache delete for id: ${id}`,
-        });
-      }
+
+      const removed = await this.createContentRepository().deleteRecord(
+        object,
+        id
+      );
+      await this.clearCacheFor(removed, id);
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',
@@ -277,6 +266,53 @@ class DataFacadeSync {
       });
       throw error;
     }
+  }
+
+  /**
+   * Räumt die Cache-Einträge eines Löschvorgangs ab.
+   *
+   * **Unabhängig von `skipCache`.** Das war einmal anders: der
+   * `DeleteEndpoint` setzt `skipCache(true)`, und daran hing auch das
+   * Aufräumen — der gelöschte Datensatz blieb bis zum Ablauf der Frist im
+   * Cache und wurde weiter ausgeliefert. `skipCache` heißt „lies nicht aus dem
+   * Cache", nicht „lass Gelöschtes darin stehen".
+   *
+   * Abgeräumt wird, was die Quelle **tatsächlich** entfernt hat: beim Löschen
+   * eines Knotens ist das der ganze Teilbaum samt seiner Inhalte. Jeder
+   * Datensatz wird unter beiden Ids gelöscht — ein Eintrag kann unter der alten
+   * angelegt worden sein, wenn ein Deep-Link von früher ihn geholt hat.
+   */
+  async clearCacheFor(removed, requestedId) {
+    const LOCATION = 'DataFacadeSync.clearCacheFor';
+    const cache = new DataCache2(this.environment);
+    const keys = new Set();
+
+    const collect = (table, records) => {
+      (records || []).forEach((record) => {
+        [record.id, record.legacy_id].forEach((value) => {
+          if (value) {
+            keys.add(this.cacheKeyFor(table, value));
+          }
+        });
+      });
+    };
+    collect('node', removed?.nodes);
+    collect('content', removed?.contents);
+
+    // Die angefragte Id kann eine dritte Schreibweise sein — etwa die alte,
+    // während der Datensatz unter der neuen abgelegt wurde.
+    keys.add(this.cacheKeyFor('node', requestedId));
+    keys.add(this.cacheKeyFor('content', requestedId));
+
+    // Ein gelöschter Knoten ändert den Inhaltsbaum.
+    keys.add('contentsTree');
+
+    await Promise.all([...keys].map((key) => cache.del(key)));
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Cleared ${keys.size} cache keys after delete`,
+    });
   }
 
   async getConfigurations() {

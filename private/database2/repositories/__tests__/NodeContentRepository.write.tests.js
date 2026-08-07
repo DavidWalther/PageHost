@@ -320,7 +320,7 @@ describe('NodeContentRepository — Schreibpfad', () => {
         { id: 'n-kapitel' },
         { id: 'n-story' },
       ]);
-      respondWith('SELECT id FROM content_node WHERE node_id', [
+      respondWith('SELECT id, legacy_id FROM content_node WHERE node_id', [
         { id: 'cn-1' },
       ]);
     });
