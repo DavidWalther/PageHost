@@ -315,6 +315,28 @@ class DataFacadeSync {
     });
   }
 
+  /**
+   * Schreibt in den Cache und verzeiht, wenn das nicht geht.
+   *
+   * Die Daten sind an dieser Stelle bereits gelesen; ein nicht erreichbarer
+   * Redis ist ein Grund, langsamer zu werden, kein Grund, die Antwort
+   * fallenzulassen. Vorher stand hier ein nicht abgewartetes `cache.set` —
+   * dessen Ablehnung fand niemanden, der sie fing, und beendete den Prozess.
+   */
+  async writeCache(cache, key, value) {
+    const LOCATION = 'DataFacadeSync.writeCache';
+    try {
+      await cache.set(key, value);
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: `Failed to write cache key ${key}: ${error?.message || error}`,
+        error,
+      });
+    }
+  }
+
   async getConfigurations() {
     const LOCATION = 'DataFacadeSync.getConfigurations';
     Logging.debugMessage({
@@ -335,7 +357,7 @@ class DataFacadeSync {
         this.environment.APPLICATION_APPLICATION_KEY
       );
       product = await dataStorage.queryConfiguration();
-      cache.set('metadata', product);
+      await this.writeCache(cache, 'metadata', product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',
@@ -362,7 +384,7 @@ class DataFacadeSync {
         message: `No contents tree in cache, building from database`,
       });
       product = await this.buildContentsTree();
-      cache.set('contentsTree', product);
+      await this.writeCache(cache, 'contentsTree', product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',
@@ -432,7 +454,7 @@ class DataFacadeSync {
         message: `No ${table} in cache, querying database: ${recordId}`,
       });
       product = await this.readTypeFree(table, recordId);
-      cache.set(cacheKey, product);
+      await this.writeCache(cache, cacheKey, product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',

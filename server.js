@@ -26,6 +26,27 @@ const ServiceWorkerEndpointLogic = require('./private/endpoints/wildcard/Service
 
 const environment = new Environment().getEnvironment();
 
+/**
+ * Ein abgelehntes Promise darf den Server nicht beenden.
+ *
+ * Beobachtet am 2026-08-02: schlug die Postgres-Anmeldung fehl, endete der
+ * Prozess mit `triggerUncaughtException` statt mit einer Fehlerantwort — der
+ * erste Request beantwortete sich noch, der zweite riss den Server mit. Für
+ * einen Ausfall der Datenbank ist das die denkbar schlechteste Reaktion:
+ * die Anwendung ist danach auch für alles andere weg.
+ *
+ * Das ist ein Netz, kein Ersatz für `catch` an den Endpunkten. Es fängt genau
+ * die Fälle, an die dort niemand gedacht hat.
+ */
+process.on('unhandledRejection', (reason) => {
+  Logging.debugMessage({
+    severity: 'ERROR',
+    location: 'Server.unhandledRejection',
+    message: `Unhandled promise rejection: ${reason?.message || reason}`,
+    error: reason,
+  });
+});
+
 const app = express();
 app.use(express.json());
 app.use(createCompressionMiddleware(environment));
@@ -116,6 +137,21 @@ app.get('/metadata', (req, res) => {
         message: `Metadata Endpoint executed`,
         location: LOCATION,
       });
+    })
+    .catch((error) => {
+      // Ohne diesen Zweig endete eine fehlgeschlagene Datenbank-Anmeldung als
+      // unbehandelte Rejection — und damit im Abbruch des Prozesses.
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Metadata Endpoint failed: ${error?.message || error}`,
+        location: LOCATION,
+        error,
+      });
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ success: false, error: 'Internal Server Error' });
+      }
     });
 });
 
