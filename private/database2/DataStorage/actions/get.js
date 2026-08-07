@@ -129,9 +129,11 @@ class ActionGet {
       { closeConnection: true }
     );
 
-    // Der Sanitizer ersetzt beim Schreiben Zeichen, die den alten
-    // String-Statements gefährlich wurden; beim Lesen wird das rückgängig
-    // gemacht. Er bleibt, solange geschriebene Bestandsdaten so aussehen.
+    // Der `Sanitizer` verdoppelte beim Schreiben die Anführungszeichen — der
+    // Ersatz für eine Bindung, die es damals nicht gab. Geschrieben wird so
+    // nicht mehr; die Rückabbildung beim Lesen bleibt, solange Bestandszeilen
+    // in `configuration` und `identity` noch verdoppelte Anführungszeichen
+    // enthalten. Sie fällt mit einer einmaligen Datenkorrektur.
     if (!Array.isArray(result)) {
       return result;
     }

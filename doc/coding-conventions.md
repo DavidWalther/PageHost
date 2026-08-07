@@ -69,6 +69,10 @@ Anfassen angleichen; eine gesammelte Migration ist optional.
   `custom-chapter-edit` bearbeitet Knoten und meldet weiterhin
   `chapter-updated`; `custom-paragraph` stellt einen `content` dar. Beide
   funktionieren, tragen aber Begriffe, die es im Modell nicht mehr gibt.
+- **`Sanitizer` beim Lesen:** geschrieben wird gebunden und ohne Sanitizer;
+  `ActionGet` bildet beim Lesen weiterhin zurück, solange Bestandszeilen in
+  `configuration`/`identity` verdoppelte Anführungszeichen enthalten. Fällt mit
+  einer einmaligen Datenkorrektur.
 - **`test()` statt `it()`:** 2 Testdateien (bei nächster Berührung umstellen).
 - **`.then`/`await` gemischt** in einer Datei:
   - `private/database2/DataFacade.js`
