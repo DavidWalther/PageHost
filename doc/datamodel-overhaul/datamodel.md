@@ -420,6 +420,13 @@ Eigenschaften:
   App-Key, der Teilstring eines anderen ist, matcht fälschlich mit. Das normalisierte
   `app_node` (echte Zeilen) beseitigt dieses Risiko und ist insofern die bessere
   Grundlage — es muss die Semantik nur vollständig abbilden.
+- **Das Trennzeichen ist ein Komma** (`storytellingdom,previewApp`). Im Code
+  steht das **nirgends**: gelesen wird ausschließlich per Substring-Match, ein
+  `split` gibt es nicht. Die Migrations-SQL spielt deshalb das `LIKE`-Prädikat
+  nach, statt zu parsen, und bleibt damit richtig, welches Zeichen auch immer
+  dort steht.
+- **Das Substring-Risiko hat sich nie materialisiert:** keiner der vier
+  vergebenen Schlüssel ist Teilstring eines anderen.
 
 ### Lesepfad: Absätze sind nur über ihr Kapitel erreichbar
 
@@ -437,15 +444,28 @@ werden — es gibt keine kapitelübergreifende Wirkung.
 - **`node`-Ebene (Story/Kapitel): App-Zugehörigkeit nötig.** Der reale Produktivfall
   „Story für alle Apps, einzelnes Kapitel pro App ausgeschlossen" existiert und wird
   über `app_node` mit `relation` + Wildcard abgebildet (Abschnitt 5).
-- **`content_node`-Ebene (Absatz): keine App-Zugehörigkeit.** Eine Analyse der
-  Produktivdaten ergab nur eine **Handvoll** Absätze, die — publiziert und in einer
-  _aktiven_ App — tatsächlich anders sichtbar sind als ihr Kapitel. Die rohe
-  String-Differenz betraf ~200 Zeilen, war aber weit überwiegend bedeutungslos
-  (Ausschlüsse aus Apps, die das Kapitel ohnehin nicht erreicht; unveröffentlichte
-  Absätze). Für so wenige Fälle wird **keine** dauerhafte per-`content_node`-Mechanik
-  gebaut; ein `content_node` folgt seinem `node`.
-- Die verbliebenen Altfälle werden in einer **separaten Migrations-Session** aufgelöst
-  und hier bewusst nicht im Detail festgehalten.
+- **`content_node`-Ebene (Absatz): keine App-Zugehörigkeit.** Ein
+  `content_node` folgt seinem `node`.
+
+  **Gemessen, nicht geschätzt** (Prüfung 6c in `003_verify.sql`, Stand vom
+  2026-08-01, bestätigt gegen den Produktivstand am 2026-08-02): **144
+  Absatz/App-Paare** in **5 Kapiteln** sind veröffentlicht, über eine sichtbare
+  Story und ein sichtbares Kapitel erreichbar und trotzdem durch ihre eigenen
+  App-Spalten versteckt — previewApp 121, cleanDemoApp 12, TextReste 10,
+  storytellingdom 1. Eine frühere Fassung dieses Abschnitts sprach von „einer
+  Handvoll"; das war zu optimistisch.
+
+  **Die Entscheidung bleibt trotzdem richtig**, weil alle 144 dieselbe Form
+  haben: das Kapitel ist in der App sichtbar, seine Absätze nicht — die App
+  zeigt heute also ein **leeres Kapitel**. Nach der Umstellung ist es gefüllt.
+  Das ist eher die Behebung eines Defekts als eine Regression, und es kommt
+  kein fremder Inhalt in eine App, die nicht schon die Überschrift zeigt. Die
+  größte sichtbare Folge: „Kapitel 13" wächst in `previewApp` von 21 auf 118
+  Absätze.
+
+  Die rohe String-Differenz betraf ~200 Zeilen; der Rest war bedeutungslos
+  (Ausschlüsse aus Apps, die das Kapitel ohnehin nicht erreicht;
+  unveröffentlichte Absätze).
 
 ## 9. Offene Fragen (fachlich)
 

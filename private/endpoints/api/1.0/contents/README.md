@@ -1,8 +1,8 @@
 # Contents Endpoint — `GET /api/1.0/contents/*`
 
-Liefert die Navigation als Baum aus **Nodes**. Stories und Chapters werden einheitlich als
-`Node` abstrahiert (perspektivisch mehr als zwei Ebenen). Der Endpunkt soll langfristig die
-`queryAllStories`-basierte Navigation ablösen; aktuell läuft er im Parallelbetrieb.
+Liefert die Navigation als Baum aus **Nodes** — Wurzelknoten mit ihren Kindern
+(perspektivisch mehr als zwei Ebenen). Er ist seit dem Wegfall des alten
+Datenmodells die einzige Quelle der Navigation.
 
 ## Request
 
@@ -43,12 +43,12 @@ Authorization: Bearer <jwt>   (optional)
 
 **Node**
 
-| Feld         | Bedeutung                                              |
-|--------------|--------------------------------------------------------|
-| `id`         | Datensatz-ID (Story- bzw. Chapter-ID)                  |
-| `name`       | Anzeigename                                            |
-| `label`      | Kopie von `name` (Frontend entscheidet die Anzeige)    |
-| `childnodes` | Kind-Nodes (nächste Ebene), `[]` an der Tiefen-Grenze  |
+| Feld         | Bedeutung                                             |
+| ------------ | ----------------------------------------------------- |
+| `id`         | Datensatz-ID (Story- bzw. Chapter-ID)                 |
+| `name`       | Anzeigename                                           |
+| `label`      | Kopie von `name` (Frontend entscheidet die Anzeige)   |
+| `childnodes` | Kind-Nodes (nächste Ebene), `[]` an der Tiefen-Grenze |
 
 Das Mapping ist allowlist-basiert — nur `id`/`name` werden übernommen, daher tauchen interne
 Felder (`publishdate`, `application*`, `sortnumber`, …) nie in der Response auf. Nodes sind je
@@ -56,10 +56,10 @@ Ebene nach `sortnumber` sortiert.
 
 ## Auth & Sichtbarkeit
 
-| Aufrufer                     | Baum                                  | Cache            |
-|------------------------------|---------------------------------------|------------------|
-| anonym / ohne `edit`-Scope   | nur **veröffentlichte** Nodes         | aus Cache gelesen |
-| Bearer-Token mit `edit`-Scope| **alle** Nodes (auch unveröffentlicht)| Cache übersprungen (frisch aus DB) |
+| Aufrufer                      | Baum                                   | Cache                              |
+| ----------------------------- | -------------------------------------- | ---------------------------------- |
+| anonym / ohne `edit`-Scope    | nur **veröffentlichte** Nodes          | aus Cache gelesen                  |
+| Bearer-Token mit `edit`-Scope | **alle** Nodes (auch unveröffentlicht) | Cache übersprungen (frisch aus DB) |
 
 Ein ungültiger Bearer-Token führt zu `401 Unauthorized`.
 
@@ -78,15 +78,17 @@ wiederverwendet. Ein Node gilt als sichtbar, wenn sein `publishdate` gesetzt und
 
 ## Datenherkunft
 
-`DataFacade.getData({ table: 'contents' })` baut den Baum aus flachen Queries je Ebene
-(`DataStorage.queryAllStories()` + `queryAllChapters()`) und gruppiert Chapters per
-`chapter.storyid → story.id` (konstant 2 DB-Round-Trips, skaliert auf künftige Ebenen).
+`DataFacade.getData({ table: 'contents' })` holt den Baum vom
+`NodeContentRepository`: zwei Abfragen (`node`, `app_node`), danach löst
+JavaScript die App-Zugehörigkeit auf und baut Wurzelknoten mit ihren Kindern
+unter `nodes`. Konstant zwei DB-Round-Trips, unabhängig von der Tiefe.
 
 ## Beteiligte Dateien
 
 - `ContentsEndpoint.js` — Mapping (`mapToNodes`), `depth`-Parsing, Scope-/Filter-Steuerung
 - `private/modules/ContentVisibilityFilter.js` — Laufzeit-Publish-Filter (geteilt mit sitemap.xml)
 - `private/database2/DataFacade.js` — `getContentsTree` / `buildContentsTree`
-- `private/database2/DataStorage/DataStorage.js` — `queryAllChapters`
+- `private/database2/repositories/NodeContentRepository.js` — `getContentsTree`
+- `private/modules/NodeVisibility.js` — Auflösung der App-Zugehörigkeit
 - `private/database2/DataCache/DataCache.js` — `ContentsTreeCacheKeyGenerator`
 - Route-Registrierung in `server.js`
