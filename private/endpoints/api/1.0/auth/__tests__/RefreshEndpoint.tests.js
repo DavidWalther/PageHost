@@ -72,6 +72,7 @@ describe('RefreshEndpoint', () => {
       setTableName: jest.fn().mockReturnThis(),
       setTableFields: jest.fn().mockReturnThis(),
       setCustomConditions: jest.fn().mockReturnThis(),
+      setConditionEquals: jest.fn().mockReturnThis(),
       setConditionApplicationKey: jest.fn().mockReturnThis(),
       execute: mockActionGetExecute,
     }));

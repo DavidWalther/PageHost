@@ -1,111 +1,91 @@
 const { ActionCreate } = require('../actions/create.js');
-const { PostgresActions } = require('../pgConnector.js');
-const { TableParagraph } = require('../../tables/paragraph.js');
-const { DataCleaner } = require('../../../modules/DataCleaner.js');
+const { TableConfiguration } = require('../../tables/configuration.js');
 
-jest.mock('../pgConnector.js');
+jest.mock('../../../modules/logging');
 
-const MOCK_ENVIRONMENT = {
-  LOGGING_SEVERITY_LEVEL: 'DEBUG',
-  PGHOST: 'localhost',
-  PGDATABASE: 'test',
-  PGUSER: 'testUser',
-  PGPASSWORD: 'testPassword',
-  ENDPOINT_ID: 'testEndpoint',
-  PG_LOCAL_DB: 'true',
-};
+/**
+ * `ActionCreate` legt Zeilen in `configuration` und `identity` an — den beiden
+ * Tabellen, die nicht zum Inhalt gehören.
+ *
+ * Die Werte gehen **gebunden** in die Anfrage. Vorher liefen sie durch den
+ * `Sanitizer` und dann in den SQL-Text; das Verdoppeln der Anführungszeichen
+ * war der Ersatz für eine Bindung.
+ */
+describe('ActionCreate', () => {
+  let pgConnector;
+  let table;
 
-let mockExecuteSql = jest.fn().mockResolvedValue();
-PostgresActions.mockImplementation(() => {
-  return {
-    executeSql: mockExecuteSql,
-    connect: jest.fn(),
-    query: jest.fn().mockResolvedValue([]),
-  };
-});
-
-describe('SQL-Actions', () => {
   beforeEach(() => {
-    process.env = MOCK_ENVIRONMENT;
-    PostgresActions.mockClear();
-    mockExecuteSql.mockClear();
+    pgConnector = {
+      executeParameterizedSql: jest.fn().mockResolvedValue([{ id: '123' }]),
+    };
+    table = new TableConfiguration();
   });
 
-  describe('create', () => {
-    it('should create a proper SQL insert statement', () => {
-      mockExecuteSql = jest
-        .fn()
-        .mockResolvedValue([
-          { Id: 1337, Name: 'TestName', Content: 'TestContent' },
-        ]);
-      const actionCreate = new ActionCreate();
-      actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionCreate.setTable(new TableParagraph());
-      actionCreate.setValue('Id', 1337);
-      actionCreate.setValue('Name', 'TestName');
-      actionCreate.setValue('Content', 'TestContent');
-      let resultPromise = actionCreate.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
-        "INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', 'TestContent') RETURNING *;"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
+  function newAction() {
+    return new ActionCreate().setPgConnector(pgConnector).setTable(table);
+  }
 
-    it('should handle null values correctly', () => {
-      mockExecuteSql = jest
-        .fn()
-        .mockResolvedValue([{ Id: 1337, Name: 'TestName', Content: null }]);
-      const actionCreate = new ActionCreate();
-      actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionCreate.setTable(new TableParagraph());
-      actionCreate.setValue('Id', 1337);
-      actionCreate.setValue('Name', 'TestName');
-      actionCreate.setValue('Content', null);
-      let resultPromise = actionCreate.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
-        "INSERT INTO Paragraph (Id, Name, Content) VALUES (1337, 'TestName', null) RETURNING *;"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
+  function lastCall() {
+    const [sql, parameters] =
+      pgConnector.executeParameterizedSql.mock.calls.at(-1);
+    return { sql, parameters };
+  }
 
-    it('should use RETURNING * to return the full record', async () => {
-      const fullRecord = {
-        Id: 42,
-        Name: 'FullRecord',
-        Content: 'Some content',
-        applicationIncluded: 'app-key',
-        createdAt: '2026-03-08',
-      };
-      mockExecuteSql = jest.fn().mockResolvedValue([fullRecord]);
-      const actionCreate = new ActionCreate();
-      actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionCreate.setTable(new TableParagraph());
-      actionCreate.setValue('Id', 42);
-      actionCreate.setValue('Name', 'FullRecord');
-      actionCreate.setValue('Content', 'Some content');
-      const result = await actionCreate.execute();
-      expect(mockExecuteSql.mock.calls[0][0]).toContain('RETURNING *');
-      expect(result).toEqual([fullRecord]);
-    });
+  it('baut ein INSERT mit Platzhaltern statt Werten', async () => {
+    await newAction()
+      .setValue('key', 'metaTitle')
+      .setValue('value', 'Mein Titel')
+      .execute();
 
-    it('should generate RETURNING * SQL regardless of inserted fields', () => {
-      mockExecuteSql = jest.fn().mockResolvedValue([{ Id: 99 }]);
-      const actionCreate = new ActionCreate();
-      actionCreate.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionCreate.setTable(new TableParagraph());
-      actionCreate.setValue('Id', 99);
-      actionCreate.execute();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
-        'INSERT INTO Paragraph (Id) VALUES (99) RETURNING *;'
-      );
-    });
+    const { sql, parameters } = lastCall();
+    expect(sql).toBe(
+      `INSERT INTO ${table.getTableName()()} (key, value) VALUES ($1, $2) RETURNING *;`
+    );
+    expect(parameters).toEqual(['metaTitle', 'Mein Titel']);
+  });
+
+  it('lässt einen Wert mit SQL darin harmlos', async () => {
+    await newAction()
+      .setValue('key', 'metaTitle')
+      .setValue('value', "x'); DROP TABLE configuration;--")
+      .execute();
+
+    const { sql, parameters } = lastCall();
+    expect(sql).not.toContain('DROP TABLE');
+    expect(parameters).toContain("x'); DROP TABLE configuration;--");
+  });
+
+  it('lässt einen Wert unverändert, statt Anführungszeichen zu verdoppeln', async () => {
+    await newAction().setValue('value', " O'Brien ").execute();
+
+    expect(lastCall().parameters).toEqual([" O'Brien "]);
+  });
+
+  it('nimmt null und Zahlen entgegen', async () => {
+    await newAction().setValue('key', 'zahl').setValue('value', null).execute();
+
+    expect(lastCall().parameters).toEqual(['zahl', null]);
+  });
+
+  it('überspringt ein Feld ohne Wert', async () => {
+    await newAction()
+      .setValue('key', 'metaTitle')
+      .setValue('value', undefined)
+      .execute();
+
+    expect(lastCall().parameters).toEqual(['metaTitle']);
+  });
+
+  it('weist ein Feld zurück, das die Tabelle nicht kennt', () => {
+    expect(() => newAction().setValue('gibtEsNicht', 'x')).toThrow(
+      'is not defined for table'
+    );
+  });
+
+  it('weist einen Wert zurück, der keine Spalte füllen kann', () => {
+    expect(() => newAction().setValue('value', { a: 1 })).toThrow(
+      'Unsupported value type'
+    );
   });
 });

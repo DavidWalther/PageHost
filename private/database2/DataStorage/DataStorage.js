@@ -1,8 +1,5 @@
 const { ActionGet } = require('./actions/get.js');
 const { TableConfiguration } = require('../tables/configuration.js');
-const { TableParagraph } = require('../tables/paragraph.js');
-const { TableStory } = require('../tables/story.js');
-const { TableChapter } = require('../tables/chapter.js');
 const { TableIdentity } = require('../tables/identity.js');
 const { PostgresActions } = require('./pgConnector.js');
 const { Logging } = require('../../modules/logging.js');
@@ -11,7 +8,27 @@ const { ActionCreate } = require('./actions/create.js');
 const ActionUpdate = require('./actions/update.js'); // Import ActionUpdate
 const { ActionDelete } = require('./actions/delete.js');
 
+/**
+ * Direkter Zugang zu den Tabellen, die **nicht** zum Inhalt gehören.
+ *
+ * Inhalte laufen seit der Umstellung über
+ * `repositories/NodeContentRepository`; hier bleiben `configuration` und
+ * `identity`. Beide tragen weiterhin `applicationincluded` und waren nie Teil
+ * des Inhaltsmodells.
+ */
 class DataStorage {
+  /** Tabellen-Definition zum Namen. Wirft, statt irgendwo zu schreiben. */
+  static tableFor(tableName) {
+    switch (tableName) {
+      case 'configuration':
+        return new TableConfiguration();
+      case 'identity':
+        return new TableIdentity();
+      default:
+        throw new Error(`Invalid table name: ${tableName}`);
+    }
+  }
+
   constructor(environment) {
     if (!environment) {
       throw new Error('Environment object is required');
@@ -33,50 +50,6 @@ class DataStorage {
     }
     this.publishDate = publishDate;
     return this;
-  }
-
-  queryParagraphs(paragraphId) {
-    const LOCATION = 'DataStorage.queryParagraphs';
-    if (!this.applicationKey) {
-      throw new Error('Application key is required');
-    }
-    return new Promise((resolve) => {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Querying paragraphs for application key: ${this.applicationKey}`,
-      });
-      let tableParagraph = new TableParagraph();
-      let actionGet = new ActionGet()
-        .setPgConnector(this.pgConnector)
-        .setTableName(tableParagraph.tableName)
-        .setTableFields(tableParagraph.tableFields)
-        .setConditionId(paragraphId)
-        .setConditionApplicationKey(this.applicationKey);
-      if (this.publishDate) {
-        actionGet.setConditionPublishDate(this.publishDate);
-      }
-      actionGet.execute().then((result) => {
-        if (result.length === 0) {
-          Logging.debugMessage({
-            severity: 'FINEST',
-            location: LOCATION,
-            message: `No paragraphs found for application key: ${this.applicationKey}`,
-          });
-          resolve({});
-        } else {
-          Logging.debugMessage({
-            severity: 'FINEST',
-            location: LOCATION,
-            message: `Paragraphs found for application key: ${this.applicationKey}`,
-          });
-          let paragraphRecord = result[0];
-          let dataCleaner = new DataCleaner();
-          dataCleaner.removeApplicationKeys(paragraphRecord);
-          resolve(paragraphRecord);
-        }
-      });
-    });
   }
 
   queryConfiguration() {
@@ -148,237 +121,6 @@ class DataStorage {
     });
   }
 
-  queryAllStories() {
-    const LOCATION = 'DataStorage.queryAllStories';
-    if (!this.applicationKey) {
-      throw new Error('Application key is required');
-    }
-    return new Promise((resolve, reject) => {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Querying all stories for application key: ${this.applicationKey}`,
-      });
-      let tableStory = new TableStory();
-      new ActionGet()
-        .setPgConnector(this.pgConnector)
-        .setTableName(tableStory.tableName)
-        .setTableFields(tableStory.tableFields)
-        .setConditionApplicationKey(this.applicationKey)
-        .execute()
-        .then((result) => {
-          if (result.length === 0) {
-            Logging.debugMessage({
-              severity: 'FINEST',
-              location: LOCATION,
-              message: `No stories found for application key: ${this.applicationKey}`,
-            });
-            resolve([]);
-          } else {
-            Logging.debugMessage({
-              severity: 'FINEST',
-              location: LOCATION,
-              message: `Stories found for application key: ${this.applicationKey}`,
-            });
-            resolve(result); // Return raw data
-          }
-        })
-        .catch(reject);
-    });
-  }
-
-  queryAllChapters() {
-    const LOCATION = 'DataStorage.queryAllChapters';
-    if (!this.applicationKey) {
-      throw new Error('Application key is required');
-    }
-    return new Promise((resolve, reject) => {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Querying all chapters for application key: ${this.applicationKey}`,
-      });
-      let tableChapter = new TableChapter();
-      new ActionGet()
-        .setPgConnector(this.pgConnector)
-        .setTableName(tableChapter.tableName)
-        .setTableFields(tableChapter.tableFields)
-        .setConditionApplicationKey(this.applicationKey)
-        .execute()
-        .then((result) => {
-          if (result.length === 0) {
-            Logging.debugMessage({
-              severity: 'FINEST',
-              location: LOCATION,
-              message: `No chapters found for application key: ${this.applicationKey}`,
-            });
-            resolve([]);
-          } else {
-            Logging.debugMessage({
-              severity: 'FINEST',
-              location: LOCATION,
-              message: `Chapters found for application key: ${this.applicationKey}`,
-            });
-            resolve(result); // Return raw data
-          }
-        })
-        .catch(reject);
-    });
-  }
-
-  queryStory(storyId) {
-    const LOCATION = 'DataStorage.queryStory';
-    if (!this.applicationKey) {
-      throw new Error('Application key is required');
-    }
-    return new Promise((resolve) => {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Querying story for application key: ${this.applicationKey}`,
-      });
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      let actionGet = new ActionGet().setPgConnector(this.pgConnector);
-      actionGet.setTable(tableStory);
-      actionGet
-        .setRightTable(tableChapter)
-        .setRightOrderField('SortNumber')
-        .setRightOrderDirection('ASC')
-        .setLeftJoin(new TableChapter(), 'story.Id = chapter.storyId');
-      actionGet
-        .setConditionId(storyId)
-        .setConditionApplicationKey(this.applicationKey);
-      if (this.publishDate === undefined) {
-        actionGet.setConditionPublishDate(
-          new Date().toISOString().split('T')[0]
-        );
-      } else {
-        actionGet.setConditionPublishDate(this.publishDate);
-      }
-
-      actionGet.execute().then((result) => {
-        if (result.length === 0) {
-          Logging.debugMessage({
-            severity: 'FINEST',
-            location: LOCATION,
-            message: `No story found for application key: ${this.applicationKey}`,
-          });
-          resolve({});
-        } else {
-          Logging.debugMessage({
-            severity: 'FINEST',
-            location: LOCATION,
-            message: `Story found for application key: ${this.applicationKey}`,
-          });
-          let storyRecord = {};
-
-          tableStory.tableFields
-            .map((field) => field.toLowerCase())
-            .forEach((field) => {
-              storyRecord[field] = result[0][`story_${field}`];
-            });
-
-          let chapters = [];
-          result.forEach((row) => {
-            let chapter = {};
-            tableChapter.tableFields.forEach((field) => {
-              let lowercasedField = field.toLowerCase();
-              let fieldName = `chapter_${lowercasedField}`;
-              fieldName = fieldName.toLowerCase();
-              if (!row[fieldName]) {
-                return;
-              }
-
-              chapter[lowercasedField] = row[fieldName];
-            });
-            chapters.push(chapter);
-          });
-          storyRecord.chapters = chapters;
-
-          let dataCleaner = new DataCleaner();
-          dataCleaner.removeApplicationKeys(storyRecord);
-          resolve(storyRecord);
-        }
-      });
-    });
-  }
-
-  queryChapter(chapterId) {
-    const LOCATION = 'DataStorage.queryChapter';
-    if (!this.applicationKey) {
-      throw new Error('Application key is required');
-    }
-    return new Promise((resolve) => {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Querying chapter for application key: ${this.applicationKey}`,
-      });
-      let tableChapter = new TableChapter();
-      let tableParagraph = new TableParagraph();
-      let actionGet = new ActionGet().setPgConnector(this.pgConnector);
-      actionGet.setTable(tableChapter);
-      actionGet
-        .setRightTable(tableParagraph)
-        .setRightOrderField('SortNumber')
-        .setRightOrderDirection('ASC')
-        .setLeftJoin(new TableParagraph(), 'chapter.Id = paragraph.chapterId');
-      actionGet
-        .setConditionId(chapterId)
-        .setConditionApplicationKey(this.applicationKey);
-      if (this.publishDate === undefined) {
-        actionGet.setConditionPublishDate();
-      } else {
-        actionGet.setConditionPublishDate(this.publishDate);
-      }
-
-      actionGet.execute().then((result) => {
-        if (result.length === 0) {
-          Logging.debugMessage({
-            severity: 'FINEST',
-            location: LOCATION,
-            message: `No chapter found for application key: ${this.applicationKey}`,
-          });
-          resolve({});
-        } else {
-          Logging.debugMessage({
-            severity: 'FINEST',
-            location: LOCATION,
-            message: `Chapter found for application key: ${this.applicationKey}`,
-          });
-          let chapterRecord = {};
-
-          tableChapter.tableFields
-            .map((field) => field.toLowerCase())
-            .forEach((field) => {
-              chapterRecord[field] = result[0][`chapter_${field}`];
-            });
-
-          let paragraphs = [];
-          result.forEach((row) => {
-            let paragraph = {};
-            tableParagraph.tableFields.forEach((field) => {
-              let lowercasedField = field.toLowerCase();
-              let fieldName = `paragraph_${lowercasedField}`;
-              if (!row[fieldName]) {
-                return;
-              }
-
-              paragraph[lowercasedField] = row[fieldName];
-            });
-            paragraphs.push(paragraph);
-          });
-          chapterRecord.paragraphs = paragraphs;
-
-          let dataCleaner = new DataCleaner();
-          dataCleaner.removeApplicationKeys(chapterRecord);
-          resolve(chapterRecord);
-        }
-      });
-    });
-  }
-
   queryIdentityByKey(userKey) {
     const LOCATION = 'DataStorage.queryIdentityByKey';
     if (!this.applicationKey) {
@@ -395,8 +137,8 @@ class DataStorage {
         .setPgConnector(this.pgConnector)
         .setTableName(tableIdentity.tableName)
         .setTableFields(tableIdentity.tableFields)
-        .setCustomConditions(`key = '${userKey}'`)
-        .setCustomConditions(`active = true`)
+        .setConditionEquals('key', userKey)
+        .setCustomConditions('active = true')
         .setConditionApplicationKey(this.applicationKey);
 
       actionGet.execute().then((result) => {
@@ -476,26 +218,7 @@ class DataStorage {
       throw new Error('Values object is required');
     }
 
-    let table;
-    switch (tableName) {
-      case 'configuration':
-        table = new TableConfiguration();
-        break;
-      case 'paragraph':
-        table = new TableParagraph();
-        break;
-      case 'story':
-        table = new TableStory();
-        break;
-      case 'chapter':
-        table = new TableChapter();
-        break;
-      case 'identity':
-        table = new TableIdentity();
-        break;
-      default:
-        throw new Error(`Invalid table name: ${tableName}`);
-    }
+    const table = DataStorage.tableFor(tableName);
 
     return new Promise((resolve, reject) => {
       const actionUpdate = new ActionUpdate()
@@ -542,26 +265,7 @@ class DataStorage {
       throw new Error('ID is required');
     }
 
-    let table;
-    switch (tableName) {
-      case 'configuration':
-        table = new TableConfiguration();
-        break;
-      case 'paragraph':
-        table = new TableParagraph();
-        break;
-      case 'story':
-        table = new TableStory();
-        break;
-      case 'chapter':
-        table = new TableChapter();
-        break;
-      case 'identity':
-        table = new TableIdentity();
-        break;
-      default:
-        throw new Error(`Invalid table name: ${tableName}`);
-    }
+    const table = DataStorage.tableFor(tableName);
 
     return new Promise((resolve, reject) => {
       const actionDelete = new ActionDelete()
