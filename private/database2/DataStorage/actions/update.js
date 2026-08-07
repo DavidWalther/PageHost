@@ -1,5 +1,4 @@
 const { Logging } = require('../../../modules/logging');
-const { Sanitizer } = require('./sanitizer');
 
 class ActionUpdate {
   constructor() {
@@ -22,16 +21,15 @@ class ActionUpdate {
     return this;
   }
 
+  /**
+   * Die zu setzenden Werte. Sie gehen gebunden in die Anfrage -- frueher
+   * liefen sie durch den `Sanitizer` und dann in den SQL-Text.
+   */
   setValues(data) {
     if (!data || typeof data !== 'object') {
       throw new Error('Data object is required');
     }
-    // Sanitize all values
-    const sanitized = {};
-    for (const [key, value] of Object.entries(data)) {
-      sanitized[key] = Sanitizer.sanitize(value);
-    }
-    this.values = sanitized;
+    this.values = { ...data };
     return this;
   }
 
@@ -60,23 +58,24 @@ class ActionUpdate {
     const id = this.values.id;
     delete this.values.id;
 
+    const parameters = [];
     const setClauses = Object.entries(this.values)
       .map(([key, value]) => {
-        if (typeof value === 'string') {
-          return `${key} = '${value}'`;
-        } else if (
-          typeof value === 'number' ||
-          value === null ||
-          typeof value === 'boolean'
+        if (
+          typeof value !== 'string' &&
+          typeof value !== 'number' &&
+          typeof value !== 'boolean' &&
+          value !== null
         ) {
-          return `${key} = ${value}`;
-        } else {
           throw new Error('Unsupported value type');
         }
+        parameters.push(value);
+        return `${key} = $${parameters.length}`;
       })
       .join(', ');
 
-    const sqlStatement = `UPDATE ${tableName} SET ${setClauses} WHERE id = '${id}' RETURNING * ;`;
+    parameters.push(id);
+    const sqlStatement = `UPDATE ${tableName} SET ${setClauses} WHERE id = $${parameters.length} RETURNING * ;`;
 
     Logging.debugMessage({
       severity: 'FINEST',
@@ -84,7 +83,9 @@ class ActionUpdate {
       message: `Executing SQL: ${sqlStatement}`,
     });
 
-    return this.pgConnector.executeSql(sqlStatement, { closeConnection: true });
+    return this.pgConnector.executeParameterizedSql(sqlStatement, parameters, {
+      closeConnection: true,
+    });
   }
 }
 

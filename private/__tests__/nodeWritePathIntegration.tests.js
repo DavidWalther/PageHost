@@ -275,11 +275,11 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
     beforeEach(() => {
       respondWith('SELECT id FROM node WHERE', [{ id: 'n-story' }]);
       respondWith('WITH RECURSIVE descendants', [
-        { id: 'n-kapitel' },
-        { id: 'n-story' },
+        { id: 'n-kapitel', legacy_id: '000c00000000000022' },
+        { id: 'n-story', legacy_id: '000s00000000000011' },
       ]);
-      respondWith('SELECT id FROM content_node WHERE node_id', [
-        { id: 'cn-1' },
+      respondWith('SELECT id, legacy_id FROM content_node WHERE node_id', [
+        { id: 'cn-1', legacy_id: '000p00000000000033' },
       ]);
     });
 
@@ -293,18 +293,28 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(statementsMatching('DELETE FROM node WHERE id')).toHaveLength(2);
     });
 
-    it('FEHLVERHALTEN: räumt den Cache dabei nicht auf', async () => {
-      // `DeleteEndpoint` setzt `skipCache(true)`, weshalb `DataFacade` das
-      // `cache.del` überspringt. Schon vor der Umstellung so; durch das
-      // Löschen ganzer Teilbäume bleiben jetzt mehr Einträge stehen — die des
-      // Knotens UND die seiner Kinder und Absätze. Geparkt in `EPC/Missed.md`;
-      // dieser Test hält den Ist-Zustand fest und schlägt um, sobald er
-      // behoben wird.
+    it('räumt die Cache-Einträge des ganzen Teilbaums ab', async () => {
+      // War lange ein FEHLVERHALTEN-Test: `DeleteEndpoint` setzt
+      // `skipCache(true)`, und daran hing auch das Aufräumen — der gelöschte
+      // Datensatz blieb bis zum Ablauf der Frist im Cache. Durch das Löschen
+      // ganzer Teilbäume blieben zuletzt auch die Einträge der Kinder stehen.
       await runEndpoint(DeleteEndpoint, {
         query: { object: 'node', id: '000s00000000000011' },
       });
 
-      expect(cacheDel).not.toHaveBeenCalled();
+      const cleared = cacheDel.mock.calls.map(([key]) => key);
+      // Jeder entfernte Datensatz unter beiden Ids, dazu der Inhaltsbaum.
+      expect(cleared).toEqual(
+        expect.arrayContaining([
+          'node:n-story',
+          'node:000s00000000000011',
+          'node:n-kapitel',
+          'node:000c00000000000022',
+          'content:cn-1',
+          'content:000p00000000000033',
+          'contentsTree',
+        ])
+      );
     });
 
     it('verweigert das Löschen, wenn die Aktion nicht freigeschaltet ist', async () => {

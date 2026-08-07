@@ -1,84 +1,104 @@
-const { PostgresActions } = require('../pgConnector.js');
-const { Logging } = require('../../../modules/logging');
 const ActionUpdate = require('../actions/update.js');
-const { TableParagraph } = require('../../tables/paragraph.js');
+const { TableIdentity } = require('../../tables/identity.js');
 
 jest.mock('../../../modules/logging');
-jest.mock('../pgConnector.js');
 
+/**
+ * `ActionUpdate` schreibt in `configuration` und `identity` — die beiden
+ * Tabellen, die nicht zum Inhalt gehören.
+ *
+ * Die Werte gehen **gebunden** in die Anfrage. Vorher liefen sie durch den
+ * `Sanitizer` und dann in den SQL-Text; über diesen Weg lief unter anderem der
+ * Refresh-Token, dessen Inhalt vom Client stammt.
+ */
 describe('ActionUpdate', () => {
-  let mockPgConnector;
+  let pgConnector;
+  let table;
 
   beforeEach(() => {
-    mockPgConnector = {
-      executeSql: jest.fn().mockResolvedValue({ id: '123' }),
+    pgConnector = {
+      executeParameterizedSql: jest.fn().mockResolvedValue([{ id: '123' }]),
     };
+    table = new TableIdentity();
   });
 
-  it('should successfully update a record and return the updated id', async () => {
-    let mockTable = new TableParagraph();
-    const updateAction = new ActionUpdate()
-      .setPgConnector(mockPgConnector)
-      .setTable(mockTable)
-      .setValues({ id: '123', name: 'Updated Name', age: 30 });
+  function newAction(values) {
+    return new ActionUpdate()
+      .setPgConnector(pgConnector)
+      .setTable(table)
+      .setValues(values);
+  }
 
-    mockPgConnector.executeSql.mockResolvedValue([{ id: '123' }]);
+  /** Das zuletzt abgesetzte Statement mit seinen gebundenen Werten. */
+  function lastCall() {
+    const [sql, parameters, options] =
+      pgConnector.executeParameterizedSql.mock.calls.at(-1);
+    return { sql, parameters, options };
+  }
 
-    updateAction.execute().then((result) => {
-      expect(mockPgConnector.executeSql).toHaveBeenCalledWith(
-        `UPDATE ${mockTable.getTableName()()} SET name = 'Updated Name', age = 30 WHERE id = '123' RETURNING * ;`,
-        { closeConnection: true }
-      );
-      expect(result).toEqual([{ id: '123' }]);
-    });
-  });
+  it('setzt die übergebenen Felder und bindet ihre Werte', async () => {
+    await newAction({
+      id: '123',
+      key: 'user@test.com',
+      active: true,
+    }).execute();
 
-  it('should throw an error if no id is provided in the data object', async () => {
-    let mockTable = new TableParagraph();
-    const updateAction = new ActionUpdate()
-      .setPgConnector(mockPgConnector)
-      .setTable(mockTable)
-      .setValues({ name: 'Updated Name', age: 30 });
-
-    try {
-      await updateAction.execute();
-    } catch (err) {
-      expect(mockPgConnector.executeSql).not.toHaveBeenCalled();
-      expect(err).toEqual(
-        new Error("Update operation requires an 'id' field in the data object.")
-      );
-    }
-  });
-
-  it('should handle SQL execution errors', async () => {
-    let mockTable = new TableParagraph();
-    const updateAction = new ActionUpdate()
-      .setPgConnector(mockPgConnector)
-      .setTable(mockTable)
-      .setValues({ id: '123', name: 'Updated Name', age: 30 });
-
-    mockPgConnector.executeSql.mockRejectedValue('SQL execution failed');
-
-    updateAction.execute().catch((err) => {
-      expect(mockPgConnector.executeSql).toHaveBeenCalledWith(
-        `UPDATE ${mockTable.getTableName()()} SET name = 'Updated Name', age = 30 WHERE id = '123' RETURNING * ;`,
-        { closeConnection: true }
-      );
-      expect(err).toEqual('SQL execution failed');
-    });
-  });
-
-  it('should throw an error for unsupported value types', async () => {
-    let mockTable = new TableParagraph();
-    const updateAction = new ActionUpdate()
-      .setPgConnector(mockPgConnector)
-      .setTable(mockTable)
-      .setValues({ id: '123', name: { first: 'John', last: 'Doe' } });
-
-    await expect(updateAction.execute()).rejects.toThrow(
-      'Unsupported value type'
+    const { sql, parameters } = lastCall();
+    expect(sql).toBe(
+      `UPDATE ${table.getTableName()()} SET key = $1, active = $2 WHERE id = $3 RETURNING * ;`
     );
+    expect(parameters).toEqual(['user@test.com', true, '123']);
+  });
 
-    expect(mockPgConnector.executeSql).not.toHaveBeenCalled();
+  it('lässt einen Wert mit SQL darin harmlos', async () => {
+    await newAction({ id: '123', key: "x' OR '1'='1" }).execute();
+
+    const { sql, parameters } = lastCall();
+    expect(sql).not.toContain("OR '1'='1");
+    expect(parameters).toEqual(["x' OR '1'='1", '123']);
+  });
+
+  it('lässt einen Wert unverändert, statt Anführungszeichen zu verdoppeln', async () => {
+    // Der `Sanitizer` hat hier früher jedes Apostroph verdoppelt und den Wert
+    // getrimmt. Mit gebundenen Werten kommt er an, wie er geschickt wurde.
+    await newAction({ id: '123', key: " O'Brien " }).execute();
+
+    expect(lastCall().parameters[0]).toBe(" O'Brien ");
+  });
+
+  it('schließt die Verbindung nach dem Schreiben', async () => {
+    await newAction({ id: '123', key: 'a' }).execute();
+
+    expect(lastCall().options).toEqual({ closeConnection: true });
+  });
+
+  it('gibt zurück, was die Datenbank meldet', async () => {
+    expect(await newAction({ id: '123', key: 'a' }).execute()).toEqual([
+      { id: '123' },
+    ]);
+  });
+
+  it('verlangt eine Id im Datensatz', async () => {
+    await expect(newAction({ key: 'a' }).execute()).rejects.toThrow(
+      "Update operation requires an 'id' field in the data object."
+    );
+  });
+
+  it('weist einen Wert zurück, der keine Spalte füllen kann', async () => {
+    await expect(
+      newAction({ id: '123', key: { first: 'John' } }).execute()
+    ).rejects.toThrow('Unsupported value type');
+  });
+
+  it('verlangt Connector, Tabelle und Daten', () => {
+    expect(() => new ActionUpdate().setPgConnector(null)).toThrow(
+      'Postgres connector is required'
+    );
+    expect(() => new ActionUpdate().setTable(null)).toThrow(
+      'Table is required'
+    );
+    expect(() => new ActionUpdate().setValues(null)).toThrow(
+      'Data object is required'
+    );
   });
 });

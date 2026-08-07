@@ -467,6 +467,11 @@ class NodeContentRepository extends ContentRepository {
    *
    * `cover_node_id` wird auch **außerhalb** des Teilbaums genullt: ein
    * Geschwisterknoten darf nicht auf einen gelöschten Knoten zeigen.
+   *
+   * **Zurück kommt, was gelöscht wurde** — Knoten und Inhalte, jeweils mit
+   * beiden Ids. Die `DataFacade` braucht das, um die Cache-Einträge
+   * abzuräumen: beim Löschen eines Teilbaums sind das nicht nur die des
+   * angefragten Knotens.
    */
   async deleteRecord(object, id) {
     const LOCATION = 'NodeContentRepository.deleteRecord';
@@ -484,25 +489,29 @@ class NodeContentRepository extends ContentRepository {
         }
 
         if (!NodeWriteMapping.isNodeObject(object)) {
+          const [content] = await run(
+            `SELECT id, legacy_id FROM content_node WHERE id = $1`,
+            [recordId]
+          );
           await this.deleteContentNodes(run, [recordId]);
-          return;
+          return { nodes: [], contents: content ? [content] : [] };
         }
 
         // Teilbaum, tiefste Ebene zuerst — Kinder vor Eltern.
         const subtree = await run(
           `WITH RECURSIVE descendants AS (
-             SELECT id, 0 AS depth FROM node WHERE id = $1
+             SELECT id, legacy_id, 0 AS depth FROM node WHERE id = $1
              UNION ALL
-             SELECT n.id, d.depth + 1
+             SELECT n.id, n.legacy_id, d.depth + 1
              FROM node n JOIN descendants d ON n.parent_node_id = d.id
            )
-           SELECT id FROM descendants ORDER BY depth DESC`,
+           SELECT id, legacy_id FROM descendants ORDER BY depth DESC`,
           [recordId]
         );
         const nodeIds = subtree.map((row) => row.id);
 
         const contentNodes = await run(
-          `SELECT id FROM content_node WHERE node_id = ANY($1)`,
+          `SELECT id, legacy_id FROM content_node WHERE node_id = ANY($1)`,
           [nodeIds]
         );
         await this.deleteContentNodes(
@@ -522,6 +531,8 @@ class NodeContentRepository extends ContentRepository {
         for (const nodeId of nodeIds) {
           await run(`DELETE FROM node WHERE id = $1`, [nodeId]);
         }
+
+        return { nodes: subtree, contents: contentNodes };
       },
       { closeConnection: true }
     );
