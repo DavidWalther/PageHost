@@ -47,6 +47,18 @@ umschaltet, entscheidet der Consumer, nicht der Knoten. Der **ganze Datensatz**
 des Kindes kommt unter `node` mit: der Consumer hat ihn sonst nicht und müsste
 ihn nachladen, etwa um die alte Id zu kennen.
 
+## Einen geladenen Knoten übergeben
+
+`adoptNode(record)` setzt einen **bereits geladenen** Datensatz, statt ihn
+abrufen zu lassen. Gebraucht beim Einstieg: `bookstore.resolveEntryPoint` löst
+ohnehin auf, was hinter einer Id steckt — ohne die Übergabe holte der Knoten
+genau das noch einmal.
+
+Nach außen verhält es sich wie ein Abruf: `id` wird gesetzt, `loaded` gemeldet,
+ein gesetztes `contentnumber` ausgewertet. **Ein Listener auf `loaded` muss
+vorher hängen** — das Ereignis kommt sofort, nicht erst nach einer Antwort aus
+dem Netz. Ebenso muss `contentnumber` vor dem Aufruf gesetzt sein.
+
 ## Bekannte Altlasten
 
 - Zum Bearbeiten wird weiterhin `custom-chapter-edit` eingebunden, samt seiner

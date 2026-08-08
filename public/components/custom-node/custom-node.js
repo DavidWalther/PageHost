@@ -625,9 +625,39 @@ class CustomNode extends LitElement {
       this.clearContent();
       return;
     }
+    // Der Datensatz kann schon da sein — `adoptNode` setzt ihn zusammen mit
+    // der Id. Ohne diesen Riegel holte `updated()` ihn gleich noch einmal.
+    if (this._nodeData?.id === newId) {
+      return;
+    }
     this._loading = true;
     this._nodeData = null;
     this.fetchNode(newId);
+  }
+
+  /**
+   * Übernimmt einen **bereits geladenen** Knoten, statt ihn selbst zu holen.
+   *
+   * Der Consumer löst beim Einstieg ohnehin auf, was hinter einer Id steckt
+   * (`bookstore.resolveEntryPoint`) — und hatte den Datensatz damit schon in
+   * der Hand, während dieser Knoten ihn ein zweites Mal anfragte.
+   *
+   * Nach außen verhält es sich wie ein Abruf: `loaded` wird gemeldet, und ein
+   * gesetztes `contentnumber` greift genauso. Wer darauf hört, muss seinen
+   * Listener allerdings **vorher** angehängt haben — das Ereignis kommt hier
+   * sofort und nicht erst nach einer Antwort aus dem Netz.
+   */
+  adoptNode(record) {
+    if (!record?.id) {
+      return;
+    }
+    this._loading = false;
+    this.applyNodeData(record);
+    // Das **Attribut**, nicht nur die Eigenschaft: alle Consumer setzen und
+    // lesen die Id als Attribut. Liefe hier nur die Eigenschaft mit, gingen
+    // beide auseinander. `handleIdChange` läuft daraufhin, findet den
+    // Datensatz aber schon vor und holt nichts nach.
+    this.setAttribute('id', record.id);
   }
 
   clearContent() {
@@ -748,21 +778,29 @@ class CustomNode extends LitElement {
         this._loading = false;
         return;
       }
-
-      this._nodeData = data || {};
-      this.dispatchEvent(
-        new CustomEvent('loaded', {
-          detail: { nodeData: this._nodeData },
-          bubbles: true,
-          composed: true,
-        })
-      );
-
-      if (this.contentnumber && this.contents.length > 0) {
-        this._buildPendingDisplaySet(this.contents);
-      }
-      this._loading = false;
+      this.applyNodeData(data);
     });
+  }
+
+  /**
+   * Was nach dem Laden zu tun ist — gleich, ob die Daten aus einem Abruf
+   * stammen oder übergeben wurden (`adoptNode`). Beide Wege müssen sich
+   * identisch verhalten, sonst hängt das Verhalten daran, wer schneller war.
+   */
+  applyNodeData(data) {
+    this._nodeData = data || {};
+    this.dispatchEvent(
+      new CustomEvent('loaded', {
+        detail: { nodeData: this._nodeData },
+        bubbles: true,
+        composed: true,
+      })
+    );
+
+    if (this.contentnumber && this.contents.length > 0) {
+      this._buildPendingDisplaySet(this.contents);
+    }
+    this._loading = false;
   }
 
   fireQueryEvent_Node(nodeId, callback) {

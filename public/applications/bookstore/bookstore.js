@@ -355,18 +355,25 @@ class Bookstore extends LitElement {
     return { kind: 'none' };
   }
 
-  /** Setzt die beiden Knoten entsprechend dem aufgelösten Einstieg. */
+  /**
+   * Setzt die beiden Knoten entsprechend dem aufgelösten Einstieg.
+   *
+   * Der aufgelöste Datensatz wird **übergeben**, nicht nur seine Id: sonst
+   * holte der Knoten genau das noch einmal, was hier gerade angekommen ist.
+   * Die Listener hängen deshalb **vor** der Übergabe — `adoptNode` meldet
+   * `loaded` sofort, nicht erst nach einer Antwort aus dem Netz.
+   */
   applyEntryPoint(entry) {
     if (entry.kind === 'node') {
-      const { id, parent_node_id: parentId } = entry.node;
+      const parentId = entry.node.parent_node_id;
       if (parentId) {
         // Ein Knoten mit Eltern: er füllt den Inhalt, sein Elternknoten die
         // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
         this.showChildOf(parentId, entry.node);
       } else {
-        this.navigationNode.setAttribute('id', id);
-        this._setCurrentLocation(entry.node);
         this._attachNavigationNodeListeners();
+        this._setCurrentLocation(entry.node);
+        this.navigationNode.adoptNode(entry.node);
       }
       return;
     }
@@ -390,20 +397,23 @@ class Bookstore extends LitElement {
   /** Auswahl oben, Inhalt unten — der Regelfall nach einem Deep-Link. */
   showChildOf(parentId, childNode) {
     const childId = childNode.id;
-    this.contentNode.setAttribute('id', childId);
     if (this._initPara?.paragraphnumber) {
+      // Muss vor der Übergabe stehen: der Knoten wertet es beim Übernehmen aus.
       this.contentNode.setAttribute(
         'contentnumber',
         this._initPara.paragraphnumber
       );
     }
-    this.navigationNode.setAttribute('id', parentId);
+    this.contentNode.adoptNode(childNode);
+
     this.navigationNode.setAttribute('selected-child', childId);
     // Der Titel-Knoten des Elternteils darf die ausdrückliche Wahl nicht
     // überschreiben.
     this._pendingChildSelection = childId;
     this._setCurrentLocation(childNode);
     this._attachNavigationNodeListeners();
+    // Den Elternknoten kennen wir nur mit Id — den holt er sich selbst.
+    this.navigationNode.setAttribute('id', parentId);
   }
 
   initWithoutParameter() {
