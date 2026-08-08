@@ -293,8 +293,10 @@ test.describe('Knoten-Rollen: der Sprung zu einem Inhalt bleibt heil', () => {
   test('der Zielabsatz wird sichtbar und der Fortschritt läuft zu Ende', async ({
     page,
   }) => {
+    // Attribut-Selektor, nicht `#…`: Die Id beginnt mit einer Ziffer und ist
+    // damit kein gültiger CSS-Id-Selektor.
     const ziel = contentNode(page).locator(
-      'custom-paragraph#00cn00000000000093'
+      'custom-paragraph[id="00cn00000000000093"]'
     );
     await expect(ziel).toBeVisible();
     await expect(ziel).not.toHaveAttribute('no-display', /.*/);
