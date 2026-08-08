@@ -595,7 +595,7 @@ class CustomNode extends LitElement {
     );
 
     if (targetIndex <= 0) {
-      this._scrollPending = false;
+      this._resetJumpState();
       return;
     }
 
@@ -643,18 +643,29 @@ class CustomNode extends LitElement {
   // ==================================================
 
   _onContentLoaded = (event) => {
+    // Der Knoten meldet `loaded` auch fuer sich selbst (`applyNodeData`), und
+    // der Listener haengt mit `capture` an ihm — er sieht also beides.
+    //
+    // Unterschieden wird am **Inhalt der Meldung**, nicht an `event.target`:
+    // Ein `composed` Ereignis aus dem eigenen Shadow-DOM wird am Host auf den
+    // Host umgeschrieben. `event.target` ist hier deshalb immer dieser Knoten,
+    // gleichgueltig ob ein Absatz oder er selbst gemeldet hat.
+    const contentData = event.detail?.paragraphData;
+    if (!contentData) {
+      return;
+    }
+
     if (
       this.pendingNewContentId &&
-      event.target.id === this.pendingNewContentId
+      contentData.id === this.pendingNewContentId
     ) {
       this.requestUpdate();
       this.pendingNewContentId = null;
     }
 
     if (this._pendingDisplaySet.size > 0) {
-      const contentId = event.detail?.paragraphData?.id;
-      if (contentId && this._pendingDisplaySet.has(contentId)) {
-        this._pendingDisplaySet.delete(contentId);
+      if (this._pendingDisplaySet.has(contentData.id)) {
+        this._pendingDisplaySet.delete(contentData.id);
       }
       this.requestUpdate();
       if (this._pendingDisplaySet.size === 0) {
@@ -675,7 +686,22 @@ class CustomNode extends LitElement {
     }
     this._loading = true;
     this._nodeData = null;
+    this._resetJumpState();
     this.fetchNode(newId);
+  }
+
+  /**
+   * Der Zaehlstand des Sprungs gehoert zum **aktuellen** Knoten.
+   *
+   * Bleibt ein Rest darin stehen — etwa weil ein Inhalt vor dem Sprungziel nie
+   * ankam — und wird danach der Knoten gewechselt, bliebe `_scrollPending`
+   * gesetzt und versteckte die Karte des **naechsten** Knotens, an dem gar
+   * nichts auszusetzen war.
+   */
+  _resetJumpState() {
+    this._pendingDisplaySet = new Set();
+    this._pendingTotalCount = 0;
+    this._scrollPending = false;
   }
 
   /**
@@ -705,6 +731,7 @@ class CustomNode extends LitElement {
 
   clearContent() {
     this.cleanupIntersectionObserver();
+    this._resetJumpState();
     this._nodeData = null;
   }
 
