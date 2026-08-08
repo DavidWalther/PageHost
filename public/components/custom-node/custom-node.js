@@ -48,6 +48,15 @@ class CustomNode extends LitElement {
     selectedChild: { type: String, attribute: 'selected-child' },
     contentnumber: { type: Number },
     loadingChunkSize: { type: Number, attribute: 'loading-chunk-size' },
+    // Rendering: Voreinstellung **an** — was der Knoten hat, zeigt er; der
+    // Consumer schaltet ab. Gleiche Richtung wie `no-load` / `no-display`.
+    noChildNavigation: { type: Boolean, attribute: 'no-child-navigation' },
+    noContents: { type: Boolean, attribute: 'no-contents' },
+    // Aktionen: Voreinstellung **aus** — ein schreibender Weg wird
+    // ausdruecklich gewaehrt, nicht stillschweigend mitgeliefert.
+    canCreateChild: { type: Boolean, attribute: 'can-create-child' },
+    canCreateContent: { type: Boolean, attribute: 'can-create-content' },
+    canDelete: { type: Boolean, attribute: 'can-delete' },
     _nodeData: { state: true },
     _loading: { state: true },
     _scrollPending: { state: true },
@@ -80,6 +89,11 @@ class CustomNode extends LitElement {
     this.selectedChild = null;
     this.contentnumber = null;
     this.loadingChunkSize = 10;
+    this.noChildNavigation = false;
+    this.noContents = false;
+    this.canCreateChild = false;
+    this.canCreateContent = false;
+    this.canDelete = false;
     this._nodeData = null;
     this._loading = false;
     this.pendingNewContentId = null;
@@ -119,6 +133,7 @@ class CustomNode extends LitElement {
     if (
       changedProperties.has('_nodeData') &&
       !this._loading &&
+      !this.noContents &&
       this.contents.length > 0
     ) {
       this.setupContentObserving();
@@ -172,18 +187,26 @@ class CustomNode extends LitElement {
       <slds-card no-footer ?hidden=${this._scrollPending}>
         <span id="node-name" slot="header">${this._nodeData.name || ''}</span>
         <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
+          ${
+            this.canCreateChild
+              ? html`<div
+                  class="slds-col slds-grow-none slds-align_absolute-center"
+                >
+                  <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
+                       Komponente im Anlege-Modus. -->
+                  <custom-chapter-edit
+                    id="node-create-child"
+                    story-id="${this.id}"
+                    mode="create"
+                    .chapters="${this.childNodeList}"
+                    @chapter-created=${this._handleChildCreated}
+                  ></custom-chapter-edit>
+                </div>`
+              : ''
+          }
           <div class="slds-col slds-grow-none slds-align_absolute-center">
-            <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
-                 Komponente im Anlege-Modus. -->
             <custom-chapter-edit
-              story-id="${this.id}"
-              mode="create"
-              .chapters="${this.childNodeList}"
-              @chapter-created=${this._handleChildCreated}
-            ></custom-chapter-edit>
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            <custom-chapter-edit
+              id="node-edit"
               chapter-id="${this.id}"
               story-id="${this._nodeData.parent_node_id || ''}"
               name="${this._nodeData.name || ''}"
@@ -203,7 +226,7 @@ class CustomNode extends LitElement {
           </div>
           <div class="slds-col slds-grow-none slds-align_absolute-center">
             ${
-              this.hasScope('create')
+              this.canCreateContent && this.hasScope('create')
                 ? html`<slds-button-icon
                     id="button-create-content"
                     icon="utility:add"
@@ -215,7 +238,7 @@ class CustomNode extends LitElement {
           </div>
           <div class="slds-col slds-grow-none slds-align_absolute-center">
             ${
-              this.hasScope('delete')
+              this.canDelete && this.hasScope('delete')
                 ? html`<slds-button-icon
                     id="button-delete"
                     icon="utility:delete"
@@ -237,6 +260,9 @@ class CustomNode extends LitElement {
    * ohne Kinder rendert hier gar nichts, statt eine leere Leiste zu zeigen.
    */
   renderChildNavigation() {
+    if (this.noChildNavigation) {
+      return '';
+    }
     const children = this.childNodeList;
     if (children.length === 0) {
       return '';
@@ -296,11 +322,21 @@ class CustomNode extends LitElement {
   }
 
   renderContents() {
+    if (this.noContents) {
+      // Diese Instanz ist fuer Inhalte nicht zustaendig — dann steht ihr auch
+      // die Aussage "keine vorhanden" nicht zu.
+      return '';
+    }
+
     const contents = this.contents;
     if (contents.length === 0) {
       // Ein Knoten, der nur weiterführt, ist kein Fehlerfall — der Hinweis
-      // gilt nur, wenn hier auch nichts weiterführt.
-      return this.childNodeList.length > 0
+      // gilt nur, wenn hier auch nichts weiterführt. Massgeblich ist, was
+      // **diese Instanz** rendert: mit `no-child-navigation` fuehrt hier
+      // nichts weiter, auch wenn der Knoten Kinder hat.
+      const showsChildNavigation =
+        !this.noChildNavigation && this.childNodeList.length > 0;
+      return showsChildNavigation
         ? ''
         : html`<p id="no-contents">${this.labels.labelNoContents}</p>`;
     }
@@ -797,7 +833,10 @@ class CustomNode extends LitElement {
       })
     );
 
-    if (this.contentnumber && this.contents.length > 0) {
+    // Ohne gerenderte Inhalte darf `_scrollPending` nie gesetzt werden: Es
+    // versteckt die Karte hinter `?hidden`, und niemand zaehlt sie wieder
+    // hervor — es laedt ja kein Absatz.
+    if (!this.noContents && this.contentnumber && this.contents.length > 0) {
       this._buildPendingDisplaySet(this.contents);
     }
     this._loading = false;
