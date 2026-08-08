@@ -66,10 +66,11 @@ describe('ActionUpdate', () => {
     expect(lastCall().parameters[0]).toBe(" O'Brien ");
   });
 
-  it('schließt die Verbindung nach dem Schreiben', async () => {
+  it('reicht keine Verbindungs-Option mehr mit', async () => {
+    // Der Pool ist prozessweit; ein einzelnes Schreiben darf ihn nicht beenden.
     await newAction({ id: '123', key: 'a' }).execute();
 
-    expect(lastCall().options).toEqual({ closeConnection: true });
+    expect(lastCall().options).toBeUndefined();
   });
 
   it('gibt zurück, was die Datenbank meldet', async () => {

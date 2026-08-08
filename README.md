@@ -23,13 +23,15 @@
 
 ### Database (Postgres) related Variables
 
-| Variable    | Description                                         |
-| :---------- | :-------------------------------------------------- |
-| PG_LOCAL_DB | Variable to specificaly the use of a local database |
-| PGHOST      |
-| PGUSER      |
-| PGDATABASE  |
-| ENDPOINT_ID |
+| Variable        | Description                                                                                                                                                                 |
+| :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PG_LOCAL_DB     | Variable to specificaly the use of a local database                                                                                                                         |
+| PG_POOL_MAX     | Maximum connections in the shared pool (default `10`). The pool is process-wide and stays open; size it so _dynos × PG_POOL_MAX_ stays below the database connection limit. |
+| PG_IDLE_TIMEOUT | Seconds an idle connection is kept before it is released (default `30`). Lower frees connections sooner, higher keeps them warm.                                            |
+| PGHOST          |
+| PGUSER          |
+| PGDATABASE      |
+| ENDPOINT_ID     |
 
 ## Cache
 

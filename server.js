@@ -23,6 +23,9 @@ const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpo
 const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
 const ContentsEndpoint = require('./private/endpoints/api/1.0/contents/ContentsEndpoint.js');
 const ServiceWorkerEndpointLogic = require('./private/endpoints/wildcard/ServiceWorkerEndpointLogic.js');
+const {
+  PostgresActions,
+} = require('./private/database2/DataStorage/pgConnector.js');
 
 const environment = new Environment().getEnvironment();
 
@@ -44,6 +47,26 @@ process.on('unhandledRejection', (reason) => {
     location: 'Server.unhandledRejection',
     message: `Unhandled promise rejection: ${reason?.message || reason}`,
     error: reason,
+  });
+});
+
+/**
+ * Beim Herunterfahren den Verbindungspool schließen.
+ *
+ * Der Pool bleibt seit der Umstellung auf einen prozessweiten Pool offen —
+ * vorher endete jede Verbindung nach ihrer Abfrage, und es gab nichts
+ * aufzuräumen. Heroku schickt `SIGTERM` und wartet; ohne diesen Weg blieben
+ * die Verbindungen bis zum harten Abbruch bestehen.
+ */
+['SIGTERM', 'SIGINT'].forEach((signal) => {
+  process.on(signal, async () => {
+    Logging.debugMessage({
+      severity: 'INFO',
+      location: 'Server.shutdown',
+      message: `${signal} empfangen, schließe den Verbindungspool`,
+    });
+    await PostgresActions.closePool().catch(() => {});
+    process.exit(0);
   });
 });
 

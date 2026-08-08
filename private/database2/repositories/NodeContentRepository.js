@@ -84,22 +84,17 @@ class NodeContentRepository extends ContentRepository {
 
     const connector = this.createConnector();
     const nodes = await connector.executeParameterizedSql(NODES_SQL, []);
-    const appNodes = await connector.executeParameterizedSql(
-      APP_NODES_SQL,
-      [],
-      { closeConnection: true }
-    );
+    const appNodes = await connector.executeParameterizedSql(APP_NODES_SQL, []);
 
     this.visibility = new NodeVisibility({ nodes, appNodes });
     return this.visibility;
   }
 
-  /** Führt eine Abfrage aus und schließt danach die Verbindung. */
+  /** Führt eine Abfrage über den geteilten Pool aus. */
   async execute(statement, parameters) {
     return this.createConnector().executeParameterizedSql(
       statement,
-      parameters,
-      { closeConnection: true }
+      parameters
     );
   }
 
@@ -297,12 +292,10 @@ class NodeContentRepository extends ContentRepository {
       message: `Creating ${object}`,
     });
 
-    return this.createConnector().transaction(
-      async (run) =>
-        NodeWriteMapping.isNodeObject(object)
-          ? this.createNode(run, object, payload)
-          : this.createContent(run, object, payload),
-      { closeConnection: true }
+    return this.createConnector().transaction(async (run) =>
+      NodeWriteMapping.isNodeObject(object)
+        ? this.createNode(run, object, payload)
+        : this.createContent(run, object, payload)
     );
   }
 
@@ -415,46 +408,43 @@ class NodeContentRepository extends ContentRepository {
       throw new Error('Update requires an id');
     }
 
-    return this.createConnector().transaction(
-      async (run) => {
-        const table = NodeWriteMapping.tableFor(object);
-        const isNode = NodeWriteMapping.isNodeObject(object);
-        const recordId = await this.resolveId(run, object, payload.id);
-        if (!recordId) {
-          throw new Error(`Record not found: ${payload.id}`);
-        }
+    return this.createConnector().transaction(async (run) => {
+      const table = NodeWriteMapping.tableFor(object);
+      const isNode = NodeWriteMapping.isNodeObject(object);
+      const recordId = await this.resolveId(run, object, payload.id);
+      if (!recordId) {
+        throw new Error(`Record not found: ${payload.id}`);
+      }
 
-        const columns = await this.resolveReferences(
-          run,
-          NodeWriteMapping.columnsFor(object, payload)
+      const columns = await this.resolveReferences(
+        run,
+        NodeWriteMapping.columnsFor(object, payload)
+      );
+
+      let record;
+      if (Object.keys(columns).length > 0) {
+        const update = updateClause(columns);
+        [record] = await run(
+          `UPDATE ${table} SET ${update.assignments} WHERE id = $${
+            update.values.length + 1
+          } RETURNING *`,
+          [...update.values, recordId]
         );
+      } else {
+        // Ein Payload ohne setzbare Felder ist kein Fehler — der Absatz
+        // schickt auch dann seinen ganzen Datensatz, wenn sich nur der
+        // Inhalt geändert hat.
+        [record] = await run(`SELECT * FROM ${table} WHERE id = $1`, [
+          recordId,
+        ]);
+      }
 
-        let record;
-        if (Object.keys(columns).length > 0) {
-          const update = updateClause(columns);
-          [record] = await run(
-            `UPDATE ${table} SET ${update.assignments} WHERE id = $${
-              update.values.length + 1
-            } RETURNING *`,
-            [...update.values, recordId]
-          );
-        } else {
-          // Ein Payload ohne setzbare Felder ist kein Fehler — der Absatz
-          // schickt auch dann seinen ganzen Datensatz, wenn sich nur der
-          // Inhalt geändert hat.
-          [record] = await run(`SELECT * FROM ${table} WHERE id = $1`, [
-            recordId,
-          ]);
-        }
+      if (!isNode) {
+        await this.writeContentItems(run, recordId, payload);
+      }
 
-        if (!isNode) {
-          await this.writeContentItems(run, recordId, payload);
-        }
-
-        return this.outwardRecord(object, record);
-      },
-      { closeConnection: true }
-    );
+      return this.outwardRecord(object, record);
+    });
   }
 
   /**
@@ -481,61 +471,58 @@ class NodeContentRepository extends ContentRepository {
       message: `Deleting ${object} ${id}`,
     });
 
-    return this.createConnector().transaction(
-      async (run) => {
-        const recordId = await this.resolveId(run, object, id);
-        if (!recordId) {
-          throw new Error(`Record not found: ${id}`);
-        }
+    return this.createConnector().transaction(async (run) => {
+      const recordId = await this.resolveId(run, object, id);
+      if (!recordId) {
+        throw new Error(`Record not found: ${id}`);
+      }
 
-        if (!NodeWriteMapping.isNodeObject(object)) {
-          const [content] = await run(
-            `SELECT id, legacy_id FROM content_node WHERE id = $1`,
-            [recordId]
-          );
-          await this.deleteContentNodes(run, [recordId]);
-          return { nodes: [], contents: content ? [content] : [] };
-        }
+      if (!NodeWriteMapping.isNodeObject(object)) {
+        const [content] = await run(
+          `SELECT id, legacy_id FROM content_node WHERE id = $1`,
+          [recordId]
+        );
+        await this.deleteContentNodes(run, [recordId]);
+        return { nodes: [], contents: content ? [content] : [] };
+      }
 
-        // Teilbaum, tiefste Ebene zuerst — Kinder vor Eltern.
-        const subtree = await run(
-          `WITH RECURSIVE descendants AS (
+      // Teilbaum, tiefste Ebene zuerst — Kinder vor Eltern.
+      const subtree = await run(
+        `WITH RECURSIVE descendants AS (
              SELECT id, legacy_id, 0 AS depth FROM node WHERE id = $1
              UNION ALL
              SELECT n.id, n.legacy_id, d.depth + 1
              FROM node n JOIN descendants d ON n.parent_node_id = d.id
            )
            SELECT id, legacy_id FROM descendants ORDER BY depth DESC`,
-          [recordId]
-        );
-        const nodeIds = subtree.map((row) => row.id);
+        [recordId]
+      );
+      const nodeIds = subtree.map((row) => row.id);
 
-        const contentNodes = await run(
-          `SELECT id, legacy_id FROM content_node WHERE node_id = ANY($1)`,
-          [nodeIds]
-        );
-        await this.deleteContentNodes(
-          run,
-          contentNodes.map((row) => row.id)
-        );
+      const contentNodes = await run(
+        `SELECT id, legacy_id FROM content_node WHERE node_id = ANY($1)`,
+        [nodeIds]
+      );
+      await this.deleteContentNodes(
+        run,
+        contentNodes.map((row) => row.id)
+      );
 
-        await run(
-          `UPDATE node SET cover_node_id = NULL WHERE cover_node_id = ANY($1)`,
-          [nodeIds]
-        );
-        await run(`DELETE FROM app_node WHERE node_id = ANY($1)`, [nodeIds]);
+      await run(
+        `UPDATE node SET cover_node_id = NULL WHERE cover_node_id = ANY($1)`,
+        [nodeIds]
+      );
+      await run(`DELETE FROM app_node WHERE node_id = ANY($1)`, [nodeIds]);
 
-        // Einzeln in Tiefenreihenfolge: parent_node_id ist RESTRICT, ein
-        // Sammel-DELETE prüft die Bedingung je Zeile und träfe die Eltern
-        // womöglich zuerst.
-        for (const nodeId of nodeIds) {
-          await run(`DELETE FROM node WHERE id = $1`, [nodeId]);
-        }
+      // Einzeln in Tiefenreihenfolge: parent_node_id ist RESTRICT, ein
+      // Sammel-DELETE prüft die Bedingung je Zeile und träfe die Eltern
+      // womöglich zuerst.
+      for (const nodeId of nodeIds) {
+        await run(`DELETE FROM node WHERE id = $1`, [nodeId]);
+      }
 
-        return { nodes: subtree, contents: contentNodes };
-      },
-      { closeConnection: true }
-    );
+      return { nodes: subtree, contents: contentNodes };
+    });
   }
 
   /** `active_content_item` lösen, dann Items, dann die Halter. */
