@@ -161,16 +161,35 @@ class Bookstore extends LitElement {
         Auswahl stehen, unten der ausgewählte Knoten mit seinen Inhalten.
         Welche Rolle ein Knoten spielt, entscheidet allein seine Position hier
         — die Komponente ist beide Male dieselbe.
+
+        data-role ist dabei nur der Selektor für die Getter unten. Wirksam
+        wird die Rolle über die Attribute: Die Daten sagen, WAS ein Knoten hat,
+        diese Zeilen sagen, WOFÜR die jeweilige Instanz da ist. Sie stehen im
+        Template, weil sie sich nie ändern — damit gelten sie vor der ersten
+        Zuweisung von id oder contentnumber.
       -->
       <div
         id="bookshelf"
         class="slds-grid slds-grid_vertical slds-m-top--small"
       >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <custom-node data-role="navigation"></custom-node>
+          <custom-node
+            data-role="navigation"
+            can-create-child
+            no-contents
+          ></custom-node>
         </div>
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <custom-node data-role="content"></custom-node>
+          <!-- Keine Kind-Auswahl: handleNavigationEvent wertet nur Meldungen
+               des oberen Knotens aus, ein Klick bliebe hier wirkungslos.
+               Kein "Kind anlegen": Das Angelegte erschiene in genau der
+               Auswahl, die hier nicht gezeigt wird. -->
+          <custom-node
+            data-role="content"
+            can-create-content
+            can-delete
+            no-child-navigation
+          ></custom-node>
         </div>
       </div>
     `;
