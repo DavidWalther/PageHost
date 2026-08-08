@@ -175,6 +175,7 @@ class Bookstore extends LitElement {
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
           <custom-node
             data-role="navigation"
+            child-buttons_number-max="2"
             can-create-child
             no-contents
           ></custom-node>
@@ -329,9 +330,6 @@ class Bookstore extends LitElement {
     this.applyEntryPoint(entry);
 
     this.isHydrated = true;
-    if (this.navigationNode) {
-      this.navigationNode.setAttribute('child-buttons_number-max', 2);
-    }
     this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     // `custom-chapter-edit` meldet weiterhin `chapter-updated` — die
     // Editierkomponente trägt ihren alten Namen noch.
