@@ -1,7 +1,7 @@
 const postgres = require('postgres');
 
 /** Voreinstellungen des Pools, wenn die Umgebung nichts sagt. */
-const DEFAULT_POOL_MAX = 10;
+const DEFAULT_POOL_MAX_COUNT = 10;
 const DEFAULT_IDLE_TIMEOUT_SECONDS = 30;
 
 /**
@@ -30,7 +30,7 @@ class PostgresActions {
   /**
    * Verbindungsangaben aus der Umgebung.
    *
-   * `PG_POOL_MAX` und `PG_IDLE_TIMEOUT` (in Sekunden) sind einstellbar, weil
+   * `PG_POOL_MAX_COUNT` und `PG_IDLE_TIMEOUT_SECONDS` sind einstellbar, weil
    * die sinnvolle Größe vom Hosting abhängt: Zahl der Dynos mal Poolgröße muss
    * unter dem Verbindungslimit der Datenbank bleiben.
    */
@@ -42,9 +42,10 @@ class PostgresActions {
       username: environment.PGUSER,
       password: environment.PGPASSWORD,
       port: 5432,
-      max: Number(environment.PG_POOL_MAX) || DEFAULT_POOL_MAX,
+      max: Number(environment.PG_POOL_MAX_COUNT) || DEFAULT_POOL_MAX_COUNT,
       idle_timeout:
-        Number(environment.PG_IDLE_TIMEOUT) || DEFAULT_IDLE_TIMEOUT_SECONDS,
+        Number(environment.PG_IDLE_TIMEOUT_SECONDS) ||
+        DEFAULT_IDLE_TIMEOUT_SECONDS,
     };
     if (isLocal) {
       return options;

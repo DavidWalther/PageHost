@@ -151,11 +151,11 @@ describe('PostgresActions', () => {
       );
     });
 
-    it('nimmt PG_POOL_MAX und PG_IDLE_TIMEOUT, wenn gesetzt', () => {
+    it('nimmt PG_POOL_MAX_COUNT und PG_IDLE_TIMEOUT_SECONDS, wenn gesetzt', () => {
       new PostgresActions({
         ...MOCK_ENVIRONMENT,
-        PG_POOL_MAX: '4',
-        PG_IDLE_TIMEOUT: '90',
+        PG_POOL_MAX_COUNT: '4',
+        PG_IDLE_TIMEOUT_SECONDS: '90',
       });
 
       expect(postgres).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe('PostgresActions', () => {
     });
 
     it('fällt bei einem unbrauchbaren Wert auf den Standard zurück', () => {
-      new PostgresActions({ ...MOCK_ENVIRONMENT, PG_POOL_MAX: 'viele' });
+      new PostgresActions({ ...MOCK_ENVIRONMENT, PG_POOL_MAX_COUNT: 'viele' });
 
       expect(postgres).toHaveBeenCalledWith(
         expect.objectContaining({ max: 10 })
