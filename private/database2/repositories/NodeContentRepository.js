@@ -60,14 +60,24 @@ WHERE cn.legacy_id = $1 OR cn.id = $1
  * eingehend wird sie mitgeprüft, ausgehend steht sie als Feld daneben.
  */
 class NodeContentRepository extends ContentRepository {
+  /**
+   * Der Zugang zur Datenbank — **einer je Repository**.
+   *
+   * Ein Repository lebt genau eine Anfrage lang; damit gilt: eine Anfrage, ein
+   * Zugang. Vorher baute jeder Aufruf einen neuen, und solange jeder davon
+   * seinen eigenen Pool mitbrachte, kostete das je Inhalts-Abruf einen zweiten
+   * Handshake. Seit der Pool geteilt wird, kostet es nichts mehr — die Regel
+   * bleibt trotzdem, damit sie nicht wieder etwas kostet, wenn jemand den Pool
+   * zurück an die Instanz hängt.
+   */
   createConnector() {
-    return new PostgresActions(this.environment);
+    if (!this.connector) {
+      this.connector = new PostgresActions(this.environment);
+    }
+    return this.connector;
   }
 
-  /**
-   * Lädt Knoten und Zugehörigkeiten und gibt die Auflösung zurück. Beide
-   * Abfragen laufen über **eine** Verbindung, die danach geschlossen wird.
-   */
+  /** Lädt Knoten und Zugehörigkeiten und gibt die Auflösung zurück. */
   async loadVisibility() {
     const LOCATION = 'NodeContentRepository.loadVisibility';
     if (!this.applicationKey) {

@@ -79,13 +79,75 @@ describe('NodeContentRepository — Abfragen', () => {
     ).rejects.toThrow('Application key is required');
   });
 
-  it('lädt Knoten und Zugehörigkeiten über dieselbe Verbindung', async () => {
-    // Keine Abfrage reicht mehr eine Verbindungs-Option mit: der Pool ist
-    // prozessweit und darf von einer einzelnen Anfrage nicht beendet werden.
+  it('reicht keine Verbindungs-Option mit', async () => {
+    // Der Pool ist prozessweit und darf von einer einzelnen Anfrage nicht
+    // beendet werden.
     await newRepository().getNode('000n1');
 
     executeParameterizedSql.mock.calls.forEach(([, , options]) => {
       expect(options).toBeUndefined();
+    });
+  });
+
+  describe('Kosten eines Lesevorgangs', () => {
+    // Regressionswächter. Der Absatz-Abruf war einmal doppelt so teuer wie
+    // nötig, weil `loadVisibility` und die Inhalts-Abfrage sich je einen
+    // eigenen Zugang holten. Die Zahl der Abfragen ist dabei die stabilere
+    // Zusicherung als die Zahl der Verbindungen — sie bleibt aussagekräftig,
+    // auch wenn der Pool geteilt wird.
+
+    /** Welche Abfragen sind gelaufen, in Reihenfolge? */
+    function issuedQueries() {
+      return executeParameterizedSql.mock.calls.map(([statement]) => {
+        if (statement.includes('FROM app_node')) return 'app_node';
+        if (statement.includes('FROM content_node cn')) return 'content';
+        if (statement.includes('FROM content_node')) return 'content_nodes';
+        return 'node';
+      });
+    }
+
+    it('getContent kommt mit einem Zugang und drei Abfragen aus', async () => {
+      await newRepository().getContent('000p00000000000033');
+
+      expect(PostgresActions).toHaveBeenCalledTimes(1);
+      expect(issuedQueries()).toEqual(['node', 'app_node', 'content']);
+    });
+
+    it('getNode kommt mit einem Zugang und drei Abfragen aus', async () => {
+      await newRepository().getNode('000n1');
+
+      expect(PostgresActions).toHaveBeenCalledTimes(1);
+      expect(issuedQueries()).toEqual(['node', 'app_node', 'content_nodes']);
+    });
+
+    it('getContentsTree kommt mit einem Zugang und zwei Abfragen aus', async () => {
+      await newRepository().getContentsTree();
+
+      expect(PostgresActions).toHaveBeenCalledTimes(1);
+      expect(issuedQueries()).toEqual(['node', 'app_node']);
+    });
+
+    it('ein zweiter Lesevorgang holt weder Zugang noch Baum erneut', async () => {
+      const repository = newRepository();
+
+      await repository.getNode('000n1');
+      await repository.getContent('000p00000000000033');
+
+      expect(PostgresActions).toHaveBeenCalledTimes(1);
+      expect(issuedQueries()).toEqual([
+        'node',
+        'app_node',
+        'content_nodes',
+        'content',
+      ]);
+    });
+
+    it('fragt für einen unsichtbaren Knoten gar nicht erst weiter', async () => {
+      setSources({ appNodes: [] });
+
+      await newRepository().getNode('000n1');
+
+      expect(issuedQueries()).toEqual(['node', 'app_node']);
     });
   });
 
