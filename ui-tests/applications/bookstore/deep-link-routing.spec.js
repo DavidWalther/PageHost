@@ -43,6 +43,18 @@ async function open(page, path) {
   await expect(page.locator('app-bookstore')).toBeAttached();
 }
 
+/** Zeichnet jede Datenabfrage auf. Muss vor `open` gerufen werden. */
+function recordQueries(page) {
+  const urls = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.pathname.startsWith('/data/query/')) {
+      urls.push(`${url.pathname}?id=${url.searchParams.get('id')}`);
+    }
+  });
+  return urls;
+}
+
 test.describe('Deep-Link ohne Präfix-Typisierung', () => {
   test('ohne Parameter startet der voreingestellte Knoten', async ({
     page,
@@ -142,6 +154,43 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
     await expect
       .poll(async () => (await readEntry(page)).navigation.name)
       .toBe('Mock Story 1');
+  });
+
+  test('holt keinen Knoten zweimal', async ({ page }) => {
+    // Regressionswächter. `resolveEntryPoint` löst den Knoten auf und gibt
+    // den Datensatz an `custom-node` weiter; ohne diese Übergabe holte der
+    // Knoten genau das noch einmal, was gerade angekommen war.
+    const queries = recordQueries(page);
+    await open(page, '/000n00000000000002');
+
+    await expect
+      .poll(async () => (await readEntry(page)).content.name)
+      .toBe('Mock Chapter 2 for Story 1');
+    await page.waitForTimeout(300);
+
+    expect(queries).toEqual([
+      // der aufgelöste Knoten selbst …
+      '/data/query/node?id=000n00000000000002',
+      // … und sein Elternknoten, den nur die Id benennt
+      '/data/query/node?id=000n00000000000011',
+    ]);
+  });
+
+  test('holt beim Einstieg über einen Inhalt nichts doppelt', async ({
+    page,
+  }) => {
+    const queries = recordQueries(page);
+    await open(page, '/000p00000000000001');
+
+    await expect
+      .poll(async () => (await readEntry(page)).content.name)
+      .toBe('Mock Chapter 1 for Story 1');
+    await page.waitForTimeout(300);
+
+    // Kein Eintrag kommt zweimal vor.
+    expect(new Set(queries).size).toBe(queries.length);
+    expect(queries).toContain('/data/query/content?id=000p00000000000001');
+    expect(queries).toContain('/data/query/node?id=000n00000000000001');
   });
 
   test('Navigation im Knoten schaltet den Inhalt um', async ({ page }) => {
