@@ -130,8 +130,11 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
   Backend-Endpunkte bindet.
   - **`custom-node`** stellt **einen Knoten** dar: seine Kind-Knoten als
     Auswahl, seine Inhalte als Text. Es gibt keinen Modus und keine
-    Tiefenangabe — was gezeigt wird, entscheiden die Daten. Die App
-    (`bookstore`) hält zwei davon: oben die Auswahl, unten den gewählten Knoten.
+    Tiefenangabe — die Daten sagen, **was** ein Knoten hat. **Wofür** eine
+    Instanz da ist, sagt der Consumer über Attribute (`no-…` fürs Rendering,
+    `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
+    Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
+    beauftragt. → `public/components/custom-node/README.md`
   - **Ids werden nicht mehr am Präfix typisiert.** Was hinter einer Id steckt,
     beantwortet das Backend (`bookstore.resolveEntryPoint`); alte Deep-Links
     bleiben über `legacy_id` gültig.

@@ -5,10 +5,16 @@ const { cacheLitBundle } = require('../../support/component-page');
 /**
  * Smoke-Test der zusammengeführten Knoten-Darstellung.
  *
- * Der Kern der Zusammenführung ist prüfbar, weil beide Rollen **dieselbe**
- * Komponente sind: Der obere Knoten zeigt eine Auswahl und keine Inhalte, der
- * untere Inhalte und keine Auswahl — ohne dass irgendwo ein Typ steht. Bricht
- * das, stünde entweder eine leere Auswahlleiste da oder die Inhalte fehlten.
+ * Geprüft wird der Weg durch den `bookstore`: Beide Rollen sind **dieselbe**
+ * Komponente, der obere Knoten zeigt eine Auswahl, der untere die Inhalte des
+ * gewählten Kindes, und ein Klick oben schaltet unten um. Bricht das, stünde
+ * entweder eine leere Auswahlleiste da oder die Inhalte fehlten.
+ *
+ * **Nicht** geprüft wird hier die Trennung der Rollen. Dass der obere Knoten
+ * keine Inhalte und der untere keine Auswahl rendert, folgt aus den Attributen,
+ * die der `bookstore` setzt — nicht aus den Mockdaten, in denen ohnehin nur der
+ * eine Kinder und nur der andere Inhalte hat. Was die Rollen unterscheidet,
+ * hält `node-role-capabilities.spec.js` fest, mit Daten, die beides tragen.
  */
 
 /** Liest den Zustand beider Knoten aus dem Shadow-DOM. */
@@ -55,7 +61,8 @@ test.describe('custom-node', () => {
       'Mock Chapter 1 for Story 1',
       'Mock Chapter 2 for Story 1',
     ]);
-    // Ein Knoten ohne eigene Inhalte rendert dafür auch nichts.
+    // Keine Inhalte oben — hier ohnehin doppelt abgesichert: Der Mock-Knoten
+    // hat keine, und `no-contents` würde sie auch sonst nicht zeigen.
     expect(navigation.contentIds).toEqual([]);
   });
 
@@ -70,6 +77,8 @@ test.describe('custom-node', () => {
     const { content } = await readNodes(page);
     expect(content.recordId).toBe('000n00000000000001');
     expect(content.contentIds).toEqual(['00cn00000000000001']);
+    // Keine Auswahl unten. Der Mock-Knoten hat keine Kinder; dass sie auch
+    // dann nicht erschiene, wenn er welche hätte, prüft die Rollen-Spec.
     expect(content.hasNavigation).toBe(false);
   });
 
