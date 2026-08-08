@@ -88,6 +88,22 @@ test.describe('Knoten: Auswahl eines Kindes per Combobox', () => {
     expect(state.optionCount).toBe(4);
   });
 
+  test('die Schwelle steht im Markup, nicht in der Hydrierung', async ({
+    page,
+  }) => {
+    // Der `bookstore` setzte den Wert früher erst **nach** `applyEntryPoint`
+    // per `setAttribute`. Bis dahin war die Schwelle unbekannt, und ein Knoten
+    // mit vielen Kindern rendete kurz als Button-Leiste, bevor er auf die
+    // Combobox umsprang. Im Template gilt sie ab dem ersten Rendern.
+    const attribut = await page.evaluate(() =>
+      document
+        .querySelector('app-bookstore')
+        .shadowRoot.querySelector('custom-node[data-role="navigation"]')
+        .getAttribute('child-buttons_number-max')
+    );
+    expect(attribut).toBe('2');
+  });
+
   test('Options-Klick stellt das Kind im Consumer um', async ({ page }) => {
     await expect
       .poll(async () => (await readCombobox(page)).present)
