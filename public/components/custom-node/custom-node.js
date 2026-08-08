@@ -17,11 +17,18 @@ import '/slds-components/slds-progress-bar/slds-progress-bar.js';
  * neuen Datenmodell gibt es diese Ebenen nicht mehr — nur Knoten, und ein
  * Knoten kann beides haben.
  *
- * **Parametrisiert wird über die Daten, nicht über einen Typ.** Es gibt keine
- * `mode`-Eigenschaft und keine Tiefenangabe: Wer Kind-Knoten hat, zeigt eine
- * Auswahl; wer Inhalte hat, zeigt sie; wer beides hat, zeigt beides. Genau das
- * ist mit „aus Tiefe und Kontext" gemeint (`doc/datamodel-overhaul/datamodel.md`,
- * Abschnitt 3) — der Knoten weiß nicht, ob er früher eine Story war.
+ * **Kein Typ in der Komponente.** Es gibt keine `mode`-Eigenschaft und keine
+ * Tiefenangabe: Wer Kind-Knoten hat, zeigt eine Auswahl; wer Inhalte hat, zeigt
+ * sie; wer beides hat, zeigt beides. Genau das ist mit „aus Tiefe und Kontext"
+ * gemeint (`doc/datamodel-overhaul/datamodel.md`, Abschnitt 3) — der Knoten
+ * weiß nicht, ob er früher eine Story war.
+ *
+ * Die Daten sagen damit, **was** ein Knoten hat. **Wofür** eine einzelne
+ * Instanz da ist, sagt der Consumer über die Attribute `no-…` (Rendering,
+ * Voreinstellung an) und `can-…` (Aktionen, Voreinstellung aus). Das ist kein
+ * Typ, der wieder hereinkommt: Zwei Instanzen mit derselben `id` dürfen
+ * verschieden aussehen, weil sie an verschiedenen Stellen verschiedene
+ * Aufgaben haben. Welche Attribute es gibt, steht in der README.
  *
  * Die Lade-Mechanik der Inhalte (Chunks, IntersectionObserver, Sprung zu einem
  * Inhalt) ist aus `custom-chapter` übernommen und bewusst unverändert: sie war
