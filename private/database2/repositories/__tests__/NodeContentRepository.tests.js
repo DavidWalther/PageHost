@@ -79,12 +79,14 @@ describe('NodeContentRepository — Abfragen', () => {
     ).rejects.toThrow('Application key is required');
   });
 
-  it('lädt Knoten und Zugehörigkeiten über eine Verbindung und schließt sie danach', async () => {
+  it('lädt Knoten und Zugehörigkeiten über dieselbe Verbindung', async () => {
+    // Keine Abfrage reicht mehr eine Verbindungs-Option mit: der Pool ist
+    // prozessweit und darf von einer einzelnen Anfrage nicht beendet werden.
     await newRepository().getNode('000n1');
 
-    const calls = executeParameterizedSql.mock.calls;
-    expect(calls[0][2]).toBeUndefined();
-    expect(calls[1][2]).toEqual({ closeConnection: true });
+    executeParameterizedSql.mock.calls.forEach(([, , options]) => {
+      expect(options).toBeUndefined();
+    });
   });
 
   it('lädt den Baum nur einmal je Repository', async () => {

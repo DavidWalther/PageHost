@@ -83,9 +83,7 @@ class ActionUpdate {
       message: `Executing SQL: ${sqlStatement}`,
     });
 
-    return this.pgConnector.executeParameterizedSql(sqlStatement, parameters, {
-      closeConnection: true,
-    });
+    return this.pgConnector.executeParameterizedSql(sqlStatement, parameters);
   }
 }
 

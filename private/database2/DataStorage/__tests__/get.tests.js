@@ -75,10 +75,11 @@ describe('ActionGet', () => {
       expect(lastCall().sql).toBe('SELECT key, value FROM configuration');
     });
 
-    it('schließt die Verbindung nach der Abfrage', async () => {
+    it('reicht keine Verbindungs-Option mehr mit', async () => {
+      // Der Pool ist prozessweit; eine einzelne Abfrage darf ihn nicht beenden.
       await newAction().execute();
 
-      expect(lastCall().options).toEqual({ closeConnection: true });
+      expect(lastCall().options).toBeUndefined();
     });
   });
 

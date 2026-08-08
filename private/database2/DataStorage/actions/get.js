@@ -125,8 +125,7 @@ class ActionGet {
 
     const result = await this.pgConnector.executeParameterizedSql(
       sqlStatement,
-      parameters,
-      { closeConnection: true }
+      parameters
     );
 
     // Der `Sanitizer` verdoppelte beim Schreiben die Anführungszeichen — der
