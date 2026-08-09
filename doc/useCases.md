@@ -31,10 +31,18 @@
 - create content_item
 - edit content_item
 - delete content_item
+- publish node
+- unpublish node
+- publish content_node
+- unpublish content_node
 - edit paragraph (depricated)
 - create paragraph (depricated)
 - delete paragraph (depricated)
+- publish paragraph (depricated)
+- unpublish paragraph (depricated)
 - edit chapter (depricated)
 - create chapter (depricated)
 - delete chapter (depricated)
+- publish chapter (depricated)
+- unpublish chapter (depricated)
 
