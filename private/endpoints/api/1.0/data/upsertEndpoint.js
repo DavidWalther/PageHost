@@ -63,8 +63,9 @@ class UpsertEndpoint extends EndpointLogic {
             .json({ success: false, error: 'Permission denied' });
           return;
         }
-        // Proceed with create operation
-        let result = await this.excuteCreate();
+        // Die Antwort schickt executeCreate selbst; hier stand einmal ein
+        // `let result =`, das nie gelesen wurde.
+        await this.executeCreate();
 
         Logging.debugMessage({
           severity: 'INFO',
@@ -146,7 +147,7 @@ class UpsertEndpoint extends EndpointLogic {
     }
   }
 
-  async excuteCreate() {
+  async executeCreate() {
     const LOCATION = 'UpsertEndpoint.executeCreate';
     Logging.debugMessage({
       severity: 'INFO',
@@ -161,9 +162,9 @@ class UpsertEndpoint extends EndpointLogic {
         location: LOCATION,
       });
 
+      // Die App-Zugehörigkeit setzt die Datenschicht — als Zeile in
+      // `app_node`. Der Endpoint kennt die Speicherform nicht.
       const data = this.requestObject.body; // Assuming data is sent in the request body
-      data.payload.applicationIncluded =
-        this.environment.APPLICATION_APPLICATION_KEY;
 
       let dataFacade = new DataFacade(this.environment).setSkipCache(true);
       let result = await dataFacade.createData(data);

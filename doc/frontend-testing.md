@@ -16,7 +16,8 @@ ui-tests/
     bookstore/bookstore.smoke.spec.js
   components/
     custom-navigation-modal/navigation-modal.spec.js
-    custom-story/story-chapter-combobox.spec.js
+    custom-node/custom-node.smoke.spec.js
+    custom-node/node-child-combobox.spec.js
   slds-components/
     slds-layout/slds-layout.spec.js
     slds-layout/layout-classlist-contract.spec.js
@@ -40,9 +41,9 @@ deshalb in `slds-components/slds-layout/`, nicht in einem App-Ordner.
 **Ein Ordner darf mehrere Specs halten.** Der **Ordner** benennt den Gegenstand,
 der **Dateiname** den Aspekt. `slds-layout/` enthält `slds-layout.spec.js` (die
 Komponente selbst) und `layout-classlist-contract.spec.js` (ihr Contract gegenüber
-Consumern). Aus demselben Grund heißt der Spec in `custom-story/` weiterhin
-`story-chapter-combobox.spec.js` — er prüft die Kapitelauswahl, nicht `custom-story`
-in Gänze.
+Consumern). Aus demselben Grund liegen in `custom-node/` mehrere Specs: einer
+für die Komponente selbst, einer für die Auswahl per Combobox, einer für die
+Bearbeitungswege — der Ordner benennt den Gegenstand, der Dateiname den Aspekt.
 
 ### Support-Module
 
@@ -119,7 +120,7 @@ Ein App-Test ist nötig, wenn der Gegenstand **nur im Zusammenspiel** existiert:
 `layout-classlist-contract` prüft, dass kein Consumer Klassen an einem
 Layout-Host ablegt — das ist ohne die Consumer nicht prüfbar.
 `story-chapter-combobox` prüft einen Pfad, den erst der Consumer auslöst
-(`custom-story` rendert die Combobox nur ab genügend Kapiteln).
+(`custom-node` rendert die Combobox nur ab genügend Kind-Knoten).
 
 Ein Komponententest mountet eine Webkomponente isoliert und prüft ihr Shadow-DOM.
 Er braucht dafür **keine laufende App** — nur eine Seite auf demselben Origin, von

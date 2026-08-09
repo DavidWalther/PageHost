@@ -1,0 +1,399 @@
+--============================
+-- Setup
+--============================
+--
+-- Stand: entspricht dem Ziel-Datenmodell aus datamodel.md (Abschnitte 3-11).
+-- Eingearbeitet: snake_case, FK-Spalten varchar(18), durchgaengig ON DELETE
+-- RESTRICT, typfreie node-Tabelle mit cover_node_id/reversed, app_node mit
+-- relation + Wildcard (app_id IS NULL), content_item mit type-CHECK,
+-- legacy_id fuer Deep-Links, Indizes auf allen FK-Spalten.
+--
+
+--
+-- Name: generate_custom_id(character varying, integer); Type: FUNCTION; Schema: public; Owner: walthdav
+--
+
+CREATE OR REPLACE FUNCTION public.generate_custom_id(objectprefix character varying, recordnumber integer) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    custom_id VARCHAR(18);
+BEGIN
+    -- Ensure objectPrefix is exactly 4 characters
+    IF LENGTH(objectPrefix) != 4 THEN
+        RAISE EXCEPTION 'objectPrefix must be exactly 4 characters';
+    END IF;
+
+    -- Generate the custom ID
+    custom_id := objectPrefix || LPAD(recordNumber::TEXT, 14, '0');
+
+    -- Ensure the custom ID is exactly 18 characters
+    IF LENGTH(custom_id) != 18 THEN
+        RAISE EXCEPTION 'Generated ID must be exactly 18 characters';
+    END IF;
+
+    RETURN custom_id;
+END;
+$$;
+
+
+-- ALTER FUNCTION public.generate_custom_id(objectprefix character varying, recordnumber integer) OWNER TO walthdav;
+
+--
+-- Name: set_table_id(); Type: FUNCTION; Schema: public; Owner: walthdav
+--
+
+CREATE OR REPLACE FUNCTION public.set_table_id() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    table_prefix TEXT;
+BEGIN
+    -- Get the prefix for the current table
+    SELECT prefix INTO table_prefix
+    FROM table_prefixes
+    WHERE table_name = TG_TABLE_NAME;
+
+    -- If no prefix found, use a default
+    IF table_prefix IS NULL THEN
+        table_prefix := '000x';
+    END IF;
+
+    NEW.id := generate_custom_id(table_prefix, NEW.recordnumber);
+    RETURN NEW;
+END;
+$$;
+
+
+-- ALTER FUNCTION public.set_table_id() OWNER TO walthdav;
+
+
+------------------
+-- Create Tables
+------------------
+--
+-- Die Beziehungen werden bewusst erst weiter unten per ALTER TABLE ergaenzt:
+-- content_node.active_content_item und content_item.content_node_id zeigen
+-- aufeinander, eine der beiden Tabellen existiert beim CREATE also noch nicht.
+--
+
+-- name traegt den Wert aus APPLICATION_APPLICATION_KEY und ist damit der
+-- Lookup-Schluessel der App, kein Anzeigename -> UNIQUE NOT NULL. Ein
+-- Umbenennen ist eine Migration (Env-Dateien, Cache-Praefixe), kein Edit.
+CREATE TABLE app (
+  id            varchar(18) PRIMARY KEY NOT NULL,
+  name          text UNIQUE NOT NULL,
+  recordnumber  serial NOT NULL,
+  createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Typfrei: keine type/level-Spalte. cover_node_id, reversed und description sind
+-- optionale Eigenschaften JEDES Knotens (frueher story.coverid, chapter.reversed
+-- bzw. story.description).
+CREATE TABLE node (
+  id                            varchar(18) PRIMARY KEY NOT NULL,
+  name                          text,
+  description                   text,
+  is_parent_controls_visibility boolean,
+  sortnumber                    integer,
+  reversed                      boolean,
+  legacy_id                     varchar(18) UNIQUE,   -- alte 000s…/000c…-Id (Deep-Links)
+  recordnumber                  serial NOT NULL,
+  createddate                   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  published_date                timestamp without time zone
+);
+
+-- app_id IS NULL = Wildcard (gilt fuer alle Apps, auch kuenftige).
+CREATE TABLE app_node (
+  id            varchar(18) PRIMARY KEY NOT NULL,
+  relation      text NOT NULL CHECK (relation IN ('include', 'exclude')),
+  recordnumber  serial NOT NULL,
+  createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Kein is_parent_controls_visibility: die Sichtbarkeit kontrolliert immer der node.
+CREATE TABLE content_node (
+  id              varchar(18) PRIMARY KEY NOT NULL,
+  name            text,
+  sortnumber      integer,
+  legacy_id       varchar(18) UNIQUE,   -- alte 000p…-Id (Deep-Links)
+  recordnumber    serial NOT NULL,
+  createddate     timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  published_date  timestamp without time zone
+);
+
+-- Reiner Payload: keine eigene Sichtbarkeits-/Publish-Spalte.
+CREATE TABLE content_item (
+  id            varchar(18) PRIMARY KEY NOT NULL,
+  content       text,
+  type          text CHECK (type IN ('text', 'html', 'markdown', 'mermaid')),
+  recordnumber  serial NOT NULL,
+  createddate   timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+------------------
+--  Create Relationships
+------------------
+--
+-- Durchgaengig ON DELETE RESTRICT: nichts kaskadiert, geloescht wird bottom-up.
+--
+
+ALTER TABLE node
+  ADD COLUMN parent_node_id varchar(18) REFERENCES node(id) ON DELETE RESTRICT;
+ALTER TABLE node
+  ADD COLUMN cover_node_id  varchar(18) REFERENCES node(id) ON DELETE RESTRICT;
+
+ALTER TABLE app_node
+  ADD COLUMN node_id varchar(18) NOT NULL REFERENCES node(id) ON DELETE RESTRICT;
+ALTER TABLE app_node
+  ADD COLUMN app_id  varchar(18) REFERENCES app(id) ON DELETE RESTRICT;
+
+ALTER TABLE content_node
+  ADD COLUMN node_id varchar(18) REFERENCES node(id) ON DELETE RESTRICT;
+-- DEFERRABLE wegen des zirkulaeren Zeigers content_node <-> content_item:
+-- der Zeiger darf innerhalb einer Transaktion vor dem Item gesetzt werden.
+--
+-- Gotcha: DEFERRABLE verschiebt nur die Existenzpruefung beim INSERT/UPDATE.
+-- ON DELETE RESTRICT ist laut Postgres NICHT aufschiebbar und greift sofort -
+-- ein content_item laesst sich also erst loeschen, wenn dieser Zeiger vorher
+-- genullt oder umgebogen wurde (siehe Loeschreihenfolge unten). Wer das
+-- Loeschen und das Nullen in derselben Transaktion in beliebiger Reihenfolge
+-- erlauben will, nimmt hier ON DELETE NO ACTION - blockiert genauso, wird aber
+-- erst beim COMMIT geprueft.
+ALTER TABLE content_node
+  ADD COLUMN active_content_item varchar(18)
+    REFERENCES content_item(id) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE content_item
+  ADD COLUMN content_node_id varchar(18) REFERENCES content_node(id) ON DELETE RESTRICT;
+
+-- Solange es keine Versionierung gibt: je content_node hoechstens ein Item pro type.
+ALTER TABLE content_item
+  ADD CONSTRAINT content_item_node_type_unique UNIQUE (content_node_id, type);
+
+------------------
+-- Indexes
+------------------
+--
+-- Eindeutigkeit von app_node inkl. Wildcard-Zeilen. Zwei partielle Indizes
+-- statt UNIQUE NULLS NOT DISTINCT, damit es auch vor PG 15 funktioniert.
+--
+
+CREATE UNIQUE INDEX idx_app_node_unique_wildcard  ON app_node (node_id, relation)         WHERE app_id IS NULL;
+CREATE UNIQUE INDEX idx_app_node_unique_specific  ON app_node (app_id, node_id, relation) WHERE app_id IS NOT NULL;
+
+-- FK-Spalten indizieren (Postgres legt das nicht automatisch an):
+CREATE INDEX idx_node_parent        ON node(parent_node_id);
+CREATE INDEX idx_node_cover         ON node(cover_node_id);
+CREATE INDEX idx_app_node_node      ON app_node(node_id);
+CREATE INDEX idx_app_node_app       ON app_node(app_id);
+CREATE INDEX idx_content_node_node  ON content_node(node_id);
+CREATE INDEX idx_content_item_cnode ON content_item(content_node_id);
+
+------------------
+-- Setup prefixes
+------------------
+
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'app', '00ap');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'app_node', '00an');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'node', '000n');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'content_node', '00cn');
+INSERT INTO table_prefixes (table_name, prefix) VALUES ( 'content_item', '00ci');
+
+------------------
+-- Logic for initializing Id
+------------------
+
+CREATE TRIGGER set_app_id
+BEFORE INSERT ON app FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_node_id
+BEFORE INSERT ON node FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_app_node_id
+BEFORE INSERT ON app_node FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_content_node_id
+BEFORE INSERT ON content_node FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+CREATE TRIGGER set_content_item_id
+BEFORE INSERT ON content_item FOR EACH ROW EXECUTE FUNCTION set_table_id();
+
+------------------
+-- Create Testdata
+------------------
+--
+-- Aufbau (deckt die Entscheidungen aus datamodel.md ab):
+--
+--   app A "testAppA"        app B "testAppB"
+--
+--   root ................... include-Wildcard (app_id IS NULL) -> in A und B
+--   |                        cover_node_id -> cover, reversed = false
+--   +- cover ............... nicht veroeffentlicht (published_date IS NULL)
+--   +- branch .............. erbt (is_parent_controls_visibility = true)
+--   |  |                     reversed = true
+--   |  +- leaf ............. dritte Ebene: zeigt die freie Verschachtelung
+--   +- appAOnly ............ bricht die Kette (false) + eigener include fuer A
+--   +- hiddenInB ........... erbt, aber exclude fuer B
+--
+--   branch traegt einen content_node mit zwei Repraesentationen (text/html);
+--   active_content_item zeigt auf die html-Zeile.
+--
+
+DO $$
+DECLARE
+  v_app_a       varchar(18);
+  v_app_b       varchar(18);
+  v_root        varchar(18);
+  v_cover       varchar(18);
+  v_branch      varchar(18);
+  v_leaf        varchar(18);
+  v_app_a_only  varchar(18);
+  v_hidden_in_b varchar(18);
+  v_cnode       varchar(18);
+  v_item_text   varchar(18);
+  v_item_html   varchar(18);
+BEGIN
+  ---------------- apps ----------------
+  INSERT INTO app (name) VALUES ('testAppA') RETURNING id INTO v_app_a;
+  INSERT INTO app (name) VALUES ('testAppB') RETURNING id INTO v_app_b;
+
+  ---------------- nodes ----------------
+  INSERT INTO node (name, sortnumber, published_date, legacy_id)
+    VALUES ('root', 10, CURRENT_TIMESTAMP, '000s00000000000011')
+    RETURNING id INTO v_root;
+
+  -- Cover-Knoten: bewusst unveroeffentlicht, dient nur als Bild-/Cover-Ziel.
+  INSERT INTO node (name, sortnumber, parent_node_id, is_parent_controls_visibility)
+    VALUES ('cover', 10, v_root, true)
+    RETURNING id INTO v_cover;
+
+  UPDATE node SET cover_node_id = v_cover, reversed = false WHERE id = v_root;
+
+  INSERT INTO node (name, sortnumber, parent_node_id, is_parent_controls_visibility, reversed, published_date, legacy_id)
+    VALUES ('branch', 20, v_root, true, true, CURRENT_TIMESTAMP, '000c00000000000045')
+    RETURNING id INTO v_branch;
+
+  -- Dritte Ebene - im alten Modell nicht darstellbar.
+  INSERT INTO node (name, sortnumber, parent_node_id, is_parent_controls_visibility, published_date)
+    VALUES ('leaf', 10, v_branch, true, CURRENT_TIMESTAMP)
+    RETURNING id INTO v_leaf;
+
+  -- Bricht die Vererbung (false) und haengt sich selbst nur an App A.
+  INSERT INTO node (name, sortnumber, parent_node_id, is_parent_controls_visibility, published_date)
+    VALUES ('appAOnly', 30, v_root, false, CURRENT_TIMESTAMP)
+    RETURNING id INTO v_app_a_only;
+
+  -- Erbt vom root, wird aber fuer App B ausgeschlossen.
+  INSERT INTO node (name, sortnumber, parent_node_id, is_parent_controls_visibility, published_date)
+    VALUES ('hiddenInB', 40, v_root, true, CURRENT_TIMESTAMP)
+    RETURNING id INTO v_hidden_in_b;
+
+  ---------------- app_node ----------------
+  -- Wildcard: root gilt fuer alle Apps (loest die alte '*'-Konvention ab).
+  INSERT INTO app_node (node_id, app_id, relation) VALUES (v_root,        NULL,    'include');
+  -- Spezifisch: appAOnly haengt trotz gebrochener Kette an App A.
+  INSERT INTO app_node (node_id, app_id, relation) VALUES (v_app_a_only,  v_app_a, 'include');
+  -- Ausschluss: exclude schlaegt include.
+  INSERT INTO app_node (node_id, app_id, relation) VALUES (v_hidden_in_b, v_app_b, 'exclude');
+
+  ---------------- content ----------------
+  INSERT INTO content_node (name, sortnumber, node_id, published_date, legacy_id)
+    VALUES ('First ContentNode', 10, v_branch, CURRENT_TIMESTAMP, '000p00000000000007')
+    RETURNING id INTO v_cnode;
+
+  INSERT INTO content_item (content, type, content_node_id)
+    VALUES ('Some random content', 'text', v_cnode)
+    RETURNING id INTO v_item_text;
+
+  INSERT INTO content_item (content, type, content_node_id)
+    VALUES ('<p>Some random content</p>', 'html', v_cnode)
+    RETURNING id INTO v_item_html;
+
+  -- Explizite Auswahl statt des frueheren impliziten "html gewinnt, wenn gefuellt".
+  UPDATE content_node SET active_content_item = v_item_html WHERE id = v_cnode;
+END $$;
+
+------------------
+-- Query created Data
+------------------
+
+SELECT * FROM app;
+SELECT * FROM node;
+SELECT * FROM app_node;
+SELECT * FROM content_node;
+SELECT * FROM content_item;
+
+-- Baum von der Wurzel aus, mit Zyklus-Schutz (parent_node_id ist ein Selbstbezug).
+--
+-- Das path-Array ist NICHT optional: es ist die verbindliche Form jeder
+-- rekursiven Baumabfrage (datamodel.md Abschnitt 3). Ohne den Guard wird ein
+-- Zyklus zur Endlosschleife in einem oeffentlich erreichbaren Lesepfad. Die
+-- zweite Haelfte der Absicherung liegt im Schreibpfad: beim Setzen/Umhaengen
+-- von parent_node_id wird aufwaerts geprueft, ob der kuenftige Parent im
+-- Subtree des Knotens liegt.
+--
+-- Der Cast auf varchar[] ist noetig, nicht kosmetisch: ohne ihn hat der
+-- nicht-rekursive Term den Typ varchar(18)[], der rekursive dagegen varchar[],
+-- und Postgres lehnt die Abfrage ab.
+--
+WITH RECURSIVE tree AS (
+  SELECT n.id, n.name, n.parent_node_id, 1 AS depth, ARRAY[n.id]::varchar[] AS path
+  FROM node n
+  WHERE n.parent_node_id IS NULL
+  UNION ALL
+  SELECT c.id, c.name, c.parent_node_id, t.depth + 1, t.path || c.id
+  FROM node c
+  JOIN tree t ON c.parent_node_id = t.id
+  WHERE NOT c.id = ANY(t.path)
+)
+SELECT depth, repeat('  ', depth - 1) || name AS tree, id
+FROM tree
+ORDER BY path;
+
+
+--============================
+-- TEAR_DOWN
+--============================
+
+------------------
+-- Testdaten loeschen (Reihenfolge unter ON DELETE RESTRICT)
+------------------
+--
+-- Nicht noetig, wenn ohnehin die Tabellen fallen - steht hier, weil es die
+-- Reihenfolge zeigt, die der Schreibpfad spaeter selbst orchestrieren muss:
+-- zuerst den Zeiger loesen, dann von unten nach oben loeschen.
+--
+
+-- UPDATE content_node SET active_content_item = NULL;
+-- DELETE FROM content_item;
+-- DELETE FROM content_node;
+-- DELETE FROM app_node;
+-- UPDATE node SET cover_node_id = NULL;
+-- DELETE FROM node WHERE parent_node_id IS NOT NULL AND id NOT IN (SELECT parent_node_id FROM node WHERE parent_node_id IS NOT NULL);
+-- ... bis der Baum leer ist, dann:
+-- DELETE FROM node WHERE parent_node_id IS NULL;
+-- DELETE FROM app;
+
+------------------
+-- drop Tables
+------------------
+--
+-- content_node und content_item verweisen aufeinander - deshalb in EINEM
+-- Statement droppen, sonst blockiert der jeweils andere Fremdschluessel.
+--
+
+DROP TABLE content_item, content_node;
+DROP TABLE app_node;
+DROP TABLE node;
+DROP TABLE app;
+
+------------------
+-- Delete prefixes
+------------------
+
+DELETE FROM table_prefixes WHERE table_name = 'app_node';
+DELETE FROM table_prefixes WHERE table_name = 'app';
+DELETE FROM table_prefixes WHERE table_name = 'node';
+DELETE FROM table_prefixes WHERE table_name = 'content_item';
+DELETE FROM table_prefixes WHERE table_name = 'content_node';

@@ -1,6 +1,7 @@
 const { EndpointLogic } = require('../../../EndpointLogic.js');
 const { Logging } = require('../../../../modules/logging.js');
 const { DataFacade } = require('../../../../database2/DataFacade.js');
+const { PublishFields } = require('../../../../modules/PublishFields.js');
 
 /**
  * UnpublishEndpoint handles unpublishing of records by setting their publishDate to null
@@ -85,7 +86,7 @@ class UnpublishEndpoint extends EndpointLogic {
       }
 
       // 4. Check if already unpublished
-      if (!existingRecord.publishdate) {
+      if (!PublishFields.valueOf(existingRecord)) {
         Logging.debugMessage({
           severity: 'INFO',
           message: 'Record is already unpublished',
@@ -164,7 +165,13 @@ class UnpublishEndpoint extends EndpointLogic {
     }
 
     // Validate supported object types
-    const supportedObjects = ['paragraph', 'chapter', 'story'];
+    const supportedObjects = [
+      'paragraph',
+      'chapter',
+      'story',
+      'node',
+      'content',
+    ];
     if (!supportedObjects.includes(object.toLowerCase())) {
       Logging.debugMessage({
         severity: 'INFO',
@@ -223,11 +230,12 @@ class UnpublishEndpoint extends EndpointLogic {
       const dataFacade = new DataFacade(this.environment).setSkipCache(true);
 
       // Prepare update data with null publishDate
+      const objectName = object.toLowerCase();
       const updateData = {
-        object: object.toLowerCase(),
+        object: objectName,
         payload: {
           id: id,
-          publishDate: null,
+          [PublishFields.incomingFieldFor(objectName)]: null,
         },
       };
 

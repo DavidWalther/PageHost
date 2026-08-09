@@ -1,8 +1,6 @@
 const { Logging } = require('../modules/logging');
-const { SingleStoryEndpoint } = require('./data/query/SingleStoryEndpoint');
-const { ChapterEndpoint } = require('./data/query/ChapterEndpoint');
-const { ParagraphEndpoint } = require('./data/query/ParagraphEndpoint');
 const { FallbackEndpoint } = require('./data/query/FallbackEndpoint');
+const { TypeFreeQueryEndpoint } = require('./data/query/TypeFreeQueryEndpoint');
 
 class DataQueryLogicFactory {
   static getProduct(requestObject) {
@@ -27,17 +25,13 @@ class DataQueryLogicFactory {
     const postgresTable = query.split('/')[0].toLowerCase();
 
     switch (postgresTable) {
-      case 'story':
-        if (requestObject.query.id) {
-          return new SingleStoryEndpoint();
-        } else {
-          return new FallbackEndpoint();
-        }
-      case 'chapter':
-        return new ChapterEndpoint();
-      case 'paragraph':
-        return new ParagraphEndpoint();
+      case 'node':
+      case 'content':
+        return new TypeFreeQueryEndpoint(postgresTable);
       default:
+        // Hier standen bis zum Abschluss der Umstellung `story`, `chapter` und
+        // `paragraph`. Sie sind mit dem alten Datenmodell weggefallen; ein
+        // Aufruf landet jetzt im Fallback wie jeder andere unbekannte Name.
         return new FallbackEndpoint();
     }
   }

@@ -25,18 +25,16 @@ class ActionDelete {
     }
     const tableName = this.table.getTableName()();
     const LOCATION = 'ActionDelete.execute';
-    const sqlStatementTpl = "DELETE FROM {tablename} WHERE id = '{recordId}';";
-    const sqlStatement = sqlStatementTpl
-      .replace('{tablename}', tableName)
-      .replace('{recordId}', this.id);
+    // Der Tabellenname stammt aus einer Tabellen-Definition, die Id aus einer
+    // Anfrage -- deshalb steht der eine im Text und die andere gebunden.
+    const sqlStatement = `DELETE FROM ${tableName} WHERE id = $1;`;
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
       message: `Executing SQL: ${sqlStatement}`,
     });
 
-    const result = await this.pgConnector.executeSql(sqlStatement);
-    return result.rows;
+    return this.pgConnector.executeParameterizedSql(sqlStatement, [this.id]);
   }
 }
 

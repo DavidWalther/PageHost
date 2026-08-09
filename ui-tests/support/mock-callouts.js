@@ -5,9 +5,9 @@
  * ohne echtes Backend (Postgres/Redis) laufen, werden diese Callouts hier per
  * `page.route()` abgefangen und mit deterministischen Mock-Bodies beantwortet.
  *
- * Die Datenformen orientieren sich am echten Datenmodell (Story → Chapter →
- * Paragraph; Story `000s00000000000011` = "Mock Story 1"), damit die App wie
- * mit echten Daten rendert.
+ * Die Datenformen orientieren sich am echten Datenmodell (Knoten mit Kindern
+ * und Inhalten; Wurzelknoten `000n00000000000011`, alte Id
+ * `000s00000000000011`), damit die App wie mit echten Daten rendert.
  *
  * Auth wird nicht gemockt: Ein frischer Browser-Context hat keine Session
  * (`code_exchange_response`), daher nutzt die App plain `fetch` statt
@@ -19,58 +19,6 @@ const MOCK_METADATA = {
   metaTitle: 'Mock Bookstore',
   meta: {},
 };
-
-const MOCK_STORY = {
-  id: '000s00000000000011',
-  name: 'Mock Story 1',
-  sortnumber: 1,
-  publishdate: '2022-01-01 00:00:00',
-  chapters: [
-    {
-      id: '000c00000000000001',
-      storyid: '000s00000000000011',
-      name: 'Mock Chapter 1 for Story 1',
-      sortnumber: 1,
-      publishdate: '2022-01-01 00:00:00',
-    },
-    {
-      id: '000c00000000000002',
-      storyid: '000s00000000000011',
-      name: 'Mock Chapter 2 for Story 1',
-      sortnumber: 2,
-      publishdate: '2022-01-01 00:00:00',
-    },
-  ],
-};
-
-const MOCK_CHAPTER = {
-  id: '000c00000000000001',
-  storyid: '000s00000000000011',
-  name: 'Mock Chapter 1 for Story 1',
-  sortnumber: 1,
-  publishdate: '2022-01-01 00:00:00',
-  paragraphs: [
-    {
-      id: '000p00000000000001',
-      name: 'Mock Paragraph 1 for Chapter 1 of Story 1',
-      sortnumber: 1,
-    },
-  ],
-};
-
-const MOCK_PARAGRAPH = [
-  {
-    id: '000p00000000000001',
-    chapterid: '000c00000000000001',
-    storyid: '000s00000000000011',
-    name: 'Mock Paragraph 1 for Chapter 1 of Story 1',
-    content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    htmlcontent:
-      '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>',
-    sortnumber: 1,
-    publishdate: '2022-01-01 00:00:00',
-  },
-];
 
 // Inhaltsbaum wie vom Endpoint `/api/1.0/contents/all` geliefert:
 // Node = { id, label, name, childnodes: Node[] } (allowlist, siehe
@@ -113,33 +61,152 @@ const MOCK_CONTENTS = {
   ],
 };
 
+// ─── Typfreie Antwortform (/data/query/node, /data/query/content) ───────────
+//
+// Die App liest seit dem Frontend-Umbau über Knoten. Jeder Datensatz trägt
+// **beide** Ids: die neue als `id`, die alte als `legacy_id` — so antwortet
+// auch das Backend. `recordFor` löst eine Anfrage über beide auf, damit ein
+// alter Deep-Link im Test denselben Weg nimmt wie in Wirklichkeit.
+//
+// Der Wurzelknoten hat Kinder und keine Inhalte, seine Kinder haben Inhalte und
+// keine Kinder — genau die Aufteilung, die früher Story und Kapitel hieß.
+
+const MOCK_NODES = {
+  wurzel: {
+    id: '000n00000000000011',
+    legacy_id: '000s00000000000011',
+    name: 'Mock Story 1',
+    description: null,
+    sortnumber: 1,
+    reversed: null,
+    parent_node_id: null,
+    cover_node_id: '000n00000000000001',
+    published_date: '2022-01-01 00:00:00',
+    nodes: [
+      {
+        id: '000n00000000000001',
+        legacy_id: '000c00000000000001',
+        name: 'Mock Chapter 1 for Story 1',
+        description: null,
+        sortnumber: 1,
+        reversed: null,
+        parent_node_id: '000n00000000000011',
+        cover_node_id: null,
+        published_date: '2022-01-01 00:00:00',
+      },
+      {
+        id: '000n00000000000002',
+        legacy_id: '000c00000000000002',
+        name: 'Mock Chapter 2 for Story 1',
+        description: null,
+        sortnumber: 2,
+        reversed: null,
+        parent_node_id: '000n00000000000011',
+        cover_node_id: null,
+        published_date: '2022-01-01 00:00:00',
+      },
+    ],
+    contents: [],
+  },
+  kind1: {
+    id: '000n00000000000001',
+    legacy_id: '000c00000000000001',
+    name: 'Mock Chapter 1 for Story 1',
+    description: null,
+    sortnumber: 1,
+    reversed: null,
+    parent_node_id: '000n00000000000011',
+    cover_node_id: null,
+    published_date: '2022-01-01 00:00:00',
+    nodes: [],
+    contents: [
+      {
+        id: '00cn00000000000001',
+        legacy_id: '000p00000000000001',
+        name: 'Mock Paragraph 1 for Chapter 1 of Story 1',
+        sortnumber: 1,
+        published_date: '2022-01-01 00:00:00',
+      },
+    ],
+  },
+  kind2: {
+    id: '000n00000000000002',
+    legacy_id: '000c00000000000002',
+    name: 'Mock Chapter 2 for Story 1',
+    description: null,
+    sortnumber: 2,
+    reversed: null,
+    parent_node_id: '000n00000000000011',
+    cover_node_id: null,
+    published_date: '2022-01-01 00:00:00',
+    nodes: [],
+    contents: [],
+  },
+};
+
+const MOCK_CONTENT = {
+  id: '00cn00000000000001',
+  legacy_id: '000p00000000000001',
+  name: 'Mock Paragraph 1 for Chapter 1 of Story 1',
+  sortnumber: 1,
+  published_date: '2022-01-01 00:00:00',
+  node_id: '000n00000000000001',
+  active_content_item: '00ci00000000000002',
+  active_type: 'html',
+  items: [
+    {
+      id: '00ci00000000000001',
+      type: 'text',
+      content: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    },
+    {
+      id: '00ci00000000000002',
+      type: 'html',
+      content:
+        '<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>',
+    },
+  ],
+};
+
+/**
+ * Auflösung wie im Backend: eine Id trifft `id` **oder** `legacy_id`.
+ * Unbekannt → leeres Objekt, genau wie der echte Endpunkt.
+ */
+function recordFor(records, url) {
+  const id = new URL(url).searchParams.get('id');
+  return (
+    Object.values(records).find(
+      (record) => record.id === id || record.legacy_id === id
+    ) || {}
+  );
+}
+
+const nodeFor = (url) => recordFor(MOCK_NODES, url);
+const contentFor = (url) => recordFor({ single: MOCK_CONTENT }, url);
+
 /**
  * Registriert alle Callout-Mocks für einen Playwright-`page`.
  * Muss vor der Navigation (`page.goto`) aufgerufen werden.
  */
 async function mockBookstoreCallouts(page) {
+  await page.route('**/data/query/node**', (route) =>
+    route.fulfill({ json: nodeFor(route.request().url()) })
+  );
+  await page.route('**/data/query/content**', (route) =>
+    route.fulfill({ json: contentFor(route.request().url()) })
+  );
   await page.route('**/metadata', (route) =>
     route.fulfill({ json: MOCK_METADATA })
   );
   await page.route('**/api/1.0/contents/**', (route) =>
     route.fulfill({ json: MOCK_CONTENTS })
   );
-  await page.route('**/data/query/story**', (route) =>
-    route.fulfill({ json: MOCK_STORY })
-  );
-  await page.route('**/data/query/chapter**', (route) =>
-    route.fulfill({ json: MOCK_CHAPTER })
-  );
-  await page.route('**/data/query/paragraph**', (route) =>
-    route.fulfill({ json: MOCK_PARAGRAPH })
-  );
 }
 
 module.exports = {
   mockBookstoreCallouts,
   MOCK_METADATA,
-  MOCK_STORY,
-  MOCK_CHAPTER,
-  MOCK_PARAGRAPH,
   MOCK_CONTENTS,
+  MOCK_NODES,
+  MOCK_CONTENT,
 };

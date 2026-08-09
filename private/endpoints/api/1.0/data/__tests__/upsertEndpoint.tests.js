@@ -108,7 +108,11 @@ describe('UpsertEndpoint', () => {
     });
   });
 
-  it('should create a complete record and return the full created record with applicationIncluded', async () => {
+  it('should pass the payload through untouched and return the full created record', async () => {
+    // Die App-Zugehörigkeit setzt seit der Umstellung die Datenschicht: im
+    // alten Modell als Spalte, im neuen als `app_node`-Zeile. Der Endpoint
+    // reicht den Payload nur weiter — geprüft wird die Zuordnung dort, wo sie
+    // entsteht (`LegacyContentRepository` bzw. `NodeContentRepository`).
     // Set up environment with APPLICATION_KEY
     environment.APPLICATION_APPLICATION_KEY = 'test-app-key';
 
@@ -148,16 +152,12 @@ describe('UpsertEndpoint', () => {
       .setResponseObject(res);
     await endpoint.execute();
 
-    // Verify the applicationIncluded was added to the payload before sending to DataFacade
-    const expectedPayloadWithApp = {
+    // Der Payload geht unverändert an die Datenschicht — insbesondere ohne
+    // eine vom Endpoint gesetzte App-Spalte.
+    expect(mockCreateData).toHaveBeenCalledWith({
       object: 'chapter',
-      payload: {
-        ...inputPayload,
-        applicationIncluded: 'test-app-key',
-      },
-    };
-
-    expect(mockCreateData).toHaveBeenCalledWith(expectedPayloadWithApp);
+      payload: inputPayload,
+    });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({
       success: true,

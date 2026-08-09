@@ -28,7 +28,7 @@ pattern to Lit.
 </script>
 ```
 
-Consumer in this app: `public/components/custom-story/custom-story.js` renders a
+Consumer in this app: `public/components/custom-node/custom-node.js` renders a
 combobox instead of chapter buttons once a story has more chapters than
 `chapterButtonsNumberMax`, and navigates on `combobox-select`.
 

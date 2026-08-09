@@ -49,13 +49,8 @@ let mockActionGetExecute = jest.fn().mockResolvedValue([
     chapter_id: 2,
   },
 ]);
-let mockActionConditionId = jest.fn().mockReturnThis();
 let mockActionConditionApplicationKey = jest.fn().mockReturnThis();
-let mockActionConditionPublishDate = jest.fn().mockReturnThis();
-let mockActionConditions = jest.fn().mockReturnThis();
-let mockActionOrderDirection = jest.fn().mockReturnThis();
-let mockActionRightTableSortField = jest.fn().mockReturnThis();
-let mockActionRightTableSortDirection = jest.fn().mockReturnThis();
+let mockActionConditionEquals = jest.fn().mockReturnThis();
 let mockActionCustomConditions = jest.fn().mockReturnThis();
 ActionGet.mockImplementation(() => {
   return {
@@ -63,17 +58,9 @@ ActionGet.mockImplementation(() => {
     setPgConnector: jest.fn().mockReturnThis(),
     setTableName: jest.fn().mockReturnThis(),
     setTableFields: jest.fn().mockReturnThis(),
-    setTable: jest.fn().mockReturnThis(),
-    setRightTable: jest.fn().mockReturnThis(),
-    setRightOrderField: mockActionRightTableSortField,
-    setRightOrderDirection: mockActionRightTableSortDirection,
-    setConditionId: mockActionConditionId,
-    setConditionPublishDate: mockActionConditionPublishDate,
-    setConditions: mockActionConditions,
+    setConditionEquals: mockActionConditionEquals,
     setCustomConditions: mockActionCustomConditions,
-    setOrderDirection: mockActionOrderDirection,
     setConditionApplicationKey: mockActionConditionApplicationKey,
-    setLeftJoin: jest.fn().mockReturnThis(),
   };
 });
 
@@ -102,23 +89,6 @@ describe('DataStorage', () => {
   });
 
   describe('Queries', () => {
-    it('queryParagraphs should call ActionGet and DataCleaner', async () => {
-      dataStorage.setConditionApplicationKey('testApplication');
-      let queryPromise = dataStorage.queryParagraphs('testParagraphId');
-
-      expect(dataStorage).toBeInstanceOf(DataStorage);
-      expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
-        expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionId).toHaveBeenCalledWith('testParagraphId');
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
-          'testApplication'
-        );
-        expect(result).toBeTruthy();
-        expect(dataCleanerSpy).toHaveBeenCalled();
-      });
-    });
-
     it('queryConfiguration should call ActionGet', async () => {
       dataStorage.setConditionApplicationKey('testApplication');
       let queryPromise = dataStorage.queryConfiguration();
@@ -131,116 +101,6 @@ describe('DataStorage', () => {
           'testApplication'
         );
         expect(result).toBeTruthy();
-      });
-    });
-
-    it('queryAllStories should call ActionGet and DataCleaner', async () => {
-      dataStorage.setConditionApplicationKey('testApplication');
-      let queryPromise = dataStorage.queryAllStories();
-
-      expect(dataStorage).toBeInstanceOf(DataStorage);
-      expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
-        expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
-          'testApplication'
-        );
-        expect(result).toBeTruthy();
-      });
-    });
-
-    it('queryAllChapters should call ActionGet with the application key and no publish filter', async () => {
-      mockActionConditionPublishDate.mockClear();
-      dataStorage.setConditionApplicationKey('testApplication');
-      let queryPromise = dataStorage.queryAllChapters();
-
-      expect(dataStorage).toBeInstanceOf(DataStorage);
-      expect(queryPromise).toBeInstanceOf(Promise);
-      return queryPromise.then((result) => {
-        expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
-          'testApplication'
-        );
-        // flat query: no join, no publish-date filtering
-        expect(mockActionConditionPublishDate).not.toHaveBeenCalled();
-        expect(result).toBeTruthy();
-      });
-    });
-
-    it('queryStory should call ActionGet and DataCleaner', async () => {
-      dataStorage.setConditionApplicationKey('testApplication');
-      let queryPromise = dataStorage.queryStory('testId');
-
-      expect(dataStorage).toBeInstanceOf(DataStorage);
-      expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
-        expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionId).toHaveBeenCalledWith('testId');
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
-          'testApplication'
-        );
-        expect(mockActionConditionPublishDate).toHaveBeenCalledWith(
-          new Date().toISOString().split('T')[0]
-        );
-        expect(mockActionRightTableSortField).toHaveBeenCalledWith(
-          'SortNumber'
-        );
-        expect(mockActionRightTableSortDirection).toHaveBeenCalledWith('ASC');
-        expect(dataCleanerSpy).toHaveBeenCalled();
-        expect(result).toBeTruthy();
-        expect(result.id).toBe(1337);
-        expect(result.name).toBe('Test Story');
-        expect(result.chapters).toHaveLength(2);
-        expect(result.chapters[0].name).toBe('Test Chapter');
-        expect(result.chapters[0].id).toBe(1);
-        expect(result.chapters[1].name).toBe('Test Chapter');
-        expect(result.chapters[1].id).toBe(2);
-      });
-    });
-
-    it('queryChapter should return a chapter record with its child paragraphs and call DataCleaner', async () => {
-      mockActionGetExecute.mockResolvedValue([
-        {
-          chapter_id: 1,
-          chapter_name: 'Test Chapter',
-          paragraph_id: 1,
-          paragraph_content: 'Test Paragraph 1',
-        },
-        {
-          chapter_id: 1,
-          chapter_name: 'Test Chapter',
-          paragraph_id: 2,
-          paragraph_content: 'Test Paragraph 2',
-        },
-      ]);
-
-      dataStorage.setConditionApplicationKey('testApplication');
-      let queryPromise = dataStorage.queryChapter('testChapterId');
-
-      expect(dataStorage).toBeInstanceOf(DataStorage);
-      expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
-        expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionConditionId).toHaveBeenCalledWith('testChapterId');
-        expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
-          'testApplication'
-        );
-        expect(mockActionConditionPublishDate).toHaveBeenCalledWith(
-          new Date().toISOString().split('T')[0]
-        );
-        expect(mockActionRightTableSortField).toHaveBeenCalledWith(
-          'SortNumber'
-        );
-        expect(mockActionRightTableSortDirection).toHaveBeenCalledWith('ASC');
-        expect(dataCleanerSpy).toHaveBeenCalled();
-        expect(result).toBeTruthy();
-        expect(result.id).toBe(1);
-        expect(result.name).toBe('Test Chapter');
-        expect(result.paragraphs).toHaveLength(2);
-        expect(result.paragraphs[0].id).toBe(1);
-        expect(result.paragraphs[0].content).toBe('Test Paragraph 1');
-        expect(result.paragraphs[1].id).toBe(2);
-        expect(result.paragraphs[1].content).toBe('Test Paragraph 2');
       });
     });
 
@@ -288,11 +148,14 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionCustomConditions).toHaveBeenCalledTimes(2);
-        expect(mockActionCustomConditions.mock.calls[0][0]).toBe(
-          "key = 'user@example.com'"
+        // Der Anmeldeschlüssel kommt vom Identity Provider und ist damit
+        // fremder Eingabe. Er geht gebunden in die Abfrage, nicht in den Text.
+        expect(mockActionConditionEquals).toHaveBeenCalledWith(
+          'key',
+          'user@example.com'
         );
-        expect(mockActionCustomConditions.mock.calls[1][0]).toBe(
+        expect(mockActionCustomConditions).toHaveBeenCalledTimes(1);
+        expect(mockActionCustomConditions).toHaveBeenCalledWith(
           'active = true'
         );
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
@@ -318,12 +181,9 @@ describe('DataStorage', () => {
       expect(queryPromise).toBeInstanceOf(Promise);
       queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
-        expect(mockActionCustomConditions).toHaveBeenCalledTimes(2);
-        expect(mockActionCustomConditions.mock.calls[0][0]).toBe(
-          "key = 'nonexistent@example.com'"
-        );
-        expect(mockActionCustomConditions.mock.calls[1][0]).toBe(
-          'active = true'
+        expect(mockActionConditionEquals).toHaveBeenCalledWith(
+          'key',
+          'nonexistent@example.com'
         );
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
           'testApplication'
@@ -341,24 +201,6 @@ describe('DataStorage', () => {
       new Error('write CONNECTION_ENDED localhost:5432'),
       { code: 'CONNECTION_ENDED' }
     );
-
-    it('queryAllStories rejects when the underlying query fails', async () => {
-      dataStorage.setConditionApplicationKey('testApplication');
-      mockActionGetExecute.mockRejectedValueOnce(connectionError);
-
-      await expect(dataStorage.queryAllStories()).rejects.toThrow(
-        'CONNECTION_ENDED'
-      );
-    }, 2000);
-
-    it('queryAllChapters rejects when the underlying query fails', async () => {
-      dataStorage.setConditionApplicationKey('testApplication');
-      mockActionGetExecute.mockRejectedValueOnce(connectionError);
-
-      await expect(dataStorage.queryAllChapters()).rejects.toThrow(
-        'CONNECTION_ENDED'
-      );
-    }, 2000);
   });
 
   describe('Updates', () => {
@@ -381,7 +223,7 @@ describe('DataStorage', () => {
       const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
       const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
 
-      dataStorage.updateData('paragraph', mockPayload).then((result) => {
+      dataStorage.updateData('identity', mockPayload).then((result) => {
         expect(ActionUpdate).toHaveBeenCalled();
         expect(mockActionUpdateExecute).toHaveBeenCalled();
         expect(result).toEqual({ id: '1234' });
@@ -394,7 +236,7 @@ describe('DataStorage', () => {
       const dataStorage = new DataStorage(MOCK_ENVIRONMENT);
       const mockPayload = { id: '1234', key: 'testKey', value: 'testValue' };
 
-      dataStorage.updateData('paragraph', mockPayload).catch((error) => {
+      dataStorage.updateData('identity', mockPayload).catch((error) => {
         expect(ActionUpdate).toHaveBeenCalled();
         expect(mockActionUpdateExecute).toHaveBeenCalled();
         expect(error.message).toBe('Update failed');

@@ -16,8 +16,33 @@
 - open navigation
 - load node via navigation
   
-
 ### actions
 
 - copy link to clipboad
+
+## authenticated && authorized user
+
+- edit node
+- create node
+- delete node
+- create content_node
+- edit content_node
+- delete content_node
+- create content_item
+- edit content_item
+- delete content_item
+- publish node
+- unpublish node
+- publish content_node
+- unpublish content_node
+- edit paragraph (depricated)
+- create paragraph (depricated)
+- delete paragraph (depricated)
+- publish paragraph (depricated)
+- unpublish paragraph (depricated)
+- edit chapter (depricated)
+- create chapter (depricated)
+- delete chapter (depricated)
+- publish chapter (depricated)
+- unpublish chapter (depricated)
 

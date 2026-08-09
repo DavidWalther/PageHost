@@ -1,7 +1,10 @@
 const { Logging } = require('../modules/logging.js');
 const { DataCache2 } = require('./DataCache/DataCache.js');
 const { DataStorage } = require('./DataStorage/DataStorage.js');
-const { DataCleaner } = require('../modules/DataCleaner.js');
+const {
+  NodeContentRepository,
+} = require('./repositories/NodeContentRepository.js');
+const { ContentRepository } = require('./repositories/ContentRepository.js');
 
 class DataFacadePromise {
   constructor(environmentObject) {
@@ -74,44 +77,67 @@ class DataFacadeSync {
     return this._skipCache === true ? true : false; // this enforces a boolean value
   }
 
+  /**
+   * Quelle der Inhalte — Knoten, Inhalte und der Baum.
+   *
+   * `configuration` und `identity` laufen bewusst nicht darüber: beide waren
+   * von der Umstellung nicht betroffen und sprechen direkt mit `DataStorage`
+   * (`createDirectStorage`). Wer zuständig ist, entscheidet
+   * `ContentRepository.owns()` — beim Lesen wie beim Schreiben.
+   */
+  createContentRepository() {
+    return new NodeContentRepository(this.environment).setApplicationKey(
+      this.environment.APPLICATION_APPLICATION_KEY
+    );
+  }
+
+  /**
+   * `DataStorage` für alles, was **nicht** Inhalt ist: `configuration` und
+   * `identity`.
+   *
+   * Beide Tabellen sind von der Umstellung nicht betroffen und bleiben
+   * unverändert beschreibbar — `identity` trägt den Refresh-Token und ist damit
+   * Teil der Anmeldung, nicht des Inhaltsmodells.
+   */
+  createDirectStorage() {
+    const dataStorage = new DataStorage(this.environment);
+    dataStorage.setConditionApplicationKey(
+      this.environment.APPLICATION_APPLICATION_KEY
+    );
+    return dataStorage;
+  }
+
+  /**
+   * Tabellen-Definition für die Objekte, die nicht zum Inhalt gehören.
+   * `identity` wird nirgends angelegt — nur gelesen und geändert.
+   */
+  createDirectTable(object) {
+    switch (String(object).toLowerCase()) {
+      case 'configuration':
+        return new (require('./tables/configuration').TableConfiguration)();
+      default:
+        throw new Error(`Invalid table name: ${object}`);
+    }
+  }
+
   async getData(parameterObject) {
     if (parameterObject.request.table == 'configuration') {
       return this.getConfigurations();
     }
-    if (parameterObject.request.table == 'paragraph') {
-      let recordId = parameterObject?.request?.id;
-
-      if (!this.getSkipCache()) {
-        return this.getParagraphs(recordId);
-      }
-      if (this.getSkipCache()) {
-        return this.getParagraphWithoutCache(parameterObject);
-      }
-    }
     if (
-      parameterObject.request.table == 'story' &&
-      parameterObject.request.id
+      parameterObject.request.table == 'node' ||
+      parameterObject.request.table == 'content'
     ) {
-      let recordId = parameterObject?.request?.id;
-
-      // Check if 'edit' scope is present to automatically skip cache
-      const hasEditScope = this.scopes && this.scopes.includes('edit');
-
-      if (!this.getSkipCache() && !hasEditScope) {
-        return this.getStory(recordId);
-      }
-      if (this.getSkipCache() || hasEditScope) {
-        return this.getStoryWithoutCache(parameterObject);
-      }
-    }
-    if (parameterObject.request.table == 'chapter') {
-      let recordId = parameterObject?.request?.id;
       if (!this.getSkipCache()) {
-        return this.getChapter(recordId);
+        return this.getTypeFree(
+          parameterObject.request.table,
+          parameterObject?.request?.id
+        );
       }
-      if (this.getSkipCache()) {
-        return this.getChapterWithoutCache(parameterObject);
-      }
+      return this.getTypeFreeWithoutCache(
+        parameterObject.request.table,
+        parameterObject
+      );
     }
     if (parameterObject.request.table == 'identity') {
       // Identity queries always bypass cache for data freshness
@@ -139,15 +165,12 @@ class DataFacadeSync {
       message: `Updating data for object: ${object}`,
     });
 
-    const dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
-
     try {
       // the id vanishes on saving to postgres, so we need to save it again
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      let updatedData = await dataStorage.updateData(object, payload);
+      let updatedData = ContentRepository.owns(object)
+        ? await this.createContentRepository().updateRecord(object, payload)
+        : await this.createDirectStorage().updateData(object, payload);
 
       if (!this.getSkipCache()) {
         const cache = new DataCache2(this.environment);
@@ -187,31 +210,14 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Creating data for object: ${object}`,
     });
-    const dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
     try {
       // Always skip cache for creation
-      let tableName = object;
-      let table;
-      switch (tableName) {
-        case 'configuration':
-          table = new (require('./tables/configuration').TableConfiguration)();
-          break;
-        case 'paragraph':
-          table = new (require('./tables/paragraph').TableParagraph)();
-          break;
-        case 'story':
-          table = new (require('./tables/story').TableStory)();
-          break;
-        case 'chapter':
-          table = new (require('./tables/chapter').TableChapter)();
-          break;
-        default:
-          throw new Error(`Invalid table name: ${tableName}`);
-      }
-      const createdRecord = await dataStorage.createRecord(table, payload);
+      const createdRecord = ContentRepository.owns(object)
+        ? await this.createContentRepository().createRecord(object, payload)
+        : await this.createDirectStorage().createRecord(
+            this.createDirectTable(object),
+            payload
+          );
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
@@ -240,28 +246,17 @@ class DataFacadeSync {
       location: LOCATION,
       message: `Deleting data for object: ${object}, id: ${id}`,
     });
-    const dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
     try {
-      await dataStorage.deleteData(object, id);
-      // Optionally, remove from cache
-      if (!this.getSkipCache()) {
-        const cache = new DataCache2(this.environment);
-        await cache.del(id);
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Data deleted and cache cleared for id: ${id}`,
-        });
-      } else {
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Skipping cache delete for id: ${id}`,
-        });
+      if (!ContentRepository.owns(object)) {
+        await this.createDirectStorage().deleteData(object, id);
+        return;
       }
+
+      const removed = await this.createContentRepository().deleteRecord(
+        object,
+        id
+      );
+      await this.clearCacheFor(removed, id);
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',
@@ -270,6 +265,75 @@ class DataFacadeSync {
         error,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Räumt die Cache-Einträge eines Löschvorgangs ab.
+   *
+   * **Unabhängig von `skipCache`.** Das war einmal anders: der
+   * `DeleteEndpoint` setzt `skipCache(true)`, und daran hing auch das
+   * Aufräumen — der gelöschte Datensatz blieb bis zum Ablauf der Frist im
+   * Cache und wurde weiter ausgeliefert. `skipCache` heißt „lies nicht aus dem
+   * Cache", nicht „lass Gelöschtes darin stehen".
+   *
+   * Abgeräumt wird, was die Quelle **tatsächlich** entfernt hat: beim Löschen
+   * eines Knotens ist das der ganze Teilbaum samt seiner Inhalte. Jeder
+   * Datensatz wird unter beiden Ids gelöscht — ein Eintrag kann unter der alten
+   * angelegt worden sein, wenn ein Deep-Link von früher ihn geholt hat.
+   */
+  async clearCacheFor(removed, requestedId) {
+    const LOCATION = 'DataFacadeSync.clearCacheFor';
+    const cache = new DataCache2(this.environment);
+    const keys = new Set();
+
+    const collect = (table, records) => {
+      (records || []).forEach((record) => {
+        [record.id, record.legacy_id].forEach((value) => {
+          if (value) {
+            keys.add(this.cacheKeyFor(table, value));
+          }
+        });
+      });
+    };
+    collect('node', removed?.nodes);
+    collect('content', removed?.contents);
+
+    // Die angefragte Id kann eine dritte Schreibweise sein — etwa die alte,
+    // während der Datensatz unter der neuen abgelegt wurde.
+    keys.add(this.cacheKeyFor('node', requestedId));
+    keys.add(this.cacheKeyFor('content', requestedId));
+
+    // Ein gelöschter Knoten ändert den Inhaltsbaum.
+    keys.add('contentsTree');
+
+    await Promise.all([...keys].map((key) => cache.del(key)));
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Cleared ${keys.size} cache keys after delete`,
+    });
+  }
+
+  /**
+   * Schreibt in den Cache und verzeiht, wenn das nicht geht.
+   *
+   * Die Daten sind an dieser Stelle bereits gelesen; ein nicht erreichbarer
+   * Redis ist ein Grund, langsamer zu werden, kein Grund, die Antwort
+   * fallenzulassen. Vorher stand hier ein nicht abgewartetes `cache.set` —
+   * dessen Ablehnung fand niemanden, der sie fing, und beendete den Prozess.
+   */
+  async writeCache(cache, key, value) {
+    const LOCATION = 'DataFacadeSync.writeCache';
+    try {
+      await cache.set(key, value);
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: `Failed to write cache key ${key}: ${error?.message || error}`,
+        error,
+      });
     }
   }
 
@@ -293,76 +357,12 @@ class DataFacadeSync {
         this.environment.APPLICATION_APPLICATION_KEY
       );
       product = await dataStorage.queryConfiguration();
-      cache.set('metadata', product);
+      await this.writeCache(cache, 'metadata', product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
         message: `Metadata found in cache`,
-      });
-    }
-    return product;
-  }
-
-  async getParagraphs(recordId) {
-    const LOCATION = 'DataFacadeSync.getParagraphs';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No paragraphs in cache, querying database`,
-      });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryParagraphs(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Paragraphs found in cache`,
-      });
-    }
-    return product;
-  }
-
-  async getParagraphWithoutCache(parameterObject) {
-    let recordId = parameterObject?.request?.id;
-    let publishDate = parameterObject?.request?.publishDate;
-    const LOCATION = 'DataFacadeSync.getParagraphWithoutCache';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying paragraphs for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
-    if (publishDate !== undefined) {
-      dataStorage.setConditionPublishDate(publishDate);
-    }
-    let product = await dataStorage.queryParagraphs(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No paragraphs in database`,
-      });
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Paragraphs found in database`,
       });
     }
     return product;
@@ -384,7 +384,7 @@ class DataFacadeSync {
         message: `No contents tree in cache, building from database`,
       });
       product = await this.buildContentsTree();
-      cache.set('contentsTree', product);
+      await this.writeCache(cache, 'contentsTree', product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',
@@ -406,181 +406,78 @@ class DataFacadeSync {
   }
 
   /**
-   * Assembles the full node tree (stories with nested chapters) from flat,
-   * per-level queries. The tree is intentionally unfiltered (published and
-   * unpublished alike); the publish filter runs later, at delivery time.
+   * Vollständiger Inhaltsbaum, bewusst ungefiltert (veröffentlicht und
+   * unveröffentlicht) — der Publish-Filter läuft erst bei der Auslieferung.
+   *
+   * Der Zusammenbau selbst liegt im Repository: er hängt am Datenmodell und
+   * sieht in der neuen Quelle grundlegend anders aus (rekursive CTE statt
+   * flacher Abfragen je Ebene).
    */
   async buildContentsTree() {
-    // Each query runs with closeConnection, so it ends its DataStorage's
-    // connection. Use a fresh DataStorage (= fresh connection) per query to
-    // avoid writing to an already-closed connection (CONNECTION_ENDED).
-    const createDataStorage = () => {
-      const dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      return dataStorage;
-    };
-
-    let stories = await createDataStorage().queryAllStories();
-    let chapters = await createDataStorage().queryAllChapters();
-
-    let chaptersByStory = {};
-    chapters.forEach((chapter) => {
-      let storyId = chapter.storyid;
-      if (!chaptersByStory[storyId]) {
-        chaptersByStory[storyId] = [];
-      }
-      chaptersByStory[storyId].push(chapter);
-    });
-
-    stories.forEach((story) => {
-      let storyChapters = chaptersByStory[story.id] || [];
-      storyChapters.sort(
-        (first, second) => first.sortnumber - second.sortnumber
-      );
-      story.chapters = storyChapters;
-    });
-    stories.sort((first, second) => first.sortnumber - second.sortnumber);
-
-    new DataCleaner().removeApplicationKeys(stories);
-    return stories;
+    return this.createContentRepository().getContentsTree();
   }
 
-  async getStory(recordId) {
-    const LOCATION = 'DataFacadeSync.getStory';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No story in cache, querying database`,
-      });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryStory(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Story found in cache`,
-      });
-    }
-    return product;
+  /**
+   * Lesepfad der typfreien Antwortform (`node` / `content`).
+   *
+   * Eine Methode für beide, weil sich die alte Dreiteilung genau hier auflöst:
+   * ein Knoten ist ein Knoten, gleich ob er früher Story oder Kapitel hieß.
+   * Was bleibt, ist die Unterscheidung Knoten/Inhalt — und die ist eine Zeile.
+   *
+   * Der Cache-Schlüssel trägt die Form im Namen (`node:<id>`). Ohne das würde
+   * ein alter Deep-Link, der über beide Wege hereinkommt, sich seinen Eintrag
+   * mit der alten Form teilen.
+   */
+  cacheKeyFor(table, recordId) {
+    return `${table}:${recordId}`;
   }
 
-  async getStoryWithoutCache(parameterObject) {
-    let recordId = parameterObject?.request?.id;
-    let publishDate = parameterObject?.request?.publishDate;
-    const LOCATION = 'DataFacadeSync.getStoryWithoutCache';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying story for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
-
-    // Check if 'edit' scope is present to skip publishDate filtering
-    const hasEditScope = this.scopes && this.scopes.includes('edit');
-
+  async readTypeFree(table, recordId, publishDate) {
+    const repository = this.createContentRepository();
     if (publishDate !== undefined) {
-      dataStorage.setConditionPublishDate(publishDate);
-    } else if (hasEditScope) {
-      // Skip publishDate filtering if edit scope is present by setting publishDate to null
-      dataStorage.setConditionPublishDate(null);
+      repository.setPublishDate(publishDate);
     }
+    return table === 'node'
+      ? repository.getNode(recordId)
+      : repository.getContent(recordId);
+  }
 
-    let product = await dataStorage.queryStory(recordId);
+  async getTypeFree(table, recordId) {
+    const LOCATION = 'DataFacadeSync.getTypeFree';
+    const cacheKey = this.cacheKeyFor(table, recordId);
+    const cache = new DataCache2(this.environment);
+    let product = await cache.get(cacheKey);
     if (!product) {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
-        message: `No story found in database`,
+        message: `No ${table} in cache, querying database: ${recordId}`,
       });
+      product = await this.readTypeFree(table, recordId);
+      await this.writeCache(cache, cacheKey, product);
     } else {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
-        message: `Story found in database`,
+        message: `${table} found in cache: ${recordId}`,
       });
     }
     return product;
   }
 
-  async getChapter(recordId) {
-    const LOCATION = 'DataFacadeSync.getChapter';
+  async getTypeFreeWithoutCache(table, parameterObject) {
+    const LOCATION = 'DataFacadeSync.getTypeFreeWithoutCache';
+    const recordId = parameterObject?.request?.id;
     Logging.debugMessage({
       severity: 'FINEST',
       location: LOCATION,
-      message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
+      message: `Querying ${table} ${recordId} for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
     });
-    let cache = new DataCache2(this.environment);
-    let product = await cache.get(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No chapter in cache, querying database`,
-      });
-      let dataStorage = new DataStorage(this.environment);
-      dataStorage.setConditionApplicationKey(
-        this.environment.APPLICATION_APPLICATION_KEY
-      );
-      product = await dataStorage.queryChapter(recordId);
-      cache.set(recordId, product);
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Chapter found in cache`,
-      });
-    }
-    return product;
-  }
-
-  async getChapterWithoutCache(parameterObject) {
-    let recordId = parameterObject?.request?.id;
-    const LOCATION = 'DataFacadeSync.getChapterWithoutCache';
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Querying chapter for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
-    });
-    let dataStorage = new DataStorage(this.environment);
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
+    return this.readTypeFree(
+      table,
+      recordId,
+      parameterObject?.request?.publishDate
     );
-    let publishDate = parameterObject?.request?.publishDate;
-    if (publishDate !== undefined) {
-      dataStorage.setConditionPublishDate(publishDate);
-    }
-    let product = await dataStorage.queryChapter(recordId);
-    if (!product) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No chapter in database`,
-      });
-    } else {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `Chapter found in database`,
-      });
-    }
-    return product;
   }
 
   async getIdentityByKeyWithoutCache(parameterObject) {
@@ -688,4 +585,6 @@ class DataFacade {
   }
 }
 
-module.exports = { DataFacade };
+// `DataFacadeSync` wird mit exportiert, damit die Wahl der Lesequelle direkt
+// prüfbar ist, ohne den Umweg über eine Abfrage zu nehmen.
+module.exports = { DataFacade, DataFacadeSync };

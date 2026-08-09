@@ -13,19 +13,37 @@ function buildRawTree() {
       id: 'story-2',
       name: 'Story B',
       sortnumber: 2,
-      publishdate: PAST,
-      chapters: [
-        { id: 'c-b1', storyid: 'story-2', name: 'Chapter B1', sortnumber: 1, publishdate: PAST },
+      published_date: PAST,
+      nodes: [
+        {
+          id: 'c-b1',
+          storyid: 'story-2',
+          name: 'Chapter B1',
+          sortnumber: 1,
+          published_date: PAST,
+        },
       ],
     },
     {
       id: 'story-1',
       name: 'Story A',
       sortnumber: 1,
-      publishdate: PAST,
-      chapters: [
-        { id: 'c-a1', storyid: 'story-1', name: 'Chapter A1', sortnumber: 1, publishdate: PAST },
-        { id: 'c-a2', storyid: 'story-1', name: 'Chapter A2 (draft)', sortnumber: 2, publishdate: FUTURE },
+      published_date: PAST,
+      nodes: [
+        {
+          id: 'c-a1',
+          storyid: 'story-1',
+          name: 'Chapter A1',
+          sortnumber: 1,
+          published_date: PAST,
+        },
+        {
+          id: 'c-a2',
+          storyid: 'story-1',
+          name: 'Chapter A2 (draft)',
+          sortnumber: 2,
+          published_date: FUTURE,
+        },
       ],
     },
   ];

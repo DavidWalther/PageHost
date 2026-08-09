@@ -91,6 +91,36 @@ class StoryCacheKeyGenerator extends GlobalCacheKeyGenerator {
   }
 }
 
+/**
+ * Schlüsselräume der typfreien Antwortform (`/data/query/node`, `/data/query/content`).
+ *
+ * Sie hängen **nicht** am Id-Präfix, sondern an einem ausdrücklichen Marker im
+ * logischen Schlüssel (`node:<id>`), und das ist der Punkt: dieselbe Id kann in
+ * beiden Formen angefragt werden — ein alter Deep-Link `000s…` einmal über
+ * `/data/query/story` und einmal über `/data/query/node`. Ohne eigenen Raum
+ * bekäme der zweite Aufruf die Antwort des ersten aus dem Cache, in der
+ * falschen Form.
+ */
+class NodeFormatCacheKeyGenerator extends GlobalCacheKeyGenerator {
+  constructor(environmentVars, space) {
+    super(environmentVars);
+    this.space = space;
+  }
+
+  recordId(key) {
+    return key.substring(key.indexOf(':') + 1);
+  }
+
+  generateCacheKey(key) {
+    return `${this.generateGlobalKeyPrefix()}-${this.space}-${this.recordId(key)}`;
+  }
+
+  /** Kein Altbestand: diese Schlüssel entstehen erst mit der neuen Form. */
+  generateCacheKeyDeprecated() {
+    return null;
+  }
+}
+
 class ContentsTreeCacheKeyGenerator extends GlobalCacheKeyGenerator {
   constructor(environmentVars) {
     super(environmentVars);
@@ -163,6 +193,16 @@ class CacheKeyGeneratorFactory {
     }
 
     // then check for keys that start with a specific prefix
+    if (key.startsWith('node:') || key.startsWith('content:')) {
+      const space = key.startsWith('node:') ? 'nodes' : 'contents';
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Creating NodeFormatCacheKeyGenerator for space ${space}`,
+      });
+      return new NodeFormatCacheKeyGenerator(this.environmentVars, space);
+    }
+
     let idPrefix = key.substring(0, 4);
 
     switch (idPrefix) {

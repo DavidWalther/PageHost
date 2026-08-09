@@ -158,64 +158,20 @@ function fetchDatabase(eventpayload) {
 
   return new Promise((resolve, reject) => {
     switch (eventpayload.object) {
-      case 'story': {
-        let storyId = eventpayload.id;
-        if (storyId) {
-          let fetchPromises = [];
-          fetchPromises.push(
-            doFetch(`/data/query/story?id=${storyId}`, preparedHeaders).then(
-              (storyResponse) => {
-                return storyResponse.json();
-              }
-            )
-          );
-
-          Promise.all(fetchPromises).then((response) => {
-            let story = response[0];
-
-            if (story) {
-              resolve(story);
-            } else {
-              resolve();
-            }
-          });
-        } else {
-          resolve();
-        }
-        break;
-      }
-      case 'chapter': {
-        let chapterId = eventpayload.id;
-        let fetchPromises = [];
-        fetchPromises.push(
-          doFetch(`/data/query/chapter?id=${chapterId}`, preparedHeaders).then(
-            (chapterResponse) => {
-              return chapterResponse.json();
-            }
-          )
-        );
-
-        Promise.all(fetchPromises).then((response) => {
-          let chapterResponse = response[0];
-          resolve(chapterResponse);
-        });
-        break;
-      }
-      case 'paragraph': {
-        let paragraphId = eventpayload.id;
-        doFetch(`/data/query/paragraph?id=${paragraphId}`, preparedHeaders)
-          .then((paragraphResponse) => paragraphResponse.json())
-          .then((paragraph) => {
-            if (!paragraph || paragraph.length === 0) {
-              reject('No paragraph found');
-            }
-
-            if (Array.isArray(paragraph)) {
-              resolve(paragraph[0]);
-            } else if (typeof paragraph === 'object') {
-              resolve(paragraph);
-            }
-          });
+      // Ein Knoten mit seinen Kindern, ein Inhalt mit seinen
+      // Repraesentationen. Der Endpunkt liefert genau einen Datensatz; ein
+      // unbekannter oder nicht sichtbarer ist ein leeres Objekt, kein Fehler.
+      case 'node':
+      case 'content': {
+        doFetch(
+          `/data/query/${eventpayload.object}?id=${encodeURIComponent(
+            eventpayload.id
+          )}`,
+          preparedHeaders
+        )
+          .then((response) => response.json())
+          .then(resolve)
+          .catch(reject);
         break;
       }
       case 'contents': {

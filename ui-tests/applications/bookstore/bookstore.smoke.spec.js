@@ -27,10 +27,8 @@ test.describe('Bookstore smoke', () => {
     // Grundlayout ist sichtbar (Playwright durchdringt offene Shadow Roots).
     await expect(page.locator('#bookshelf')).toBeVisible();
 
-    // Gemockter Story-Callout ist bis in die UI durchgeflossen:
-    // custom-story rendert den Story-Namen in seiner Titelzeile.
-    await expect(page.locator('#span-chapter-title')).toHaveText(
-      'Mock Story 1'
-    );
+    // Gemockter Knoten-Callout ist bis in die UI durchgeflossen: der obere
+    // custom-node rendert seinen Namen in der Titelzeile.
+    await expect(page.locator('#node-name').first()).toHaveText('Mock Story 1');
   });
 });

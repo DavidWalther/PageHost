@@ -222,8 +222,8 @@ class RefreshEndpoint {
       .setPgConnector(dataStorage.pgConnector)
       .setTableName(tableIdentity.tableName)
       .setTableFields(tableIdentity.tableFields)
-      .setCustomConditions(`refreshtoken->>'token' = '${tokenId}'`)
-      .setCustomConditions(`active = true`)
+      .setConditionEquals("refreshtoken->>'token'", tokenId)
+      .setCustomConditions('active = true')
       .setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
 
     const result = await actionGet.execute();

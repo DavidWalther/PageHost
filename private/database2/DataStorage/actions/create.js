@@ -1,11 +1,13 @@
 const { Logging } = require('../../../modules/logging');
-const { Sanitizer } = require('./sanitizer');
 
 /**
- * ActionCreate class is responsible for constructing and executing SQL INSERT statements.
- * It's agnostic to the specific database schema and can be used to insert records into any table by setting the appropriate values.
+ * Baut und fuehrt ein INSERT aus -- schemaunabhaengig, ueber `setValue`.
  *
- * It uses the Sanitizer module to sanitize input values to prevent SQL injection attacks.
+ * **Werte werden gebunden.** Frueher liefen sie durch den `Sanitizer` und
+ * wurden dann in den SQL-Text geschrieben; das Verdoppeln der Anfuehrungs-
+ * zeichen war der Ersatz fuer eine Bindung. Mit `$1`, `$2`, ... braucht es ihn
+ * nicht mehr, und der Wert kommt unveraendert in der Spalte an -- `trim()` und
+ * verdoppelte Apostrophe inklusive.
  */
 
 class ActionCreate {
@@ -43,33 +45,31 @@ class ActionCreate {
       );
     }
 
-    const sanitizedValue = Sanitizer.sanitize(value);
-    if (typeof value === 'string') {
-      this.values[key] = `'${sanitizedValue}'`;
-    } else if (
-      typeof value === 'number' ||
-      value === null ||
-      typeof value === 'boolean'
+    if (
+      typeof value !== 'string' &&
+      typeof value !== 'number' &&
+      typeof value !== 'boolean' &&
+      value !== null
     ) {
-      this.values[key] = sanitizedValue;
-    } else {
       throw new Error('Unsupported value type');
     }
+    this.values[key] = value;
     return this;
   }
 
   async execute() {
     const tableName = this.table.getTableName()();
     const tableFields = Object.keys(this.values);
-    const fieldValues = tableFields.map((field) => `${this.values[field]}`);
-    const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${fieldValues.join(', ')}) RETURNING *;`;
+    const placeholders = tableFields.map((_, index) => `$${index + 1}`);
+    const parameters = tableFields.map((field) => this.values[field]);
+    const sqlStatement = `INSERT INTO ${tableName} (${tableFields.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *;`;
 
     Logging.debugMessage({
       severity: 'FINEST',
       location: 'ActionCreate.execute',
       message: `Executing SQL: ${sqlStatement}`,
     });
-    return this.pgConnector.executeSql(sqlStatement);
+    return this.pgConnector.executeParameterizedSql(sqlStatement, parameters);
   }
 }
 

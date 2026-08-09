@@ -1,14 +1,18 @@
 const { ActionGet } = require('../actions/get.js');
 const { PostgresActions } = require('../pgConnector.js');
-const { TableStory } = require('../../tables/story.js');
-const { TableParagraph } = require('../../tables/paragraph.js');
-const { TableChapter } = require('../../tables/chapter.js');
 
-// ToDos:
-// - Order
-//- Table class as parameter
+/**
+ * `ActionGet` liest aus `configuration` und `identity` — den beiden Tabellen,
+ * die nicht zum Inhalt gehören.
+ *
+ * Diese Suite prüfte einmal LEFT JOINs, Publish-Filter je Tabellenseite und
+ * Sortier-Strategien. All das gehörte zum alten Datenmodell und ist mit ihm
+ * verschwunden. Was bleibt, ist eine Abfrage über eine Tabelle — und die
+ * Zusicherung, die dabei am meisten zählt: **Werte stehen nicht im SQL-Text.**
+ */
 
 jest.mock('../pgConnector.js');
+jest.mock('../../../modules/logging');
 
 const MOCK_ENVIRONMENT = {
   LOGGING_SEVERITY_LEVEL: 'DEBUG',
@@ -20,496 +24,164 @@ const MOCK_ENVIRONMENT = {
   PG_LOCAL_DB: 'true',
 };
 
-const MOCK_CONFIGURATION = [
-  { key: 'firstname', value: 'Tom' },
-  { key: 'lastname', value: 'Jones' },
-];
-let mockExecuteSql = jest.fn().mockResolvedValue();
-PostgresActions.mockImplementation(() => {
-  return {
-    executeSql: mockExecuteSql,
-    connect: jest.fn(),
-    query: jest.fn().mockResolvedValue([]),
-  };
+let executeParameterizedSql;
+
+beforeEach(() => {
+  executeParameterizedSql = jest.fn().mockResolvedValue([]);
+  PostgresActions.mockReset();
+  PostgresActions.mockImplementation(() => ({
+    executeParameterizedSql,
+  }));
 });
 
-describe('SQL-Actions', () => {
-  beforeEach(() => {
-    PostgresActions.mockClear();
-    mockExecuteSql.mockClear();
-    process.env = MOCK_ENVIRONMENT;
-  });
+function newAction() {
+  return new ActionGet()
+    .setPgConnector(new PostgresActions(MOCK_ENVIRONMENT))
+    .setTableName('identity')
+    .setTableFields(['id', 'key', 'active']);
+}
 
-  describe('get', () => {
-    it('should create a proper SQL criteria for application key', () => {
-      mockExecuteSql = jest
-        .fn()
-        .mockResolvedValue([
-          { Id: 1337, Name: 'TestName', Value: 'TestValue' },
-        ]);
-      const actionGet = new ActionGet();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTableName('TestTable');
-      actionGet.setTableFields(['Id', 'Name', 'Value', 'coverId']);
-      actionGet.setConditionApplicationKey('TestApplicationKey');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
-        "SELECT Id, Name, Value, coverId FROM TestTable WHERE ((applicationIncluded LIKE '%' || 'TestApplicationKey' || '%' OR applicationIncluded = '*') AND (applicationExcluded isNull OR applicationExcluded NOT LIKE '%' || 'TestApplicationKey' || '%'))"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+/** Das zuletzt abgesetzte Statement mit seinen gebundenen Werten. */
+function lastCall() {
+  const [sql, parameters, options] = executeParameterizedSql.mock.calls.at(-1);
+  return { sql, parameters, options };
+}
+
+describe('ActionGet', () => {
+  describe('Abfrage', () => {
+    it('wählt die angegebenen Felder aus der angegebenen Tabelle', async () => {
+      await newAction().execute();
+
+      expect(lastCall().sql).toBe('SELECT id, key, active FROM identity');
     });
 
-    it('should create a proper SQL statement with combined criteria', () => {
-      mockExecuteSql = jest
-        .fn()
-        .mockResolvedValue([
-          { Id: 1337, Name: 'TestName', Value: 'TestValue' },
-        ]);
-      const actionGet = new ActionGet();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTableName('TestTable');
-      actionGet.setTableFields(['Id', 'Name', 'Value', 'coverId']);
-      actionGet.setConditionId('1337');
-      actionGet.setConditionPublishDate('2021-01-01');
-      actionGet.setConditionApplicationKey('TestApplicationKey');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      expect(mockExecuteSql).toHaveBeenCalled();
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
-        "SELECT Id, Name, Value, coverId FROM TestTable WHERE (id = '1337' AND PublishDate <= '2021-01-01 00:00:00' AND (applicationIncluded LIKE '%' || 'TestApplicationKey' || '%' OR applicationIncluded = '*') AND (applicationExcluded isNull OR applicationExcluded NOT LIKE '%' || 'TestApplicationKey' || '%'))"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+    it('wählt alles, wenn keine Felder angegeben sind', async () => {
+      await new ActionGet()
+        .setPgConnector(new PostgresActions(MOCK_ENVIRONMENT))
+        .setTableName('identity')
+        .execute();
+
+      expect(lastCall().sql).toBe('SELECT * FROM identity');
     });
 
-    it('should create a proper SQL statement with a left join', () => {
-      mockExecuteSql = jest
-        .fn()
-        .mockResolvedValue([
-          { Id: 1337, Name: 'TestName', Value: 'TestValue' },
-        ]);
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setConditionApplicationKey('TestApplicationKey');
-      let joinOnCondition = 'TestTable.Id = TestChildTable.parentId';
-      actionGet.setLeftJoin(new TableChapter(), joinOnCondition);
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      expect(mockExecuteSql).toHaveBeenCalled();
-      // Updated expectation: right table application conditions should now be in JOIN ON clause
-      expect(mockExecuteSql.mock.calls[0][0]).toEqual(
-        "SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON (TestTable.Id = TestChildTable.parentId AND (Chapter.applicationIncluded LIKE '%' || 'TestApplicationKey' || '%' OR Chapter.applicationIncluded = '*') AND (Chapter.applicationExcluded isNull OR Chapter.applicationExcluded NOT LIKE '%' || 'TestApplicationKey' || '%')) WHERE ((Story.applicationIncluded LIKE '%' || 'TestApplicationKey' || '%' OR Story.applicationIncluded = '*') AND (Story.applicationExcluded isNull OR Story.applicationExcluded NOT LIKE '%' || 'TestApplicationKey' || '%'))"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+    it('nimmt Tabellenname und Felder auch als Funktion entgegen', async () => {
+      // Die Tabellen-Definitionen liefern beides als Getter.
+      await new ActionGet()
+        .setPgConnector(new PostgresActions(MOCK_ENVIRONMENT))
+        .setTableName(() => 'configuration')
+        .setTableFields(() => ['key', 'value'])
+        .execute();
+
+      expect(lastCall().sql).toBe('SELECT key, value FROM configuration');
+    });
+
+    it('reicht keine Verbindungs-Option mehr mit', async () => {
+      // Der Pool ist prozessweit; eine einzelne Abfrage darf ihn nicht beenden.
+      await newAction().execute();
+
+      expect(lastCall().options).toBeUndefined();
     });
   });
 
-  describe("'setConditionId' creates propper SQL statement", () => {
-    it('without a right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setConditionId('1337');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        "SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (id = '1337')"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+  describe('App-Filter', () => {
+    it('bildet Positiv-Liste und Negativ-Ausnahme ab', async () => {
+      await newAction().setConditionApplicationKey('meineApp').execute();
+
+      const { sql } = lastCall();
+      expect(sql).toContain("applicationIncluded LIKE '%' || $1 || '%'");
+      expect(sql).toContain("applicationIncluded = '*'");
+      expect(sql).toContain('applicationExcluded IS NULL');
+      expect(sql).toContain("applicationExcluded NOT LIKE '%' || $1 || '%'");
     });
 
-    it('with a right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setConditionId('1337');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        "SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.id = '1337')"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+    it('bindet den Schlüssel, statt ihn einzusetzen', async () => {
+      await newAction().setConditionApplicationKey('meineApp').execute();
+
+      const { sql, parameters } = lastCall();
+      expect(parameters).toEqual(['meineApp']);
+      expect(sql).not.toContain('meineApp');
+    });
+
+    it('lässt die Bedingung weg, wenn kein Schlüssel gesetzt ist', async () => {
+      await newAction().execute();
+
+      expect(lastCall().sql).not.toContain('WHERE');
     });
   });
 
-  describe("'setConditionPublishDate' creates proper SQL statement", () => {
-    it('without a right table, datetime is undefined', () => {
-      mockExecuteSql = jest
-        .fn()
-        .mockResolvedValue([{ Id: 1337, Name: 'TestName' }]);
+  describe('setConditionEquals', () => {
+    it('bindet den Wert und nummeriert die Platzhalter durch', async () => {
+      await newAction()
+        .setConditionApplicationKey('meineApp')
+        .setConditionEquals('key', 'nutzer@example.com')
+        .execute();
 
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setConditionPublishDate(undefined);
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (PublishDate <= NOW())'
-      );
-      return resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+      const { sql, parameters } = lastCall();
+      expect(sql).toContain('key = $2');
+      expect(parameters).toEqual(['meineApp', 'nutzer@example.com']);
     });
 
-    it('without a right table, datetime is null', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setConditionPublishDate(null);
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+    it('lässt einen Wert mit SQL darin harmlos', async () => {
+      // Genau der Weg, über den ein Anmeldeschlüssel hereinkommt.
+      await newAction().setConditionEquals('key', "x' OR '1'='1").execute();
+
+      const { sql, parameters } = lastCall();
+      expect(sql).toBe('SELECT id, key, active FROM identity WHERE (key = $1)');
+      expect(parameters).toEqual(["x' OR '1'='1"]);
     });
 
-    it('without a right table, datetime is actual datetime', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setConditionPublishDate('2021-01-01');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        "SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (PublishDate <= '2021-01-01 00:00:00')"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+    it('nimmt auch einen Ausdruck als linke Seite', async () => {
+      // Der RefreshEndpoint sucht in einem JSON-Feld.
+      await newAction()
+        .setConditionEquals("refreshtoken->>'token'", 'abc-123')
+        .execute();
+
+      expect(lastCall().sql).toContain("refreshtoken->>'token' = $1");
+      expect(lastCall().parameters).toEqual(['abc-123']);
     });
 
-    it('with a right table, datetime is undefined', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setConditionPublishDate(undefined);
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      // Updated expectation: right table publish date condition should be in JOIN ON clause
-      expect(firstCall[0]).toEqual(
-        'SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON (Story.Id = Chapter.storyId AND Chapter.PublishDate <= NOW()) WHERE (Story.PublishDate <= NOW())'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
+    it('überspringt eine Bedingung ohne Ausdruck', async () => {
+      await newAction().setConditionEquals(null, 'egal').execute();
 
-    it('with a right table, datetime is null', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setConditionPublishDate(null);
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
-
-    it('with a right table, datetime is actual datetime', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setConditionPublishDate('2021-01-01');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      // Updated expectation: right table publish date condition should be in JOIN ON clause
-      expect(firstCall[0]).toEqual(
-        "SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON (Story.Id = Chapter.storyId AND Chapter.PublishDate <= '2021-01-01 00:00:00') WHERE (Story.PublishDate <= '2021-01-01 00:00:00')"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+      expect(lastCall().sql).not.toContain('WHERE');
     });
   });
 
-  describe("'setOrderDirection' creates propper SQL statement", () => {
-    it('without a right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setOrderField('SortNumber');
-      actionGet.setOrderDirection('ASC');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story ORDER BY SortNumber ASC'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+  describe('setCustomConditions', () => {
+    it('hängt ein Fragment ohne Wert an', async () => {
+      await newAction().setCustomConditions('active = true').execute();
+
+      const { sql, parameters } = lastCall();
+      expect(sql).toContain('active = true');
+      expect(parameters).toEqual([]);
     });
 
-    it('with a right table, sorting by left table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setOrderField('SortNumber');
-      actionGet.setOrderDirection('ASC');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Story.SortNumber ASC'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
+    it('verbindet mehrere Bedingungen mit AND', async () => {
+      await newAction()
+        .setConditionEquals('key', 'nutzer@example.com')
+        .setCustomConditions('active = true')
+        .execute();
 
-    it('with a right table, sorting by right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setRightOrderField('SortNumber');
-      actionGet.setRightOrderDirection('ASC');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Chapter.SortNumber ASC'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
-
-    it('with a right table, sorting by left and right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setOrderField('SortNumber');
-      actionGet.setOrderDirection('ASC');
-      actionGet.setRightOrderField('SortNumber');
-      actionGet.setRightOrderDirection('ASC');
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        'SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId ORDER BY Story.SortNumber ASC, Chapter.SortNumber ASC'
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+      expect(lastCall().sql).toContain('WHERE (key = $1 AND active = true)');
     });
   });
 
-  describe("'setCustomCondition' creates proper SQL statement", () => {
-    it('without a right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setCustomConditions("Name = 'TestName'");
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        "SELECT Id, Name, LastUpdate, SortNumber, PublishDate, applicationincluded, applicationexcluded, coverId FROM Story WHERE (Name = 'TestName')"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
-
-    it('with a right table', () => {
-      const actionGet = new ActionGet();
-      let tableStory = new TableStory();
-      let tableChapter = new TableChapter();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableStory);
-      actionGet.setRightTable(tableChapter);
-      actionGet.setJoinCondition('Story.Id = Chapter.storyId');
-      actionGet.setCustomConditions(
-        "Story.Name = 'TestName' AND Chapter.Name = 'TestChapterName'"
-      );
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-      expect(firstCall[0]).toEqual(
-        "SELECT Story.Id as story_Id, Story.Name as story_Name, Story.LastUpdate as story_LastUpdate, Story.SortNumber as story_SortNumber, Story.PublishDate as story_PublishDate, Story.applicationincluded as story_applicationincluded, Story.applicationexcluded as story_applicationexcluded, Story.coverId as story_coverId, Chapter.Id as chapter_Id, Chapter.Name as chapter_Name, Chapter.SortNumber as chapter_SortNumber FROM Story LEFT JOIN Chapter ON Story.Id = Chapter.storyId WHERE (Story.Name = 'TestName' AND Chapter.Name = 'TestChapterName')"
-      );
-      resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
-    });
-  });
-
-  describe('LEFT JOIN bug reproduction - parent records not returned when no children exist', () => {
-    it('should reproduce the original bug: application conditions for right table in WHERE clause instead of JOIN ON', () => {
-      mockExecuteSql = jest.fn().mockResolvedValue([
-        {
-          chapter_Id: '000c00000000000045',
-          chapter_Name: 'TestChapter',
-          paragraph_Id: null,
-          paragraph_Name: null,
-        },
+  describe('Ergebnis', () => {
+    it('macht die Ersetzungen des Sanitizers rückgängig', async () => {
+      const { Sanitizer } = require('../actions/sanitizer.js');
+      executeParameterizedSql.mockResolvedValue([
+        { key: Sanitizer.sanitize("Robert'); DROP TABLE identity;--") },
       ]);
 
-      const actionGet = new ActionGet();
-      let tableChapter = new TableChapter();
-      let tableParagraph = new TableParagraph();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableChapter);
-      actionGet.setRightTable(tableParagraph);
-      actionGet.setJoinCondition('chapter.Id = paragraph.chapterId');
-      actionGet.setConditionId('000c00000000000045');
-      actionGet.setConditionApplicationKey('storytellingdom');
-      actionGet.setRightOrderField('SortNumber');
-      actionGet.setRightOrderDirection('ASC');
+      const [row] = await newAction().execute();
 
-      let resultPromise = actionGet.execute();
-      expect(resultPromise).toBeInstanceOf(Promise);
-      let firstCall = mockExecuteSql.mock.calls[0];
-
-      const actualSQL = firstCall[0];
-
-      // Check if the bug exists: right table application conditions in WHERE instead of JOIN ON
-      const hasRightTableConditionsInWhere =
-        actualSQL.includes('WHERE') &&
-        actualSQL.includes('Paragraph.applicationIncluded') &&
-        actualSQL.split('WHERE')[1].includes('Paragraph.applicationIncluded');
-
-      const hasRightTableConditionsInJoinOn =
-        actualSQL.includes('JOIN') &&
-        actualSQL.split('ON')[1] &&
-        actualSQL.split('WHERE')[0].includes('Paragraph.applicationIncluded');
-
-      return resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+      expect(row.key).toBe("Robert'); DROP TABLE identity;--");
     });
 
-    it('should demonstrate correct LEFT JOIN behavior where parent records are returned even without children', () => {
-      // This test shows what the correct behavior should be after fixing
-      // The application conditions for the right table should only be in the JOIN ON clause
-      // not in the WHERE clause
+    it('reicht durch, was keine Zeilenliste ist', async () => {
+      executeParameterizedSql.mockResolvedValue(undefined);
 
-      const correctSQL = `SELECT Chapter.Id as chapter_Id, Chapter.StoryId as chapter_StoryId, Chapter.Name as chapter_Name, Chapter.LastUpdate as chapter_LastUpdate, Chapter.SortNumber as chapter_SortNumber, Chapter.reversed as chapter_reversed, Chapter.PublishDate as chapter_PublishDate, Chapter.applicationincluded as chapter_applicationincluded, Chapter.applicationexcluded as chapter_applicationexcluded, Paragraph.Id as paragraph_Id, Paragraph.Name as paragraph_Name, Paragraph.SortNumber as paragraph_SortNumber FROM Chapter LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded LIKE '%' || 'storytellingdom' || '%' OR Paragraph.applicationIncluded = '*') AND (Paragraph.applicationExcluded IS NULL OR Paragraph.applicationExcluded NOT LIKE '%' || 'storytellingdom' || '%')) WHERE (Chapter.id = '000c00000000000045' AND (Chapter.applicationIncluded LIKE '%' || 'storytellingdom' || '%' OR Chapter.applicationIncluded = '*') AND (Chapter.applicationExcluded IS NULL OR Chapter.applicationExcluded NOT LIKE '%' || 'storytellingdom' || '%')) ORDER BY Paragraph.SortNumber ASC`;
-
-      // Verify structure of correct SQL
-      expect(correctSQL).toContain(
-        'LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded'
-      );
-      expect(correctSQL.split('WHERE')[1]).not.toContain(
-        'Paragraph.applicationIncluded'
-      );
-      expect(correctSQL.split('WHERE')[1]).toContain(
-        'Chapter.applicationIncluded'
-      );
-    });
-
-    it('should handle both application key AND publish date conditions correctly in JOIN ON clause', () => {
-      mockExecuteSql = jest.fn().mockResolvedValue([
-        {
-          chapter_Id: '000c00000000000045',
-          chapter_Name: 'TestChapter',
-          paragraph_Id: null,
-        },
-      ]);
-
-      const actionGet = new ActionGet();
-      let tableChapter = new TableChapter();
-      let tableParagraph = new TableParagraph();
-      actionGet.setPgConnector(new PostgresActions(MOCK_ENVIRONMENT));
-      actionGet.setTable(tableChapter);
-      actionGet.setRightTable(tableParagraph);
-      actionGet.setJoinCondition('Chapter.Id = Paragraph.chapterId');
-      actionGet.setConditionId('000c00000000000045');
-      actionGet.setConditionApplicationKey('storytellingdom');
-      actionGet.setConditionPublishDate('2021-01-01');
-      actionGet.setRightOrderField('SortNumber');
-      actionGet.setRightOrderDirection('ASC');
-
-      let resultPromise = actionGet.execute();
-      let firstCall = mockExecuteSql.mock.calls[0];
-      const actualSQL = firstCall[0];
-
-      // Should have both application key AND publish date conditions in JOIN ON clause
-      expect(actualSQL).toContain(
-        'LEFT JOIN Paragraph ON (Chapter.Id = Paragraph.chapterId AND (Paragraph.applicationIncluded'
-      );
-      expect(actualSQL).toContain('AND Paragraph.PublishDate <=');
-
-      // Left table conditions should be in WHERE clause
-      expect(actualSQL).toContain(
-        "WHERE (Chapter.id = '000c00000000000045' AND Chapter.PublishDate <="
-      );
-      expect(actualSQL).toContain('AND (Chapter.applicationIncluded');
-
-      // Right table conditions should NOT be in WHERE clause
-      expect(actualSQL.split('WHERE')[1]).not.toContain(
-        'Paragraph.applicationIncluded'
-      );
-      expect(actualSQL.split('WHERE')[1]).not.toContain(
-        'Paragraph.PublishDate'
-      );
-
-      return resultPromise.then((result) => {
-        expect(result).toBeTruthy();
-      });
+      expect(await newAction().execute()).toBeUndefined();
     });
   });
 });

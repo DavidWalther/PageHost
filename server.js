@@ -23,8 +23,52 @@ const PublishEndpoint = require('./private/endpoints/api/1.0/action/publishEndpo
 const UnpublishEndpoint = require('./private/endpoints/api/1.0/action/unpublishEndpoint.js');
 const ContentsEndpoint = require('./private/endpoints/api/1.0/contents/ContentsEndpoint.js');
 const ServiceWorkerEndpointLogic = require('./private/endpoints/wildcard/ServiceWorkerEndpointLogic.js');
+const {
+  PostgresActions,
+} = require('./private/database2/DataStorage/pgConnector.js');
 
 const environment = new Environment().getEnvironment();
+
+/**
+ * Ein abgelehntes Promise darf den Server nicht beenden.
+ *
+ * Beobachtet am 2026-08-02: schlug die Postgres-Anmeldung fehl, endete der
+ * Prozess mit `triggerUncaughtException` statt mit einer Fehlerantwort — der
+ * erste Request beantwortete sich noch, der zweite riss den Server mit. Für
+ * einen Ausfall der Datenbank ist das die denkbar schlechteste Reaktion:
+ * die Anwendung ist danach auch für alles andere weg.
+ *
+ * Das ist ein Netz, kein Ersatz für `catch` an den Endpunkten. Es fängt genau
+ * die Fälle, an die dort niemand gedacht hat.
+ */
+process.on('unhandledRejection', (reason) => {
+  Logging.debugMessage({
+    severity: 'ERROR',
+    location: 'Server.unhandledRejection',
+    message: `Unhandled promise rejection: ${reason?.message || reason}`,
+    error: reason,
+  });
+});
+
+/**
+ * Beim Herunterfahren den Verbindungspool schließen.
+ *
+ * Der Pool bleibt seit der Umstellung auf einen prozessweiten Pool offen —
+ * vorher endete jede Verbindung nach ihrer Abfrage, und es gab nichts
+ * aufzuräumen. Heroku schickt `SIGTERM` und wartet; ohne diesen Weg blieben
+ * die Verbindungen bis zum harten Abbruch bestehen.
+ */
+['SIGTERM', 'SIGINT'].forEach((signal) => {
+  process.on(signal, async () => {
+    Logging.debugMessage({
+      severity: 'INFO',
+      location: 'Server.shutdown',
+      message: `${signal} empfangen, schließe den Verbindungspool`,
+    });
+    await PostgresActions.closePool().catch(() => {});
+    process.exit(0);
+  });
+});
 
 const app = express();
 app.use(express.json());
@@ -116,6 +160,21 @@ app.get('/metadata', (req, res) => {
         message: `Metadata Endpoint executed`,
         location: LOCATION,
       });
+    })
+    .catch((error) => {
+      // Ohne diesen Zweig endete eine fehlgeschlagene Datenbank-Anmeldung als
+      // unbehandelte Rejection — und damit im Abbruch des Prozesses.
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Metadata Endpoint failed: ${error?.message || error}`,
+        location: LOCATION,
+        error,
+      });
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ success: false, error: 'Internal Server Error' });
+      }
     });
 });
 

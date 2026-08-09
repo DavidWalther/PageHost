@@ -1,6 +1,7 @@
 const { EndpointLogic } = require('../../../EndpointLogic.js');
 const { Logging } = require('../../../../modules/logging.js');
 const { DataFacade } = require('../../../../database2/DataFacade.js');
+const { PublishFields } = require('../../../../modules/PublishFields.js');
 
 class PublishEndpoint extends EndpointLogic {
   async execute() {
@@ -58,7 +59,7 @@ class PublishEndpoint extends EndpointLogic {
       }
 
       // 4. Check if already published
-      if (existingRecord.publishDate) {
+      if (PublishFields.valueOf(existingRecord)) {
         this.responseObject
           .status(400)
           .json({ success: false, error: 'Record is already published' });
@@ -125,7 +126,13 @@ class PublishEndpoint extends EndpointLogic {
     }
 
     // Validate that object is one of the supported table types
-    const supportedObjects = ['paragraph', 'chapter', 'story'];
+    const supportedObjects = [
+      'paragraph',
+      'chapter',
+      'story',
+      'node',
+      'content',
+    ];
     if (!supportedObjects.includes(object.toLowerCase())) {
       Logging.debugMessage({
         severity: 'INFO',
@@ -168,11 +175,13 @@ class PublishEndpoint extends EndpointLogic {
     try {
       const dataFacade = new DataFacade(this.environment).setSkipCache(true);
 
+      const objectName = object.toLowerCase();
       const updateData = {
-        object: object.toLowerCase(),
+        object: objectName,
         payload: {
           id: id,
-          publishDate: new Date().toISOString(),
+          [PublishFields.incomingFieldFor(objectName)]:
+            new Date().toISOString(),
         },
       };
 
