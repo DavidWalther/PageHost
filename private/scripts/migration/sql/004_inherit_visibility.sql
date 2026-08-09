@@ -4,7 +4,16 @@
 --
 -- Gesamtbild und Reihenfolge: ../README.md
 --
--- MUSS LAUFEN, SOLANGE story/chapter/paragraph NOCH STEHEN. Danach fehlt die
+-- KEIN PFLICHTSCHRITT MEHR. Die Bestandsdaten geben die automatische
+-- Umstellung nicht her: applicationincluded/-excluded sind zwischen Story und
+-- Kapitel widerspruechlich gepflegt, und da diese Datei nur umstellt, wo sich
+-- NICHTS aendert (siehe unten), blockiert sie fast jeden Knoten. Ein Lauf
+-- gegen die lokale Testdatenbank hat das bestaetigt. Die Sichtbarkeit wird
+-- deshalb von Hand gesetzt -- Regel, Fallstricke und Pruefabfragen stehen in
+-- ../README.md, Abschnitt "Sichtbarkeit von Hand korrigieren".
+--
+-- Die Datei bleibt lauffaehig und idempotent. Wer sie doch laufen laesst, muss
+-- das tun, SOLANGE story/chapter/paragraph NOCH STEHEN: danach fehlt die
 -- Referenz, gegen die sich das Ergebnis pruefen laesst (003, Abschnitt 5).
 --
 -- Die Kopie hat jedem Knoten eine eigene app_node-Zeile gegeben und

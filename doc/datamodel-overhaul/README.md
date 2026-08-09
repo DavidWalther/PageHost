@@ -8,8 +8,12 @@
 >
 > **Offen bleibt die Datenbank selbst:** die alten Tabellen stehen, bis
 > `private/scripts/migration/sql/005_drop_legacy_tables.sql` ausgeführt wurde.
-> Vorher muss `004_inherit_visibility.sql` gelaufen sein — danach fehlt die
-> Referenz, gegen die es sich prüfen lässt.
+> Vorher ist die Sichtbarkeit auf Vererbung umzustellen — **von Hand**, weil die
+> alten App-Spalten zu widersprüchlich sind, als dass
+> `004_inherit_visibility.sql` daraus etwas ableiten könnte. Regel, Fallstricke
+> und Prüfabfragen: `private/scripts/migration/README.md`, Abschnitt
+> „Sichtbarkeit von Hand korrigieren". Danach fehlt die Referenz, gegen die
+> sich das prüfen lässt.
 >
 > Der Überblick über das laufende System steht weiterhin in
 > `doc/architecture.md`.
