@@ -64,7 +64,6 @@ beforeEach(() => {
   PostgresActions.mockReset();
   PostgresActions.mockImplementation(() => ({
     executeParameterizedSql,
-    executeSql: jest.fn(),
   }));
 });
 

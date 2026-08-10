@@ -25,14 +25,9 @@ const MOCK_CONFIGURATION = [
 ];
 
 // ----- Mock PostgresActions -----
-let mockExecuteSql = jest.fn().mockResolvedValue();
-PostgresActions.mockImplementation(() => {
-  return {
-    executeSql: mockExecuteSql,
-    connect: jest.fn(),
-    query: jest.fn().mockResolvedValue([]),
-  };
-});
+// `DataStorage` reicht den Connector nur an die Aktionen weiter; die sind hier
+// gemockt. Deshalb braucht die Attrappe keine Methode.
+PostgresActions.mockImplementation(() => ({}));
 
 // ----- Mock ActionGet -----
 let mockActionGetExecute = jest.fn().mockResolvedValue([
