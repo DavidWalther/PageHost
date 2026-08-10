@@ -164,6 +164,50 @@ class DataStorage {
     });
   }
 
+  /**
+   * Die Identität zu einer Refresh-Token-Id.
+   *
+   * Gesucht wird im JSON der Spalte `refreshtoken` (`->>'token'`) — der
+   * einzige Ort, an dem eine Abfrage in ein Feld eines Datensatzes hineingreift.
+   * Die Id kommt aus einem Refresh-Token des Clients und geht deshalb gebunden
+   * in die Abfrage.
+   *
+   * Kein Treffer heißt `null`: Ein Refresh-Token, zu dem es keine Identität
+   * gibt, ist ungültig — das ist etwas anderes als eine Identität ohne Felder.
+   */
+  async queryIdentityByRefreshTokenId(refreshTokenId) {
+    const LOCATION = 'DataStorage.queryIdentityByRefreshTokenId';
+    if (!this.applicationKey) {
+      throw new Error('Application key is required');
+    }
+
+    const tableIdentity = new TableIdentity();
+    const result = await new ActionGet()
+      .setPgConnector(this.pgConnector)
+      .setTableName(tableIdentity.tableName)
+      .setTableFields(tableIdentity.tableFields)
+      .setConditionEquals("refreshtoken->>'token'", refreshTokenId)
+      .setCustomConditions('active = true')
+      .setConditionApplicationKey(this.applicationKey)
+      .execute();
+
+    if (result.length === 0) {
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `No identity found for refresh token id: ${refreshTokenId}`,
+      });
+      return null;
+    }
+
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Identity found for refresh token id: ${refreshTokenId}`,
+    });
+    return result[0];
+  }
+
   createRecord(table, values) {
     const LOCATION = 'DataStorage.createRecord';
     Logging.debugMessage({

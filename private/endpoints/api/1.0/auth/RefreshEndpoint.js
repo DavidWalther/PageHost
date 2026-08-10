@@ -2,7 +2,6 @@ const { Logging } = require('../../../../modules/logging.js');
 const { DataFacade } = require('../../../../database2/DataFacade.js');
 const RefreshTokenService = require('../../../../modules/oAuth2/RefreshTokenService.js');
 const AccessTokenService = require('../../../../modules/oAuth2/AccessTokenService.js');
-const JwtService = require('../../../../modules/oAuth2/JwtService.js');
 
 class RefreshEndpoint {
   constructor() {
@@ -74,10 +73,9 @@ class RefreshEndpoint {
     // Find identity by refresh token UUID
     let identityRecord;
     try {
-      identityRecord = await this._findIdentityByRefreshTokenId(
-        dataFacade,
-        tokenId
-      );
+      identityRecord = await dataFacade.getData({
+        request: { table: 'identity', refreshTokenId: tokenId },
+      });
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',
@@ -198,50 +196,6 @@ class RefreshEndpoint {
         },
       },
     });
-  }
-
-  async _findIdentityByRefreshTokenId(dataFacade, tokenId) {
-    const LOCATION = 'RefreshEndpoint._findIdentityByRefreshTokenId';
-
-    // Query identity table - we need to find the record where refreshtoken->token matches
-    // Since DataFacade.getData for identity uses key lookup, we use a different approach:
-    // We get the identity by checking the stored refresh token UUID
-    const dataStorage =
-      new (require('../../../../database2/DataStorage/DataStorage.js').DataStorage)(
-        this.environment
-      );
-    dataStorage.setConditionApplicationKey(
-      this.environment.APPLICATION_APPLICATION_KEY
-    );
-
-    const {
-      ActionGet,
-    } = require('../../../../database2/DataStorage/actions/get.js');
-    const {
-      TableIdentity,
-    } = require('../../../../database2/tables/identity.js');
-
-    const tableIdentity = new TableIdentity();
-    const actionGet = new ActionGet()
-      .setPgConnector(dataStorage.pgConnector)
-      .setTableName(tableIdentity.tableName)
-      .setTableFields(tableIdentity.tableFields)
-      .setConditionEquals("refreshtoken->>'token'", tokenId)
-      .setCustomConditions('active = true')
-      .setConditionApplicationKey(this.environment.APPLICATION_APPLICATION_KEY);
-
-    const result = await actionGet.execute();
-
-    if (result.length === 0) {
-      Logging.debugMessage({
-        severity: 'FINEST',
-        location: LOCATION,
-        message: `No identity found for refresh token ID: ${tokenId}`,
-      });
-      return null;
-    }
-
-    return result[0];
   }
 }
 

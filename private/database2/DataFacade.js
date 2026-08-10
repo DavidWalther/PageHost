@@ -141,6 +141,9 @@ class DataFacadeSync {
     }
     if (parameterObject.request.table == 'identity') {
       // Identity queries always bypass cache for data freshness
+      if (parameterObject?.request?.refreshTokenId) {
+        return this.getIdentityByRefreshTokenIdWithoutCache(parameterObject);
+      }
       return this.getIdentityByKeyWithoutCache(parameterObject);
     }
     if (parameterObject.request.table == 'contents') {
@@ -492,7 +495,7 @@ class DataFacadeSync {
     dataStorage.setConditionApplicationKey(
       this.environment.APPLICATION_APPLICATION_KEY
     );
-    let product = await dataStorage.queryIdentityByKey(userKey);
+    const product = await dataStorage.queryIdentityByKey(userKey);
     if (!product) {
       Logging.debugMessage({
         severity: 'FINEST',
@@ -507,6 +510,24 @@ class DataFacadeSync {
       });
     }
     return product;
+  }
+
+  /**
+   * Die Identität zu einer Refresh-Token-Id — der zweite Weg zu `identity`.
+   *
+   * Auch er umgeht den Cache: Beim Refresh entscheidet der **aktuelle** Stand
+   * der Spalte, ob der vorgelegte Token noch gilt.
+   */
+  async getIdentityByRefreshTokenIdWithoutCache(parameterObject) {
+    const LOCATION = 'DataFacadeSync.getIdentityByRefreshTokenIdWithoutCache';
+    const refreshTokenId = parameterObject?.request?.refreshTokenId;
+    Logging.debugMessage({
+      severity: 'FINEST',
+      location: LOCATION,
+      message: `Querying identity by refresh token id for application key: ${this.environment.APPLICATION_APPLICATION_KEY}`,
+    });
+    const dataStorage = this.createDirectStorage();
+    return dataStorage.queryIdentityByRefreshTokenId(refreshTokenId);
   }
 }
 
