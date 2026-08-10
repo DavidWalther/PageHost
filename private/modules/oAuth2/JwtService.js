@@ -14,10 +14,14 @@ class JwtService {
   static createJwt(userId, idp, scopes, serverSecret, lifetimeSeconds = 900) {
     const now = Math.floor(Date.now() / 1000);
 
+    // `iat` steht ausdrücklich im Payload: sonst setzt `jsonwebtoken` es
+    // selbst und liest die Uhr dabei ein zweites Mal. Fällt dazwischen eine
+    // Sekundengrenze, driften `iat` und `nbf` auseinander.
     const payload = {
       userId,
       IdP: idp,
       scopes,
+      iat: now,
       exp: now + lifetimeSeconds,
       nbf: now,
     };
