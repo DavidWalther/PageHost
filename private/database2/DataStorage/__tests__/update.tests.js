@@ -85,9 +85,23 @@ describe('ActionUpdate', () => {
     );
   });
 
+  it('bindet ein Objekt unverändert — für json-Spalten', async () => {
+    // Serialisiert wird vom Treiber. Wer hier schon JSON.stringify anwendet,
+    // codiert zweimal; in der Spalte stünde dann ein JSON-String statt eines
+    // Objekts.
+    const refreshtoken = { token: 'abc', issuedAt: 'gestern' };
+
+    await newAction({ id: '123', refreshtoken }).execute();
+
+    expect(lastCall().parameters[0]).toEqual(refreshtoken);
+    expect(typeof lastCall().parameters[0]).not.toBe('string');
+  });
+
   it('weist einen Wert zurück, der keine Spalte füllen kann', async () => {
+    // Ein `Date` ist kein schlichter Wert: welche Form es in einer json-Spalte
+    // hätte, hat hier niemand festgelegt.
     await expect(
-      newAction({ id: '123', key: { first: 'John' } }).execute()
+      newAction({ id: '123', createddate: new Date('2026-01-01') }).execute()
     ).rejects.toThrow('Unsupported value type');
   });
 
