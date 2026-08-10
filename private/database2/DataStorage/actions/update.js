@@ -1,4 +1,5 @@
 const { Logging } = require('../../../modules/logging');
+const { BindableValue } = require('./bindableValue');
 
 class ActionUpdate {
   constructor() {
@@ -24,6 +25,9 @@ class ActionUpdate {
   /**
    * Die zu setzenden Werte. Sie gehen gebunden in die Anfrage -- frueher
    * liefen sie durch den `Sanitizer` und dann in den SQL-Text.
+   *
+   * Fuer `json`/`jsonb`-Spalten gehoert das **Objekt** hierher, nicht sein
+   * JSON-Text: serialisiert wird vom Treiber (siehe `BindableValue`).
    */
   setValues(data) {
     if (!data || typeof data !== 'object') {
@@ -61,12 +65,7 @@ class ActionUpdate {
     const parameters = [];
     const setClauses = Object.entries(this.values)
       .map(([key, value]) => {
-        if (
-          typeof value !== 'string' &&
-          typeof value !== 'number' &&
-          typeof value !== 'boolean' &&
-          value !== null
-        ) {
+        if (!BindableValue.isBindable(value)) {
           throw new Error('Unsupported value type');
         }
         parameters.push(value);
