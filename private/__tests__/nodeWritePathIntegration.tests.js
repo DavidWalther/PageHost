@@ -69,13 +69,6 @@ beforeEach(() => {
       const match = responses.find((entry) => sql.includes(entry.pattern));
       return match ? match.rows : [];
     }),
-    // `DataStorage` setzt seine Statements über den alten Weg ab — nötig für
-    // die Objekte, die nicht zum Inhalt gehören (identity, configuration).
-    executeSql: jest.fn(async (sql) => {
-      executed.push({ sql, parameters: [] });
-      const match = responses.find((entry) => sql.includes(entry.pattern));
-      return match ? match.rows : [];
-    }),
   }));
 
   cacheDel = jest.fn();

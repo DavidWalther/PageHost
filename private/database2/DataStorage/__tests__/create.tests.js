@@ -83,8 +83,20 @@ describe('ActionCreate', () => {
     );
   });
 
+  it('bindet ein Objekt unverändert — für json-Spalten', async () => {
+    // Serialisiert wird vom Treiber; vorcodieren hiesse zweimal codieren.
+    const value = { token: 'abc', issuedAt: 'gestern' };
+
+    await newAction().setValue('value', value).execute();
+
+    expect(lastCall().parameters[0]).toEqual(value);
+    expect(typeof lastCall().parameters[0]).not.toBe('string');
+  });
+
   it('weist einen Wert zurück, der keine Spalte füllen kann', () => {
-    expect(() => newAction().setValue('value', { a: 1 })).toThrow(
+    // Ein `Date` ist kein schlichter Wert: welche Form es in einer json-Spalte
+    // hätte, hat hier niemand festgelegt.
+    expect(() => newAction().setValue('value', new Date('2026-01-01'))).toThrow(
       'Unsupported value type'
     );
   });

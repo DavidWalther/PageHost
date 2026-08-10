@@ -1,4 +1,5 @@
 const { Logging } = require('../../../modules/logging');
+const { BindableValue } = require('./bindableValue');
 
 /**
  * Baut und fuehrt ein INSERT aus -- schemaunabhaengig, ueber `setValue`.
@@ -8,6 +9,9 @@ const { Logging } = require('../../../modules/logging');
  * zeichen war der Ersatz fuer eine Bindung. Mit `$1`, `$2`, ... braucht es ihn
  * nicht mehr, und der Wert kommt unveraendert in der Spalte an -- `trim()` und
  * verdoppelte Apostrophe inklusive.
+ *
+ * Fuer `json`/`jsonb`-Spalten gehoert das **Objekt** uebergeben, nicht sein
+ * JSON-Text: serialisiert wird vom Treiber (siehe `BindableValue`).
  */
 
 class ActionCreate {
@@ -45,12 +49,7 @@ class ActionCreate {
       );
     }
 
-    if (
-      typeof value !== 'string' &&
-      typeof value !== 'number' &&
-      typeof value !== 'boolean' &&
-      value !== null
-    ) {
+    if (!BindableValue.isBindable(value)) {
       throw new Error('Unsupported value type');
     }
     this.values[key] = value;

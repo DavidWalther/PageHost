@@ -64,6 +64,28 @@ describe('JwtService', () => {
       expect(payload.exp).toBe(payload.nbf + 900);
     });
 
+    it('should read the clock once, even across a second boundary', () => {
+      // `jsonwebtoken` setzt `iat` selbst — mit einem eigenen Blick auf die
+      // Uhr. Faellt zwischen die beiden Ablesungen eine Sekundengrenze,
+      // driften `iat` und `nbf` auseinander. Hier tickt die Uhr bei jedem
+      // Abruf weiter, damit genau dieser Fall sicher eintritt.
+      const start = Date.now();
+      let ticks = 0;
+      const realNow = Date.now;
+      Date.now = () => start + ticks++ * 1000;
+
+      try {
+        const payload = jwt.decode(
+          JwtService.createJwt(TEST_USER_ID, TEST_IDP, TEST_SCOPES, TEST_SECRET)
+        );
+
+        expect(payload.nbf).toBe(payload.iat);
+        expect(payload.exp).toBe(payload.iat + 900);
+      } finally {
+        Date.now = realNow;
+      }
+    });
+
     it('should use the provided lifetimeSeconds for exp', () => {
       const customLifetime = 3600;
       const before = Math.floor(Date.now() / 1000);

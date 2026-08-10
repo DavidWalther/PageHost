@@ -169,15 +169,15 @@ Every refresh request invalidates the previous token and issues a new one. This 
 
 ## Token Specifications
 
-| Property | Access Token | Refresh Token |
-|----------|-------------|---------------|
-| Format | JWT (HS256) | JWT (HS256) |
-| Payload | userId, idp, scopes, iat, nbf, exp | token (UUID), issuedAt, expiresAt |
-| Lifetime | 15 minutes (900s) | Configurable (AUTH_REFRESH_TOKEN_LIFETIME_DAYS) |
-| Storage (Frontend) | sessionStorage | localStorage |
-| Storage (Backend) | — | PostgreSQL (identity.refreshtoken JSONB) |
-| Rotation | No | Yes (new token on each refresh) |
-| Signing Secret | AUTH_SERVER_SECRET | AUTH_SERVER_SECRET |
+| Property           | Access Token                       | Refresh Token                                   |
+| ------------------ | ---------------------------------- | ----------------------------------------------- |
+| Format             | JWT (HS256)                        | JWT (HS256)                                     |
+| Payload            | userId, idp, scopes, iat, nbf, exp | token (UUID), issuedAt, expiresAt               |
+| Lifetime           | 15 minutes (900s)                  | Configurable (AUTH_REFRESH_TOKEN_LIFETIME_DAYS) |
+| Storage (Frontend) | sessionStorage                     | localStorage                                    |
+| Storage (Backend)  | —                                  | PostgreSQL (identity.refreshtoken JSONB)        |
+| Rotation           | No                                 | Yes (new token on each refresh)                 |
+| Signing Secret     | AUTH_SERVER_SECRET                 | AUTH_SERVER_SECRET                              |
 
 ## Database Schema
 
@@ -188,6 +188,7 @@ ALTER TABLE identity ADD COLUMN RefreshToken JSONB;
 ```
 
 Stored value example:
+
 ```json
 {
   "token": "2c448d2f-3452-4d96-8399-77b627b183bd",
@@ -198,16 +199,42 @@ Stored value example:
 
 The `token` field is the UUID used to identify which refresh token is valid. On logout, this column is set to `null`.
 
+#### Writing this column: pass the object, never its JSON text
+
+The column is `jsonb`, and the value is passed to `DataFacade.updateData` as a
+**JavaScript object**:
+
+```js
+refreshtoken: { token, issuedAt, expiresAt }   // right
+refreshtoken: JSON.stringify({ … })            // wrong — encodes it twice
+```
+
+Values are bound (`$1`, `$2`, …). The `postgres` driver has the server describe
+the resolved parameter type — `jsonb` for this column — and applies
+`JSON.stringify` for it when binding. A value that is already JSON text is
+therefore encoded a second time and lands in the column as a JSON **string**:
+
+```
+"{\"token\": \"2c448d2f-…\", \"issuedAt\": \"…\", \"expiresAt\": \"…\"}"
+```
+
+`refreshtoken->>'token'` returns a field only for a JSON **object**; against a
+string scalar it yields `NULL`. The lookup in `RefreshEndpoint` then never
+matches and every refresh ends in `401` — the failure mode this note exists to
+prevent. The write path enforces the contract in
+`private/database2/DataStorage/actions/bindableValue.js`; the round trip is
+covered by `private/__tests__/refreshTokenStorageIntegration.tests.js`.
+
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AUTH_SERVER_SECRET` | Yes | Secret for signing JWTs (access + refresh tokens) |
-| `AUTH_REFRESH_TOKEN_LIFETIME_DAYS` | Yes | Refresh token lifetime in days |
-| `AUTH_CLOCK_SKEW_SECONDS` | Yes | Allowed clock skew for ID token validation (seconds) |
-| `GOOGLE_CLIENT_ID` | Yes | Google OAuth 2.0 Client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes | Google OAuth 2.0 Client Secret |
-| `AUTH_OIDC_REDIRECT_URI` | Yes | OAuth callback redirect URI |
+| Variable                           | Required | Description                                          |
+| ---------------------------------- | -------- | ---------------------------------------------------- |
+| `AUTH_SERVER_SECRET`               | Yes      | Secret for signing JWTs (access + refresh tokens)    |
+| `AUTH_REFRESH_TOKEN_LIFETIME_DAYS` | Yes      | Refresh token lifetime in days                       |
+| `AUTH_CLOCK_SKEW_SECONDS`          | Yes      | Allowed clock skew for ID token validation (seconds) |
+| `GOOGLE_CLIENT_ID`                 | Yes      | Google OAuth 2.0 Client ID                           |
+| `GOOGLE_CLIENT_SECRET`             | Yes      | Google OAuth 2.0 Client Secret                       |
+| `AUTH_OIDC_REDIRECT_URI`           | Yes      | OAuth callback redirect URI                          |
 
 ## API Endpoints
 
@@ -216,6 +243,7 @@ The `token` field is the UUID used to identify which refresh token is valid. On 
 Exchanges an OAuth authorization code for access and refresh tokens.
 
 **Request:**
+
 ```json
 {
   "auth_code": "4/0AX4X...",
@@ -225,6 +253,7 @@ Exchanges an OAuth authorization code for access and refresh tokens.
 ```
 
 **Response (200):**
+
 ```json
 {
   "authenticationResult": {
@@ -252,6 +281,7 @@ Exchanges an OAuth authorization code for access and refresh tokens.
 Refreshes an expired access token using a valid refresh token.
 
 **Request:**
+
 ```json
 {
   "refresh_token": "eyJhbG..."
@@ -259,6 +289,7 @@ Refreshes an expired access token using a valid refresh token.
 ```
 
 **Response (200):**
+
 ```json
 {
   "access_token": "eyJhbG...",
@@ -267,6 +298,7 @@ Refreshes an expired access token using a valid refresh token.
 ```
 
 **Error Responses:**
+
 - `400` — Missing refresh token
 - `401` — Invalid, expired, or revoked refresh token
 - `500` — Server configuration error
@@ -280,6 +312,7 @@ Invalidates the refresh token server-side and ends the session.
 **Response (200):** Empty (success)
 
 **Error Responses:**
+
 - `401` — Missing or invalid access token
 
 ## Frontend Module: authTokenManager

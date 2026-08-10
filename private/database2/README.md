@@ -23,6 +23,12 @@ This document describes how the `DataFacade`, `DataCache`, and `DataStorage` cla
   `repositories/NodeContentRepository`, which `DataFacade` selects via
   `ContentRepository.owns()`.
 - Uses `ActionGet` to execute database queries and `DataCleaner` to clean up the data before returning it.
+- **Values are bound, never concatenated** (`$1`, `$2`, …). What may be bound is
+  defined in `actions/bindableValue.js`: scalars, `null`, arrays and plain
+  objects. For a `json`/`jsonb` column pass the **object** — the driver
+  serializes it. Passing its JSON text encodes it twice and stores a JSON
+  string, which `->>` cannot read a field from (see `doc/authentication.md`,
+  „Writing this column").
 
 ### Example Workflow
 

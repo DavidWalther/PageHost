@@ -25,14 +25,9 @@ const MOCK_CONFIGURATION = [
 ];
 
 // ----- Mock PostgresActions -----
-let mockExecuteSql = jest.fn().mockResolvedValue();
-PostgresActions.mockImplementation(() => {
-  return {
-    executeSql: mockExecuteSql,
-    connect: jest.fn(),
-    query: jest.fn().mockResolvedValue([]),
-  };
-});
+// `DataStorage` reicht den Connector nur an die Aktionen weiter; die sind hier
+// gemockt. Deshalb braucht die Attrappe keine Methode.
+PostgresActions.mockImplementation(() => ({}));
 
 // ----- Mock ActionGet -----
 let mockActionGetExecute = jest.fn().mockResolvedValue([
@@ -95,7 +90,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
           'testApplication'
@@ -117,7 +112,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
           'testApplication'
@@ -146,7 +141,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         // Der Anmeldeschlüssel kommt vom Identity Provider und ist damit
         // fremder Eingabe. Er geht gebunden in die Abfrage, nicht in den Text.
@@ -179,7 +174,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionEquals).toHaveBeenCalledWith(
           'key',
@@ -190,6 +185,37 @@ describe('DataStorage', () => {
         );
         expect(result).toEqual({});
       });
+    });
+
+    it('queryIdentityByRefreshTokenId sucht über das Token-Feld im JSON', async () => {
+      mockActionGetExecute.mockResolvedValue([
+        { id: '000i123', key: 'user@example.com', active: true },
+      ]);
+
+      dataStorage.setConditionApplicationKey('testApplication');
+      const result = await dataStorage.queryIdentityByRefreshTokenId('abc-123');
+
+      // Die Token-Id kommt aus einem Refresh-Token des Clients und geht
+      // deshalb gebunden in die Abfrage, nicht in den SQL-Text.
+      expect(mockActionConditionEquals).toHaveBeenCalledWith(
+        "refreshtoken->>'token'",
+        'abc-123'
+      );
+      expect(mockActionCustomConditions).toHaveBeenCalledWith('active = true');
+      expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+        'testApplication'
+      );
+      expect(result.id).toBe('000i123');
+    });
+
+    it('queryIdentityByRefreshTokenId liefert null, wenn nichts passt', async () => {
+      mockActionGetExecute.mockResolvedValue([]);
+
+      dataStorage.setConditionApplicationKey('testApplication');
+
+      expect(await dataStorage.queryIdentityByRefreshTokenId('abc-123')).toBe(
+        null
+      );
     });
   });
 
