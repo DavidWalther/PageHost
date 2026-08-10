@@ -1,28 +1,21 @@
 const RefreshEndpoint = require('../RefreshEndpoint.js');
 const { Logging } = require('../../../../../modules/logging.js');
 const { DataFacade } = require('../../../../../database2/DataFacade.js');
-const {
-  DataStorage,
-} = require('../../../../../database2/DataStorage/DataStorage.js');
 const RefreshTokenService = require('../../../../../modules/oAuth2/RefreshTokenService.js');
 const AccessTokenService = require('../../../../../modules/oAuth2/AccessTokenService.js');
-const {
-  ActionGet,
-} = require('../../../../../database2/DataStorage/actions/get.js');
 
 jest.mock('../../../../../modules/logging.js');
 jest.mock('../../../../../database2/DataFacade.js');
-jest.mock('../../../../../database2/DataStorage/DataStorage.js');
 jest.mock('../../../../../modules/oAuth2/RefreshTokenService.js');
 jest.mock('../../../../../modules/oAuth2/AccessTokenService.js');
-jest.mock('../../../../../database2/DataStorage/actions/get.js');
 
 describe('RefreshEndpoint', () => {
   let endpoint;
   let mockRequestObject;
   let mockResponseObject;
   let mockEnvironment;
-  let mockActionGetExecute;
+  let mockGetData;
+  let mockUpdateData;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -61,29 +54,14 @@ describe('RefreshEndpoint', () => {
       createJwt: jest.fn().mockReturnValue('new-access-token-jwt'),
     }));
 
-    mockActionGetExecute = jest
+    mockGetData = jest
       .fn()
-      .mockResolvedValue([
-        { id: 'identity-001', key: 'user@test.com', active: true },
-      ]);
-
-    ActionGet.mockImplementation(() => ({
-      setPgConnector: jest.fn().mockReturnThis(),
-      setTableName: jest.fn().mockReturnThis(),
-      setTableFields: jest.fn().mockReturnThis(),
-      setCustomConditions: jest.fn().mockReturnThis(),
-      setConditionEquals: jest.fn().mockReturnThis(),
-      setConditionApplicationKey: jest.fn().mockReturnThis(),
-      execute: mockActionGetExecute,
-    }));
-
-    DataStorage.mockImplementation(() => ({
-      pgConnector: {},
-      setConditionApplicationKey: jest.fn().mockReturnThis(),
-    }));
+      .mockResolvedValue({ id: 'identity-001', key: 'user@test.com' });
+    mockUpdateData = jest.fn().mockResolvedValue({});
 
     DataFacade.mockImplementation(() => ({
-      updateData: jest.fn().mockResolvedValue({}),
+      getData: mockGetData,
+      updateData: mockUpdateData,
       setSkipCache: jest.fn(),
     }));
 
@@ -131,8 +109,16 @@ describe('RefreshEndpoint', () => {
     });
   });
 
+  it('sucht die Identität über die Token-Id, nicht über den Anmeldeschlüssel', async () => {
+    await endpoint.execute();
+
+    expect(mockGetData).toHaveBeenCalledWith({
+      request: { table: 'identity', refreshTokenId: 'existing-uuid' },
+    });
+  });
+
   it('should return 401 when refresh token UUID does not match any identity', async () => {
-    mockActionGetExecute.mockResolvedValue([]);
+    mockGetData.mockResolvedValue(null);
 
     await endpoint.execute();
 
@@ -163,12 +149,6 @@ describe('RefreshEndpoint', () => {
   });
 
   it('should store the new refresh token UUID in the database', async () => {
-    const mockUpdateData = jest.fn().mockResolvedValue({});
-    DataFacade.mockImplementation(() => ({
-      updateData: mockUpdateData,
-      setSkipCache: jest.fn(),
-    }));
-
     await endpoint.execute();
 
     // Das **Objekt** geht in die jsonb-Spalte, nicht sein JSON-Text —

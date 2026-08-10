@@ -186,6 +186,37 @@ describe('DataStorage', () => {
         expect(result).toEqual({});
       });
     });
+
+    it('queryIdentityByRefreshTokenId sucht über das Token-Feld im JSON', async () => {
+      mockActionGetExecute.mockResolvedValue([
+        { id: '000i123', key: 'user@example.com', active: true },
+      ]);
+
+      dataStorage.setConditionApplicationKey('testApplication');
+      const result = await dataStorage.queryIdentityByRefreshTokenId('abc-123');
+
+      // Die Token-Id kommt aus einem Refresh-Token des Clients und geht
+      // deshalb gebunden in die Abfrage, nicht in den SQL-Text.
+      expect(mockActionConditionEquals).toHaveBeenCalledWith(
+        "refreshtoken->>'token'",
+        'abc-123'
+      );
+      expect(mockActionCustomConditions).toHaveBeenCalledWith('active = true');
+      expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
+        'testApplication'
+      );
+      expect(result.id).toBe('000i123');
+    });
+
+    it('queryIdentityByRefreshTokenId liefert null, wenn nichts passt', async () => {
+      mockActionGetExecute.mockResolvedValue([]);
+
+      dataStorage.setConditionApplicationKey('testApplication');
+
+      expect(await dataStorage.queryIdentityByRefreshTokenId('abc-123')).toBe(
+        null
+      );
+    });
   });
 
   describe('Query error propagation', () => {
