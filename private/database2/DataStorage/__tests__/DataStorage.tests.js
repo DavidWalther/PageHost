@@ -90,7 +90,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
           'testApplication'
@@ -112,7 +112,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionApplicationKey).toHaveBeenCalledWith(
           'testApplication'
@@ -141,7 +141,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         // Der Anmeldeschlüssel kommt vom Identity Provider und ist damit
         // fremder Eingabe. Er geht gebunden in die Abfrage, nicht in den Text.
@@ -174,7 +174,7 @@ describe('DataStorage', () => {
 
       expect(dataStorage).toBeInstanceOf(DataStorage);
       expect(queryPromise).toBeInstanceOf(Promise);
-      queryPromise.then((result) => {
+      await queryPromise.then((result) => {
         expect(ActionGet).toHaveBeenCalled();
         expect(mockActionConditionEquals).toHaveBeenCalledWith(
           'key',
