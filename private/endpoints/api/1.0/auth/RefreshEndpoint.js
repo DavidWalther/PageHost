@@ -159,11 +159,15 @@ class RefreshEndpoint {
         object: 'identity',
         payload: {
           id: identityRecord.id,
-          refreshtoken: JSON.stringify({
+          // `refreshtoken` ist eine jsonb-Spalte: das Objekt gehört übergeben,
+          // nicht sein JSON-Text. Serialisiert wird vom Treiber; wer
+          // vorcodiert, legt einen JSON-String ab, in dem `->>'token'` nichts
+          // mehr findet.
+          refreshtoken: {
             token: newRefreshPayload.token,
             issuedAt: newRefreshPayload.issuedAt,
             expiresAt: newRefreshPayload.expiresAt,
-          }),
+          },
         },
       });
     } catch (error) {

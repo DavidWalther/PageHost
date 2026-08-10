@@ -231,18 +231,33 @@ describe('CodeExchangeEndpoint', () => {
       .mockResolvedValueOnce(true) // this will be a hit on the auth_state cache. what simulates that the auth_state was initialized by the server before
       .mockResolvedValue(null); // this will be on the auth_code. what simulates that the auth_code was not used before
 
+    const mockUpdateData = jest.fn().mockResolvedValue({});
     DataFacade.mockImplementation(() => {
       return {
         getData: jest
           .fn()
           .mockResolvedValue({ id: 'user-id', email: 'legit.user@test.com' }),
-        updateData: jest.fn().mockResolvedValue({}),
+        updateData: mockUpdateData,
         setSkipCache: jest.fn(),
       };
     });
 
     let environment = new Environment();
     await endpoint.setEnvironment(environment).execute();
+
+    // Das **Objekt** geht in die jsonb-Spalte, nicht sein JSON-Text —
+    // serialisiert wird vom Treiber.
+    expect(mockUpdateData).toHaveBeenCalledWith({
+      object: 'identity',
+      payload: {
+        id: 'user-id',
+        refreshtoken: {
+          token: expect.any(String),
+          issuedAt: expect.any(String),
+          expiresAt: expect.any(String),
+        },
+      },
+    });
 
     expect(mockResponseObject.json).toHaveBeenCalledWith({
       authenticationResult: {

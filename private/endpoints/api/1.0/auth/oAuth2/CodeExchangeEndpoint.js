@@ -325,11 +325,15 @@ class CodeExchangeEndpoint {
         object: 'identity',
         payload: {
           id: userWithAuthorization.id,
-          refreshtoken: JSON.stringify({
+          // `refreshtoken` ist eine jsonb-Spalte: das Objekt gehört übergeben,
+          // nicht sein JSON-Text. Serialisiert wird vom Treiber; wer
+          // vorcodiert, legt einen JSON-String ab, in dem `->>'token'` nichts
+          // mehr findet.
+          refreshtoken: {
             token: refreshTokenPayload.token,
             issuedAt: refreshTokenPayload.issuedAt,
             expiresAt: refreshTokenPayload.expiresAt,
-          }),
+          },
         },
       });
     } catch (error) {

@@ -171,11 +171,17 @@ describe('RefreshEndpoint', () => {
 
     await endpoint.execute();
 
+    // Das **Objekt** geht in die jsonb-Spalte, nicht sein JSON-Text —
+    // serialisiert wird vom Treiber.
     expect(mockUpdateData).toHaveBeenCalledWith({
       object: 'identity',
       payload: {
         id: 'identity-001',
-        refreshtoken: expect.any(String),
+        refreshtoken: {
+          token: expect.any(String),
+          issuedAt: expect.any(String),
+          expiresAt: expect.any(String),
+        },
       },
     });
   });
