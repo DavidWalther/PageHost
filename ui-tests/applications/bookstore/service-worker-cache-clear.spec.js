@@ -84,4 +84,25 @@ test.describe('service-worker-cache-clear', () => {
     // Der Reload ist Sache der Anwendung (Entscheidung 4b), nicht des Listeners.
     expect(await page.evaluate(() => window.__reloaded)).toBe(false);
   });
+
+  test('Klick in der Danger Zone löscht und lädt neu', async ({ page }) => {
+    await page.evaluate(async () => {
+      const cache = await caches.open('epc-probe');
+      await cache.put('/probe', new Response('x'));
+    });
+
+    await page.locator('#button-settings_open').click();
+    const dangerRow = page.locator('[slot="danger"]', {
+      hasText: 'App-Cache löschen',
+    });
+    await expect(dangerRow).toBeVisible();
+
+    const reloaded = page.waitForEvent('load');
+    await dangerRow.getByRole('button', { name: 'Cache löschen' }).click();
+    await reloaded;
+
+    // Nach dem Neuladen darf der Precache wieder entstehen — der Probe-Cache
+    // ist der Beleg, dass gelöscht wurde, und kommt nie zurück.
+    expect(await page.evaluate(() => caches.keys())).not.toContain('epc-probe');
+  });
 });

@@ -149,6 +149,22 @@ class Bookstore extends LitElement {
             </button>
           </div>
         </div>
+        <div
+          slot="danger"
+          class="slds-grid slds-wrap slds-grid_vertical-align-center slds-m-top_x-small"
+        >
+          <div class="slds-col slds-text-align_left slds-size_1-of-2">
+            App-Cache löschen
+          </div>
+          <div class="slds-col slds-text-align_right slds-size_1-of-2">
+            <button
+              class="slds-button slds-button_destructive"
+              @click="${this.handleClearServiceWorkerCache}"
+            >
+              Cache löschen
+            </button>
+          </div>
+        </div>
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
@@ -281,6 +297,31 @@ class Bookstore extends LitElement {
     this._setCurrentLocation(chapterId);
 
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
+  }
+
+  /**
+   * Setzt den Service Worker zurueck — ausgefuehrt wird das eine Ebene hoeher.
+   *
+   * Die Anwendung sagt nur, DASS zurueckgesetzt werden soll; das Loeschen der
+   * Caches und das Deregistrieren erledigt der Listener in `public/index.js`,
+   * wo der Worker auch registriert wird. Zurueck kommt `(error, data)` wie bei
+   * save/publish. Bei Erfolg laedt die Anwendung neu — erst dadurch laeuft
+   * `install` wieder und der Precache entsteht frisch.
+   */
+  handleClearServiceWorkerCache() {
+    this.dispatchEvent(
+      new CustomEvent('service-worker-cache-clear', {
+        detail: {
+          callback: (error) => {
+            if (error) {
+              return;
+            }
+            window.location.reload();
+          },
+        },
+        bubbles: true,
+      })
+    );
   }
 
   handleClearSession() {
