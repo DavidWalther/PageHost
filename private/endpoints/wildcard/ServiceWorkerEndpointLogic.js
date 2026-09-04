@@ -80,4 +80,4 @@ class ServiceWorkerEndpointLogic extends EndpointLogic {
   }
 }
 
-module.exports = ServiceWorkerEndpointLogic;
+module.exports = { ServiceWorkerEndpointLogic };
