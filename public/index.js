@@ -246,7 +246,7 @@ function attachPublishEventListener(element) {
         callback(null, data);
       })
       .catch((error) => {
-        console.error('Error during publispayloaout:', error);
+        console.error('Error during publish callout:', error);
         callback(error, null);
       });
   });
