@@ -127,7 +127,11 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
   HTML-Tag-Präfix `slds-`.
 - **`public/components/`** — anwendungsspezifische Komponenten, Tag-Präfix
   `custom-`. Holen Daten über Events, die `public/index.js` an die
-  Backend-Endpunkte bindet.
+  Backend-Endpunkte bindet. Dieselbe Ebene bindet auch Events, die **kein**
+  Backend meinen, sondern die Browser-Plattform: `service-worker-cache-clear`
+  löscht dort alle Caches der Origin und deregistriert den Service Worker — den
+  `index.js` auch registriert. Die Anwendung sagt nur, **dass** zurückgesetzt
+  werden soll, und entscheidet anhand der Rückmeldung über Reload oder Toast.
   - **`custom-node`** stellt **einen Knoten** dar: seine Kind-Knoten als
     Auswahl, seine Inhalte als Text. Es gibt keinen Modus und keine
     Tiefenangabe — die Daten sagen, **was** ein Knoten hat. **Wofür** eine
