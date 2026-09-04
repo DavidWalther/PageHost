@@ -18,7 +18,6 @@ const STATIC_FILES = [
   '/styles/darkmode.css',
 
   // Applications
-  '/applications/bookstore/bookstore.html',
   '/applications/bookstore/bookstore.js',
 
   // Custom Components
