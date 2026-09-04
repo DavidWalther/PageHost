@@ -4,11 +4,12 @@
 
 ### General Application Variables
 
-| Variable                    | Description                                                                                                                                             |
-| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| APPLICATION_APPLICATION_KEY | Key to seperate different applications in cache and database                                                                                            |
-| LOGGING_SEVERITY_LEVEL      | Level of Debug messages to show. <br> Messages with the given severity and above are printed. <br><br>Possible values: INFO, DEBUG, FINE, FINER, FINEST |
-| COMPRESSION_THRESHOLD_BYTES | Minimum response size in bytes before HTTP compression is applied. Required value (in bytes).                                                           |
+| Variable                          | Description                                                                                                                                                                                              |
+| :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| APPLICATION_APPLICATION_KEY       | Key to seperate different applications in cache and database                                                                                                                                             |
+| LOGGING_SEVERITY_LEVEL            | Level of Debug messages to show. <br> Messages with the given severity and above are printed. <br><br>Possible values: INFO, DEBUG, FINE, FINER, FINEST                                                  |
+| COMPRESSION_THRESHOLD_BYTES       | Minimum response size in bytes before HTTP compression is applied. Required value (in bytes).                                                                                                            |
+| APPLICATION_SERVICEWORKER_VERSION | Version of the service worker. It is baked into `public/sw.js` on delivery and names its cache (`app-cache-v<version>`). Changing it makes the browser install the worker anew and rebuild the precache. |
 
 ### Cache related Variables
 
