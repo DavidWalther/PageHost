@@ -105,4 +105,37 @@ test.describe('service-worker-cache-clear', () => {
     // ist der Beleg, dass gelöscht wurde, und kommt nie zurück.
     expect(await page.evaluate(() => caches.keys())).not.toContain('epc-probe');
   });
+
+  test('Fehler beim Löschen: Toast statt Reload', async ({ page }) => {
+    // Cache Storage verweigern lassen. addInitScript wirkt erst ab der
+    // nächsten Navigation, deshalb der Reload.
+    await page.addInitScript(() => {
+      window.caches.keys = () =>
+        Promise.reject(new Error('Cache Storage verweigert'));
+    });
+    await page.reload();
+
+    await page.locator('#button-settings_open').click();
+
+    // Der Toast selbst räumt sich nach 900 ms wieder ab (showToast in
+    // index.js) — geprüft wird deshalb das Event, nicht das flüchtige Markup.
+    await page.evaluate(() => {
+      window.__toasts = [];
+      window.__stillHere = true;
+      document
+        .querySelector('app-bookstore')
+        .addEventListener('toast', (event) =>
+          window.__toasts.push(event.detail)
+        );
+    });
+
+    await page
+      .locator('[slot="danger"]', { hasText: 'App-Cache löschen' })
+      .getByRole('button', { name: 'Cache löschen' })
+      .click();
+
+    await page.waitForFunction(() => window.__toasts.length > 0);
+    expect(await page.evaluate(() => window.__toasts[0].variant)).toBe('error');
+    expect(await page.evaluate(() => window.__stillHere)).toBe(true);
+  });
 });

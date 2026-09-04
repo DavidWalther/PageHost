@@ -314,6 +314,7 @@ class Bookstore extends LitElement {
         detail: {
           callback: (error) => {
             if (error) {
+              this.fireToast('Cache konnte nicht gelöscht werden', 'error');
               return;
             }
             window.location.reload();
