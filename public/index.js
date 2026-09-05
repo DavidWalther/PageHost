@@ -14,6 +14,7 @@ async function initializeApp() {
   attachCreateEventListener(mainApp);
   attachPublishEventListener(mainApp);
   attachUnpublishEventListener(mainApp);
+  attachClearServiceWorkerCacheEventListener(mainApp);
 
   bodyElem.appendChild(mainApp);
 }
@@ -245,7 +246,7 @@ function attachPublishEventListener(element) {
         callback(null, data);
       })
       .catch((error) => {
-        console.error('Error during publispayloaout:', error);
+        console.error('Error during publish callout:', error);
         callback(error, null);
       });
   });
@@ -276,6 +277,71 @@ function attachUnpublishEventListener(element) {
         callback(error, null);
       });
   });
+}
+
+/**
+ * Setzt den Service Worker zurueck: Erst werden alle Caches der Origin
+ * geloescht, dann alle Registrierungen deregistriert.
+ *
+ * Beides gehoert hierher, nicht in die Anwendung: Diese Ebene registriert den
+ * Worker (siehe unten), also raeumt sie ihn auch weg. Ueber `caches.keys()` zu
+ * gehen statt ueber den aktuellen Cache-Namen erwischt auch Reste aelterer
+ * Versionen und bleibt gueltig, wenn sw.js seine Caches spaeter anders benennt.
+ *
+ * Das Deregistrieren ist der Teil, der den Precache wieder aufbaut: Ohne es
+ * bliebe der Worker aktiv, `install` liefe bei unveraenderter Version nicht
+ * erneut, und der Cache bliebe leer. Nach dem Neuladen greift die Registrierung
+ * am Dateiende wieder und der Precache entsteht frisch.
+ */
+function attachClearServiceWorkerCacheEventListener(element) {
+  element.addEventListener('service-worker-cache-clear', (clearEvent) => {
+    const callback = clearEvent.detail.callback;
+
+    deleteAllCaches()
+      .then((cachesDeleted) =>
+        unregisterServiceWorkers().then((workersUnregistered) => ({
+          cachesDeleted,
+          workersUnregistered,
+        }))
+      )
+      .then((data) => {
+        callback(null, data);
+      })
+      .catch((error) => {
+        console.error('Error during service worker cache clear:', error);
+        callback(error, null);
+      });
+  });
+}
+
+function deleteAllCaches() {
+  if (!('caches' in window)) {
+    return Promise.reject(
+      new Error('Cache Storage steht in diesem Browser nicht zur Verfuegung')
+    );
+  }
+
+  return caches
+    .keys()
+    .then((cacheNames) =>
+      Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)))
+    )
+    .then((deletions) => deletions.length);
+}
+
+function unregisterServiceWorkers() {
+  if (!('serviceWorker' in navigator)) {
+    return Promise.resolve(0);
+  }
+
+  return navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) =>
+      Promise.all(
+        registrations.map((registration) => registration.unregister())
+      )
+    )
+    .then((unregistrations) => unregistrations.length);
 }
 
 if ('serviceWorker' in navigator) {
