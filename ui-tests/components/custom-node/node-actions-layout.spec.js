@@ -5,9 +5,13 @@ const { cacheLitBundle } = require('../../support/component-page');
 /**
  * Aufbau der Actions-Leiste von `custom-node`.
  *
- * Die Leiste im Kopf der Karte hält je Aktion ein eigenes Grid-Element. Jedes
- * ist nur so breit wie sein Inhalt plus Gutter — die Elemente wachsen nicht,
- * sonst verteilten sich die Buttons über die ganze Kartenbreite.
+ * Die Leiste im Kopf der Karte hält je Aktion ein eigenes Grid-Element mit
+ * `xxx-small`-Gutter (2px je Seite): Jedes Element ist genau so breit wie seine
+ * Aktion plus 4px.
+ *
+ * Ob die Elemente wachsen dürften, prüft dieser Spec **nicht** — hier könnten
+ * sie es gar nicht: `slds-card` legt den Actions-Slot in ein inhaltsbreites
+ * `slds-no-flex`-Element, das Grid hat also keinen freien Platz.
  *
  * Die Zusicherungen sind bewusst **strukturneutral**: Sie greifen auf die Kinder
  * des `[slot="actions"]`-Elements und deren Rechtecke zu, nicht auf bestimmte
@@ -64,7 +68,7 @@ const ACTION_IDS = [
   'button-delete',
 ];
 
-// Gutter der Leiste: 2px je Seite.
+// Gutter der Leiste: slds-gutters_xxx-small, 2px je Seite.
 const GUTTER = 4;
 
 function readActions(node) {
@@ -121,15 +125,15 @@ test.describe('Knoten: Aufbau der Actions-Leiste', () => {
       expect([...placed].sort()).toEqual([...actions.present].sort());
     });
 
-    test(`${role}: kein Element ist breiter als sein Inhalt plus Gutter`, async ({
+    test(`${role}: jedes Element ist so breit wie seine Aktion plus 4px Gutter`, async ({
       page,
     }) => {
       const actions = await readActions(nodeByRole(page, role));
       expect(actions.items.length).toBeGreaterThan(0);
       for (const item of actions.items) {
-        expect(item.width).toBeLessThanOrEqual(
-          item.contentWidth + GUTTER + 0.5
-        );
+        expect(
+          Math.abs(item.width - (item.contentWidth + GUTTER))
+        ).toBeLessThanOrEqual(0.5);
       }
     });
   }
