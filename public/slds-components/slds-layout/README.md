@@ -195,6 +195,21 @@ A value outside that set applies **no** size class — a typo such as `size="1-o
 | `align-middle` | `slds-align-middle` | Center content vertically |
 | `align-bottom` | `slds-align-bottom` | Align content to bottom   |
 
+#### Flex (grow / shrink)
+
+| Attribute     | SLDS Class         | Effect (SLDS documentation)                            |
+| ------------- | ------------------ | ------------------------------------------------------ |
+| `grow-none`   | `slds-grow-none`   | "Prevents column from growing to children's content"   |
+| `shrink-none` | `slds-shrink-none` | "Prevents column from shrinking to children's content" |
+
+Source: the _Flex Utilities_ table of the
+[SLDS Grid System](https://v1.lightningdesignsystem.com/utilities/grid/)
+documentation, which lists both as column utilities.
+
+Only the `-none` variants exist as attributes: `slds-grow` and `slds-shrink`
+match the default of `slds-col` (`flex: 1 1 auto`) and would have no effect.
+SLDS defines no breakpoint variants of these utilities.
+
 ---
 
 ## Examples
