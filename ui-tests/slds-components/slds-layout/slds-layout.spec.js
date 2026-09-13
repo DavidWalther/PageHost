@@ -284,4 +284,50 @@ test.describe('slds-layout', () => {
       alignBottom: false,
     });
   });
+
+  test('Item: grow-none setzt slds-grow-none', async ({ page }) => {
+    const res = await mountGrid(page, { itemAttrs: { 'grow-none': true } });
+    expect(res.itemClasses).toContain('slds-grow-none');
+    expect(res.itemClasses).not.toContain('slds-shrink-none');
+  });
+
+  test('Item: shrink-none setzt slds-shrink-none', async ({ page }) => {
+    const res = await mountGrid(page, { itemAttrs: { 'shrink-none': true } });
+    expect(res.itemClasses).toContain('slds-shrink-none');
+    expect(res.itemClasses).not.toContain('slds-grow-none');
+  });
+
+  test('Item: grow-none und shrink-none wirken nebeneinander', async ({
+    page,
+  }) => {
+    const res = await mountGrid(page, {
+      itemAttrs: { 'grow-none': true, 'shrink-none': true },
+    });
+    expect(res.itemClasses).toEqual(
+      expect.arrayContaining(['slds-col', 'slds-grow-none', 'slds-shrink-none'])
+    );
+  });
+
+  test('Item: Entfernen von grow-none entfernt die Klasse wieder', async ({
+    page,
+  }) => {
+    await mountGrid(page, { itemAttrs: { 'grow-none': true } });
+
+    const without = await toggleAttribute(
+      page,
+      'slds-layout-item',
+      'grow-none',
+      false
+    );
+    expect(without).not.toContain('slds-grow-none');
+    expect(without).toContain('slds-col');
+
+    const again = await toggleAttribute(
+      page,
+      'slds-layout-item',
+      'grow-none',
+      true
+    );
+    expect(again).toContain('slds-grow-none');
+  });
 });
