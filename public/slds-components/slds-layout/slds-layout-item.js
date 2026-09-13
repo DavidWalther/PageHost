@@ -37,6 +37,13 @@ const ALIGN_CLASSES = {
   alignBottom: 'slds-align-bottom',
 };
 
+// Nur die -none-Varianten: slds-grow / slds-shrink entsprechen dem Default von
+// slds-col (flex: 1 1 auto) und wären als Attribut wirkungslos.
+const GROW_SHRINK_CLASSES = {
+  growNone: 'slds-grow-none',
+  shrinkNone: 'slds-shrink-none',
+};
+
 class SldsLayoutItem extends LitElement {
   static properties = {
     // Ein String je Breakpoint (`size="1-of-2"`). Früher stand hier ein Boolean je
@@ -54,6 +61,9 @@ class SldsLayoutItem extends LitElement {
     alignTop: { type: Boolean, attribute: 'align-top' },
     alignMiddle: { type: Boolean, attribute: 'align-middle' },
     alignBottom: { type: Boolean, attribute: 'align-bottom' },
+
+    growNone: { type: Boolean, attribute: 'grow-none' },
+    shrinkNone: { type: Boolean, attribute: 'shrink-none' },
   };
 
   constructor() {
@@ -71,6 +81,8 @@ class SldsLayoutItem extends LitElement {
     this.alignTop = false;
     this.alignMiddle = false;
     this.alignBottom = false;
+    this.growNone = false;
+    this.shrinkNone = false;
   }
 
   createRenderRoot() {
@@ -107,6 +119,12 @@ class SldsLayoutItem extends LitElement {
       ...BUMP_CLASSES,
       ...ALIGN_CLASSES,
     })) {
+      if (changedProperties.has(prop)) {
+        this.classList.toggle(className, this[prop]);
+      }
+    }
+
+    for (const [prop, className] of Object.entries(GROW_SHRINK_CLASSES)) {
       if (changedProperties.has(prop)) {
         this.classList.toggle(className, this[prop]);
       }
