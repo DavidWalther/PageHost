@@ -56,6 +56,23 @@ class SldsLayoutItem extends LitElement {
     alignBottom: { type: Boolean, attribute: 'align-bottom' },
   };
 
+  constructor() {
+    super();
+    // Boolean-Defaults sind Pflicht, nicht Stil: classList.toggle(cls, undefined)
+    // schaltet UM, statt abzuschalten. Ohne Default bliebe eine nie gesetzte
+    // Property undefined — und ein Zweig in updated(), der sie liest, ohne dass
+    // sie selbst geändert wurde, würde die Klasse setzen statt entfernen.
+    // Die Size-Strings bleiben bewusst ohne Default: SIZE_FRACTIONS.has(undefined)
+    // ist ohnehin false, ein '' würde nur das erste changedProperties füllen.
+    this.bumpLeft = false;
+    this.bumpRight = false;
+    this.bumpTop = false;
+    this.bumpBottom = false;
+    this.alignTop = false;
+    this.alignMiddle = false;
+    this.alignBottom = false;
+  }
+
   createRenderRoot() {
     return this;
   }

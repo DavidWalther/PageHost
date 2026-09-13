@@ -247,4 +247,41 @@ test.describe('slds-layout', () => {
     expect(after).toContain('slds-m-bottom--medium');
     expect(after).toContain('slds-size_3-of-4');
   });
+
+  test('Item: Boolean-Properties sind ohne Attribut false, nicht undefined', async ({
+    page,
+  }) => {
+    // classList.toggle(cls, undefined) schaltet UM, statt abzuschalten. Liest
+    // updated() eine Boolean-Property, die selbst nicht geändert wurde, würde
+    // `undefined` eine Klasse setzen, wo sie entfernt gehört. Geprüft wird der
+    // Typ, nicht nur `falsy` — sonst ginge `undefined` als `false` durch.
+    await mountGrid(page);
+
+    const values = await page.evaluate(() => {
+      const item = document.querySelector('slds-layout-item');
+      return Object.fromEntries(
+        [
+          'bumpLeft',
+          'bumpRight',
+          'bumpTop',
+          'bumpBottom',
+          'alignTop',
+          'alignMiddle',
+          'alignBottom',
+        ].map((prop) => [
+          prop,
+          typeof item[prop] === 'boolean' ? item[prop] : typeof item[prop],
+        ])
+      );
+    });
+    expect(values).toEqual({
+      bumpLeft: false,
+      bumpRight: false,
+      bumpTop: false,
+      bumpBottom: false,
+      alignTop: false,
+      alignMiddle: false,
+      alignBottom: false,
+    });
+  });
 });
