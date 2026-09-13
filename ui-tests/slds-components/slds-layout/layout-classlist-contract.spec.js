@@ -16,7 +16,9 @@ const { cacheLitBundle } = require('../../support/component-page');
  * eine Klasse, die die Komponente nicht selbst gesetzt hat.
  */
 
-// Präfixe, die die Komponenten selbst vergeben.
+// Präfixe, die die Komponenten selbst vergeben. Setzt ein neues Attribut eine
+// Klasse, gehört sie hier mit hinein — sonst schlägt der Contract an, sobald ein
+// Consumer das Attribut nutzt, obwohl die Komponente die Klasse selbst vergibt.
 const OWNED_PREFIXES = [
   'slds-grid',
   'slds-wrap',
@@ -27,6 +29,8 @@ const OWNED_PREFIXES = [
   'slds-medium-size_',
   'slds-large-size_',
   'slds-align-',
+  'slds-grow-none',
+  'slds-shrink-none',
 ];
 
 test.describe('Layout: classList-Contract', () => {
