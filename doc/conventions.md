@@ -75,6 +75,41 @@ html`<svg class="slds-icon"><use xlink:href="${sprite}#${name}"></use></svg>`;
   `slds-button-icon` (2026-07-09); bei den Ports von `slds-panel` und
   `slds-combobox` von vornherein auf `href` gezogen.
 
+### Fehlgebrauch: stilles Zurückfallen statt Meldung
+
+Eine ungültige oder unpassende Angabe an einer `slds-*`-Komponente **wirft keinen
+Fehler und schreibt nichts auf die Konsole**. Sie wirkt einfach nicht: Die
+Komponente setzt dann keine Klasse oder fällt auf ihren dokumentierten Standard
+zurück.
+
+**Warum:** Vorbild ist SLDS in Salesforce — dort geht falsche Verwendung ebenfalls
+still „einfach nicht". Die Komponenten folgen dem, statt einen eigenen Meldeweg
+einzuführen.
+
+**Regeln:**
+
+- Kein `console.*` und kein `throw` für Fehlgebrauch in `slds-*`-Komponenten.
+- Das Zurückfallen ist **Soll-Verhalten** und wird im Playwright-Spec der
+  Komponente festgeschrieben. Abgrenzung: Tests mit dem Präfix `FEHLVERHALTEN`
+  (siehe „Historie") halten einen **Bug** als Ist-Zustand fest — stilles
+  Zurückfallen ist kein Bug.
+- Ist das Verhalten für Consumer überraschend, steht es in der README der
+  Komponente — etwa bei `slds-layout-item`, das `grow-none` bei gesetzter
+  `size` nicht in eine Klasse übersetzt.
+
+**Festgeschrieben in:**
+
+| Komponente          | Angabe                          | Verhalten                        | Spec                        |
+| :------------------ | :------------------------------ | :------------------------------- | :-------------------------- |
+| `slds-layout-item`  | `size="1-of-9"`                 | keine Größenklasse               | `slds-layout.spec.js`       |
+| `slds-layout-item`  | `grow-none` mit gültiger `size` | keine `slds-grow-none`-Klasse    | `slds-layout.spec.js`       |
+| `slds-button-icon`  | ungültige `variant` / `size`    | keine Variant- bzw. Größenklasse | `slds-button-icon.spec.js`  |
+| `slds-breadcrumbs`  | unbekannte `size`               | fällt auf `medium` zurück        | `slds-breadcrumbs.spec.js`  |
+| `slds-toast`        | ungültiger `state`              | fällt auf `info` zurück          | `slds-toast.spec.js`        |
+| `slds-input`        | unbekannter `type`              | fällt auf den Text-Input zurück  | `slds-input.spec.js`        |
+| `slds-progress-bar` | unbekannte `size`               | keine Größenklasse               | `slds-progress-bar.spec.js` |
+| `slds-progress-bar` | nicht-numerisches `percent`     | `0` statt `NaN`                  | `slds-progress-bar.spec.js` |
+
 ## Historie: abgelöste Muster
 
 Beide früheren Muster sind vollständig abgelöst — sie tauchen im Code nicht mehr
