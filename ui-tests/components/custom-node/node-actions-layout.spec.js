@@ -138,3 +138,68 @@ test.describe('Knoten: Aufbau der Actions-Leiste', () => {
     });
   }
 });
+
+/**
+ * Leere Elemente: Eine Aktion, deren Button wegen der Rolle oder eines fehlenden
+ * Scopes nicht erscheint, bekommt auch kein Element — sonst bliebe ein leerer
+ * Rahmen mit 4px Gutter als Lücke in der Leiste stehen.
+ */
+const ONLY_VISIBLE = [
+  {
+    name: 'ohne Sitzung',
+    scopes: null,
+    expected: { navigation: ['button-share'], content: ['button-share'] },
+  },
+  {
+    name: 'nur Scope read',
+    scopes: ['read'],
+    expected: { navigation: ['button-share'], content: ['button-share'] },
+  },
+  {
+    name: 'nur Scope edit',
+    scopes: ['edit'],
+    expected: {
+      navigation: ['node-edit', 'button-share'],
+      content: ['node-edit', 'button-share'],
+    },
+  },
+  {
+    name: 'alle Scopes',
+    scopes: SESSION_SCOPES,
+    expected: {
+      navigation: ['node-create-child', 'node-edit', 'button-share'],
+      content: [
+        'node-edit',
+        'button-share',
+        'button-create-content',
+        'button-delete',
+      ],
+    },
+  },
+];
+
+test.describe('Knoten: Actions-Leiste ohne leere Elemente', () => {
+  for (const scenario of ONLY_VISIBLE) {
+    for (const role of Object.keys(ROLES)) {
+      test(`${scenario.name}: ${role} hat nur Elemente mit sichtbarer Aktion`, async ({
+        page,
+      }) => {
+        await mockBookstoreCallouts(page);
+        await cacheLitBundle(page);
+        if (scenario.scopes) {
+          await withSession(page, scenario.scopes);
+        }
+        await page.goto(ENTRY);
+        await expect(nodeByRole(page, role).locator('#node-name')).toHaveText(
+          ROLES[role]
+        );
+
+        const actions = await readActions(nodeByRole(page, role));
+        expect(actions.items.every((item) => item.contentWidth > 0)).toBe(true);
+        expect(actions.items.map((item) => item.ids[0])).toEqual(
+          scenario.expected[role]
+        );
+      });
+    }
+  }
+});

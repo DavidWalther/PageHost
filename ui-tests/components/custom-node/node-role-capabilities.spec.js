@@ -157,13 +157,15 @@ test.describe('Knoten-Rollen: Attribut und Scope gelten zusammen', () => {
     await expect(contentNode(page).locator('#button-delete')).toHaveCount(0);
   });
 
-  test('ohne Sitzung bleibt auch „Kind anlegen" leer', async ({ page }) => {
-    // Der Rahmen wird gerendert (`can-create-child` ist gesetzt), aber
-    // `custom-chapter-edit` prüft seinerseits den `create`-Scope und zeigt
-    // seinen Button nicht. Beide Tore greifen hintereinander.
+  test('ohne Sitzung wird „Kind anlegen" gar nicht erst gerendert', async ({
+    page,
+  }) => {
+    // `can-create-child` ist gesetzt, aber ohne `create`-Scope rendert
+    // `custom-node` das Element nicht — statt eines leeren Rahmens, in dem
+    // `custom-chapter-edit` seinen Button ohnehin nicht zeigen würde.
     await expect(
       navigationNode(page).locator('#node-create-child')
-    ).toHaveCount(1);
+    ).toHaveCount(0);
     await expect(
       navigationNode(page).locator('slds-button-icon[icon="utility:add"]')
     ).toHaveCount(0);
