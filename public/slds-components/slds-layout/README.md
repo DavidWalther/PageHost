@@ -98,15 +98,21 @@ A flex grid container: adds `slds-grid` to the host element.
 
 #### Gutters
 
-| Attribute          | SLDS Class              |
-| ------------------ | ----------------------- |
-| `gutters`          | `slds-gutters`          |
-| `gutters-xx-small` | `slds-gutters_xx-small` |
-| `gutters-x-small`  | `slds-gutters_x-small`  |
-| `gutters-small`    | `slds-gutters_small`    |
-| `gutters-medium`   | `slds-gutters_medium`   |
-| `gutters-large`    | `slds-gutters_large`    |
-| `gutters-xx-large` | `slds-gutters_xx-large` |
+| Attribute           | SLDS Class               |
+| ------------------- | ------------------------ |
+| `gutters`           | `slds-gutters`           |
+| `gutters-xxx-small` | `slds-gutters_xxx-small` |
+| `gutters-xx-small`  | `slds-gutters_xx-small`  |
+| `gutters-x-small`   | `slds-gutters_x-small`   |
+| `gutters-small`     | `slds-gutters_small`     |
+| `gutters-medium`    | `slds-gutters_medium`    |
+| `gutters-large`     | `slds-gutters_large`     |
+| `gutters-x-large`   | `slds-gutters_x-large`   |
+| `gutters-xx-large`  | `slds-gutters_xx-large`  |
+
+These are all nine gutter sizes of the
+[SLDS Grid System](https://v1.lightningdesignsystem.com/utilities/grid/)
+documentation. The `slds-gutters_direct*` variants are not supported.
 
 #### Horizontal Alignment
 
