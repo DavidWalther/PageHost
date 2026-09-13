@@ -242,6 +242,31 @@ leaves it off.
 > browser (computed `flex-grow` / `flex-shrink`, values in the table) against
 > `@salesforce-ux/design-system` **2.30.7**. Re-check it when upgrading SLDS.
 
+##### Interaction with aligned layouts
+
+In a `<slds-layout>` with `align-center`, `align-space`, `align-spread` or
+`align-end`, columns **do not grow in the first place**: SLDS sets
+`flex-grow: 0` on every `slds-col` inside these grids. `grow-none` is
+therefore **redundant** there, while `shrink-none` still takes effect. Values for
+an item without a size:
+
+| Layout attribute                                           | Item attribute | `flex-grow` | `flex-shrink` |
+| ---------------------------------------------------------- | -------------- | ----------- | ------------- |
+| _none_                                                     | _none_         | 1           | 1             |
+| _none_                                                     | `grow-none`    | **0**       | 1             |
+| `align-center`, `align-space`, `align-spread`, `align-end` | _none_         | **0**       | 1             |
+| `align-center`, `align-space`, `align-spread`, `align-end` | `grow-none`    | 0           | 1             |
+| `align-center`, `align-space`, `align-spread`, `align-end` | `shrink-none`  | 0           | **0**         |
+
+Unlike with `size`, `<slds-layout-item>` still sets `slds-grow-none` here. To
+leave it off, the item would have to watch the attributes of its parent layout,
+including changes at runtime — the redundant class does no harm.
+
+> **Not documented by SLDS either.** Derived from the compiled stylesheet and
+> measured in the browser (computed `flex-grow` / `flex-shrink` at 390px and
+> 1100px) against `@salesforce-ux/design-system` **2.30.7**. Re-check it when
+> upgrading SLDS.
+
 ---
 
 ## Examples
