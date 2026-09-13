@@ -288,20 +288,20 @@ class CustomNode extends LitElement {
       children.length > this.childButtonsNumberMax;
 
     return html`
-      <div id="child-navigation" class="slds-grid slds-gutters slds-wrap">
+      <slds-layout id="child-navigation" gutters wrap>
         ${
           asCombobox
             ? this._renderChildCombobox(children)
             : children.map((child) => this._renderChildButton(child))
         }
-      </div>
+      </slds-layout>
     `;
   }
 
   _renderChildButton(child) {
     const isSelected = this.selectedChild === child.id;
     return html`
-      <div class="slds-col slds-grow-none">
+      <slds-layout-item grow-none>
         <button
           class="slds-button slds-button_neutral ${
             isSelected ? 'slds-button_brand' : ''
@@ -312,7 +312,7 @@ class CustomNode extends LitElement {
         >
           ${child.name}
         </button>
-      </div>
+      </slds-layout-item>
     `;
   }
 
@@ -324,7 +324,7 @@ class CustomNode extends LitElement {
     }));
 
     return html`
-      <div class="slds-col slds-size_1-of-1 slds-grow-none">
+      <slds-layout-item size="1-of-1">
         <slds-combobox
           options=${JSON.stringify(options)}
           label="Auswahl"
@@ -332,7 +332,7 @@ class CustomNode extends LitElement {
           value=${this.selectedChild}
           @combobox-select=${(event) => this.selectChild(event.detail.value)}
         ></slds-combobox>
-      </div>
+      </slds-layout-item>
     `;
   }
 
