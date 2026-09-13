@@ -45,20 +45,22 @@ Zwei Familien mit **gegenläufiger Voreinstellung**. Rendering ist an und wird
 abgeschaltet (wie `no-load`/`no-display`/`no-footer` im Projekt); ein
 schreibender Weg ist aus und wird ausdrücklich gewährt.
 
-| Attribut              | Voreinstellung | Wirkung                                                          |
-| :-------------------- | :------------- | :--------------------------------------------------------------- |
-| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert        |
-| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen  |
-| `can-create-child`    | aus            | Button „Kind-Knoten anlegen"                                     |
-| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')` |
-| `can-delete`          | aus            | Button „Knoten löschen" — **zusätzlich** zu `hasScope('delete')` |
+| Attribut              | Voreinstellung | Wirkung                                                               |
+| :-------------------- | :------------- | :-------------------------------------------------------------------- |
+| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert             |
+| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen       |
+| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')` |
+| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`      |
+| `can-delete`          | aus            | Button „Knoten löschen" — **zusätzlich** zu `hasScope('delete')`      |
 
-Die beiden `can-…`-Attribute für schreibende Aktionen ersetzen die
-Scope-Prüfung **nicht**, sie kommen davor: Ohne Sitzung erscheint der Button
-auch mit gesetztem Attribut nicht.
+Die `can-…`-Attribute für schreibende Aktionen ersetzen die Scope-Prüfung
+**nicht**, sie kommen davor: Ohne passenden Scope erscheint die Aktion auch mit
+gesetztem Attribut nicht — und zwar ganz: Die Leiste bekommt dann auch kein
+leeres Element, das als Lücke stehen bliebe.
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
 sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.
+`Bearbeiten` hängt trotzdem am Scope `edit`; `Teilen` erscheint immer.
 Kommt eine Rolle dazu, für die das nicht mehr gilt, ist das der Moment, es
 nachzuziehen — nicht vorher.
 

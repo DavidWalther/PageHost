@@ -37,6 +37,13 @@ const ALIGN_CLASSES = {
   alignBottom: 'slds-align-bottom',
 };
 
+// Nur die -none-Varianten: slds-grow / slds-shrink entsprechen dem Default von
+// slds-col (flex: 1 1 auto) und wären als Attribut wirkungslos.
+const GROW_SHRINK_CLASSES = {
+  growNone: 'slds-grow-none',
+  shrinkNone: 'slds-shrink-none',
+};
+
 class SldsLayoutItem extends LitElement {
   static properties = {
     // Ein String je Breakpoint (`size="1-of-2"`). Früher stand hier ein Boolean je
@@ -54,7 +61,29 @@ class SldsLayoutItem extends LitElement {
     alignTop: { type: Boolean, attribute: 'align-top' },
     alignMiddle: { type: Boolean, attribute: 'align-middle' },
     alignBottom: { type: Boolean, attribute: 'align-bottom' },
+
+    growNone: { type: Boolean, attribute: 'grow-none' },
+    shrinkNone: { type: Boolean, attribute: 'shrink-none' },
   };
+
+  constructor() {
+    super();
+    // Boolean-Defaults sind Pflicht, nicht Stil: classList.toggle(cls, undefined)
+    // schaltet UM, statt abzuschalten. Ohne Default bliebe eine nie gesetzte
+    // Property undefined — und ein Zweig in updated(), der sie liest, ohne dass
+    // sie selbst geändert wurde, würde die Klasse setzen statt entfernen.
+    // Die Size-Strings bleiben bewusst ohne Default: SIZE_FRACTIONS.has(undefined)
+    // ist ohnehin false, ein '' würde nur das erste changedProperties füllen.
+    this.bumpLeft = false;
+    this.bumpRight = false;
+    this.bumpTop = false;
+    this.bumpBottom = false;
+    this.alignTop = false;
+    this.alignMiddle = false;
+    this.alignBottom = false;
+    this.growNone = false;
+    this.shrinkNone = false;
+  }
 
   createRenderRoot() {
     return this;
@@ -92,6 +121,22 @@ class SldsLayoutItem extends LitElement {
     })) {
       if (changedProperties.has(prop)) {
         this.classList.toggle(className, this[prop]);
+      }
+    }
+
+    // Eine gültige size setzt slds-size_* und damit flex: none bei jeder Breite —
+    // slds-grow-none / slds-shrink-none wären wirkungslos und werden nicht
+    // gesetzt. small-/medium-/large-size unterdrücken bewusst nicht: sie setzen
+    // flex: none erst ab ihrem Breakpoint, darunter wirkt die Utility weiter.
+    // SLDS dokumentiert diese Wechselwirkung nicht; gemessen im Browser an
+    // @salesforce-ux/design-system 2.30.7.
+    const suppressedBySize = SIZE_FRACTIONS.has(this.size);
+    for (const [prop, className] of Object.entries(GROW_SHRINK_CLASSES)) {
+      // Auch bei einer reinen size-Änderung neu bewerten — sonst bliebe die
+      // Klasse nach einem Size-Wechsel stehen bzw. fehlte.
+      if (changedProperties.has(prop) || changedProperties.has('size')) {
+        // !! gegen classList.toggle(cls, undefined), das UMSCHALTET statt abschaltet.
+        this.classList.toggle(className, !!this[prop] && !suppressedBySize);
       }
     }
   }
