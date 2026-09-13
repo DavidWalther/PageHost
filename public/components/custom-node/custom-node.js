@@ -193,70 +193,78 @@ class CustomNode extends LitElement {
       }
       <slds-card no-footer ?hidden=${this._scrollPending}>
         <span id="node-name" slot="header">${this._nodeData.name || ''}</span>
-        <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
+        <slds-layout slot="actions" wrap gutters-xxx-small>
           ${
             this.canCreateChild
-              ? html`<div
-                  class="slds-col slds-grow-none slds-align_absolute-center"
-                >
-                  <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
-                       Komponente im Anlege-Modus. -->
-                  <custom-chapter-edit
-                    id="node-create-child"
-                    story-id="${this.id}"
-                    mode="create"
-                    .chapters="${this.childNodeList}"
-                    @chapter-created=${this._handleChildCreated}
-                  ></custom-chapter-edit>
-                </div>`
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
+                         Komponente im Anlege-Modus. -->
+                    <custom-chapter-edit
+                      id="node-create-child"
+                      story-id="${this.id}"
+                      mode="create"
+                      .chapters="${this.childNodeList}"
+                      @chapter-created=${this._handleChildCreated}
+                    ></custom-chapter-edit>
+                  </div>
+                </slds-layout-item>`
               : ''
           }
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            <custom-chapter-edit
-              id="node-edit"
-              chapter-id="${this.id}"
-              story-id="${this._nodeData.parent_node_id || ''}"
-              name="${this._nodeData.name || ''}"
-              sort-number="${this._nodeData.sortnumber || 1}"
-              ?reversed="${this._nodeData.reversed || false}"
-              publish-date="${this._nodeData.published_date || ''}"
-              @chapter-updated=${this._handleNodeUpdated}
-            ></custom-chapter-edit>
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            <slds-button-icon
-              id="button-share"
-              icon="utility:link"
-              variant="container-filled"
-              @click=${this.handleShareClick}
-            ></slds-button-icon>
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${
-              this.canCreateContent && this.hasScope('create')
-                ? html`<slds-button-icon
-                    id="button-create-content"
-                    icon="utility:add"
-                    variant="container-filled"
-                    @click=${this.handleCreateContentClick}
-                  ></slds-button-icon>`
-                : ''
-            }
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${
-              this.canDelete && this.hasScope('delete')
-                ? html`<slds-button-icon
-                    id="button-delete"
-                    icon="utility:delete"
-                    variant="container-filled"
-                    title="${this.labels.labelDeleteNode}"
-                    @click=${this._handleDeleteClick}
-                  ></slds-button-icon>`
-                : ''
-            }
-          </div>
-        </div>
+          <slds-layout-item grow-none align-middle>
+            <div class="slds-align_absolute-center">
+              <custom-chapter-edit
+                id="node-edit"
+                chapter-id="${this.id}"
+                story-id="${this._nodeData.parent_node_id || ''}"
+                name="${this._nodeData.name || ''}"
+                sort-number="${this._nodeData.sortnumber || 1}"
+                ?reversed="${this._nodeData.reversed || false}"
+                publish-date="${this._nodeData.published_date || ''}"
+                @chapter-updated=${this._handleNodeUpdated}
+              ></custom-chapter-edit>
+            </div>
+          </slds-layout-item>
+          <slds-layout-item grow-none align-middle>
+            <div class="slds-align_absolute-center">
+              <slds-button-icon
+                id="button-share"
+                icon="utility:link"
+                variant="container-filled"
+                @click=${this.handleShareClick}
+              ></slds-button-icon>
+            </div>
+          </slds-layout-item>
+          <slds-layout-item grow-none align-middle>
+            <div class="slds-align_absolute-center">
+              ${
+                this.canCreateContent && this.hasScope('create')
+                  ? html`<slds-button-icon
+                      id="button-create-content"
+                      icon="utility:add"
+                      variant="container-filled"
+                      @click=${this.handleCreateContentClick}
+                    ></slds-button-icon>`
+                  : ''
+              }
+            </div>
+          </slds-layout-item>
+          <slds-layout-item grow-none align-middle>
+            <div class="slds-align_absolute-center">
+              ${
+                this.canDelete && this.hasScope('delete')
+                  ? html`<slds-button-icon
+                      id="button-delete"
+                      icon="utility:delete"
+                      variant="container-filled"
+                      title="${this.labels.labelDeleteNode}"
+                      @click=${this._handleDeleteClick}
+                    ></slds-button-icon>`
+                  : ''
+              }
+            </div>
+          </slds-layout-item>
+        </slds-layout>
         ${this.renderChildNavigation()} ${this.renderContents()}
       </slds-card>
     `;
@@ -280,20 +288,20 @@ class CustomNode extends LitElement {
       children.length > this.childButtonsNumberMax;
 
     return html`
-      <div id="child-navigation" class="slds-grid slds-gutters slds-wrap">
+      <slds-layout id="child-navigation" gutters wrap>
         ${
           asCombobox
             ? this._renderChildCombobox(children)
             : children.map((child) => this._renderChildButton(child))
         }
-      </div>
+      </slds-layout>
     `;
   }
 
   _renderChildButton(child) {
     const isSelected = this.selectedChild === child.id;
     return html`
-      <div class="slds-col slds-grow-none">
+      <slds-layout-item grow-none>
         <button
           class="slds-button slds-button_neutral ${
             isSelected ? 'slds-button_brand' : ''
@@ -304,7 +312,7 @@ class CustomNode extends LitElement {
         >
           ${child.name}
         </button>
-      </div>
+      </slds-layout-item>
     `;
   }
 
@@ -316,7 +324,7 @@ class CustomNode extends LitElement {
     }));
 
     return html`
-      <div class="slds-col slds-size_1-of-1 slds-grow-none">
+      <slds-layout-item size="1-of-1">
         <slds-combobox
           options=${JSON.stringify(options)}
           label="Auswahl"
@@ -324,7 +332,7 @@ class CustomNode extends LitElement {
           value=${this.selectedChild}
           @combobox-select=${(event) => this.selectChild(event.detail.value)}
         ></slds-combobox>
-      </div>
+      </slds-layout-item>
     `;
   }
 
@@ -374,7 +382,7 @@ class CustomNode extends LitElement {
 
           return html`
             <div
-              class="slds-col slds-p-bottom_small content-container pending"
+              class="slds-p-bottom_small content-container pending"
               data-content-id=${entry.id}
               data-chunk-index=${chunkIndex}
             >
