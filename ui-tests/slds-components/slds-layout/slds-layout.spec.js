@@ -370,4 +370,61 @@ test.describe('slds-layout', () => {
     });
     expect(res.itemClasses).toEqual(['slds-col', 'slds-grow-none']);
   });
+
+  test('Item: size zur Laufzeit setzen entfernt grow-none und shrink-none', async ({
+    page,
+  }) => {
+    await mountGrid(page, {
+      itemAttrs: { 'grow-none': true, 'shrink-none': true },
+    });
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.setAttribute('size', '1-of-2');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).toContain('slds-size_1-of-2');
+    expect(after).not.toContain('slds-grow-none');
+    expect(after).not.toContain('slds-shrink-none');
+  });
+
+  test('Item: size zur Laufzeit entfernen stellt grow-none und shrink-none wieder her', async ({
+    page,
+  }) => {
+    const mounted = await mountGrid(page, {
+      itemAttrs: { size: '1-of-2', 'grow-none': true, 'shrink-none': true },
+    });
+    expect(mounted.itemClasses).not.toContain('slds-grow-none');
+    expect(mounted.itemClasses).not.toContain('slds-shrink-none');
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.removeAttribute('size');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).not.toContain('slds-size_1-of-2');
+    expect(after).toContain('slds-grow-none');
+    expect(after).toContain('slds-shrink-none');
+  });
+
+  test('Item: size-Wechsel ohne grow-none setzt keine grow- oder shrink-Klasse', async ({
+    page,
+  }) => {
+    // Ein size-Wechsel bewertet grow/shrink neu, obwohl deren Properties sich
+    // nicht geändert haben. Wären sie undefined statt false, würde
+    // classList.toggle(cls, undefined) die Klasse SETZEN statt entfernen.
+    await mountGrid(page, { itemAttrs: { size: '1-of-2' } });
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.setAttribute('size', '1-of-9');
+      await item.updateComplete;
+      item.removeAttribute('size');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).toEqual(['slds-col']);
+  });
 });
