@@ -194,8 +194,12 @@ class CustomNode extends LitElement {
       <slds-card no-footer ?hidden=${this._scrollPending}>
         <span id="node-name" slot="header">${this._nodeData.name || ''}</span>
         <slds-layout slot="actions" wrap gutters-xxx-small>
+          <!-- Ein Element je Aktion, aber nur, wenn die Aktion sichtbar ist —
+               sonst bliebe ein leerer Rahmen als Lücke stehen. Für die beiden
+               custom-chapter-edit prüft custom-node dafür dieselben Scopes, die
+               die Komponente selbst prüft (create bzw. edit): bewusst doppelt. -->
           ${
-            this.canCreateChild
+            this.canCreateChild && this.hasScope('create')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
                     <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
@@ -211,20 +215,24 @@ class CustomNode extends LitElement {
                 </slds-layout-item>`
               : ''
           }
-          <slds-layout-item grow-none align-middle>
-            <div class="slds-align_absolute-center">
-              <custom-chapter-edit
-                id="node-edit"
-                chapter-id="${this.id}"
-                story-id="${this._nodeData.parent_node_id || ''}"
-                name="${this._nodeData.name || ''}"
-                sort-number="${this._nodeData.sortnumber || 1}"
-                ?reversed="${this._nodeData.reversed || false}"
-                publish-date="${this._nodeData.published_date || ''}"
-                @chapter-updated=${this._handleNodeUpdated}
-              ></custom-chapter-edit>
-            </div>
-          </slds-layout-item>
+          ${
+            this.hasScope('edit')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <custom-chapter-edit
+                      id="node-edit"
+                      chapter-id="${this.id}"
+                      story-id="${this._nodeData.parent_node_id || ''}"
+                      name="${this._nodeData.name || ''}"
+                      sort-number="${this._nodeData.sortnumber || 1}"
+                      ?reversed="${this._nodeData.reversed || false}"
+                      publish-date="${this._nodeData.published_date || ''}"
+                      @chapter-updated=${this._handleNodeUpdated}
+                    ></custom-chapter-edit>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
           <slds-layout-item grow-none align-middle>
             <div class="slds-align_absolute-center">
               <slds-button-icon
@@ -235,35 +243,35 @@ class CustomNode extends LitElement {
               ></slds-button-icon>
             </div>
           </slds-layout-item>
-          <slds-layout-item grow-none align-middle>
-            <div class="slds-align_absolute-center">
-              ${
-                this.canCreateContent && this.hasScope('create')
-                  ? html`<slds-button-icon
+          ${
+            this.canCreateContent && this.hasScope('create')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <slds-button-icon
                       id="button-create-content"
                       icon="utility:add"
                       variant="container-filled"
                       @click=${this.handleCreateContentClick}
-                    ></slds-button-icon>`
-                  : ''
-              }
-            </div>
-          </slds-layout-item>
-          <slds-layout-item grow-none align-middle>
-            <div class="slds-align_absolute-center">
-              ${
-                this.canDelete && this.hasScope('delete')
-                  ? html`<slds-button-icon
+                    ></slds-button-icon>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+          ${
+            this.canDelete && this.hasScope('delete')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <slds-button-icon
                       id="button-delete"
                       icon="utility:delete"
                       variant="container-filled"
                       title="${this.labels.labelDeleteNode}"
                       @click=${this._handleDeleteClick}
-                    ></slds-button-icon>`
-                  : ''
-              }
-            </div>
-          </slds-layout-item>
+                    ></slds-button-icon>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
         </slds-layout>
         ${this.renderChildNavigation()} ${this.renderContents()}
       </slds-card>
