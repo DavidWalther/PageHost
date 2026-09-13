@@ -142,6 +142,41 @@ test.describe('slds-layout', () => {
     expect(again).toContain('slds-wrap');
   });
 
+  test('Layout: gutters-xxx-small und gutters-x-large schalten ihre Klassen', async ({
+    page,
+  }) => {
+    // Beide Stufen stehen in der SLDS-Grid-Doku (2px / 32px); damit deckt
+    // slds-layout alle neun dokumentierten Gutter-Stufen ab.
+    const xxxSmall = await mountGrid(page, {
+      layoutAttrs: { 'gutters-xxx-small': true },
+    });
+    expect(xxxSmall.layoutClasses).toContain('slds-gutters_xxx-small');
+
+    const xLarge = await mountGrid(page, {
+      layoutAttrs: { 'gutters-x-large': true },
+    });
+    expect(xLarge.layoutClasses).toContain('slds-gutters_x-large');
+  });
+
+  test('Layout: Entfernen von gutters-xxx-small und gutters-x-large entfernt die Klassen', async ({
+    page,
+  }) => {
+    await mountGrid(page, {
+      layoutAttrs: { 'gutters-xxx-small': true, 'gutters-x-large': true },
+    });
+
+    await toggleAttribute(page, 'slds-layout', 'gutters-xxx-small', false);
+    const without = await toggleAttribute(
+      page,
+      'slds-layout',
+      'gutters-x-large',
+      false
+    );
+    expect(without).not.toContain('slds-gutters_xxx-small');
+    expect(without).not.toContain('slds-gutters_x-large');
+    expect(without).toContain('slds-grid');
+  });
+
   test('Item: Größen-, Bump- und Align-Attribute schalten die passenden Klassen', async ({
     page,
   }) => {
