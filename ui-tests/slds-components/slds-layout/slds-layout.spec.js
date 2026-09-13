@@ -268,6 +268,8 @@ test.describe('slds-layout', () => {
           'alignTop',
           'alignMiddle',
           'alignBottom',
+          'growNone',
+          'shrinkNone',
         ].map((prop) => [
           prop,
           typeof item[prop] === 'boolean' ? item[prop] : typeof item[prop],
@@ -282,6 +284,147 @@ test.describe('slds-layout', () => {
       alignTop: false,
       alignMiddle: false,
       alignBottom: false,
+      growNone: false,
+      shrinkNone: false,
     });
+  });
+
+  test('Item: grow-none setzt slds-grow-none', async ({ page }) => {
+    const res = await mountGrid(page, { itemAttrs: { 'grow-none': true } });
+    expect(res.itemClasses).toContain('slds-grow-none');
+    expect(res.itemClasses).not.toContain('slds-shrink-none');
+  });
+
+  test('Item: shrink-none setzt slds-shrink-none', async ({ page }) => {
+    const res = await mountGrid(page, { itemAttrs: { 'shrink-none': true } });
+    expect(res.itemClasses).toContain('slds-shrink-none');
+    expect(res.itemClasses).not.toContain('slds-grow-none');
+  });
+
+  test('Item: grow-none und shrink-none wirken nebeneinander', async ({
+    page,
+  }) => {
+    const res = await mountGrid(page, {
+      itemAttrs: { 'grow-none': true, 'shrink-none': true },
+    });
+    expect(res.itemClasses).toEqual(
+      expect.arrayContaining(['slds-col', 'slds-grow-none', 'slds-shrink-none'])
+    );
+  });
+
+  test('Item: Entfernen von grow-none entfernt die Klasse wieder', async ({
+    page,
+  }) => {
+    await mountGrid(page, { itemAttrs: { 'grow-none': true } });
+
+    const without = await toggleAttribute(
+      page,
+      'slds-layout-item',
+      'grow-none',
+      false
+    );
+    expect(without).not.toContain('slds-grow-none');
+    expect(without).toContain('slds-col');
+
+    const again = await toggleAttribute(
+      page,
+      'slds-layout-item',
+      'grow-none',
+      true
+    );
+    expect(again).toContain('slds-grow-none');
+  });
+
+  test('Item: eine gültige size unterdrückt grow-none und shrink-none', async ({
+    page,
+  }) => {
+    // slds-size_* setzt flex: none bei jeder Breite und überfährt beide
+    // Utilities. Die Klassen wären wirkungslos — also werden sie nicht gesetzt.
+    const res = await mountGrid(page, {
+      itemAttrs: { size: '1-of-2', 'grow-none': true, 'shrink-none': true },
+    });
+    expect(res.itemClasses).toContain('slds-size_1-of-2');
+    expect(res.itemClasses).not.toContain('slds-grow-none');
+    expect(res.itemClasses).not.toContain('slds-shrink-none');
+  });
+
+  test('Item: eine Breakpoint-Size unterdrückt grow-none nicht', async ({
+    page,
+  }) => {
+    // slds-medium-size_* setzt flex: none erst ab 48em. Darunter wirkt
+    // slds-grow-none weiterhin und darf nicht verschluckt werden.
+    const res = await mountGrid(page, {
+      itemAttrs: { 'medium-size': '1-of-3', 'grow-none': true },
+    });
+    expect(res.itemClasses).toEqual(
+      expect.arrayContaining(['slds-medium-size_1-of-3', 'slds-grow-none'])
+    );
+  });
+
+  test('Item: eine ungültige size unterdrückt grow-none nicht', async ({
+    page,
+  }) => {
+    // 1-of-9 erzeugt keine Größenklasse — ohne flex: none wirkt grow-none.
+    const res = await mountGrid(page, {
+      itemAttrs: { size: '1-of-9', 'grow-none': true },
+    });
+    expect(res.itemClasses).toEqual(['slds-col', 'slds-grow-none']);
+  });
+
+  test('Item: size zur Laufzeit setzen entfernt grow-none und shrink-none', async ({
+    page,
+  }) => {
+    await mountGrid(page, {
+      itemAttrs: { 'grow-none': true, 'shrink-none': true },
+    });
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.setAttribute('size', '1-of-2');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).toContain('slds-size_1-of-2');
+    expect(after).not.toContain('slds-grow-none');
+    expect(after).not.toContain('slds-shrink-none');
+  });
+
+  test('Item: size zur Laufzeit entfernen stellt grow-none und shrink-none wieder her', async ({
+    page,
+  }) => {
+    const mounted = await mountGrid(page, {
+      itemAttrs: { size: '1-of-2', 'grow-none': true, 'shrink-none': true },
+    });
+    expect(mounted.itemClasses).not.toContain('slds-grow-none');
+    expect(mounted.itemClasses).not.toContain('slds-shrink-none');
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.removeAttribute('size');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).not.toContain('slds-size_1-of-2');
+    expect(after).toContain('slds-grow-none');
+    expect(after).toContain('slds-shrink-none');
+  });
+
+  test('Item: size-Wechsel ohne grow-none setzt keine grow- oder shrink-Klasse', async ({
+    page,
+  }) => {
+    // Ein size-Wechsel bewertet grow/shrink neu, obwohl deren Properties sich
+    // nicht geändert haben. Wären sie undefined statt false, würde
+    // classList.toggle(cls, undefined) die Klasse SETZEN statt entfernen.
+    await mountGrid(page, { itemAttrs: { size: '1-of-2' } });
+
+    const after = await page.evaluate(async () => {
+      const item = document.querySelector('slds-layout-item');
+      item.setAttribute('size', '1-of-9');
+      await item.updateComplete;
+      item.removeAttribute('size');
+      await item.updateComplete;
+      return [...item.classList];
+    });
+    expect(after).toEqual(['slds-col']);
   });
 });
