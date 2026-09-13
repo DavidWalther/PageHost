@@ -210,6 +210,32 @@ Only the `-none` variants exist as attributes: `slds-grow` and `slds-shrink`
 match the default of `slds-col` (`flex: 1 1 auto`) and would have no effect.
 SLDS defines no breakpoint variants of these utilities.
 
+##### Interaction with sizes
+
+`grow-none` and `shrink-none` are **not turned into a class while `size` holds a
+valid fraction.** Every `slds-size_*` class sets `flex: none` at every width,
+which overrides both utilities — the class would be inert, so the component
+leaves it off.
+
+- `small-size`, `medium-size` and `large-size` do **not** suppress: their
+  classes set `flex: none` only from their breakpoint on. Below it the utility
+  still takes effect.
+- An invalid `size` (e.g. `1-of-9`) applies no size class, so it does not
+  suppress either.
+- Changing `size` at runtime re-evaluates both classes.
+
+| Attributes                       | `slds-grow-none` set? | `flex-grow` at 390px | at 1100px     |
+| -------------------------------- | --------------------- | -------------------- | ------------- |
+| `grow-none`                      | yes                   | 0                    | 0             |
+| `size="1-of-2" grow-none`        | **no**                | 0 (from size)        | 0 (from size) |
+| `medium-size="1-of-3" grow-none` | yes                   | 0                    | 0 (from size) |
+
+> **Not documented by SLDS.** The grid documentation describes the flex
+> utilities but says nothing about how they interact with the sizing classes.
+> The rule above is derived from the compiled stylesheet and was measured in the
+> browser (computed `flex-grow` / `flex-shrink`, values in the table) against
+> `@salesforce-ux/design-system` **2.30.7**. Re-check it when upgrading SLDS.
+
 ---
 
 ## Examples
