@@ -382,7 +382,7 @@ class CustomNode extends LitElement {
 
           return html`
             <div
-              class="slds-col slds-p-bottom_small content-container pending"
+              class="slds-p-bottom_small content-container pending"
               data-content-id=${entry.id}
               data-chunk-index=${chunkIndex}
             >
