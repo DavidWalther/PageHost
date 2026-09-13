@@ -1,6 +1,6 @@
 # slds-layout & slds-layout-item
 
-Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/components/utilities/grid/).
+Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/utilities/grid/).
 
 Most attributes are **booleans** — add the attribute name to enable the corresponding
 SLDS class (`wrap`, `gutters-small`, `bump-right`, …). The **sizes** of
