@@ -124,9 +124,19 @@ class SldsLayoutItem extends LitElement {
       }
     }
 
+    // Eine gültige size setzt slds-size_* und damit flex: none bei jeder Breite —
+    // slds-grow-none / slds-shrink-none wären wirkungslos und werden nicht
+    // gesetzt. small-/medium-/large-size unterdrücken bewusst nicht: sie setzen
+    // flex: none erst ab ihrem Breakpoint, darunter wirkt die Utility weiter.
+    // SLDS dokumentiert diese Wechselwirkung nicht; gemessen im Browser an
+    // @salesforce-ux/design-system 2.30.7.
+    const suppressedBySize = SIZE_FRACTIONS.has(this.size);
     for (const [prop, className] of Object.entries(GROW_SHRINK_CLASSES)) {
-      if (changedProperties.has(prop)) {
-        this.classList.toggle(className, this[prop]);
+      // Auch bei einer reinen size-Änderung neu bewerten — sonst bliebe die
+      // Klasse nach einem Size-Wechsel stehen bzw. fehlte.
+      if (changedProperties.has(prop) || changedProperties.has('size')) {
+        // !! gegen classList.toggle(cls, undefined), das UMSCHALTET statt abschaltet.
+        this.classList.toggle(className, !!this[prop] && !suppressedBySize);
       }
     }
   }
