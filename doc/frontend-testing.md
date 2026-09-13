@@ -111,15 +111,15 @@ Diese Unterscheidung betrifft den **Mechanismus** (welche Seite der Test lädt),
 „Wo gehört ein neuer Spec hin?"). Ein App-Test kann sehr wohl im Ordner einer
 Komponente liegen.
 
-| Art                  | Specs                                                                                        | Seite                                 |
-| :------------------- | :------------------------------------------------------------------------------------------- | :------------------------------------ |
-| **App-Tests**        | `bookstore.smoke`, `navigation-modal`, `story-chapter-combobox`, `layout-classlist-contract` | echte App (`page.goto('/')`)          |
-| **Komponententests** | die 13 `slds-<name>.spec.js`                                                                 | **leere Seite** (`gotoComponentPage`) |
+| Art                  | Specs                                                                                           | Seite                                 |
+| :------------------- | :---------------------------------------------------------------------------------------------- | :------------------------------------ |
+| **App-Tests**        | u. a. `bookstore.smoke`, `navigation-modal`, `node-child-combobox`, `layout-classlist-contract` | echte App (`page.goto('/')`)          |
+| **Komponententests** | die 13 `slds-<name>.spec.js`                                                                    | **leere Seite** (`gotoComponentPage`) |
 
 Ein App-Test ist nötig, wenn der Gegenstand **nur im Zusammenspiel** existiert:
 `layout-classlist-contract` prüft, dass kein Consumer Klassen an einem
 Layout-Host ablegt — das ist ohne die Consumer nicht prüfbar.
-`story-chapter-combobox` prüft einen Pfad, den erst der Consumer auslöst
+`node-child-combobox` prüft einen Pfad, den erst der Consumer auslöst
 (`custom-node` rendert die Combobox nur ab genügend Kind-Knoten).
 
 Ein Komponententest mountet eine Webkomponente isoliert und prüft ihr Shadow-DOM.
