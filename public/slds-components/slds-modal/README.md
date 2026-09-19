@@ -33,12 +33,17 @@ this.shadowRoot.querySelector('slds-modal').hide();
 | ---------- | ------- | ------- | --------------------------------------------------------------------------- |
 | `open`     | Boolean | `false` | Whether the dialog is shown. Reflected. While `false`, nothing is rendered. |
 | `heading`  | String  | `''`    | Heading text, used unless the `headline` slot is filled.                    |
-| `headless` | Boolean | `false` | Omits the header region. Reflected.                                         |
+| `headless` | Boolean | `false` | Omits the header region. Reflected. See the note below the table.           |
 | `footless` | Boolean | `false` | Omits the footer region. Reflected.                                         |
 | `size`     | String  | _unset_ | Width modifier: `small`, `medium`, `large`, `full`. Reflected. See below.   |
 
 > The heading attribute used to be called `title`, which shadowed the _global_ HTML
 > `title` attribute and gave the host an unwanted browser tooltip. Use `heading`.
+
+> With `headless` the content region takes over the rounded top corners via
+> `slds-modal__content_headless` — without it the square content would stick out
+> of the rounded container. `footless` needs no counterpart: SLDS rounds the
+> bottom through `.slds-modal__container > .slds-modal__content:last-child`.
 
 ## Sizes
 

@@ -99,6 +99,18 @@ class SLDSModal extends LitElement {
       .filter(Boolean)
       .join(' ');
 
+    // Ohne Header rundet SLDS die oberen Ecken des Inhalts nur ueber diese
+    // Klasse. Fehlt sie, stoesst der Inhalt eckig an den runden Container.
+    // Das Gegenstueck fuer `footless` braucht es nicht: dort greift bereits
+    // `.slds-modal__container > .slds-modal__content:last-child`.
+    const contentClasses = [
+      'slds-modal__content',
+      'slds-p-around_medium',
+      this.headless ? 'slds-modal__content_headless' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     return html`
       <section
         role="dialog"
@@ -138,7 +150,7 @@ class SLDSModal extends LitElement {
           }
 
           <!-- Modal Body -->
-          <div class="slds-modal__content slds-p-around_medium">
+          <div class="${contentClasses}">
             <slot></slot>
           </div>
 

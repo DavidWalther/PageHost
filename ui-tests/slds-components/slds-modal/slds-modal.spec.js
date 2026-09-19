@@ -49,6 +49,9 @@ async function mountModal(page, { attrs = {}, action } = {}) {
         hasDialog: !!section,
         // Klassenliste der Dialog-Section: hier haengen die Groessen-Modifier.
         sectionClasses: section ? [...section.classList] : null,
+        contentClasses: root.querySelector('.slds-modal__content')
+          ? [...root.querySelector('.slds-modal__content').classList]
+          : null,
         hasBackdrop: !!root.querySelector('.slds-backdrop'),
         hasCloseButton: !!root.querySelector('.slds-modal__close'),
         hasHeader: !!root.querySelector('.slds-modal__header'),
@@ -167,6 +170,31 @@ test.describe('slds-modal', () => {
     expect(res.sectionClasses).not.toContain('slds-modal_gigantisch');
     // Der Dialog steht trotzdem normal.
     expect(res.hasDialog).toBe(true);
+  });
+
+  test('headless rundet die oberen Ecken des Inhalts', async ({ page }) => {
+    // Ohne Header rundet SLDS die oberen Ecken des Inhalts nur ueber
+    // `slds-modal__content_headless` (bzw. ueber einen leeren Header davor).
+    // Fehlt die Klasse, stoesst der Inhalt eckig an den runden Container.
+    const headless = await mountModal(page, {
+      attrs: { open: true, headless: true },
+    });
+    expect(headless.contentClasses).toContain('slds-modal__content_headless');
+
+    // Gegenprobe: mit Header uebernimmt der Header die oberen Ecken.
+    const withHeader = await mountModal(page, { attrs: { open: true } });
+    expect(withHeader.contentClasses).not.toContain(
+      'slds-modal__content_headless'
+    );
+
+    // footless bleibt bewusst unangetastet: die unteren Ecken erledigt schon
+    // der SLDS-Selektor `.slds-modal__container > .slds-modal__content:last-child`.
+    const footless = await mountModal(page, {
+      attrs: { open: true, footless: true },
+    });
+    expect(footless.contentClasses).not.toContain(
+      'slds-modal__content_footless'
+    );
   });
 
   test('Close-Button schließt und feuert close', async ({ page }) => {
