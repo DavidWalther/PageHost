@@ -69,6 +69,13 @@ async function mountModal(page, { attrs = {}, action } = {}) {
   );
 }
 
+// Alle Groessen-Modifier tragen den Unterstrich; `slds-modal` und
+// `slds-fade-in-open` nicht. Das faengt auch ein versehentliches
+// `slds-modal_undefined` in der Klassenliste.
+function sizeModifiers(classes) {
+  return classes.filter((name) => name.startsWith('slds-modal_'));
+}
+
 test.describe('slds-modal', () => {
   test.beforeEach(async ({ page }) => {
     await gotoComponentPage(page);
@@ -141,6 +148,26 @@ test.describe('slds-modal', () => {
       expect(res.sectionClasses).toContain('slds-fade-in-open');
     });
   }
+
+  test('ohne size bleibt es bei der SLDS-Basisbreite', async ({ page }) => {
+    // Rueckwaertskompatibilitaet: alle vier Consumer setzen kein size-Attribut
+    // und muessen unveraendert rendern.
+    const res = await mountModal(page, { attrs: { open: true } });
+    expect(sizeModifiers(res.sectionClasses)).toEqual([]);
+    expect(res.sectionClasses).toContain('slds-modal');
+  });
+
+  test('unbekannte size wirkt still nicht', async ({ page }) => {
+    // Soll-Verhalten nach doc/conventions.md: kein throw, keine Konsolen-
+    // ausgabe, nur keine Klasse.
+    const res = await mountModal(page, {
+      attrs: { open: true, size: 'gigantisch' },
+    });
+    expect(sizeModifiers(res.sectionClasses)).toEqual([]);
+    expect(res.sectionClasses).not.toContain('slds-modal_gigantisch');
+    // Der Dialog steht trotzdem normal.
+    expect(res.hasDialog).toBe(true);
+  });
 
   test('Close-Button schließt und feuert close', async ({ page }) => {
     const res = await mountModal(page, {
