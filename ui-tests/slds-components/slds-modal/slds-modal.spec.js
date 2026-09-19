@@ -126,6 +126,22 @@ test.describe('slds-modal', () => {
     expect(footless.hasFooter).toBe(false);
   });
 
+  // --- Größen ---------------------------------------------------------------
+  //
+  // SLDS bringt die Breiten als Modifier am `.slds-modal`-Element mit. Die
+  // Komponente verantwortet nur die Klasse — die Breite selbst liefert das
+  // Stylesheet. Deshalb ist die Klassenliste der Contract.
+
+  for (const size of ['small', 'medium', 'large', 'full']) {
+    test(`size="${size}" setzt den SLDS-Modifier`, async ({ page }) => {
+      const res = await mountModal(page, { attrs: { open: true, size } });
+      expect(res.sectionClasses).toContain(`slds-modal_${size}`);
+      // Die Basisklassen bleiben daneben bestehen.
+      expect(res.sectionClasses).toContain('slds-modal');
+      expect(res.sectionClasses).toContain('slds-fade-in-open');
+    });
+  }
+
   test('Close-Button schließt und feuert close', async ({ page }) => {
     const res = await mountModal(page, {
       attrs: { open: true },
