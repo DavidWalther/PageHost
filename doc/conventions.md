@@ -109,6 +109,7 @@ einzuführen.
 | `slds-input`        | unbekannter `type`              | fällt auf den Text-Input zurück  | `slds-input.spec.js`        |
 | `slds-progress-bar` | unbekannte `size`               | keine Größenklasse               | `slds-progress-bar.spec.js` |
 | `slds-progress-bar` | nicht-numerisches `percent`     | `0` statt `NaN`                  | `slds-progress-bar.spec.js` |
+| `slds-modal`        | unbekannte `size`               | keine Größenklasse               | `slds-modal.spec.js`        |
 
 ## Historie: abgelöste Muster
 
