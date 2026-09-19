@@ -33,11 +33,45 @@ this.shadowRoot.querySelector('slds-modal').hide();
 | ---------- | ------- | ------- | --------------------------------------------------------------------------- |
 | `open`     | Boolean | `false` | Whether the dialog is shown. Reflected. While `false`, nothing is rendered. |
 | `heading`  | String  | `''`    | Heading text, used unless the `headline` slot is filled.                    |
-| `headless` | Boolean | `false` | Omits the header region. Reflected.                                         |
+| `headless` | Boolean | `false` | Omits the header region. Reflected. See the note below the table.           |
 | `footless` | Boolean | `false` | Omits the footer region. Reflected.                                         |
+| `size`     | String  | _unset_ | Width modifier: `small`, `medium`, `large`, `full`. Reflected. See below.   |
 
 > The heading attribute used to be called `title`, which shadowed the _global_ HTML
 > `title` attribute and gave the host an unwanted browser tooltip. Use `heading`.
+
+> With `headless` the content region takes over the rounded top corners via
+> `slds-modal__content_headless` — without it the square content would stick out
+> of the rounded container. `footless` needs no counterpart: SLDS rounds the
+> bottom through `.slds-modal__container > .slds-modal__content:last-child`.
+
+## Sizes
+
+`size` maps to the SLDS width modifiers on the dialog element:
+
+| `size`   | Class               | Container width (≥ 48em)       |
+| -------- | ------------------- | ------------------------------ |
+| _unset_  | —                   | 50 %, max `40rem`, min `20rem` |
+| `small`  | `slds-modal_small`  | 60 %, max `52.0625rem`         |
+| `medium` | `slds-modal_medium` | 70 %, max `75rem`              |
+| `large`  | `slds-modal_large`  | 90 %, no max                   |
+| `full`   | `slds-modal_full`   | 90 %, plus full screen ≤ 30em  |
+
+Two things are easy to get wrong:
+
+- **Leaving `size` off is not the same as `small`.** The unmodified base is the
+  _narrowest_ of the five — max `40rem` against `small`'s `52.0625rem` — it just
+  has no name in SLDS. That is why the attribute has no default value: adding
+  one would widen every existing consumer.
+- **No size has any effect below 48em.** Below that the container is always the
+  viewport minus a `2rem` margin. The exception is `full`, which below 30em
+  becomes a real full-screen dialog: a CSS grid over close button, header,
+  content and footer, `100dvh` tall, honouring the safe-area insets. The
+  component needs no extra markup for that — the four regions it already
+  renders are exactly the grid areas SLDS expects.
+
+An unknown value sets no class and the dialog stays at the base width —
+silently, without a console message, like the other `slds-*` components.
 
 ## Slots
 

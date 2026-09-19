@@ -41,11 +41,17 @@ async function mountModal(page, { attrs = {}, action } = {}) {
 
       const root = el.shadowRoot;
       const use = root.querySelector('svg use');
+      const section = root.querySelector('section.slds-modal');
 
       return {
         open: el.open,
         closeEvents,
-        hasDialog: !!root.querySelector('section.slds-modal'),
+        hasDialog: !!section,
+        // Klassenliste der Dialog-Section: hier haengen die Groessen-Modifier.
+        sectionClasses: section ? [...section.classList] : null,
+        contentClasses: root.querySelector('.slds-modal__content')
+          ? [...root.querySelector('.slds-modal__content').classList]
+          : null,
         hasBackdrop: !!root.querySelector('.slds-backdrop'),
         hasCloseButton: !!root.querySelector('.slds-modal__close'),
         hasHeader: !!root.querySelector('.slds-modal__header'),
@@ -64,6 +70,13 @@ async function mountModal(page, { attrs = {}, action } = {}) {
     },
     { attrs, action }
   );
+}
+
+// Alle Groessen-Modifier tragen den Unterstrich; `slds-modal` und
+// `slds-fade-in-open` nicht. Das faengt auch ein versehentliches
+// `slds-modal_undefined` in der Klassenliste.
+function sizeModifiers(classes) {
+  return classes.filter((name) => name.startsWith('slds-modal_'));
 }
 
 test.describe('slds-modal', () => {
@@ -121,6 +134,67 @@ test.describe('slds-modal', () => {
       attrs: { open: true, footless: true },
     });
     expect(footless.hasFooter).toBe(false);
+  });
+
+  // --- Größen ---------------------------------------------------------------
+  //
+  // SLDS bringt die Breiten als Modifier am `.slds-modal`-Element mit. Die
+  // Komponente verantwortet nur die Klasse — die Breite selbst liefert das
+  // Stylesheet. Deshalb ist die Klassenliste der Contract.
+
+  for (const size of ['small', 'medium', 'large', 'full']) {
+    test(`size="${size}" setzt den SLDS-Modifier`, async ({ page }) => {
+      const res = await mountModal(page, { attrs: { open: true, size } });
+      expect(res.sectionClasses).toContain(`slds-modal_${size}`);
+      // Die Basisklassen bleiben daneben bestehen.
+      expect(res.sectionClasses).toContain('slds-modal');
+      expect(res.sectionClasses).toContain('slds-fade-in-open');
+    });
+  }
+
+  test('ohne size bleibt es bei der SLDS-Basisbreite', async ({ page }) => {
+    // Rueckwaertskompatibilitaet: alle vier Consumer setzen kein size-Attribut
+    // und muessen unveraendert rendern.
+    const res = await mountModal(page, { attrs: { open: true } });
+    expect(sizeModifiers(res.sectionClasses)).toEqual([]);
+    expect(res.sectionClasses).toContain('slds-modal');
+  });
+
+  test('unbekannte size wirkt still nicht', async ({ page }) => {
+    // Soll-Verhalten nach doc/conventions.md: kein throw, keine Konsolen-
+    // ausgabe, nur keine Klasse.
+    const res = await mountModal(page, {
+      attrs: { open: true, size: 'gigantisch' },
+    });
+    expect(sizeModifiers(res.sectionClasses)).toEqual([]);
+    expect(res.sectionClasses).not.toContain('slds-modal_gigantisch');
+    // Der Dialog steht trotzdem normal.
+    expect(res.hasDialog).toBe(true);
+  });
+
+  test('headless rundet die oberen Ecken des Inhalts', async ({ page }) => {
+    // Ohne Header rundet SLDS die oberen Ecken des Inhalts nur ueber
+    // `slds-modal__content_headless` (bzw. ueber einen leeren Header davor).
+    // Fehlt die Klasse, stoesst der Inhalt eckig an den runden Container.
+    const headless = await mountModal(page, {
+      attrs: { open: true, headless: true },
+    });
+    expect(headless.contentClasses).toContain('slds-modal__content_headless');
+
+    // Gegenprobe: mit Header uebernimmt der Header die oberen Ecken.
+    const withHeader = await mountModal(page, { attrs: { open: true } });
+    expect(withHeader.contentClasses).not.toContain(
+      'slds-modal__content_headless'
+    );
+
+    // footless bleibt bewusst unangetastet: die unteren Ecken erledigt schon
+    // der SLDS-Selektor `.slds-modal__container > .slds-modal__content:last-child`.
+    const footless = await mountModal(page, {
+      attrs: { open: true, footless: true },
+    });
+    expect(footless.contentClasses).not.toContain(
+      'slds-modal__content_footless'
+    );
   });
 
   test('Close-Button schließt und feuert close', async ({ page }) => {
