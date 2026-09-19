@@ -41,11 +41,14 @@ async function mountModal(page, { attrs = {}, action } = {}) {
 
       const root = el.shadowRoot;
       const use = root.querySelector('svg use');
+      const section = root.querySelector('section.slds-modal');
 
       return {
         open: el.open,
         closeEvents,
-        hasDialog: !!root.querySelector('section.slds-modal'),
+        hasDialog: !!section,
+        // Klassenliste der Dialog-Section: hier haengen die Groessen-Modifier.
+        sectionClasses: section ? [...section.classList] : null,
         hasBackdrop: !!root.querySelector('.slds-backdrop'),
         hasCloseButton: !!root.querySelector('.slds-modal__close'),
         hasHeader: !!root.querySelector('.slds-modal__header'),
