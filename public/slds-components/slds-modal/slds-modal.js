@@ -8,6 +8,18 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+// Gueltige Groessen -> SLDS-Modifier. Fuer den Zustand *ohne* Modifier gibt es
+// bewusst keinen Eintrag: er hat in SLDS keinen Namen und ist mit max-width 40rem
+// schmaler als `small` (52rem). Ein Default-Wert waere deshalb nicht das heutige
+// Rendering, sondern wuerde alle Consumer breiter machen.
+// Unbekannte Groesse -> keine Klasse, still und ohne Meldung (doc/conventions.md).
+const SIZE_CLASS_MAP = {
+  small: 'slds-modal_small',
+  medium: 'slds-modal_medium',
+  large: 'slds-modal_large',
+  full: 'slds-modal_full',
+};
+
 // Der Body-Scroll ist eine globale Ressource: bei mehreren offenen Modals darf ihn
 // erst das letzte wieder freigeben. Der urspruengliche Wert wird gesichert, statt
 // beim Schliessen pauschal auf '' zurueckgesetzt zu werden.
@@ -44,6 +56,9 @@ class SLDSModal extends LitElement {
     headless: { type: Boolean, reflect: true },
     footless: { type: Boolean, reflect: true },
     open: { type: Boolean, reflect: true },
+    // Ohne Vorbelegung im Konstruktor: `undefined` faellt aus der Klassenliste
+    // heraus und laesst das Modal auf der SLDS-Basisbreite.
+    size: { type: String, reflect: true },
   };
 
   constructor() {
@@ -76,13 +91,21 @@ class SLDSModal extends LitElement {
       return html``;
     }
 
+    const sectionClasses = [
+      'slds-modal',
+      'slds-fade-in-open',
+      SIZE_CLASS_MAP[this.size],
+    ]
+      .filter(Boolean)
+      .join(' ');
+
     return html`
       <section
         role="dialog"
         aria-labelledby="modal-heading"
         aria-modal="true"
         tabindex="-1"
-        class="slds-modal slds-fade-in-open"
+        class="${sectionClasses}"
       >
         <!-- Modal Container -->
         <div class="slds-modal__container">
