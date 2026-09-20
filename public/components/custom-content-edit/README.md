@@ -38,7 +38,8 @@ Ein durchgehendes Formular, kein Tab-Werk (`size="full"`):
 
 1. **Name** und **Sortierung** (`slds-input`)
 2. **Fassung** (`slds-combobox`) — welche Fassung gilt und bearbeitet wird
-3. **Ein** Textfeld (`<textarea class="slds-textarea">`) für genau diese Fassung
+3. **Ein** Textfeld (`<textarea class="slds-textarea">`) für genau diese
+   Fassung, daneben der Schalter für den Zeilenumbruch
 4. **Entwurfs-Leiste**, abgesetzt: anlegen/aktualisieren und verwerfen
 5. Footer: `Abbrechen` und `Speichern`
 
@@ -65,6 +66,37 @@ vorhandenes, leeres Item hat eine Id, eine nicht vorhandene Fassung nicht.
 - Eine Fassung, die es **nicht gibt**, wird nicht aktiv; es bleibt bei der
   bisherigen. Das wird als Toast gesagt, statt still zu geschehen. Wer die neue
   Fassung befüllt, legt sie damit an — und macht sie aktiv.
+
+## Platz für den Text
+
+Das Textfeld bekommt, was im Modal übrig ist — es steht **nicht** auf einer
+festen Zeilenzahl. Dafür braucht es zwei Wege, weil das Modal zwei Gestalten
+hat:
+
+- **Unter 30em** ist es ein echtes Vollbild-Grid. Der Inhaltsbereich hat dort
+  eine aufgelöste Höhe, und das Feld dehnt sich über `flex: 1` auf den ganzen
+  Rest.
+- **Darüber** richtet sich der Inhaltsbereich nach seinem Inhalt. Ein
+  Prozentwert hätte nichts, worauf er sich beziehen könnte — gemessen fiel das
+  Feld dort auf seine Mindesthöhe zurück. Die ist deshalb am Fenster bemessen
+  (`min-height: max(8rem, 40vh)`), nicht an Zeilen.
+
+Damit möglichst viel davon beim Text ankommt, steht das Formular darüber ab
+`medium` in **einer** Zeile und die Entwurfs-Leiste in einer weiteren. Wer mehr
+braucht, zieht das Feld auf (`resize: vertical`).
+
+## Zeilenumbruch abschalten
+
+Neben der Beschriftung des Textfelds sitzt ein Schalter. Aus heißt: lange Zeilen
+laufen nach rechts weiter und werden gescrollt, statt weich umzubrechen — bei
+Markup und langen Datenzeilen verdeckt der Umbruch sonst die Struktur.
+
+Der Schalter ist eine **Ansichtssache**: Am gespeicherten Text ändert er nichts.
+Umgesetzt ist er über `white-space: pre` und nicht über das `wrap`-Attribut —
+ein Wechsel von `wrap` an einem bestehenden Textfeld greift nicht zuverlässig,
+und `wrap="hard"` würde echte Umbrüche in den gespeicherten Wert schreiben.
+
+Er merkt sich nichts: Jedes Öffnen beginnt wieder mit Umbruch.
 
 ## Entwurf
 
