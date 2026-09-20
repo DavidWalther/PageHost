@@ -178,3 +178,96 @@ test.describe('custom-content-edit: Zeilenumbruch abschalten', () => {
     expect(zurück.value).toBe(LANGE_ZEILE);
   });
 });
+
+/**
+ * Gedrehter Schirm — flach und breit.
+ *
+ * Dort passt der Editor **nicht** mehr in den Inhaltsbereich des Modals, und
+ * genau daran ist er zerbrochen: Das Textfeld hielt an seiner Mindesthöhe fest,
+ * sein Glied schrumpfte auf fast nichts, und die Entwurfs-Leiste wurde direkt
+ * dahinter gesetzt — quer über das überlaufende Feld.
+ *
+ * Die Zusage lautet deshalb nicht "alles passt", sondern: **nichts überlagert
+ * sich, und alles bleibt erreichbar.** Was nicht hineinpasst, wird gescrollt —
+ * der Inhaltsbereich des Modals ist dafür da.
+ */
+test.describe('custom-content-edit: gedrehter Schirm', () => {
+  const QUERFORMATE = [
+    { name: 'Telefon quer', width: 800, height: 400 },
+    { name: 'flaches Fenster', width: 740, height: 360 },
+  ];
+
+  /** Lage von Textfeld und Entwurfs-Leiste zueinander. */
+  function stacking(page) {
+    return page.evaluate(() => {
+      const app = document.querySelector('app-bookstore');
+      const node = app.shadowRoot.querySelector(
+        'custom-node[data-role="content"]'
+      );
+      const root = node.shadowRoot
+        .querySelector('custom-paragraph')
+        .shadowRoot.querySelector('custom-content-edit').shadowRoot;
+      const rect = (selector) =>
+        root.querySelector(selector).getBoundingClientRect();
+      const scroller = root
+        .querySelector('slds-modal')
+        .shadowRoot.querySelector('.slds-modal__content');
+
+      return {
+        textareaBottom: Math.round(rect('#content-input').bottom),
+        draftBarTop: Math.round(rect('.slds-border_top').top),
+        scrollHeight: scroller.scrollHeight,
+        clientHeight: scroller.clientHeight,
+      };
+    });
+  }
+
+  for (const format of QUERFORMATE) {
+    test(`${format.name}: die Entwurfs-Leiste liegt unter dem Textfeld`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({
+        width: format.width,
+        height: format.height,
+      });
+      await openTheEditor(page);
+
+      const lage = await stacking(page);
+      expect(lage.draftBarTop).toBeGreaterThanOrEqual(lage.textareaBottom);
+    });
+
+    test(`${format.name}: was nicht hineinpasst, wird gescrollt`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({
+        width: format.width,
+        height: format.height,
+      });
+      await openTheEditor(page);
+
+      const lage = await stacking(page);
+      // Kein stiller Überlauf: Der Inhaltsbereich weiß, dass mehr da ist.
+      expect(lage.scrollHeight).toBeGreaterThan(lage.clientHeight);
+
+      // Und unten angekommen ist die Entwurfs-Leiste wirklich zu sehen.
+      await page.evaluate(() => {
+        const app = document.querySelector('app-bookstore');
+        const node = app.shadowRoot.querySelector(
+          'custom-node[data-role="content"]'
+        );
+        const scroller = node.shadowRoot
+          .querySelector('custom-paragraph')
+          .shadowRoot.querySelector('custom-content-edit')
+          .shadowRoot.querySelector('slds-modal')
+          .shadowRoot.querySelector('.slds-modal__content');
+        scroller.scrollTop = scroller.scrollHeight;
+      });
+
+      await expect(
+        paragraph(page).locator('custom-content-edit button', {
+          hasText: 'Entwurf anlegen',
+        })
+      ).toBeInViewport();
+    });
+  }
+});
