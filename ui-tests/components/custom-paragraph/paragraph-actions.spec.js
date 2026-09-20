@@ -105,14 +105,21 @@ test.describe('custom-paragraph: Aktionsleiste', () => {
     const absatz = paragraph(page);
 
     await openEditor(absatz);
-    expect(await activeElementPath(page)).toContain('custom-content-edit');
+    // Der Fokus wandert erst, wenn das Modal gerendert ist — abwarten, statt
+    // im selben Atemzug zu messen. Ohne das Warten fiel der Test unter Last um.
+    await expect(
+      absatz.locator('custom-content-edit .slds-modal')
+    ).toBeVisible();
+    await expect
+      .poll(() => activeElementPath(page))
+      .toContain('custom-content-edit');
 
     await editor(absatz).cancel.click();
     await absatz
       .locator('custom-content-edit .slds-modal')
       .waitFor({ state: 'detached' });
 
-    expect(await activeElementPath(page)).toEqual(['body']);
+    await expect.poll(() => activeElementPath(page)).toEqual(['body']);
   });
 
   test('die Escape-Taste schließt das Modal', async ({ page }) => {
