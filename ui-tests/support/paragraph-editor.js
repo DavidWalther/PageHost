@@ -4,13 +4,14 @@
  * **Warum ein Helfer und nicht ein paar Selektoren je Spec:** Die Specs halten
  * das *Verhalten* des Absatzes fest — welcher Payload hinausgeht, was im
  * `localStorage` landet, welche Fassung gerendert wird. Der *Weg* dorthin ist
- * dagegen genau das, was gerade umgebaut wird (heute ein Button, der erst bei
- * `:hover` erscheint; künftig ein permanenter Icon-Button, der ein Modal
- * öffnet). Liegt dieser Weg an einer Stelle, kostet der Umbau **eine** Datei
- * statt sechs Specs.
+ * dagegen genau das, was der Umbau verändert hat: aus einem Button, der erst
+ * bei `:hover` erschien und den Absatz an Ort und Stelle in ein Formular
+ * verwandelte, wurde ein permanenter Icon-Button, der ein Modal öffnet. Weil
+ * dieser Weg an einer Stelle liegt, kostete der Umbau **eine** Datei statt
+ * sechs Specs.
  *
  * Die Funktionen unterhalb von „Der Weg zum Editor" sind deshalb die einzigen,
- * die beim Umbau angefasst werden.
+ * die dabei angefasst wurden.
  */
 
 const { mockBookstoreCallouts } = require('./mock-callouts');
@@ -113,57 +114,69 @@ function textContentRecord(overrides = {}) {
 
 /** Die Schaltfläche, die den Editor öffnet. Fehlt ohne Scope `edit`. */
 function editTrigger(paragraphLocator) {
-  return paragraphLocator.locator('#content button', { hasText: 'Bearbeiten' });
+  return paragraphLocator.locator('custom-content-edit slds-button-icon');
 }
 
 /** Die Schaltfläche, die den Absatz löscht. Fehlt ohne Scope `delete`. */
 function deleteTrigger(paragraphLocator) {
-  return paragraphLocator.locator('#content button', { hasText: 'Löschen' });
+  return paragraphLocator.locator('#button-delete');
 }
 
 /**
- * Öffnet den Editor.
- *
- * Das `hover()` ist kein Detail des Tests, sondern des heutigen UI: Die
- * Schaltflächen stehen auf `display: none` und erscheinen erst über
- * `#content.editable:hover`. Ohne das Überfahren wartet ein Klick vergeblich
- * auf ein sichtbares Element.
+ * Die Schaltfläche, die das Veröffentlichen öffnet. Fehlt ohne `publish`+`edit`.
  */
+function publishTrigger(paragraphLocator) {
+  return paragraphLocator.locator('custom-content-publish slds-button-icon');
+}
+
+/** Öffnet den Editor. Der Auslöser ist permanent sichtbar. */
 async function openEditor(paragraphLocator) {
-  await paragraphLocator.locator('#content').hover();
   await editTrigger(paragraphLocator).click();
 }
 
 /** Löst das Löschen aus (der `confirm`-Dialog wird im Spec beantwortet). */
 async function triggerDelete(paragraphLocator) {
-  await paragraphLocator.locator('#content').hover();
   await deleteTrigger(paragraphLocator).click();
 }
+
+/** Bezeichnungen der Fassungen in der Auswahl. */
+const VERSION_LABELS = { text: 'Text', html: 'HTML' };
 
 /**
  * Die Felder und Schaltflächen des geöffneten Editors.
  *
- * Die Namen sagen die **Absicht**, nicht das Markup — nach dem Umbau zeigen
- * dieselben Namen auf die Felder im Modal.
+ * Die Namen sagen die **Absicht**, nicht das Markup. Zwei Zuordnungen sind
+ * deshalb nicht wörtlich:
+ *
+ * - `text` ist das **eine** Textfeld des Modals. Es zeigt die gerade gewählte
+ *   Fassung; welche das ist, sagt `chooseVersion`.
+ * - `draftApply` ist der Speichern-Knopf. Einen eigenen Knopf zum Übernehmen
+ *   gibt es nicht mehr: Der Formularstand *ist* der Entwurf, also übernimmt ihn
+ *   das Speichern und räumt ihn weg.
  */
 function editor(paragraphLocator) {
-  const button = (label) =>
-    paragraphLocator.locator('button', { hasText: label });
+  const modal = paragraphLocator.locator('custom-content-edit');
+  const button = (label) => modal.locator('button', { hasText: label });
+  const save = button('Speichern');
 
   return {
-    name: paragraphLocator.locator('#edit-name'),
-    sortnumber: paragraphLocator.locator('#edit-sortnumber'),
-    text: paragraphLocator.locator('#edit-content'),
-    html: paragraphLocator.locator('#edit-htmlcontent'),
+    name: modal.locator('#input-text'),
+    sortnumber: modal.locator('#input-number'),
+    text: modal.locator('#content-input'),
     /** Auf die Fassung umschalten, die bearbeitet werden soll. */
     async chooseVersion(type) {
-      await paragraphLocator.locator(`#${type}-tab-link`).click();
+      await modal.locator('slds-combobox .slds-combobox').click();
+      await modal
+        .locator('slds-combobox ul.slds-listbox li', {
+          hasText: VERSION_LABELS[type],
+        })
+        .click();
     },
-    save: button('Save'),
-    cancel: button('Cancel'),
-    draftEnable: button('Enable Draft'),
-    draftApply: button('Apply'),
-    draftDrop: button('Drop'),
+    save,
+    cancel: button('Abbrechen'),
+    draftEnable: button('Entwurf anlegen'),
+    draftApply: save,
+    draftDrop: button('Entwurf verwerfen'),
   };
 }
 
@@ -177,6 +190,7 @@ module.exports = {
   textContentRecord,
   editTrigger,
   deleteTrigger,
+  publishTrigger,
   openEditor,
   triggerDelete,
   editor,
