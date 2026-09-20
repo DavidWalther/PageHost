@@ -109,4 +109,14 @@ dem Netz. Ebenso muss `contentnumber` vor dem Aufruf gesetzt sein.
   ihre Benennung stammt aber noch aus dem alten Modell.
 - Die Inhalte werden von `custom-paragraph` gerendert. Es holt seine Daten über
   `object: 'content'` und damit über den neuen Endpunkt; allein sein Name
-  stammt noch aus dem alten Modell.
+  stammt noch aus dem alten Modell. Bearbeitet und veröffentlicht wird dort
+  nicht mehr selbst: Das tun `custom-content-edit` und `custom-content-publish`,
+  jedes in einem eigenen Modal. → `public/components/custom-paragraph/README.md`
+
+## Ein gelöschter Inhalt
+
+Ein Absatz, der gelöscht wurde, meldet `content-deleted` mit seiner Id. Der
+Knoten nimmt den Inhalt daraufhin aus `_nodeData.contents` — aus den **Daten**,
+nicht aus dem DOM: Sein Container käme beim nächsten Rendern sonst zurück.
+Bleibt danach nichts übrig und führt der Knoten auch nirgends weiter, steht dort
+der Hinweis `#no-contents`.

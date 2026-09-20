@@ -139,6 +139,14 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
     Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
     beauftragt. → `public/components/custom-node/README.md`
+  - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
+    Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
+    **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und
+    **`custom-content-publish`**. Letzteres ist eine **Übergangslösung**, bis
+    es eine einheitliche Komponente zum Veröffentlichen von Inhalten _und
+    Listen von Inhalten_ gibt — es steht deshalb ausdrücklich **neben** dem
+    Editor und nicht in ihm.
+    → `public/components/custom-paragraph/README.md`
   - **Ids werden nicht mehr am Präfix typisiert.** Was hinter einer Id steckt,
     beantwortet das Backend (`bookstore.resolveEntryPoint`); alte Deep-Links
     bleiben über `legacy_id` gültig.
