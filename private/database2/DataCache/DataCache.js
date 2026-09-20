@@ -333,6 +333,44 @@ class DataCache2 {
   }
 
   /**
+   * Löscht **mehrere** Schlüssel über eine einzige Verbindung.
+   *
+   * Nicht `del` in einer Schleife und erst recht nicht in einem
+   * `Promise.all`: Jeder `del` öffnet und schließt die Verbindung, und die
+   * teilen sich alle Aufrufer. Parallel gerufen lehnt der Client den zweiten
+   * `connect()` ab ("Socket already opened") — und diese Ablehnung hat schon
+   * eine HTTP-Antwort verschluckt.
+   */
+  async delMany(keys) {
+    const LOCATION = 'DataCache2.delMany';
+    const list = [...new Set(keys || [])].filter(Boolean);
+    if (list.length === 0) {
+      return;
+    }
+
+    const cacheKeys = list.map((key) =>
+      new CacheKeyGeneratorFactory(this.environment)
+        .getProduct(key)
+        .generateCacheKey(key)
+    );
+
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: `Keys: ${cacheKeys.join(', ')}`,
+      location: LOCATION,
+    });
+
+    await this.redis.connect();
+    try {
+      for (const cacheKey of cacheKeys) {
+        await this.redis.del(cacheKey);
+      }
+    } finally {
+      await this.redis.disconnect();
+    }
+  }
+
+  /**
    * Future implementation
    */
   async flush(key) {

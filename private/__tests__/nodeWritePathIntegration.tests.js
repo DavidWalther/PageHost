@@ -42,6 +42,7 @@ const ENVIRONMENT = Object.freeze({
 let executed;
 let responses;
 let cacheDel;
+let cacheDelMany;
 
 function respondWith(pattern, rows) {
   responses.push({ pattern, rows });
@@ -72,11 +73,13 @@ beforeEach(() => {
   }));
 
   cacheDel = jest.fn();
+  cacheDelMany = jest.fn();
   DataCache2.mockReset();
   DataCache2.mockImplementation(() => ({
     get: jest.fn().mockResolvedValue(null),
     set: jest.fn(),
     del: cacheDel,
+    delMany: cacheDelMany,
   }));
 });
 
@@ -295,7 +298,12 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
         query: { object: 'node', id: '000s00000000000011' },
       });
 
-      const cleared = cacheDel.mock.calls.map(([key]) => key);
+      // Ein Aufruf mit allen Schlüsseln — nicht einer je Schlüssel: Die
+      // Einzelaufrufe öffneten und schlossen dieselbe Verbindung parallel, und
+      // der zweite gleichzeitige connect() lehnte ab. Die Ablehnung hing, und
+      // die Antwort auf das Löschen kam nie.
+      expect(cacheDelMany).toHaveBeenCalledTimes(1);
+      const [cleared] = cacheDelMany.mock.calls[0];
       // Jeder entfernte Datensatz unter beiden Ids, dazu der Inhaltsbaum.
       expect(cleared).toEqual(
         expect.arrayContaining([
