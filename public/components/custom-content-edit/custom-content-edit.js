@@ -60,79 +60,67 @@ class CustomContentEdit extends LitElement {
   };
 
   /**
-   * Nur **Maße**, kein Layout.
+   * **Kein Layout, nur Maße.**
    *
-   * Die Anordnung machen `slds-layout` / `slds-layout-item`: die Spalte im
-   * Modal, die Formularzeile, die Kopfzeile des Textfelds und die
-   * Entwurfs-Leiste. Was hier steht, sind die drei Dinge, die der Baukasten
-   * nicht kennt: dass die Spalte die volle Hoehe bekommt, dass ihre Kinder
-   * schrumpfen duerfen, und wie gross das Textfeld mindestens ist.
+   * Die ganze Anordnung macht `slds-layout`: die Spalte im Modal (Hauptachse
+   * senkrecht), die Formularzeile, die Kopfzeile des Textfelds und die
+   * Entwurfs-Leiste. Abstände, Trennlinie und Textfarben kommen als
+   * SLDS-Utilities ans Markup.
    *
-   * Angesprochen wird ueber `id`, nicht ueber eine Klasse: Die `classList`
-   * eines Layout-Hosts gehoert der Komponente (siehe deren README und
+   * Was hier bleibt, kann der Baukasten nicht ausdrücken — das SLDS-Raster
+   * **ordnet** an, es sagt aber nicht, **wie hoch** etwas ist:
+   *
+   * 1. Eine Flex-Spalte verteilt nur Platz, den sie **hat**. Ohne eine Höhe
+   *    wäre sie so hoch wie ihr Inhalt, und es bliebe nichts zu verteilen —
+   *    SLDS v1 kennt dafür keine Utility (es gibt kein `slds-height_full`).
+   * 2. `min-height: 0` hebt die Flexbox-Vorgabe `min-height: auto` auf. Ohne
+   *    sie weigert sich ein Glied, unter seinen Inhalt zu schrumpfen: Die
+   *    Spalte wüchse mit dem Text, statt ihn scrollen zu lassen.
+   * 3. Wie hoch das Textfeld **mindestens** ist, ist eine Produktfrage, keine
+   *    Rasterfrage.
+   *
+   * Dazu der Umbruch-Schalter, der eine Ansichtssache umsetzt und mit der
+   * Anordnung nichts zu tun hat.
+   *
+   * Angesprochen wird über `id`, nicht über eine Klasse: Die `classList` eines
+   * Layout-Hosts gehört der Komponente (siehe deren README und
    * `layout-classlist-contract.spec.js`).
    */
   static styles = css`
-    :host {
-      display: inline-block;
-    }
-
-    /* Die Spalte nimmt den Inhaltsbereich des Modals ganz ein, damit das
-       Textfeld den Rest bekommt. "min-height: 0" hebt die Vorgabe
-       "min-height: auto" fuer Flex-Kinder auf; ohne sie wuechse die Spalte
-       mit dem Text, statt ihn scrollen zu lassen. */
+    /* (1) Die Spalte bekommt den Inhaltsbereich des Modals ganz — nur so hat
+       sie Platz, den sie an das Textfeld weitergeben kann. (2) gilt für sie
+       selbst und für das Glied, in dem das Feld sitzt. */
     #editor {
       height: 100%;
       min-height: 0;
     }
 
-    #content-area,
-    #content-control {
+    #content-area {
       min-height: 0;
-    }
-
-    #content-field {
-      height: 100%;
-      min-height: 0;
-    }
-
-    /* Das Feld fuellt sein Layout-Item. */
-    #content-control {
       display: flex;
     }
 
-    /* Zwei Wege zur Hoehe, weil das Modal zwei Gestalten hat:
-       - Unter 30em ist es ein echtes Vollbild-Grid. Der Inhaltsbereich hat
-         dort eine aufgeloeste Hoehe, "flex: 1" dehnt das Feld auf den Rest.
-       - Darueber ist die Hoehe des Inhaltsbereichs automatisch. Ein
-         Prozentwert haette nichts, worauf er sich beziehen koennte — gemessen
-         fiel das Feld dort auf seine Mindesthoehe zurueck. Die ist deshalb am
-         Viewport bemessen und nicht an einer Zeilenzahl. */
+    /* (3) Zwei Wege zur Höhe, weil das Modal zwei Gestalten hat:
+       - Unter 30em ist es ein Vollbild-Grid. Der Inhaltsbereich hat dort eine
+         aufgelöste Höhe, "flex: 1" dehnt das Feld auf den ganzen Rest.
+       - Darüber ist die Höhe des Inhaltsbereichs automatisch. Ein Prozentwert
+         hätte nichts, worauf er sich beziehen könnte — gemessen fiel das Feld
+         dort auf seine Mindesthöhe zurück. Die ist deshalb am Fenster
+         bemessen und nicht an einer Zeilenzahl.
+       Die Breite kommt von "slds-textarea" selbst. */
     #content-input {
       flex: 1 1 auto;
-      width: 100%;
       min-height: max(8rem, 40vh);
       resize: vertical;
     }
 
     /* Kein Umbruch: lange Zeilen laufen nach rechts weiter und werden
        gescrollt. "white-space: pre" statt des wrap-Attributs, weil ein
-       Wechsel von "wrap" an einem bestehenden Textfeld nicht zuverlaessig
-       greift — und weil wrap="hard" den gespeicherten Wert veraendern wuerde. */
+       Wechsel von "wrap" an einem bestehenden Textfeld nicht zuverlässig
+       greift — und weil wrap="hard" den gespeicherten Wert verändern würde. */
     #content-input.no-wrap {
       white-space: pre;
       overflow-x: auto;
-    }
-
-    /* Abgesetzt: Was hier steht, wirkt lokal und geht nicht an den Server. */
-    .draft-bar {
-      border-top: 1px solid var(--slds-color-border, #e5e5e5);
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
-    }
-
-    .draft-bar p {
-      margin: 0;
     }
   `;
 
@@ -171,8 +159,11 @@ class CustomContentEdit extends LitElement {
       >
         <slds-layout id="editor" vertical>
           <slds-layout-item grow-none>${this.renderForm()}</slds-layout-item>
+          <slds-layout-item grow-none>
+            ${this.renderContentHead()}
+          </slds-layout-item>
           <slds-layout-item id="content-area">
-            ${this.renderContentField()}
+            ${this.renderContentInput()}
           </slds-layout-item>
           <slds-layout-item grow-none
             >${this.renderDraftBar()}</slds-layout-item
@@ -239,74 +230,93 @@ class CustomContentEdit extends LitElement {
    * Datenzeilen ist der weiche Umbruch im Weg, weil er die Struktur verdeckt.
    * Aus ist er eine **Ansichtssache** — am gespeicherten Text ändert er nichts.
    */
-  renderContentField() {
+  /**
+   * Die Entwurfs-Leiste — abgesetzt, weil sie nicht zum Formular gehoert: Sie
+   * wirkt **lokal** und geht nirgendwo hin.
+   *
+   * Ein "Uebernehmen" gibt es hier nicht: Der Formularstand *ist* der Entwurf
+   * (das Oeffnen zieht ihn vor), also uebernimmt ihn der Speichern-Knopf und
+   * raeumt ihn weg. Ein zweiter Knopf daneben taete dasselbe.
+   */
+  renderDraftBar() {
     return html`
-      <slds-layout id="content-field" vertical>
-        <slds-layout-item grow-none>
-          <slds-layout align-spread vertical-align-center>
-            <slds-layout-item>
-              <label class="slds-form-element__label" for="content-input">
-                ${this.labels.content}
-              </label>
-            </slds-layout-item>
-            <slds-layout-item>
-              <slds-toggle
-                label="${this.labels.wrap}"
-                enabled-label="${this.labels.wrapOn}"
-                disabled-label="${this.labels.wrapOff}"
-                name="content-wrap"
-                ?checked=${!this._noWrap}
-                @toggle=${this._handleWrapToggle}
-              ></slds-toggle>
-            </slds-layout-item>
-          </slds-layout>
+      <div class="slds-border_top slds-m-top_small slds-p-top_x-small">
+        <slds-layout wrap gutters-x-small vertical-align-center>
+          <slds-layout-item size="1-of-1" medium-size="1-of-2">
+            <p
+              class="slds-text-body_small slds-text-color_weak slds-m-bottom_none"
+            >
+              ${this.labels.draftHint}
+            </p>
+          </slds-layout-item>
+          <slds-layout-item grow-none>
+            <button
+              class="slds-button slds-button_neutral"
+              @click=${this._handleDraftSave}
+            >
+              ${
+                this._hasDraft
+                  ? this.labels.draftUpdate
+                  : this.labels.draftCreate
+              }
+            </button>
+          </slds-layout-item>
+          ${
+            this._hasDraft
+              ? html`<slds-layout-item grow-none>
+                  <button
+                    class="slds-button slds-button_destructive"
+                    @click=${this._handleDraftDrop}
+                  >
+                    ${this.labels.draftDrop}
+                  </button>
+                </slds-layout-item>`
+              : ''
+          }
+        </slds-layout>
+      </div>
+    `;
+  }
+  /** Beschriftung des Textfelds und der Schalter fuer den Zeilenumbruch. */
+  renderContentHead() {
+    return html`
+      <slds-layout align-spread vertical-align-center>
+        <slds-layout-item>
+          <label class="slds-form-element__label" for="content-input">
+            ${this.labels.content}
+          </label>
         </slds-layout-item>
-        <slds-layout-item id="content-control">
-          <textarea
-            id="content-input"
-            class="slds-textarea ${this._noWrap ? 'no-wrap' : ''}"
-            .value=${this._versionContent}
-            @input=${this._handleContentChange}
-          ></textarea>
+        <slds-layout-item>
+          <slds-toggle
+            label="${this.labels.wrap}"
+            enabled-label="${this.labels.wrapOn}"
+            disabled-label="${this.labels.wrapOff}"
+            name="content-wrap"
+            ?checked=${!this._noWrap}
+            @toggle=${this._handleWrapToggle}
+          ></slds-toggle>
         </slds-layout-item>
       </slds-layout>
     `;
   }
 
   /**
-   * Die Entwurfs-Leiste — abgesetzt, weil sie nicht zum Formular gehört: Sie
-   * wirkt **lokal** und geht nirgendwo hin.
+   * Das Textfeld — es bekommt die Hoehe, die im Modal uebrig ist.
    *
-   * Ein „Übernehmen" gibt es hier nicht: Der Formularstand *ist* der Entwurf
-   * (das Öffnen zieht ihn vor), also übernimmt ihn der Speichern-Knopf und
-   * räumt ihn weg. Ein zweiter Knopf daneben täte dasselbe.
+   * Der Schalter daneben nimmt den weichen Umbruch heraus: Bei Markup und
+   * langen Datenzeilen verdeckt er die Struktur. Aus ist er eine
+   * **Ansichtssache** — am gespeicherten Text aendert er nichts.
    */
-  renderDraftBar() {
+  renderContentInput() {
     return html`
-      <div class="draft-bar slds-m-top_small slds-p-top_x-small">
-        <p class="slds-text-body_small slds-text-color_weak">
-          ${this.labels.draftHint}
-        </p>
-        <button
-          class="slds-button slds-button_neutral"
-          @click=${this._handleDraftSave}
-        >
-          ${this._hasDraft ? this.labels.draftUpdate : this.labels.draftCreate}
-        </button>
-        ${
-          this._hasDraft
-            ? html`<button
-                class="slds-button slds-button_destructive"
-                @click=${this._handleDraftDrop}
-              >
-                ${this.labels.draftDrop}
-              </button>`
-            : ''
-        }
-      </div>
+      <textarea
+        id="content-input"
+        class="slds-textarea ${this._noWrap ? 'no-wrap' : ''}"
+        .value=${this._versionContent}
+        @input=${this._handleContentChange}
+      ></textarea>
     `;
   }
-
   // ==================================================
   // Abgeleitete Sichten auf den Formularzustand
   // ==================================================
