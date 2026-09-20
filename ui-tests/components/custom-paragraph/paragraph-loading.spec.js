@@ -133,3 +133,50 @@ test.describe('custom-paragraph: Laden und Verstecken', () => {
     await expect.poll(() => queries(page)).toBe(3);
   });
 });
+
+/**
+ * Eine neue `id` heißt: Dieses Element stellt einen **anderen** Inhalt dar.
+ *
+ * Das passiert beim Löschen mitten in einer Liste — Lit setzt Listen ohne
+ * Schlüssel über den Index zusammen und teilt die vorhandenen Elemente neu zu,
+ * statt sie zu verschieben.
+ */
+test.describe('custom-paragraph: die id wechselt', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  const setId = (page, id) =>
+    page.evaluate(
+      (value) =>
+        document.querySelector('custom-paragraph').setAttribute('id', value),
+      id
+    );
+
+  test('der Absatz wirft seinen Stand weg und holt den neuen Inhalt', async ({
+    page,
+  }) => {
+    await mountParagraph(page, { attrs: { id: RECORD.id } });
+    expect(await queries(page)).toBe(1);
+
+    await setId(page, '00cn00000000000002');
+
+    await expect.poll(() => queries(page)).toBe(2);
+  });
+
+  test('mit no-load bleibt es beim Platzhalter — kein Abruf', async ({
+    page,
+  }) => {
+    await mountParagraph(page, {
+      attrs: { id: RECORD.id, 'no-load': true },
+    });
+    expect(await queries(page)).toBe(0);
+
+    await setId(page, '00cn00000000000002');
+
+    await expect(page.locator('custom-paragraph')).toContainText(
+      'Loading paragraph...'
+    );
+    expect(await queries(page)).toBe(0);
+  });
+});
