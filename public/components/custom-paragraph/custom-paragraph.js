@@ -141,7 +141,11 @@ class CustomParagraph extends LitElement {
     // auf einem Datensatz, der hier nicht mehr steht.
     if (changedProperties.has('id') && changedProperties.get('id')) {
       this._paragraphData = null;
-      this.loadParagraphData();
+      // `no-load` gilt auch hier: Ein Absatz, der noch gar nicht dran ist,
+      // soll durch die Neuzuteilung nicht ungefragt einen Abruf auslösen.
+      if (!this.noLoad) {
+        this.loadParagraphData();
+      }
     }
 
     // If no-load attribute was removed, start loading
