@@ -91,8 +91,7 @@ class CustomContentEdit extends LitElement {
        sie Platz, den sie an das Textfeld weitergeben kann. (2) gilt für sie
        selbst und für das Glied, in dem das Feld sitzt. */
     #editor {
-      height: 100%;
-      min-height: 0;
+      min-height: 100%;
     }
 
     #content-area {

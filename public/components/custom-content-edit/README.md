@@ -87,13 +87,22 @@ Entwurfs-Leiste sind `grow-none`, und das Feld dazwischen nimmt den Rest
 Das SLDS-Raster **ordnet** an — es sagt nicht, **wie hoch** etwas ist. Drei
 Dinge kann es deshalb nicht ausdrücken:
 
-1. **Die Spalte braucht eine Höhe.** Eine Flex-Spalte verteilt nur Platz, den
-   sie hat; ohne Höhe wäre sie so hoch wie ihr Inhalt und hätte nichts zu
-   verteilen. SLDS v1 kennt dafür keine Utility — ein `slds-height_full` gibt es
-   nicht (nachgesehen im ausgelieferten Stylesheet).
-2. **`min-height: 0`.** Flexbox setzt für Glieder `min-height: auto`; damit
-   weigert sich ein Glied, unter seinen Inhalt zu schrumpfen. Die Spalte wüchse
-   mit dem Text, statt ihn scrollen zu lassen.
+1. **Die Spalte braucht eine Mindesthöhe** (`min-height: 100%`). Eine Flex-Spalte
+   verteilt nur Platz, den sie hat; ohne Höhe wäre sie so hoch wie ihr Inhalt und
+   hätte nichts zu verteilen. SLDS v1 kennt dafür keine Utility — ein
+   `slds-height_full` gibt es nicht (nachgesehen im ausgelieferten Stylesheet).
+
+   **`min-height`, nicht `height`** — das ist der Unterschied zwischen „passt" und
+   „überlagert sich": Auf einem flachen, gedrehten Schirm passt der Editor nicht
+   in den Inhaltsbereich. Eine feste Höhe zwänge ihn hinein, seine Kinder liefen
+   still über, und die Entwurfs-Leiste würde quer über das Textfeld gesetzt. Mit
+   `min-height` wächst die Spalte stattdessen über den Bereich hinaus, und der
+   Inhaltsbereich des Modals scrollt — dafür ist er da.
+
+2. **`min-height: 0`** am Glied, in dem das Textfeld sitzt. Flexbox setzt für
+   Glieder `min-height: auto`; damit weigert sich ein Glied, unter seinen Inhalt
+   zu schrumpfen.
+
 3. **Die Mindesthöhe des Felds** ist eine Produktfrage, keine Rasterfrage.
 
 Nummer 3 braucht es, weil das Modal zwei Gestalten hat: Unter 30em ist es ein
