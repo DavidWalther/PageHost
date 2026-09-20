@@ -54,9 +54,17 @@ vorhandenen Items abgeleitet — sonst ließe sich eine Fassung, die es noch nic
 gibt, nie anlegen. Ein neuer Typ ist ein Eintrag in `VERSION_OPTIONS` und
 `FIELD_BY_VERSION`.
 
-**Eine leere Fassung wird nicht aktiv.** Wer auf eine Fassung ohne Inhalt
-umschaltet und speichert, bekommt die bisherige aktive Fassung zurück — sonst
-zeigte der Absatz danach nichts an.
+**„Gibt es nicht" ist nicht dasselbe wie „ist leer".** Der Zeiger des Modells
+(`content_node.active_content_item`) zeigt auf ein `content_item` — ein
+vorhandenes, leeres Item hat eine Id, eine nicht vorhandene Fassung nicht.
+
+- Eine **vorhandene** Fassung wird aktiv, auch wenn sie leer ist. Sie geht dafür
+  im Payload mit (als `null`): Der Schreibpfad nimmt die gewählte Fassung nur
+  an, wenn der Payload sie mitbringt — sonst bliebe der Zeiger stehen und das
+  Umschalten verpuffte.
+- Eine Fassung, die es **nicht gibt**, wird nicht aktiv; es bleibt bei der
+  bisherigen. Das wird als Toast gesagt, statt still zu geschehen. Wer die neue
+  Fassung befüllt, legt sie damit an — und macht sie aktiv.
 
 ## Entwurf
 

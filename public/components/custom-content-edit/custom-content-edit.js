@@ -41,6 +41,8 @@ class CustomContentEdit extends LitElement {
     draftSaved: 'Entwurf lokal gesichert',
     draftDropped: 'Entwurf verworfen',
     nameRequired: 'Ein Name ist erforderlich',
+    versionMissing:
+      'Diese Fassung gibt es noch nicht — sie wird erst aktiv, wenn sie Inhalt hat. Es bleibt bei der bisherigen.',
     contentSaved: 'Gespeichert',
     contentSaveError: 'Fehler beim Speichern',
   };
@@ -372,6 +374,12 @@ class CustomContentEdit extends LitElement {
       return;
     }
 
+    // Die Wahl geht nur hinaus, wenn es die Fassung gibt (siehe `_payload`).
+    // Dass sie liegen bleibt, darf nicht still geschehen.
+    if (!this._hasVersion(FIELD_BY_VERSION[this._activeType])) {
+      this._dispatchToast(this.labels.versionMissing, 'warning');
+    }
+
     this.dispatchEvent(
       new CustomEvent('save', {
         detail: {
@@ -393,15 +401,28 @@ class CustomContentEdit extends LitElement {
   }
 
   /**
+   * **Gibt es diese Fassung?** Der Schlüssel sagt es, nicht der Inhalt.
+   *
+   * `custom-paragraph` übersetzt die Antwort des Endpunkts so: Eine Fassung, die
+   * es nicht gibt, **fehlt** im Datensatz; eine vorhandene, aber leere steht als
+   * `null` darin. Der Unterschied trägt den Zeiger — ein leeres `content_item`
+   * hat eine Id, auf die `content_node.active_content_item` zeigen kann, eine
+   * nicht vorhandene Fassung nicht.
+   */
+  _hasVersion(field) {
+    return field in this._form;
+  }
+
+  /**
    * Die zu schreibenden Spalten.
    *
-   * **Ein Feld, das es nicht gibt, kommt nicht vor.** Ein `htmlcontent: null` im
-   * Payload legte sonst eine leere HTML-Zeile an — dieselbe Regel, nach der
-   * `custom-paragraph` die Antwort des Endpunkts übersetzt.
+   * **Eine Fassung, die es nicht gibt, kommt nicht vor.** Ein `htmlcontent` im
+   * Payload legte sonst eine HTML-Zeile an, die niemand angelegt hat.
    *
-   * Die aktive Fassung ist die **gewählte**, solange sie Inhalt hat. Eine leere
-   * Fassung aktiv zu setzen hieße, den Absatz danach leer anzuzeigen; dann bleibt
-   * es bei der bisherigen.
+   * Eine **vorhandene** Fassung geht dagegen mit, auch wenn sie leer ist: Der
+   * Schreibpfad nimmt die gewählte Fassung nur an, wenn der Payload sie
+   * mitbringt — ohne das Feld bliebe der Zeiger stehen, und das Umschalten
+   * verpuffte.
    */
   _payload() {
     const payload = {
@@ -411,15 +432,15 @@ class CustomContentEdit extends LitElement {
     };
 
     Object.values(FIELD_BY_VERSION).forEach((field) => {
-      const value = this._form[field];
-      if (value !== undefined && value !== null) {
-        payload[field] = value;
+      if (this._hasVersion(field)) {
+        payload[field] = this._form[field] ?? null;
       }
     });
 
+    // Die gewählte Fassung gilt, sobald es sie gibt. Gibt es sie nicht, bleibt
+    // es bei der bisherigen — der Zeiger darf nicht ins Leere zeigen.
     const chosenField = FIELD_BY_VERSION[this._activeType];
-    const chosenHasContent = !!this._form[chosenField];
-    const activeType = chosenHasContent
+    const activeType = this._hasVersion(chosenField)
       ? this._activeType
       : this._form.active_type;
     if (activeType) {
