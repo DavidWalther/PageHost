@@ -285,9 +285,14 @@ class DataFacadeSync {
    * Datensatz wird unter beiden Ids gelöscht — ein Eintrag kann unter der alten
    * angelegt worden sein, wenn ein Deep-Link von früher ihn geholt hat.
    */
+  /** Der Cache-Zugang — als Methode, damit ein Test ihn ersetzen kann. */
+  createCache() {
+    return new DataCache2(this.environment);
+  }
+
   async clearCacheFor(removed, requestedId) {
     const LOCATION = 'DataFacadeSync.clearCacheFor';
-    const cache = new DataCache2(this.environment);
+    const cache = this.createCache();
     const keys = new Set();
 
     const collect = (table, records) => {
@@ -310,12 +315,30 @@ class DataFacadeSync {
     // Ein gelöschter Knoten ändert den Inhaltsbaum.
     keys.add('contentsTree');
 
-    await Promise.all([...keys].map((key) => cache.del(key)));
-    Logging.debugMessage({
-      severity: 'FINEST',
-      location: LOCATION,
-      message: `Cleared ${keys.size} cache keys after delete`,
-    });
+    // **Ein** Aufruf über eine Verbindung. Vorher stand hier ein
+    // `Promise.all` über alle Schlüssel; jeder öffnete und schloss dieselbe
+    // Verbindung, und der zweite gleichzeitige `connect()` lehnte ab. Die
+    // Ablehnung hing, die Antwort auf das Löschen kam nie.
+    //
+    // Und wenn es schiefgeht, bleibt es beim Cache: Die Zeilen sind zu diesem
+    // Zeitpunkt **gelöscht**. Ein unerreichbarer Redis ist ein Grund für einen
+    // veralteten Eintrag, kein Grund, die Antwort fallenzulassen — dieselbe
+    // Haltung wie in `writeCache`.
+    try {
+      await cache.delMany([...keys]);
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Cleared ${keys.size} cache keys after delete`,
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear cache keys after delete',
+        error,
+      });
+    }
   }
 
   /**
