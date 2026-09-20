@@ -42,6 +42,9 @@ async function mount(page, { scopes = ['edit'], record = RECORD } = {}) {
       await import('/slds-components/slds-modal/slds-modal.js');
       await import('/slds-components/slds-input/slds-input.js');
       await import('/slds-components/slds-combobox/slds-combobox.js');
+      await import('/slds-components/slds-toggle/slds-toggle.js');
+      await import('/slds-components/slds-layout/slds-layout.js');
+      await import('/slds-components/slds-layout/slds-layout-item.js');
       await import('/components/custom-content-edit/custom-content-edit.js');
 
       document

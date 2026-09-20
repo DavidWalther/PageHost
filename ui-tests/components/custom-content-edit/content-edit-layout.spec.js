@@ -37,8 +37,10 @@ function geometry(page) {
     return {
       viewport: window.innerHeight,
       content: height('.slds-modal__content', modalRoot),
-      editor: height('.editor'),
-      fields: height('.fields'),
+      editor: height('#editor'),
+      // Die Formularzeile ist das erste Element der Spalte; sie trägt keinen
+      // eigenen Namen, weil die Anordnung dem Layout-Baukasten gehört.
+      fields: height('#editor > slds-layout-item'),
       draftBar: height('.draft-bar'),
       textarea: height('#content-input'),
     };
