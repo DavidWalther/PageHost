@@ -32,6 +32,9 @@ class CustomContentEdit extends LitElement {
     sortNumber: 'Sortierung',
     version: 'Fassung',
     content: 'Inhalt',
+    wrap: 'Zeilenumbruch',
+    wrapOn: 'Umbruch',
+    wrapOff: 'Kein Umbruch',
     cancelButton: 'Abbrechen',
     saveButton: 'Speichern',
     draftCreate: 'Entwurf anlegen',
@@ -53,6 +56,7 @@ class CustomContentEdit extends LitElement {
     _form: { state: true },
     _activeType: { state: true },
     _hasDraft: { state: true },
+    _noWrap: { state: true },
   };
 
   static styles = css`
@@ -63,6 +67,71 @@ class CustomContentEdit extends LitElement {
     /* Abgesetzt: Was hier steht, wirkt lokal und geht nicht an den Server. */
     .draft-bar {
       border-top: 1px solid var(--slds-color-border, #e5e5e5);
+      flex: none;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Der Hinweis nimmt die Breite, die die Schaltflaechen uebrig lassen —
+       auf schmalem Schirm rutscht er in eine eigene Zeile. */
+    .draft-bar p {
+      flex: 1 1 12rem;
+      margin: 0;
+    }
+
+    /* Der Inhaltsbereich des Modals hat eine aufgelöste Höhe und scrollt selbst.
+       Diese Spalte nimmt sie ganz ein, damit das Textfeld den Rest bekommt —
+       statt auf einer festen Zeilenzahl zu stehen, während darunter Luft bleibt.
+       "min-height: 0" hebt die Vorgabe "min-height: auto" für Flex-Kinder auf;
+       ohne sie wächst die Spalte mit dem Text, statt ihn scrollen zu lassen. */
+    .editor {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .fields {
+      flex: none;
+    }
+
+    .content-field {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .content-field__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex: none;
+    }
+
+    /* Zwei Wege zur Höhe, weil das Modal zwei Gestalten hat:
+       - Unter 30em ist es ein echtes Vollbild-Grid. Der Inhaltsbereich hat dort
+         eine aufgeloeste Hoehe, "flex: 1" dehnt das Feld auf den ganzen Rest.
+       - Darueber ist die Hoehe des Inhaltsbereichs automatisch. Ein Prozentwert
+         haette nichts, worauf er sich beziehen koennte — gemessen fiel das Feld
+         dort auf seine Mindesthoehe zurueck. Die ist deshalb am Viewport
+         bemessen und nicht an einer Zeilenzahl. */
+    #content-input {
+      flex: 1 1 auto;
+      min-height: max(8rem, 40vh);
+      resize: vertical;
+    }
+
+    /* Kein Umbruch: lange Zeilen laufen nach rechts weiter und werden
+       gescrollt. "white-space: pre" statt des wrap-Attributs, weil ein
+       Wechsel von "wrap" an einem bestehenden Textfeld nicht zuverlässig
+       greift — und weil wrap="hard" den gespeicherten Wert verändern würde. */
+    #content-input.no-wrap {
+      white-space: pre;
+      overflow-x: auto;
     }
   `;
 
@@ -72,6 +141,7 @@ class CustomContentEdit extends LitElement {
     this._form = {};
     this._activeType = 'text';
     this._hasDraft = false;
+    this._noWrap = false;
   }
 
   connectedCallback() {
@@ -98,7 +168,10 @@ class CustomContentEdit extends LitElement {
         size="full"
         @close=${this._handleModalClose}
       >
-        ${this.renderForm()} ${this.renderDraftBar()}
+        <div class="editor">
+          ${this.renderForm()} ${this.renderContentField()}
+          ${this.renderDraftBar()}
+        </div>
 
         <div slot="footer">
           <button
@@ -120,8 +193,8 @@ class CustomContentEdit extends LitElement {
 
   renderForm() {
     return html`
-      <div class="slds-grid slds-wrap slds-gutters_x-small">
-        <div class="slds-col slds-size_1-of-1">
+      <div class="fields slds-grid slds-wrap slds-gutters_x-small">
+        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
           <slds-input
             type="text"
             label="${this.labels.name}"
@@ -131,7 +204,7 @@ class CustomContentEdit extends LitElement {
           ></slds-input>
         </div>
 
-        <div class="slds-col slds-size_1-of-2">
+        <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-6">
           <slds-input
             type="number"
             label="${this.labels.sortNumber}"
@@ -141,7 +214,7 @@ class CustomContentEdit extends LitElement {
           ></slds-input>
         </div>
 
-        <div class="slds-col slds-size_1-of-2">
+        <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-3">
           <slds-combobox
             label="${this.labels.version}"
             options=${JSON.stringify(VERSION_OPTIONS)}
@@ -149,22 +222,40 @@ class CustomContentEdit extends LitElement {
             @combobox-select=${this._handleVersionChange}
           ></slds-combobox>
         </div>
+      </div>
+    `;
+  }
 
-        <div class="slds-col slds-size_1-of-1 slds-m-top_x-small">
-          <div class="slds-form-element">
-            <label class="slds-form-element__label" for="content-input">
-              ${this.labels.content}
-            </label>
-            <div class="slds-form-element__control">
-              <textarea
-                id="content-input"
-                class="slds-textarea"
-                rows="12"
-                .value=${this._versionContent}
-                @input=${this._handleContentChange}
-              ></textarea>
-            </div>
-          </div>
+  /**
+   * Das Textfeld — es bekommt die Höhe, die im Modal übrig ist.
+   *
+   * Dazu gehört der Schalter für den Zeilenumbruch: Bei Markup und langen
+   * Datenzeilen ist der weiche Umbruch im Weg, weil er die Struktur verdeckt.
+   * Aus ist er eine **Ansichtssache** — am gespeicherten Text ändert er nichts.
+   */
+  renderContentField() {
+    return html`
+      <div class="content-field slds-form-element slds-m-top_x-small">
+        <div class="content-field__head">
+          <label class="slds-form-element__label" for="content-input">
+            ${this.labels.content}
+          </label>
+          <slds-toggle
+            label="${this.labels.wrap}"
+            enabled-label="${this.labels.wrapOn}"
+            disabled-label="${this.labels.wrapOff}"
+            name="content-wrap"
+            ?checked=${!this._noWrap}
+            @toggle=${this._handleWrapToggle}
+          ></slds-toggle>
+        </div>
+        <div class="slds-form-element__control content-field">
+          <textarea
+            id="content-input"
+            class="slds-textarea ${this._noWrap ? 'no-wrap' : ''}"
+            .value=${this._versionContent}
+            @input=${this._handleContentChange}
+          ></textarea>
         </div>
       </div>
     `;
@@ -180,10 +271,8 @@ class CustomContentEdit extends LitElement {
    */
   renderDraftBar() {
     return html`
-      <div class="draft-bar slds-m-top_medium slds-p-top_small">
-        <p
-          class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
-        >
+      <div class="draft-bar slds-m-top_small slds-p-top_x-small">
+        <p class="slds-text-body_small slds-text-color_weak">
           ${this.labels.draftHint}
         </p>
         <button
@@ -284,6 +373,14 @@ class CustomContentEdit extends LitElement {
    */
   _handleVersionChange(event) {
     this._activeType = event.detail.value;
+  }
+
+  /**
+   * Der Umbruch ist eine Ansicht, kein Inhalt: Der Schalter ändert nur, wie das
+   * Textfeld lange Zeilen darstellt, nie den Text selbst.
+   */
+  _handleWrapToggle(event) {
+    this._noWrap = !event.detail.checked;
   }
 
   _handleContentChange(event) {
