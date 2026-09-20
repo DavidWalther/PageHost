@@ -207,3 +207,179 @@ test.describe('custom-content-edit: Fassung wählen', () => {
     await expect(editor.locator('#content-input')).toHaveValue('');
   });
 });
+
+/**
+ * Speichern.
+ *
+ * Die Komponente ruft nichts selbst auf: Sie feuert ein `save`-Ereignis, das im
+ * Betrieb `public/index.js` an den Endpunkt bindet. Hier antwortet der Test —
+ * und kann dadurch sowohl den Payload als auch den Fehlerfall prüfen.
+ */
+test.describe('custom-content-edit: Speichern', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  /**
+   * Fängt `save` ab. `outcome` entscheidet, womit der Callback antwortet.
+   * `window.__saved` hält das Ereignis-Detail, `window.__updated` die Meldung
+   * `content-updated`.
+   */
+  async function captureSave(page, outcome = { ok: true }) {
+    await page.evaluate((outcome) => {
+      window.__saved = null;
+      window.__updated = null;
+      document.body.addEventListener('save', (event) => {
+        window.__saved = {
+          object: event.detail.object,
+          payload: event.detail.payload,
+        };
+        if (outcome.ok) {
+          event.detail.callback(null, {
+            success: true,
+            result: event.detail.payload,
+          });
+        } else {
+          event.detail.callback('Fehlgeschlagen', null);
+        }
+      });
+      document.body.addEventListener('content-updated', (event) => {
+        window.__updated = event.detail;
+      });
+    }, outcome);
+  }
+
+  const saved = (page) => page.evaluate(() => window.__saved);
+  const updated = (page) => page.evaluate(() => window.__updated);
+
+  test('Speichern schickt object "content" mit den Feldern des Modells', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await captureSave(page);
+    await open(page);
+
+    await editor.locator('#input-text').fill('Neuer Name');
+    await editor.locator('#input-text').blur();
+    await editor.locator('#content-input').fill('Neuer Text');
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    const { object, payload } = await saved(page);
+    expect(object).toBe('content');
+    expect(payload.id).toBe('00cn00000000000001');
+    expect(payload.name).toBe('Neuer Name');
+    expect(payload.sortnumber).toBe(3);
+    expect(payload.content).toBe('Neuer Text');
+    expect(payload.active_type).toBe('text');
+  });
+
+  test('eine Fassung, die es nicht gibt, kommt nicht als leere Zeile mit', async ({
+    page,
+  }) => {
+    const editor = await mount(page, {
+      record: {
+        id: '00cn00000000000001',
+        name: 'Nur Text',
+        sortnumber: 1,
+        active_type: 'text',
+        content: 'Vorhandener Text',
+      },
+    });
+    await captureSave(page);
+    await open(page);
+
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    const { payload } = await saved(page);
+    expect(payload).not.toHaveProperty('htmlcontent');
+  });
+
+  test('eine leere Fassung wird nicht zur aktiven', async ({ page }) => {
+    const editor = await mount(page, {
+      record: {
+        id: '00cn00000000000001',
+        name: 'Nur Text',
+        sortnumber: 1,
+        active_type: 'text',
+        content: 'Vorhandener Text',
+      },
+    });
+    await captureSave(page);
+    await open(page);
+
+    await editor.locator('slds-combobox .slds-combobox').click();
+    await editor
+      .locator('slds-combobox ul.slds-listbox li', { hasText: 'HTML' })
+      .click();
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    const { payload } = await saved(page);
+    expect(payload.active_type).toBe('text');
+  });
+
+  test('nach erfolgreichem Speichern meldet die Komponente und schließt', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await captureSave(page);
+    await open(page);
+
+    await editor.locator('#content-input').fill('Gespeicherter Text');
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => updated(page)).not.toBeNull();
+    const meldung = await updated(page);
+    expect(meldung.contentData.content).toBe('Gespeicherter Text');
+    await expect(editor.locator('.slds-modal')).toHaveCount(0);
+  });
+
+  test('schlägt das Speichern fehl, bleibt das Modal mit der Eingabe offen', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await captureSave(page, { ok: false });
+    await open(page);
+
+    await editor.locator('#content-input').fill('Nicht gespeicherter Text');
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    await expect(editor.locator('.slds-modal')).toHaveCount(1);
+    await expect(editor.locator('#content-input')).toHaveValue(
+      'Nicht gespeicherter Text'
+    );
+  });
+
+  test('ohne Namen wird nicht gespeichert', async ({ page }) => {
+    const editor = await mount(page);
+    await captureSave(page);
+    await open(page);
+
+    await editor.locator('#input-text').fill('');
+    await editor.locator('#input-text').blur();
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect(editor.locator('.slds-modal')).toHaveCount(1);
+    expect(await saved(page)).toBeNull();
+  });
+
+  test('Abbrechen speichert nicht und verwirft die Eingabe', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await captureSave(page);
+    await open(page);
+
+    await editor.locator('#content-input').fill('Verworfener Text');
+    await editor.locator('button', { hasText: 'Abbrechen' }).click();
+
+    expect(await saved(page)).toBeNull();
+    await open(page);
+    await expect(editor.locator('#content-input')).toHaveValue(
+      'Erste Zeile\nZweite Zeile'
+    );
+  });
+});

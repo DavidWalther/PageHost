@@ -34,6 +34,9 @@ class CustomContentEdit extends LitElement {
     content: 'Inhalt',
     cancelButton: 'Abbrechen',
     saveButton: 'Speichern',
+    nameRequired: 'Ein Name ist erforderlich',
+    contentSaved: 'Gespeichert',
+    contentSaveError: 'Fehler beim Speichern',
   };
 
   static properties = {
@@ -89,7 +92,10 @@ class CustomContentEdit extends LitElement {
           >
             ${this.labels.cancelButton}
           </button>
-          <button class="slds-button slds-button_brand" disabled>
+          <button
+            class="slds-button slds-button_brand"
+            @click=${this._handleSave}
+          >
             ${this.labels.saveButton}
           </button>
         </div>
@@ -232,6 +238,106 @@ class CustomContentEdit extends LitElement {
 
   _handleCancel() {
     this.hide();
+  }
+
+  // ==================================================
+  // Speichern
+  // ==================================================
+
+  _handleSave() {
+    const validation = this._validate();
+    if (!validation.valid) {
+      this._dispatchToast(validation.message, 'error');
+      return;
+    }
+
+    this.dispatchEvent(
+      new CustomEvent('save', {
+        detail: {
+          object: 'content',
+          payload: this._payload(),
+          callback: this._saveCallback.bind(this),
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  _validate() {
+    if (!this._form.name?.trim()) {
+      return { valid: false, message: this.labels.nameRequired };
+    }
+    return { valid: true };
+  }
+
+  /**
+   * Die zu schreibenden Spalten.
+   *
+   * **Ein Feld, das es nicht gibt, kommt nicht vor.** Ein `htmlcontent: null` im
+   * Payload legte sonst eine leere HTML-Zeile an — dieselbe Regel, nach der
+   * `custom-paragraph` die Antwort des Endpunkts übersetzt.
+   *
+   * Die aktive Fassung ist die **gewählte**, solange sie Inhalt hat. Eine leere
+   * Fassung aktiv zu setzen hieße, den Absatz danach leer anzuzeigen; dann bleibt
+   * es bei der bisherigen.
+   */
+  _payload() {
+    const payload = {
+      id: this._form.id,
+      name: this._form.name,
+      sortnumber: this._form.sortnumber,
+    };
+
+    Object.values(FIELD_BY_VERSION).forEach((field) => {
+      const value = this._form[field];
+      if (value !== undefined && value !== null) {
+        payload[field] = value;
+      }
+    });
+
+    const chosenField = FIELD_BY_VERSION[this._activeType];
+    const chosenHasContent = !!this._form[chosenField];
+    const activeType = chosenHasContent
+      ? this._activeType
+      : this._form.active_type;
+    if (activeType) {
+      payload.active_type = activeType;
+    }
+
+    return payload;
+  }
+
+  _saveCallback(error, data) {
+    if (error) {
+      this._dispatchToast(this.labels.contentSaveError, 'error');
+      return;
+    }
+    if (!data) {
+      return;
+    }
+
+    const payload = this._payload();
+    const contentData = { ...this._form, ...payload };
+    this._dispatchToast(this.labels.contentSaved, 'success');
+    this.dispatchEvent(
+      new CustomEvent('content-updated', {
+        detail: { contentData },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    this.hide();
+  }
+
+  _dispatchToast(message, variant) {
+    this.dispatchEvent(
+      new CustomEvent('toast', {
+        detail: { message, variant },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _handleModalClose() {
