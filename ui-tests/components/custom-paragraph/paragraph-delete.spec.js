@@ -55,3 +55,35 @@ test.describe('custom-paragraph: Löschen', () => {
     await expect(absatz).toHaveCount(1);
   });
 });
+
+/**
+ * Nach dem Löschen meldet sich der Absatz ab.
+ *
+ * Bis dahin nahm er sich nur selbst aus dem Dokument (`this.remove()`) — der
+ * umgebende Container blieb als leere Hülle stehen, und der Knoten erfuhr vom
+ * Wegfall nichts. Der Knoten macht es beim eigenen Löschen längst anders und
+ * meldet `node-deleted`.
+ */
+test.describe('custom-paragraph: Abmelden nach dem Löschen', () => {
+  test('meldet content-deleted mit der Id, bevor es sich entfernt', async ({
+    page,
+  }) => {
+    await openBookstore(page, { scopes: ['read', 'edit', 'delete'] });
+    const absatz = paragraph(page);
+    await captureDelete(page);
+    page.on('dialog', (dialog) => dialog.accept());
+
+    await page.evaluate(() => {
+      window.__deleted = [];
+      document.body.addEventListener('content-deleted', (event) =>
+        window.__deleted.push(event.detail.contentId)
+      );
+    });
+
+    await triggerDelete(absatz);
+
+    await expect
+      .poll(() => page.evaluate(() => window.__deleted))
+      .toEqual([CONTENT_ID]);
+  });
+});

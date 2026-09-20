@@ -318,6 +318,16 @@ class CustomParagraph extends LitElement {
           composed: true,
         })
       );
+      // Erst melden, dann gehen: Ein `composed` Ereignis eines bereits
+      // entfernten Elements erreicht niemanden mehr. Der Knoten braucht die
+      // Meldung, sonst bleibt sein Container als leere Hülle stehen.
+      this.dispatchEvent(
+        new CustomEvent('content-deleted', {
+          detail: { contentId: this.id },
+          bubbles: true,
+          composed: true,
+        })
+      );
       this.remove();
     } catch (e) {
       this.dispatchEvent(
