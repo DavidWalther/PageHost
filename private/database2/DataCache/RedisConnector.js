@@ -9,6 +9,8 @@ class RedisConnector {
       throw new Error('Environment object is required');
     }
 
+    /** Der laufende Verbindungsversuch, geteilt von allen Aufrufern. */
+    this.connectPromise = null;
     this.redisClient = this.createClient(
       environmentObject.REDIS_PASSWORD,
       environmentObject.REDIS_HOST,
@@ -26,49 +28,69 @@ class RedisConnector {
     });
   }
 
+  /**
+   * Stellt die Verbindung her — **höchstens eine** auf einmal.
+   *
+   * Zwei Fallen stecken hier, und beide haben schon eine HTTP-Anfrage zum
+   * Stillstand gebracht:
+   *
+   * 1. `connect()` ein zweites Mal aufzurufen, während der erste noch läuft,
+   *    lehnt der Client ab ("Socket already opened"). Genau das passiert, wenn
+   *    mehrere Schlüssel gleichzeitig abgeräumt werden — sie teilen sich diesen
+   *    Connector. Deshalb wird der laufende Versuch geteilt.
+   * 2. Eine Ablehnung wurde früher verschluckt: Die Methode hängte nur ein
+   *    `.then()` an ihre eigene Promise. Lehnte der Client ab, wurde die nie
+   *    aufgelöst, und der Aufrufer wartete für immer. Jetzt lehnt sie ab; wer
+   *    damit umgehen kann, fängt es.
+   */
   async connect() {
-    return new Promise((mainResolve) => {
-      //console.log('RedisConnector.connecting');
-      Logging.debugMessage({
-        severity: 'FINEST',
-        message: 'RedisConnector.connecting',
-        location: 'RedisConnector.connect',
-      });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: 'RedisConnector.connecting',
+      location: 'RedisConnector.connect',
+    });
 
-      if (this.redisClient.isOpen) {
-        mainResolve();
-        return;
-      }
+    if (this.redisClient.isOpen) {
+      return;
+    }
 
-      this.redisClient.connect().then(() => {
-        // console.log('RedisConnector.connected');
-        Logging.debugMessage({
-          severity: 'FINEST',
-          message: 'RedisConnector.connected',
-          location: 'RedisConnector.connect',
-        });
-        mainResolve();
+    if (!this.connectPromise) {
+      this.connectPromise = this.redisClient.connect().finally(() => {
+        this.connectPromise = null;
       });
+    }
+
+    await this.connectPromise;
+
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: 'RedisConnector.connected',
+      location: 'RedisConnector.connect',
     });
   }
 
+  /**
+   * Trennt die Verbindung. Ein bereits geschlossener Client ist kein Fehler —
+   * `quit()` lehnte dort ab ("The client is closed"), und die Ablehnung hing
+   * aus demselben Grund wie oben.
+   */
   async disconnect() {
-    return new Promise((resolve) => {
-      //console.log('RedisConnector.disconnecting');
-      Logging.debugMessage({
-        severity: 'FINEST',
-        message: 'RedisConnector.disconnecting',
-        location: 'RedisConnector.disconnect',
-      });
-      this.redisClient.quit().then(() => {
-        //console.log('RedisConnector.disconnected');
-        Logging.debugMessage({
-          severity: 'FINEST',
-          message: 'RedisConnector.disconnected',
-          location: 'RedisConnector.disconnect',
-        });
-        resolve();
-      });
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: 'RedisConnector.disconnecting',
+      location: 'RedisConnector.disconnect',
+    });
+
+    if (!this.redisClient.isOpen) {
+      return;
+    }
+
+    await this.redisClient.quit();
+
+    Logging.debugMessage({
+      severity: 'FINEST',
+      message: 'RedisConnector.disconnected',
+      location: 'RedisConnector.disconnect',
     });
   }
 
