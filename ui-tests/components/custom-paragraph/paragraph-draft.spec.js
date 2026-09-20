@@ -99,7 +99,10 @@ test.describe('custom-paragraph: Entwurf', () => {
 
     const wieder = paragraph(page);
     await openEditor(wieder);
-    await expect(editor(wieder).draftApply).toBeVisible();
+    // Dass der Editor vom Entwurf weiß, zeigt das Verwerfen: Es steht nur da,
+    // wenn einer liegt. (Vor dem Umbau war es der Knopf „Apply", den es jetzt
+    // nicht mehr gibt — das Speichern übernimmt den Entwurf.)
+    await expect(editor(wieder).draftDrop).toBeVisible();
     await expect(editor(wieder).text).toHaveValue('Entwurfs-Text');
   });
 
