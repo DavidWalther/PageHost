@@ -513,3 +513,124 @@ test.describe('custom-content-edit: Entwurf', () => {
     expect(await draftEvents(page)).toEqual([{ hasDraft: false }]);
   });
 });
+
+/**
+ * Die gewählte Fassung muss beim Speichern auch **ankommen**.
+ *
+ * Der Zeiger im Modell heißt `content_node.active_content_item` und zeigt auf
+ * ein `content_item`. Der Editor sagt ihn über `active_type`; der Schreibpfad
+ * löst das in die Id auf. Er tut das nur, wenn der Payload die Fassung auch
+ * mitbringt — deshalb hängen beide Regeln zusammen.
+ *
+ * Entscheidend ist der Unterschied zwischen **„es gibt diese Fassung nicht"**
+ * und **„diese Fassung ist leer"**. Ein vorhandenes, leeres `content_item` hat
+ * eine Id, auf die der Zeiger zeigen kann. `custom-paragraph` unterscheidet
+ * beides bereits: Ein Feld für eine Fassung, die es nicht gibt, **fehlt**; eine
+ * vorhandene, leere Fassung steht als `null` im Datensatz.
+ */
+test.describe('custom-content-edit: die gewählte Fassung geht hinaus', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  async function captureSave(page) {
+    await page.evaluate(() => {
+      window.__saved = null;
+      document.body.addEventListener('save', (event) => {
+        window.__saved = event.detail.payload;
+        event.detail.callback(null, { success: true });
+      });
+    });
+  }
+
+  const saved = (page) => page.evaluate(() => window.__saved);
+
+  async function chooseVersion(editor, label) {
+    await editor.locator('slds-combobox .slds-combobox').click();
+    await editor
+      .locator('slds-combobox ul.slds-listbox li', { hasText: label })
+      .click();
+  }
+
+  /** Beide Fassungen vorhanden, HTML aber leer. */
+  const MIT_LEERER_HTML_FASSUNG = {
+    id: '00cn00000000000001',
+    name: 'Ein Absatz',
+    sortnumber: 1,
+    active_type: 'text',
+    content: 'Vorhandener Text',
+    htmlcontent: null,
+  };
+
+  /** Nur Text — eine HTML-Fassung gibt es nicht, das Feld fehlt. */
+  const OHNE_HTML_FASSUNG = {
+    id: '00cn00000000000001',
+    name: 'Ein Absatz',
+    sortnumber: 1,
+    active_type: 'text',
+    content: 'Vorhandener Text',
+  };
+
+  test('eine vorhandene, aber leere Fassung wird aktiv', async ({ page }) => {
+    const editor = await mount(page, { record: MIT_LEERER_HTML_FASSUNG });
+    await captureSave(page);
+    await open(page);
+
+    await chooseVersion(editor, 'HTML');
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    const payload = await saved(page);
+    expect(payload.active_type).toBe('html');
+    // Ohne das Feld kann der Schreibpfad den Zeiger nicht auflösen: Er nimmt
+    // nur Fassungen an, die der Payload auch mitbringt.
+    expect(payload).toHaveProperty('htmlcontent');
+  });
+
+  test('eine Fassung, die es nicht gibt, wird nicht still übergangen', async ({
+    page,
+  }) => {
+    const editor = await mount(page, { record: OHNE_HTML_FASSUNG });
+    await captureSave(page);
+    await open(page);
+
+    const toasts = await page.evaluate(() => {
+      window.__toasts = [];
+      document.body.addEventListener('toast', (event) =>
+        window.__toasts.push(event.detail.variant)
+      );
+      return true;
+    });
+    expect(toasts).toBe(true);
+
+    await chooseVersion(editor, 'HTML');
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    const payload = await saved(page);
+    // Der Zeiger darf nicht auf etwas zeigen, das es nicht gibt …
+    expect(payload.active_type).toBe('text');
+    expect(payload).not.toHaveProperty('htmlcontent');
+    // … aber das muss gesagt werden, statt still zu geschehen.
+    await expect
+      .poll(() => page.evaluate(() => window.__toasts))
+      .toContain('warning');
+  });
+
+  test('wer die neue Fassung befüllt, macht sie damit aktiv', async ({
+    page,
+  }) => {
+    const editor = await mount(page, { record: OHNE_HTML_FASSUNG });
+    await captureSave(page);
+    await open(page);
+
+    await chooseVersion(editor, 'HTML');
+    await editor.locator('#content-input').fill('<p>Neu angelegt</p>');
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect.poll(() => saved(page)).not.toBeNull();
+    const payload = await saved(page);
+    expect(payload.active_type).toBe('html');
+    expect(payload.htmlcontent).toBe('<p>Neu angelegt</p>');
+  });
+});

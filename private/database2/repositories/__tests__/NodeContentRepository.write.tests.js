@@ -276,6 +276,44 @@ describe('NodeContentRepository — Schreibpfad', () => {
       expect(statementsMatching('SET active_content_item = (')).toHaveLength(1);
     });
 
+    it('macht eine vorhandene, aber leere Fassung zur aktiven', async () => {
+      // Der Editor schickt eine vorhandene Fassung auch dann mit, wenn sie
+      // leer ist (`null`) — nur so kann der Zeiger auf ihr `content_item`
+      // zeigen. Eine Fassung, die es nicht gibt, fehlt dagegen im Payload.
+      responses = [];
+      respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
+      respondWith('UPDATE content_node SET name', [{ id: 'cn-1' }]);
+
+      await createRepository().updateRecord('content', {
+        id: '00cn00000000000001',
+        name: 'Absatz',
+        content: 'Vorhandener Text',
+        htmlcontent: null,
+        active_type: 'html',
+      });
+
+      const [zeiger] = statementsMatching('SET active_content_item = (');
+      expect(zeiger.parameters).toEqual(['cn-1', 'html']);
+    });
+
+    it('lässt den Zeiger stehen, wenn die gewünschte Fassung fehlt', async () => {
+      // Ein Typ ohne mitgeschickte Fassung darf den Zeiger nicht bewegen: Es
+      // gibt kein `content_item`, auf das er zeigen könnte.
+      responses = [];
+      respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
+      respondWith('UPDATE content_node SET name', [{ id: 'cn-1' }]);
+
+      await createRepository().updateRecord('content', {
+        id: '00cn00000000000001',
+        name: 'Absatz',
+        content: 'Vorhandener Text',
+        active_type: 'html',
+      });
+
+      const [zeiger] = statementsMatching('SET active_content_item = (');
+      expect(zeiger.parameters).toEqual(['cn-1', 'text']);
+    });
+
     it('kommt mit einem Payload ohne setzbare Felder zurecht', async () => {
       // Der Editor schickt seinen ganzen Datensatz — auch wenn sich nur der
       // Inhalt geändert hat.
