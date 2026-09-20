@@ -136,14 +136,7 @@ class CustomParagraph extends LitElement {
     // If no-load attribute was removed, start loading
     if (changedProperties.has('noLoad')) {
       const previousValue = changedProperties.get('noLoad');
-      console.log(
-        `noLoad changed from ${previousValue} to ${this.noLoad} for paragraph ${this.id}`
-      );
-
       if (previousValue === true && this.noLoad === false) {
-        console.log(
-          `Triggering load for paragraph ${this.id} due to no-load removal`
-        );
         this.loadParagraphData();
       }
     }
@@ -152,7 +145,6 @@ class CustomParagraph extends LitElement {
   loadParagraphData() {
     if (!this.id || this._paragraphData) return; // Don't load if already loaded
 
-    console.log(`Loading paragraph data for ${this.id}`);
     this.fireQueryEvent_Paragraph(
       this.id,
       this.queryEventCallback_Paragraph.bind(this)
