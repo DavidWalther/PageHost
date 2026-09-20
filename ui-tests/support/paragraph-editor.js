@@ -117,9 +117,15 @@ function editTrigger(paragraphLocator) {
   return paragraphLocator.locator('custom-content-edit slds-button-icon');
 }
 
-/** Die Schaltfläche, die den Absatz löscht. Fehlt ohne Scope `delete`. */
+/**
+ * Die Schaltfläche, die den Absatz löscht. Fehlt ohne Scope `delete`.
+ *
+ * `#button-delete-content`, nicht `#button-delete`: Letzteres gehört dem Knoten
+ * (`custom-node`). Beide stehen im selben Teilbaum, und ein Locator, der Shadow
+ * Roots durchdringt, träfe sonst zwei Elemente.
+ */
 function deleteTrigger(paragraphLocator) {
-  return paragraphLocator.locator('#button-delete');
+  return paragraphLocator.locator('#button-delete-content');
 }
 
 /**
