@@ -82,8 +82,37 @@ test.describe('custom-paragraph: Aktionsleiste', () => {
       0
     );
     expect(await bodyOverflow(page)).toBe('');
-    // Der Fokus steht wieder auf dem Auslöser, nicht irgendwo am Seitenanfang.
+  });
+
+  /**
+   * FEHLVERHALTEN — hält den Ist-Zustand fest, nicht das Soll.
+   *
+   * `slds-modal` merkt sich beim Öffnen `document.activeElement`. Liegt der
+   * Auslöser in einem Shadow Root — und das tut er bei **jedem** echten
+   * Consumer — meldet das nur den äußersten Host (`app-bookstore`). Der ist
+   * ohne `tabindex` nicht fokussierbar, also landet der Fokus beim Schließen
+   * auf `body`: Wer mit der Tastatur arbeitet, steht danach am Seitenanfang.
+   *
+   * Der eigene Spec von `slds-modal` sieht das nicht, weil er den Auslöser ins
+   * Light DOM der Testseite hängt; dort ist `document.activeElement` der Button
+   * selbst. Bestandsverhalten, das `custom-chapter-edit` genauso trifft — der
+   * Fix gehört in `slds-modal` und dreht dann auch diesen Test um.
+   */
+  test('FEHLVERHALTEN: der Fokus kehrt nicht zum Auslöser zurück', async ({
+    page,
+  }) => {
+    await openBookstore(page, { scopes: ALL_SCOPES });
+    const absatz = paragraph(page);
+
+    await openEditor(absatz);
     expect(await activeElementPath(page)).toContain('custom-content-edit');
+
+    await editor(absatz).cancel.click();
+    await absatz
+      .locator('custom-content-edit .slds-modal')
+      .waitFor({ state: 'detached' });
+
+    expect(await activeElementPath(page)).toEqual(['body']);
   });
 
   test('die Escape-Taste schließt das Modal', async ({ page }) => {
