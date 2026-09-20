@@ -44,10 +44,11 @@ Ein durchgehendes Formular, kein Tab-Werk (`size="full"`):
 4. Footer: `Abbrechen` und `Speichern`
 
 Die **Anordnung** macht durchgehend `slds-layout` / `slds-layout-item` — auch die
-Spalte im Modal (`vertical`), in der das Textfeld zwischen Formularzeile und
-Entwurfs-Leiste wächst. Eigenes CSS gibt es nur für **Maße**, die der Baukasten
-nicht kennt (siehe unten); Klassen landen nie an einem Layout-Host, die gehören
-der Komponente (`layout-classlist-contract.spec.js`).
+Spalte im Modal (`vertical`, Hauptachse senkrecht), in der das Textfeld zwischen
+seinen `grow-none`-Nachbarn wächst. Abstände, Trennlinie und Textfarben kommen
+als SLDS-Utilities ans Markup. Eigenes CSS gibt es nur für **Maße**, die das
+Raster nicht ausdrücken kann (siehe unten); Klassen landen nie an einem
+Layout-Host, die gehören der Komponente (`layout-classlist-contract.spec.js`).
 
 ### Die Fassung wird gewählt, nicht abgeleitet
 
@@ -76,25 +77,35 @@ vorhandenes, leeres Item hat eine Id, eine nicht vorhandene Fassung nicht.
 ## Platz für den Text
 
 Das Textfeld bekommt, was im Modal übrig ist — es steht **nicht** auf einer
-festen Zeilenzahl. Dafür sorgt die vertikale `slds-layout`-Spalte: Formularzeile
-und Entwurfs-Leiste sind `grow-none`, das Feld dazwischen wächst.
+festen Zeilenzahl. Dafür sorgt die senkrechte `slds-layout`-Spalte: Ihre
+Hauptachse läuft von oben nach unten, Formularzeile, Kopfzeile und
+Entwurfs-Leiste sind `grow-none`, und das Feld dazwischen nimmt den Rest
+(`.slds-col` ist `flex: 1 1 auto`).
 
-Drei Maße kann der Baukasten nicht ausdrücken; sie stehen als CSS daneben und
-sprechen die Elemente über ihre `id` an:
+### Warum es trotzdem noch CSS gibt
 
-- Die Spalte nimmt die **volle Höhe** des Inhaltsbereichs (`height: 100%`).
-- Ihre Kinder dürfen **schrumpfen** (`min-height: 0`) — sonst wächst die Spalte
-  mit dem Text, statt ihn scrollen zu lassen.
-- Das Feld hat eine **Mindesthöhe**, und die ist am Fenster bemessen
-  (`min-height: max(8rem, 40vh)`), nicht an Zeilen.
+Das SLDS-Raster **ordnet** an — es sagt nicht, **wie hoch** etwas ist. Drei
+Dinge kann es deshalb nicht ausdrücken:
 
-Das Letzte braucht es, weil das Modal zwei Gestalten hat: Unter 30em ist es ein
+1. **Die Spalte braucht eine Höhe.** Eine Flex-Spalte verteilt nur Platz, den
+   sie hat; ohne Höhe wäre sie so hoch wie ihr Inhalt und hätte nichts zu
+   verteilen. SLDS v1 kennt dafür keine Utility — ein `slds-height_full` gibt es
+   nicht (nachgesehen im ausgelieferten Stylesheet).
+2. **`min-height: 0`.** Flexbox setzt für Glieder `min-height: auto`; damit
+   weigert sich ein Glied, unter seinen Inhalt zu schrumpfen. Die Spalte wüchse
+   mit dem Text, statt ihn scrollen zu lassen.
+3. **Die Mindesthöhe des Felds** ist eine Produktfrage, keine Rasterfrage.
+
+Nummer 3 braucht es, weil das Modal zwei Gestalten hat: Unter 30em ist es ein
 Vollbild-Grid, dessen Inhaltsbereich eine aufgelöste Höhe hat — dort dehnt sich
 das Feld auf den ganzen Rest. Darüber richtet sich der Inhaltsbereich nach
 seinem Inhalt; ein Prozentwert hätte nichts, worauf er sich beziehen könnte, und
-gemessen fiel das Feld dort auf seine Mindesthöhe zurück.
+gemessen fiel das Feld dort auf seine Mindesthöhe zurück. Die ist deshalb am
+Fenster bemessen (`min-height: max(8rem, 40vh)`).
 
-Wer mehr Platz braucht, zieht das Feld auf (`resize: vertical`).
+Alles andere ist im Markup: Abstände, Trennlinie und Textfarben als
+SLDS-Utilities, die Breite des Felds von `slds-textarea` selbst. Wer mehr Platz
+braucht, zieht das Feld auf (`resize: vertical`).
 
 ## Zeilenumbruch abschalten
 
@@ -156,6 +167,7 @@ nur ein Erfolg schließt es.
 ## Styling
 
 SLDS-Styles kommen über `addGlobalStylesToShadowRoot` aus
-`/modules/global-styles.mjs` ins ShadowDOM. Eigenes CSS gibt es nur für Maße
-(siehe „Platz für den Text“), dazu `:host { display: inline-block }` und die
-Trennlinie der Entwurfs-Leiste. Die Anordnung gehört `slds-layout`.
+`/modules/global-styles.mjs` ins ShadowDOM. Die Komponente bringt **vier**
+eigene Regeln mit, und alle vier sind Maße oder Verhalten, keine Anordnung:
+die Höhe der Spalte, das Schrumpfen ihrer Glieder, die Mindesthöhe des
+Textfelds und der abgeschaltete Zeilenumbruch — siehe „Platz für den Text“.
