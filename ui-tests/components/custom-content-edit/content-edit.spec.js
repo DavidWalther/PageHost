@@ -383,3 +383,133 @@ test.describe('custom-content-edit: Speichern', () => {
     );
   });
 });
+
+/**
+ * Der lokale Entwurf.
+ *
+ * Er liegt im `localStorage` unter der Id des Inhalts und hat Vorrang: Wer den
+ * Editor öffnet, während ein Entwurf liegt, arbeitet an ihm weiter.
+ *
+ * Die Leiste kennt zwei Wege — anlegen und verwerfen. Ein dritter („übernehmen")
+ * wäre derselbe Knopf wie **Speichern**: Der Formularstand *ist* der Entwurf,
+ * und ein erfolgreiches Speichern räumt ihn weg.
+ */
+test.describe('custom-content-edit: Entwurf', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  const draftInStorage = (page) =>
+    page.evaluate((id) => {
+      const raw = localStorage.getItem(id);
+      return raw ? JSON.parse(raw) : null;
+    }, RECORD.id);
+
+  /** Zählt die Meldungen `content-draft-changed`. */
+  async function watchDraftEvents(page) {
+    await page.evaluate(() => {
+      window.__draftEvents = [];
+      document.body.addEventListener('content-draft-changed', (event) =>
+        window.__draftEvents.push(event.detail)
+      );
+    });
+  }
+
+  const draftEvents = (page) => page.evaluate(() => window.__draftEvents);
+
+  const draftCreate = (editor) =>
+    editor.locator('button', { hasText: 'Entwurf anlegen' });
+  const draftUpdate = (editor) =>
+    editor.locator('button', { hasText: 'Entwurf aktualisieren' });
+  const draftDrop = (editor) =>
+    editor.locator('button', { hasText: 'Entwurf verwerfen' });
+
+  test('ohne Entwurf gibt es nur das Anlegen', async ({ page }) => {
+    const editor = await mount(page);
+    await open(page);
+
+    await expect(draftCreate(editor)).toHaveCount(1);
+    await expect(draftDrop(editor)).toHaveCount(0);
+  });
+
+  test('Anlegen schreibt den Entwurf unter die Inhalts-Id und meldet ihn', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await watchDraftEvents(page);
+    await open(page);
+
+    await editor.locator('#content-input').fill('Entwurfs-Text');
+    await draftCreate(editor).click();
+
+    await expect.poll(() => draftInStorage(page)).not.toBeNull();
+    const draft = await draftInStorage(page);
+    expect(draft.id).toBe(RECORD.id);
+    expect(draft.content).toBe('Entwurfs-Text');
+    expect(draft.draft).toBe(true);
+    expect(await draftEvents(page)).toEqual([{ hasDraft: true }]);
+
+    // Das Modal bleibt offen, die Leiste bietet jetzt beide Wege an.
+    await expect(editor.locator('.slds-modal')).toHaveCount(1);
+    await expect(draftUpdate(editor)).toHaveCount(1);
+    await expect(draftDrop(editor)).toHaveCount(1);
+  });
+
+  test('ein liegender Entwurf belegt das Formular beim Öffnen', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await open(page);
+    await editor.locator('#content-input').fill('Entwurfs-Text');
+    await draftCreate(editor).click();
+    await editor.locator('button', { hasText: 'Abbrechen' }).click();
+
+    await open(page);
+
+    await expect(editor.locator('#content-input')).toHaveValue('Entwurfs-Text');
+    await expect(draftDrop(editor)).toHaveCount(1);
+  });
+
+  test('Verwerfen löscht den Entwurf und stellt den Serverstand her', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await open(page);
+    await editor.locator('#content-input').fill('Entwurfs-Text');
+    await draftCreate(editor).click();
+    await watchDraftEvents(page);
+
+    await draftDrop(editor).click();
+
+    await expect.poll(() => draftInStorage(page)).toBeNull();
+    await expect(editor.locator('#content-input')).toHaveValue(
+      'Erste Zeile\nZweite Zeile'
+    );
+    expect(await draftEvents(page)).toEqual([{ hasDraft: false }]);
+  });
+
+  test('erfolgreiches Speichern übernimmt den Entwurf und räumt ihn weg', async ({
+    page,
+  }) => {
+    const editor = await mount(page);
+    await page.evaluate(() => {
+      window.__saved = null;
+      document.body.addEventListener('save', (event) => {
+        window.__saved = event.detail.payload;
+        event.detail.callback(null, { success: true });
+      });
+    });
+    await open(page);
+    await editor.locator('#content-input').fill('Entwurfs-Text');
+    await draftCreate(editor).click();
+    await watchDraftEvents(page);
+
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => window.__saved?.content))
+      .toBe('Entwurfs-Text');
+    await expect.poll(() => draftInStorage(page)).toBeNull();
+    expect(await draftEvents(page)).toEqual([{ hasDraft: false }]);
+  });
+});

@@ -34,6 +34,12 @@ class CustomContentEdit extends LitElement {
     content: 'Inhalt',
     cancelButton: 'Abbrechen',
     saveButton: 'Speichern',
+    draftCreate: 'Entwurf anlegen',
+    draftUpdate: 'Entwurf aktualisieren',
+    draftDrop: 'Entwurf verwerfen',
+    draftHint: 'Speichern übernimmt einen Entwurf und räumt ihn weg.',
+    draftSaved: 'Entwurf lokal gesichert',
+    draftDropped: 'Entwurf verworfen',
     nameRequired: 'Ein Name ist erforderlich',
     contentSaved: 'Gespeichert',
     contentSaveError: 'Fehler beim Speichern',
@@ -44,11 +50,17 @@ class CustomContentEdit extends LitElement {
     contentData: { type: Object, attribute: false },
     _form: { state: true },
     _activeType: { state: true },
+    _hasDraft: { state: true },
   };
 
   static styles = css`
     :host {
       display: inline-block;
+    }
+
+    /* Abgesetzt: Was hier steht, wirkt lokal und geht nicht an den Server. */
+    .draft-bar {
+      border-top: 1px solid var(--slds-color-border, #e5e5e5);
     }
   `;
 
@@ -57,6 +69,7 @@ class CustomContentEdit extends LitElement {
     this.contentData = null;
     this._form = {};
     this._activeType = 'text';
+    this._hasDraft = false;
   }
 
   connectedCallback() {
@@ -83,7 +96,7 @@ class CustomContentEdit extends LitElement {
         size="full"
         @close=${this._handleModalClose}
       >
-        ${this.renderForm()}
+        ${this.renderForm()} ${this.renderDraftBar()}
 
         <div slot="footer">
           <button
@@ -155,6 +168,42 @@ class CustomContentEdit extends LitElement {
     `;
   }
 
+  /**
+   * Die Entwurfs-Leiste — abgesetzt, weil sie nicht zum Formular gehört: Sie
+   * wirkt **lokal** und geht nirgendwo hin.
+   *
+   * Ein „Übernehmen" gibt es hier nicht: Der Formularstand *ist* der Entwurf
+   * (das Öffnen zieht ihn vor), also übernimmt ihn der Speichern-Knopf und
+   * räumt ihn weg. Ein zweiter Knopf daneben täte dasselbe.
+   */
+  renderDraftBar() {
+    return html`
+      <div class="draft-bar slds-m-top_medium slds-p-top_small">
+        <p
+          class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small"
+        >
+          ${this.labels.draftHint}
+        </p>
+        <button
+          class="slds-button slds-button_neutral"
+          @click=${this._handleDraftSave}
+        >
+          ${this._hasDraft ? this.labels.draftUpdate : this.labels.draftCreate}
+        </button>
+        ${
+          this._hasDraft
+            ? html`<button
+                class="slds-button slds-button_destructive"
+                @click=${this._handleDraftDrop}
+              >
+                ${this.labels.draftDrop}
+              </button>`
+            : ''
+        }
+      </div>
+    `;
+  }
+
   // ==================================================
   // Abgeleitete Sichten auf den Formularzustand
   // ==================================================
@@ -170,7 +219,11 @@ class CustomContentEdit extends LitElement {
   // ==================================================
 
   show() {
-    this._form = { ...(this.contentData || {}) };
+    // Ein liegender Entwurf hat Vorrang — wer den Editor öffnet, arbeitet an
+    // ihm weiter, statt ihn unbemerkt zu übergehen.
+    const draft = this._readDraft();
+    this._hasDraft = !!draft;
+    this._form = { ...(draft || this.contentData || {}) };
     this._activeType = this._form.active_type || 'text';
 
     const modal = this.shadowRoot.querySelector('slds-modal');
@@ -238,6 +291,74 @@ class CustomContentEdit extends LitElement {
 
   _handleCancel() {
     this.hide();
+  }
+
+  // ==================================================
+  // Entwurf (localStorage)
+  // ==================================================
+
+  /** Der Entwurf liegt unter der Id des Inhalts. */
+  get _draftKey() {
+    return this.contentData?.id || null;
+  }
+
+  _readDraft() {
+    if (!this._draftKey) return null;
+    try {
+      const raw = localStorage.getItem(this._draftKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  _handleDraftSave() {
+    if (!this._draftKey) return;
+    const draft = {
+      ...this._form,
+      active_type: this._activeType,
+      draft: true,
+    };
+    try {
+      localStorage.setItem(this._draftKey, JSON.stringify(draft));
+    } catch {
+      this._dispatchToast(this.labels.contentSaveError, 'error');
+      return;
+    }
+    this._hasDraft = true;
+    this._dispatchToast(this.labels.draftSaved, 'info');
+    this._dispatchDraftChanged();
+  }
+
+  _handleDraftDrop() {
+    this._removeDraft();
+    this._form = { ...(this.contentData || {}) };
+    this._activeType = this._form.active_type || 'text';
+    this._dispatchToast(this.labels.draftDropped, 'info');
+    this._dispatchDraftChanged();
+  }
+
+  /** Entfernt den Entwurf, falls einer liegt. Meldet **nicht** von selbst. */
+  _removeDraft() {
+    if (!this._draftKey) return false;
+    if (!this._hasDraft) return false;
+    try {
+      localStorage.removeItem(this._draftKey);
+    } catch {
+      // Kein Speicher, kein Entwurf — nichts zu tun.
+    }
+    this._hasDraft = false;
+    return true;
+  }
+
+  _dispatchDraftChanged() {
+    this.dispatchEvent(
+      new CustomEvent('content-draft-changed', {
+        detail: { hasDraft: this._hasDraft },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   // ==================================================
@@ -319,7 +440,12 @@ class CustomContentEdit extends LitElement {
 
     const payload = this._payload();
     const contentData = { ...this._form, ...payload };
+    // Was auf dem Server steht, braucht daneben keinen Entwurf mehr.
+    const hadDraft = this._removeDraft();
     this._dispatchToast(this.labels.contentSaved, 'success');
+    if (hadDraft) {
+      this._dispatchDraftChanged();
+    }
     this.dispatchEvent(
       new CustomEvent('content-updated', {
         detail: { contentData },
