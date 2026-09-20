@@ -133,6 +133,17 @@ class CustomParagraph extends LitElement {
   updated(changedProperties) {
     super.updated(changedProperties);
 
+    // Eine neue Id heißt: Dieses Element stellt ab jetzt einen **anderen**
+    // Inhalt dar. Das passiert beim Löschen mitten in der Liste — Lit setzt
+    // Listen ohne Schlüssel über den Index zusammen und teilt die vorhandenen
+    // Elemente neu zu, statt sie zu verschieben. Ohne dieses Nachladen zeigte
+    // der Absatz weiter den Text seines Vorgängers, und sein Editor arbeitete
+    // auf einem Datensatz, der hier nicht mehr steht.
+    if (changedProperties.has('id') && changedProperties.get('id')) {
+      this._paragraphData = null;
+      this.loadParagraphData();
+    }
+
     // If no-load attribute was removed, start loading
     if (changedProperties.has('noLoad')) {
       const previousValue = changedProperties.get('noLoad');
@@ -310,9 +321,11 @@ class CustomParagraph extends LitElement {
           composed: true,
         })
       );
-      // Erst melden, dann gehen: Ein `composed` Ereignis eines bereits
-      // entfernten Elements erreicht niemanden mehr. Der Knoten braucht die
-      // Meldung, sonst bleibt sein Container als leere Hülle stehen.
+      // Melden statt selbst verschwinden: Der Absatz steht in einer Liste, die
+      // **Lit** rendert. Nimmt er sich mit `remove()` heraus, stimmt deren
+      // Buchführung nicht mehr — beim nächsten Rendern verschwand dann ein
+      // unbeteiligter Nachbar mit. Wer die Liste hält, nimmt den Inhalt aus
+      // seinen Daten; das Rendering folgt.
       this.dispatchEvent(
         new CustomEvent('content-deleted', {
           detail: { contentId: this.id },
@@ -320,7 +333,6 @@ class CustomParagraph extends LitElement {
           composed: true,
         })
       );
-      this.remove();
     } catch (e) {
       this.dispatchEvent(
         new CustomEvent('toast', {

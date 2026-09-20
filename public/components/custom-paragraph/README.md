@@ -40,11 +40,11 @@ sein eigenes Löschen.
 
 ## Attribute
 
-| Attribut     | Typ     | Beschreibung                                                                               |
-| ------------ | ------- | ------------------------------------------------------------------------------------------ |
-| `id`         | String  | Id des Inhalts. Zugleich der Schlüssel des lokalen Entwurfs.                               |
-| `no-load`    | Boolean | **Nicht abrufen.** Zeigt einen Platzhalter; `custom-node` nutzt das für verzögertes Laden. |
-| `no-display` | Boolean | **Nicht zeigen.** Reflektiert; beim Sprung zu einem Inhalt weiter unten.                   |
+| Attribut     | Typ     | Beschreibung                                                                                                             |
+| ------------ | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`         | String  | Id des Inhalts, zugleich der Schlüssel des lokalen Entwurfs. Ändert sie sich, lädt die Komponente neu (siehe „Löschen“). |
+| `no-load`    | Boolean | **Nicht abrufen.** Zeigt einen Platzhalter; `custom-node` nutzt das für verzögertes Laden.                               |
+| `no-display` | Boolean | **Nicht zeigen.** Reflektiert; beim Sprung zu einem Inhalt weiter unten.                                                 |
 
 Wird `no-load` zur Laufzeit entfernt, holt die Komponente ihren Inhalt nach.
 
@@ -95,11 +95,28 @@ hierher:
 ## Löschen
 
 Ruft `deleteParagraph` (`delete-paragraph.api.js`,
-`GET /api/1.0/data/delete?object=content&id=…`) nach einer Rückfrage, meldet
-`content-deleted` und nimmt sich dann aus dem Dokument. Die Reihenfolge ist
-wichtig: Ein `composed` Ereignis eines bereits entfernten Elements erreicht
-niemanden mehr — und `custom-node` braucht die Meldung, sonst bliebe sein
-Container als leere Hülle stehen.
+`GET /api/1.0/data/delete?object=content&id=…`) nach einer Rückfrage und meldet
+dann `content-deleted`.
+
+**Die Komponente nimmt sich nicht selbst aus dem Dokument.** Sie steht in einer
+Liste, die `custom-node` mit Lit rendert; ein `remove()` von innen bringt deren
+Buchführung durcheinander, und beim nächsten Rendern verschwand ein
+unbeteiligter Nachbar gleich mit. Wer die Liste hält, nimmt den Inhalt aus
+seinen Daten — das Rendering folgt.
+
+Die Reihenfolge bleibt trotzdem wichtig: Erst melden, dann alles Weitere. Ein
+`composed` Ereignis eines bereits entfernten Elements erreicht niemanden mehr.
+
+### Wechselt die `id`, lädt der Absatz neu
+
+Lit setzt Listen ohne Schlüssel über den **Index** zusammen. Fällt ein Inhalt
+mitten aus der Liste, werden die vorhandenen Elemente deshalb **neu zugeteilt**
+statt verschoben: Dasselbe `<custom-paragraph>` bekommt eine andere `id`.
+
+Die Komponente wirft darauf ihren geladenen Datensatz weg und holt den neuen.
+Ohne das zeigte sie weiter den Text ihres Vorgängers — und ihr Editor arbeitete
+auf einem Datensatz, der nicht mehr in der Liste steht (beim Speichern ein
+Fehler aus dem Backend).
 
 ## Styling
 

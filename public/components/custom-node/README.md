@@ -118,5 +118,10 @@ dem Netz. Ebenso muss `contentnumber` vor dem Aufruf gesetzt sein.
 Ein Absatz, der gelöscht wurde, meldet `content-deleted` mit seiner Id. Der
 Knoten nimmt den Inhalt daraufhin aus `_nodeData.contents` — aus den **Daten**,
 nicht aus dem DOM: Sein Container käme beim nächsten Rendern sonst zurück.
+
+Der Absatz entfernt sich **nicht** selbst; er meldet nur. Diese Liste wird von
+Lit gerendert, und ein `remove()` von innen bringt deren Buchführung
+durcheinander — beim Löschen mitten in der Liste verschwand sonst ein
+unbeteiligter Nachbar gleich mit.
 Bleibt danach nichts übrig und führt der Knoten auch nirgends weiter, steht dort
 der Hinweis `#no-contents`.
