@@ -59,79 +59,80 @@ class CustomContentEdit extends LitElement {
     _noWrap: { state: true },
   };
 
+  /**
+   * Nur **Maße**, kein Layout.
+   *
+   * Die Anordnung machen `slds-layout` / `slds-layout-item`: die Spalte im
+   * Modal, die Formularzeile, die Kopfzeile des Textfelds und die
+   * Entwurfs-Leiste. Was hier steht, sind die drei Dinge, die der Baukasten
+   * nicht kennt: dass die Spalte die volle Hoehe bekommt, dass ihre Kinder
+   * schrumpfen duerfen, und wie gross das Textfeld mindestens ist.
+   *
+   * Angesprochen wird ueber `id`, nicht ueber eine Klasse: Die `classList`
+   * eines Layout-Hosts gehoert der Komponente (siehe deren README und
+   * `layout-classlist-contract.spec.js`).
+   */
   static styles = css`
     :host {
       display: inline-block;
     }
 
-    /* Abgesetzt: Was hier steht, wirkt lokal und geht nicht an den Server. */
-    .draft-bar {
-      border-top: 1px solid var(--slds-color-border, #e5e5e5);
-      flex: none;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* Der Hinweis nimmt die Breite, die die Schaltflaechen uebrig lassen —
-       auf schmalem Schirm rutscht er in eine eigene Zeile. */
-    .draft-bar p {
-      flex: 1 1 12rem;
-      margin: 0;
-    }
-
-    /* Der Inhaltsbereich des Modals hat eine aufgelöste Höhe und scrollt selbst.
-       Diese Spalte nimmt sie ganz ein, damit das Textfeld den Rest bekommt —
-       statt auf einer festen Zeilenzahl zu stehen, während darunter Luft bleibt.
-       "min-height: 0" hebt die Vorgabe "min-height: auto" für Flex-Kinder auf;
-       ohne sie wächst die Spalte mit dem Text, statt ihn scrollen zu lassen. */
-    .editor {
-      display: flex;
-      flex-direction: column;
+    /* Die Spalte nimmt den Inhaltsbereich des Modals ganz ein, damit das
+       Textfeld den Rest bekommt. "min-height: 0" hebt die Vorgabe
+       "min-height: auto" fuer Flex-Kinder auf; ohne sie wuechse die Spalte
+       mit dem Text, statt ihn scrollen zu lassen. */
+    #editor {
       height: 100%;
       min-height: 0;
     }
 
-    .fields {
-      flex: none;
-    }
-
-    .content-field {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
+    #content-area,
+    #content-control {
       min-height: 0;
     }
 
-    .content-field__head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      flex: none;
+    #content-field {
+      height: 100%;
+      min-height: 0;
     }
 
-    /* Zwei Wege zur Höhe, weil das Modal zwei Gestalten hat:
-       - Unter 30em ist es ein echtes Vollbild-Grid. Der Inhaltsbereich hat dort
-         eine aufgeloeste Hoehe, "flex: 1" dehnt das Feld auf den ganzen Rest.
-       - Darueber ist die Hoehe des Inhaltsbereichs automatisch. Ein Prozentwert
-         haette nichts, worauf er sich beziehen koennte — gemessen fiel das Feld
-         dort auf seine Mindesthoehe zurueck. Die ist deshalb am Viewport
-         bemessen und nicht an einer Zeilenzahl. */
+    /* Das Feld fuellt sein Layout-Item. */
+    #content-control {
+      display: flex;
+    }
+
+    /* Zwei Wege zur Hoehe, weil das Modal zwei Gestalten hat:
+       - Unter 30em ist es ein echtes Vollbild-Grid. Der Inhaltsbereich hat
+         dort eine aufgeloeste Hoehe, "flex: 1" dehnt das Feld auf den Rest.
+       - Darueber ist die Hoehe des Inhaltsbereichs automatisch. Ein
+         Prozentwert haette nichts, worauf er sich beziehen koennte — gemessen
+         fiel das Feld dort auf seine Mindesthoehe zurueck. Die ist deshalb am
+         Viewport bemessen und nicht an einer Zeilenzahl. */
     #content-input {
       flex: 1 1 auto;
+      width: 100%;
       min-height: max(8rem, 40vh);
       resize: vertical;
     }
 
     /* Kein Umbruch: lange Zeilen laufen nach rechts weiter und werden
        gescrollt. "white-space: pre" statt des wrap-Attributs, weil ein
-       Wechsel von "wrap" an einem bestehenden Textfeld nicht zuverlässig
-       greift — und weil wrap="hard" den gespeicherten Wert verändern würde. */
+       Wechsel von "wrap" an einem bestehenden Textfeld nicht zuverlaessig
+       greift — und weil wrap="hard" den gespeicherten Wert veraendern wuerde. */
     #content-input.no-wrap {
       white-space: pre;
       overflow-x: auto;
+    }
+
+    /* Abgesetzt: Was hier steht, wirkt lokal und geht nicht an den Server. */
+    .draft-bar {
+      border-top: 1px solid var(--slds-color-border, #e5e5e5);
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+
+    .draft-bar p {
+      margin: 0;
     }
   `;
 
@@ -168,10 +169,15 @@ class CustomContentEdit extends LitElement {
         size="full"
         @close=${this._handleModalClose}
       >
-        <div class="editor">
-          ${this.renderForm()} ${this.renderContentField()}
-          ${this.renderDraftBar()}
-        </div>
+        <slds-layout id="editor" vertical>
+          <slds-layout-item grow-none>${this.renderForm()}</slds-layout-item>
+          <slds-layout-item id="content-area">
+            ${this.renderContentField()}
+          </slds-layout-item>
+          <slds-layout-item grow-none
+            >${this.renderDraftBar()}</slds-layout-item
+          >
+        </slds-layout>
 
         <div slot="footer">
           <button
@@ -193,8 +199,8 @@ class CustomContentEdit extends LitElement {
 
   renderForm() {
     return html`
-      <div class="fields slds-grid slds-wrap slds-gutters_x-small">
-        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+      <slds-layout wrap gutters-x-small>
+        <slds-layout-item size="1-of-1" medium-size="1-of-2">
           <slds-input
             type="text"
             label="${this.labels.name}"
@@ -202,9 +208,9 @@ class CustomContentEdit extends LitElement {
             value="${this._form.name || ''}"
             @change=${this._handleNameChange}
           ></slds-input>
-        </div>
+        </slds-layout-item>
 
-        <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-6">
+        <slds-layout-item size="1-of-2" medium-size="1-of-6">
           <slds-input
             type="number"
             label="${this.labels.sortNumber}"
@@ -212,17 +218,17 @@ class CustomContentEdit extends LitElement {
             min="1"
             @change=${this._handleSortNumberChange}
           ></slds-input>
-        </div>
+        </slds-layout-item>
 
-        <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-3">
+        <slds-layout-item size="1-of-2" medium-size="1-of-3">
           <slds-combobox
             label="${this.labels.version}"
             options=${JSON.stringify(VERSION_OPTIONS)}
             value="${this._activeType}"
             @combobox-select=${this._handleVersionChange}
           ></slds-combobox>
-        </div>
-      </div>
+        </slds-layout-item>
+      </slds-layout>
     `;
   }
 
@@ -235,29 +241,35 @@ class CustomContentEdit extends LitElement {
    */
   renderContentField() {
     return html`
-      <div class="content-field slds-form-element slds-m-top_x-small">
-        <div class="content-field__head">
-          <label class="slds-form-element__label" for="content-input">
-            ${this.labels.content}
-          </label>
-          <slds-toggle
-            label="${this.labels.wrap}"
-            enabled-label="${this.labels.wrapOn}"
-            disabled-label="${this.labels.wrapOff}"
-            name="content-wrap"
-            ?checked=${!this._noWrap}
-            @toggle=${this._handleWrapToggle}
-          ></slds-toggle>
-        </div>
-        <div class="slds-form-element__control content-field">
+      <slds-layout id="content-field" vertical>
+        <slds-layout-item grow-none>
+          <slds-layout align-spread vertical-align-center>
+            <slds-layout-item>
+              <label class="slds-form-element__label" for="content-input">
+                ${this.labels.content}
+              </label>
+            </slds-layout-item>
+            <slds-layout-item>
+              <slds-toggle
+                label="${this.labels.wrap}"
+                enabled-label="${this.labels.wrapOn}"
+                disabled-label="${this.labels.wrapOff}"
+                name="content-wrap"
+                ?checked=${!this._noWrap}
+                @toggle=${this._handleWrapToggle}
+              ></slds-toggle>
+            </slds-layout-item>
+          </slds-layout>
+        </slds-layout-item>
+        <slds-layout-item id="content-control">
           <textarea
             id="content-input"
             class="slds-textarea ${this._noWrap ? 'no-wrap' : ''}"
             .value=${this._versionContent}
             @input=${this._handleContentChange}
           ></textarea>
-        </div>
-      </div>
+        </slds-layout-item>
+      </slds-layout>
     `;
   }
 

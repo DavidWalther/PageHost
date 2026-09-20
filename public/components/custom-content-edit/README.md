@@ -36,12 +36,18 @@ nicht gibt, fehlt** — es ist nicht `null`.
 
 Ein durchgehendes Formular, kein Tab-Werk (`size="full"`):
 
-1. **Name** und **Sortierung** (`slds-input`)
-2. **Fassung** (`slds-combobox`) — welche Fassung gilt und bearbeitet wird
-3. **Ein** Textfeld (`<textarea class="slds-textarea">`) für genau diese
+1. **Name**, **Sortierung** und **Fassung** in einer Zeile (`slds-input`,
+   `slds-combobox`) — ab `medium` nebeneinander, darunter umbrechend
+2. **Ein** Textfeld (`<textarea class="slds-textarea">`) für genau diese
    Fassung, daneben der Schalter für den Zeilenumbruch
-4. **Entwurfs-Leiste**, abgesetzt: anlegen/aktualisieren und verwerfen
-5. Footer: `Abbrechen` und `Speichern`
+3. **Entwurfs-Leiste**, abgesetzt: anlegen/aktualisieren und verwerfen
+4. Footer: `Abbrechen` und `Speichern`
+
+Die **Anordnung** macht durchgehend `slds-layout` / `slds-layout-item` — auch die
+Spalte im Modal (`vertical`), in der das Textfeld zwischen Formularzeile und
+Entwurfs-Leiste wächst. Eigenes CSS gibt es nur für **Maße**, die der Baukasten
+nicht kennt (siehe unten); Klassen landen nie an einem Layout-Host, die gehören
+der Komponente (`layout-classlist-contract.spec.js`).
 
 ### Die Fassung wird gewählt, nicht abgeleitet
 
@@ -70,20 +76,25 @@ vorhandenes, leeres Item hat eine Id, eine nicht vorhandene Fassung nicht.
 ## Platz für den Text
 
 Das Textfeld bekommt, was im Modal übrig ist — es steht **nicht** auf einer
-festen Zeilenzahl. Dafür braucht es zwei Wege, weil das Modal zwei Gestalten
-hat:
+festen Zeilenzahl. Dafür sorgt die vertikale `slds-layout`-Spalte: Formularzeile
+und Entwurfs-Leiste sind `grow-none`, das Feld dazwischen wächst.
 
-- **Unter 30em** ist es ein echtes Vollbild-Grid. Der Inhaltsbereich hat dort
-  eine aufgelöste Höhe, und das Feld dehnt sich über `flex: 1` auf den ganzen
-  Rest.
-- **Darüber** richtet sich der Inhaltsbereich nach seinem Inhalt. Ein
-  Prozentwert hätte nichts, worauf er sich beziehen könnte — gemessen fiel das
-  Feld dort auf seine Mindesthöhe zurück. Die ist deshalb am Fenster bemessen
+Drei Maße kann der Baukasten nicht ausdrücken; sie stehen als CSS daneben und
+sprechen die Elemente über ihre `id` an:
+
+- Die Spalte nimmt die **volle Höhe** des Inhaltsbereichs (`height: 100%`).
+- Ihre Kinder dürfen **schrumpfen** (`min-height: 0`) — sonst wächst die Spalte
+  mit dem Text, statt ihn scrollen zu lassen.
+- Das Feld hat eine **Mindesthöhe**, und die ist am Fenster bemessen
   (`min-height: max(8rem, 40vh)`), nicht an Zeilen.
 
-Damit möglichst viel davon beim Text ankommt, steht das Formular darüber ab
-`medium` in **einer** Zeile und die Entwurfs-Leiste in einer weiteren. Wer mehr
-braucht, zieht das Feld auf (`resize: vertical`).
+Das Letzte braucht es, weil das Modal zwei Gestalten hat: Unter 30em ist es ein
+Vollbild-Grid, dessen Inhaltsbereich eine aufgelöste Höhe hat — dort dehnt sich
+das Feld auf den ganzen Rest. Darüber richtet sich der Inhaltsbereich nach
+seinem Inhalt; ein Prozentwert hätte nichts, worauf er sich beziehen könnte, und
+gemessen fiel das Feld dort auf seine Mindesthöhe zurück.
+
+Wer mehr Platz braucht, zieht das Feld auf (`resize: vertical`).
 
 ## Zeilenumbruch abschalten
 
@@ -145,6 +156,6 @@ nur ein Erfolg schließt es.
 ## Styling
 
 SLDS-Styles kommen über `addGlobalStylesToShadowRoot` aus
-`/modules/global-styles.mjs` ins ShadowDOM. Die Komponente bringt nur zwei
-eigene Regeln mit: `:host { display: inline-block }` und die Trennlinie der
-Entwurfs-Leiste.
+`/modules/global-styles.mjs` ins ShadowDOM. Eigenes CSS gibt es nur für Maße
+(siehe „Platz für den Text“), dazu `:host { display: inline-block }` und die
+Trennlinie der Entwurfs-Leiste. Die Anordnung gehört `slds-layout`.
