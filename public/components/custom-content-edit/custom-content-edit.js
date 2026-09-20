@@ -125,6 +125,7 @@ class CustomContentEdit extends LitElement {
             label="${this.labels.version}"
             options=${JSON.stringify(VERSION_OPTIONS)}
             value="${this._activeType}"
+            @combobox-select=${this._handleVersionChange}
           ></slds-combobox>
         </div>
 
@@ -210,6 +211,18 @@ class CustomContentEdit extends LitElement {
       ...this._form,
       sortnumber: parseInt(event.detail.value, 10) || 1,
     };
+  }
+
+  /**
+   * Die gewählte Fassung.
+   *
+   * Sie wird **gesetzt**, nicht abgeleitet: Das Textfeld zeigt ab jetzt diese
+   * Fassung, und beim Speichern geht sie als `active_type` hinaus. Der Inhalt
+   * der anderen Fassung bleibt im Formularzustand liegen — Umschalten ist
+   * Ansehen, nicht Verwerfen.
+   */
+  _handleVersionChange(event) {
+    this._activeType = event.detail.value;
   }
 
   _handleContentChange(event) {
