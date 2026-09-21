@@ -9,11 +9,13 @@ class SldsLayout extends LitElement {
     wrap: { type: Boolean, attribute: 'wrap' },
     // Gutters
     gutters: { type: Boolean, attribute: 'gutters' },
+    guttersXxxSmall: { type: Boolean, attribute: 'gutters-xxx-small' },
     guttersXxSmall: { type: Boolean, attribute: 'gutters-xx-small' },
     guttersXSmall: { type: Boolean, attribute: 'gutters-x-small' },
     guttersSmall: { type: Boolean, attribute: 'gutters-small' },
     guttersMedium: { type: Boolean, attribute: 'gutters-medium' },
     guttersLarge: { type: Boolean, attribute: 'gutters-large' },
+    guttersXLarge: { type: Boolean, attribute: 'gutters-x-large' },
     guttersXxLarge: { type: Boolean, attribute: 'gutters-xx-large' },
     // Horizontal align
     alignCenter: { type: Boolean, attribute: 'align-center' },
@@ -34,11 +36,13 @@ class SldsLayout extends LitElement {
     super();
     this.wrap = false;
     this.gutters = false;
+    this.guttersXxxSmall = false;
     this.guttersXxSmall = false;
     this.guttersXSmall = false;
     this.guttersSmall = false;
     this.guttersMedium = false;
     this.guttersLarge = false;
+    this.guttersXLarge = false;
     this.guttersXxLarge = false;
     this.alignCenter = false;
     this.alignSpace = false;
@@ -68,11 +72,13 @@ class SldsLayout extends LitElement {
 
     toggle('wrap', 'slds-wrap');
     toggle('gutters', 'slds-gutters');
+    toggle('guttersXxxSmall', 'slds-gutters_xxx-small');
     toggle('guttersXxSmall', 'slds-gutters_xx-small');
     toggle('guttersXSmall', 'slds-gutters_x-small');
     toggle('guttersSmall', 'slds-gutters_small');
     toggle('guttersMedium', 'slds-gutters_medium');
     toggle('guttersLarge', 'slds-gutters_large');
+    toggle('guttersXLarge', 'slds-gutters_x-large');
     toggle('guttersXxLarge', 'slds-gutters_xx-large');
     toggle('alignCenter', 'slds-grid_align-center');
     toggle('alignSpace', 'slds-grid_align-space');

@@ -45,20 +45,22 @@ Zwei Familien mit **gegenläufiger Voreinstellung**. Rendering ist an und wird
 abgeschaltet (wie `no-load`/`no-display`/`no-footer` im Projekt); ein
 schreibender Weg ist aus und wird ausdrücklich gewährt.
 
-| Attribut              | Voreinstellung | Wirkung                                                          |
-| :-------------------- | :------------- | :--------------------------------------------------------------- |
-| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert        |
-| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen  |
-| `can-create-child`    | aus            | Button „Kind-Knoten anlegen"                                     |
-| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')` |
-| `can-delete`          | aus            | Button „Knoten löschen" — **zusätzlich** zu `hasScope('delete')` |
+| Attribut              | Voreinstellung | Wirkung                                                               |
+| :-------------------- | :------------- | :-------------------------------------------------------------------- |
+| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert             |
+| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen       |
+| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')` |
+| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`      |
+| `can-delete`          | aus            | Button „Knoten löschen" — **zusätzlich** zu `hasScope('delete')`      |
 
-Die beiden `can-…`-Attribute für schreibende Aktionen ersetzen die
-Scope-Prüfung **nicht**, sie kommen davor: Ohne Sitzung erscheint der Button
-auch mit gesetztem Attribut nicht.
+Die `can-…`-Attribute für schreibende Aktionen ersetzen die Scope-Prüfung
+**nicht**, sie kommen davor: Ohne passenden Scope erscheint die Aktion auch mit
+gesetztem Attribut nicht — und zwar ganz: Die Leiste bekommt dann auch kein
+leeres Element, das als Lücke stehen bliebe.
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
 sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.
+`Bearbeiten` hängt trotzdem am Scope `edit`; `Teilen` erscheint immer.
 Kommt eine Rolle dazu, für die das nicht mehr gilt, ist das der Moment, es
 nachzuziehen — nicht vorher.
 
@@ -107,4 +109,19 @@ dem Netz. Ebenso muss `contentnumber` vor dem Aufruf gesetzt sein.
   ihre Benennung stammt aber noch aus dem alten Modell.
 - Die Inhalte werden von `custom-paragraph` gerendert. Es holt seine Daten über
   `object: 'content'` und damit über den neuen Endpunkt; allein sein Name
-  stammt noch aus dem alten Modell.
+  stammt noch aus dem alten Modell. Bearbeitet und veröffentlicht wird dort
+  nicht mehr selbst: Das tun `custom-content-edit` und `custom-content-publish`,
+  jedes in einem eigenen Modal. → `public/components/custom-paragraph/README.md`
+
+## Ein gelöschter Inhalt
+
+Ein Absatz, der gelöscht wurde, meldet `content-deleted` mit seiner Id. Der
+Knoten nimmt den Inhalt daraufhin aus `_nodeData.contents` — aus den **Daten**,
+nicht aus dem DOM: Sein Container käme beim nächsten Rendern sonst zurück.
+
+Der Absatz entfernt sich **nicht** selbst; er meldet nur. Diese Liste wird von
+Lit gerendert, und ein `remove()` von innen bringt deren Buchführung
+durcheinander — beim Löschen mitten in der Liste verschwand sonst ein
+unbeteiligter Nachbar gleich mit.
+Bleibt danach nichts übrig und führt der Knoten auch nirgends weiter, steht dort
+der Hinweis `#no-contents`.

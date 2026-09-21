@@ -120,6 +120,7 @@ class CustomNode extends LitElement {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot);
     this.addEventListener('loaded', this._onContentLoaded, true);
+    this.addEventListener('content-deleted', this._onContentDeleted, true);
     this.initializeIntersectionObserver();
     // Kein Laden hier: eine vor dem Upgrade gesetzte `id` steht in der ersten
     // `changedProperties`-Map, `updated` deckt den Fall also mit ab. Beides zu
@@ -129,6 +130,7 @@ class CustomNode extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener('loaded', this._onContentLoaded, true);
+    this.removeEventListener('content-deleted', this._onContentDeleted, true);
     this.cleanupIntersectionObserver();
   }
 
@@ -193,70 +195,86 @@ class CustomNode extends LitElement {
       }
       <slds-card no-footer ?hidden=${this._scrollPending}>
         <span id="node-name" slot="header">${this._nodeData.name || ''}</span>
-        <div slot="actions" class="slds-grid slds-wrap slds-gutters_xxx-small">
+        <slds-layout slot="actions" wrap gutters-xxx-small>
+          <!-- Ein Element je Aktion, aber nur, wenn die Aktion sichtbar ist —
+               sonst bliebe ein leerer Rahmen als Lücke stehen. Für die beiden
+               custom-chapter-edit prüft custom-node dafür dieselben Scopes, die
+               die Komponente selbst prüft (create bzw. edit): bewusst doppelt. -->
           ${
-            this.canCreateChild
-              ? html`<div
-                  class="slds-col slds-grow-none slds-align_absolute-center"
-                >
-                  <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
-                       Komponente im Anlege-Modus. -->
-                  <custom-chapter-edit
-                    id="node-create-child"
-                    story-id="${this.id}"
-                    mode="create"
-                    .chapters="${this.childNodeList}"
-                    @chapter-created=${this._handleChildCreated}
-                  ></custom-chapter-edit>
-                </div>`
+            this.canCreateChild && this.hasScope('create')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
+                         Komponente im Anlege-Modus. -->
+                    <custom-chapter-edit
+                      id="node-create-child"
+                      story-id="${this.id}"
+                      mode="create"
+                      .chapters="${this.childNodeList}"
+                      @chapter-created=${this._handleChildCreated}
+                    ></custom-chapter-edit>
+                  </div>
+                </slds-layout-item>`
               : ''
           }
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            <custom-chapter-edit
-              id="node-edit"
-              chapter-id="${this.id}"
-              story-id="${this._nodeData.parent_node_id || ''}"
-              name="${this._nodeData.name || ''}"
-              sort-number="${this._nodeData.sortnumber || 1}"
-              ?reversed="${this._nodeData.reversed || false}"
-              publish-date="${this._nodeData.published_date || ''}"
-              @chapter-updated=${this._handleNodeUpdated}
-            ></custom-chapter-edit>
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            <slds-button-icon
-              id="button-share"
-              icon="utility:link"
-              variant="container-filled"
-              @click=${this.handleShareClick}
-            ></slds-button-icon>
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${
-              this.canCreateContent && this.hasScope('create')
-                ? html`<slds-button-icon
-                    id="button-create-content"
-                    icon="utility:add"
-                    variant="container-filled"
-                    @click=${this.handleCreateContentClick}
-                  ></slds-button-icon>`
-                : ''
-            }
-          </div>
-          <div class="slds-col slds-grow-none slds-align_absolute-center">
-            ${
-              this.canDelete && this.hasScope('delete')
-                ? html`<slds-button-icon
-                    id="button-delete"
-                    icon="utility:delete"
-                    variant="container-filled"
-                    title="${this.labels.labelDeleteNode}"
-                    @click=${this._handleDeleteClick}
-                  ></slds-button-icon>`
-                : ''
-            }
-          </div>
-        </div>
+          ${
+            this.hasScope('edit')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <custom-chapter-edit
+                      id="node-edit"
+                      chapter-id="${this.id}"
+                      story-id="${this._nodeData.parent_node_id || ''}"
+                      name="${this._nodeData.name || ''}"
+                      sort-number="${this._nodeData.sortnumber || 1}"
+                      ?reversed="${this._nodeData.reversed || false}"
+                      publish-date="${this._nodeData.published_date || ''}"
+                      @chapter-updated=${this._handleNodeUpdated}
+                    ></custom-chapter-edit>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+          <slds-layout-item grow-none align-middle>
+            <div class="slds-align_absolute-center">
+              <slds-button-icon
+                id="button-share"
+                icon="utility:link"
+                variant="container-filled"
+                @click=${this.handleShareClick}
+              ></slds-button-icon>
+            </div>
+          </slds-layout-item>
+          ${
+            this.canCreateContent && this.hasScope('create')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <slds-button-icon
+                      id="button-create-content"
+                      icon="utility:add"
+                      variant="container-filled"
+                      @click=${this.handleCreateContentClick}
+                    ></slds-button-icon>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+          ${
+            this.canDelete && this.hasScope('delete')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <slds-button-icon
+                      id="button-delete"
+                      icon="utility:delete"
+                      variant="container-filled"
+                      title="${this.labels.labelDeleteNode}"
+                      @click=${this._handleDeleteClick}
+                    ></slds-button-icon>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+        </slds-layout>
         ${this.renderChildNavigation()} ${this.renderContents()}
       </slds-card>
     `;
@@ -280,20 +298,20 @@ class CustomNode extends LitElement {
       children.length > this.childButtonsNumberMax;
 
     return html`
-      <div id="child-navigation" class="slds-grid slds-gutters slds-wrap">
+      <slds-layout id="child-navigation" gutters wrap>
         ${
           asCombobox
             ? this._renderChildCombobox(children)
             : children.map((child) => this._renderChildButton(child))
         }
-      </div>
+      </slds-layout>
     `;
   }
 
   _renderChildButton(child) {
     const isSelected = this.selectedChild === child.id;
     return html`
-      <div class="slds-col slds-grow-none">
+      <slds-layout-item grow-none>
         <button
           class="slds-button slds-button_neutral ${
             isSelected ? 'slds-button_brand' : ''
@@ -304,7 +322,7 @@ class CustomNode extends LitElement {
         >
           ${child.name}
         </button>
-      </div>
+      </slds-layout-item>
     `;
   }
 
@@ -316,7 +334,7 @@ class CustomNode extends LitElement {
     }));
 
     return html`
-      <div class="slds-col slds-size_1-of-1 slds-grow-none">
+      <slds-layout-item size="1-of-1">
         <slds-combobox
           options=${JSON.stringify(options)}
           label="Auswahl"
@@ -324,7 +342,7 @@ class CustomNode extends LitElement {
           value=${this.selectedChild}
           @combobox-select=${(event) => this.selectChild(event.detail.value)}
         ></slds-combobox>
-      </div>
+      </slds-layout-item>
     `;
   }
 
@@ -374,7 +392,7 @@ class CustomNode extends LitElement {
 
           return html`
             <div
-              class="slds-col slds-p-bottom_small content-container pending"
+              class="slds-p-bottom_small content-container pending"
               data-content-id=${entry.id}
               data-chunk-index=${chunkIndex}
             >
@@ -672,6 +690,24 @@ class CustomNode extends LitElement {
         this._revealAndScroll();
       }
     }
+  };
+
+  /**
+   * Ein Inhalt hat sich abgemeldet.
+   *
+   * Der Inhalt wird aus den **Daten** genommen, nicht aus dem DOM: Sein
+   * Container käme beim nächsten Rendern sonst zurück. Welcher es war, steht in
+   * der Meldung — `event.target` ist am Host auf den Knoten umgeschrieben und
+   * taugt hier nicht (siehe `_onContentLoaded`).
+   */
+  _onContentDeleted = (event) => {
+    const contentId = event.detail?.contentId;
+    if (!contentId || !this._nodeData) return;
+
+    const remaining = this.contents.filter((entry) => entry.id !== contentId);
+    if (remaining.length === this.contents.length) return;
+
+    this._nodeData = { ...this._nodeData, contents: remaining };
   };
 
   async handleIdChange(newId) {

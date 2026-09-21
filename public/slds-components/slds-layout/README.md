@@ -1,6 +1,6 @@
 # slds-layout & slds-layout-item
 
-Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/components/utilities/grid/).
+Web components wrapping the [SLDS Grid System](https://v1.lightningdesignsystem.com/utilities/grid/).
 
 Most attributes are **booleans** — add the attribute name to enable the corresponding
 SLDS class (`wrap`, `gutters-small`, `bump-right`, …). The **sizes** of
@@ -98,15 +98,21 @@ A flex grid container: adds `slds-grid` to the host element.
 
 #### Gutters
 
-| Attribute          | SLDS Class              |
-| ------------------ | ----------------------- |
-| `gutters`          | `slds-gutters`          |
-| `gutters-xx-small` | `slds-gutters_xx-small` |
-| `gutters-x-small`  | `slds-gutters_x-small`  |
-| `gutters-small`    | `slds-gutters_small`    |
-| `gutters-medium`   | `slds-gutters_medium`   |
-| `gutters-large`    | `slds-gutters_large`    |
-| `gutters-xx-large` | `slds-gutters_xx-large` |
+| Attribute           | SLDS Class               |
+| ------------------- | ------------------------ |
+| `gutters`           | `slds-gutters`           |
+| `gutters-xxx-small` | `slds-gutters_xxx-small` |
+| `gutters-xx-small`  | `slds-gutters_xx-small`  |
+| `gutters-x-small`   | `slds-gutters_x-small`   |
+| `gutters-small`     | `slds-gutters_small`     |
+| `gutters-medium`    | `slds-gutters_medium`    |
+| `gutters-large`     | `slds-gutters_large`     |
+| `gutters-x-large`   | `slds-gutters_x-large`   |
+| `gutters-xx-large`  | `slds-gutters_xx-large`  |
+
+These are all nine gutter sizes of the
+[SLDS Grid System](https://v1.lightningdesignsystem.com/utilities/grid/)
+documentation. The `slds-gutters_direct*` variants are not supported.
 
 #### Horizontal Alignment
 
@@ -194,6 +200,72 @@ A value outside that set applies **no** size class — a typo such as `size="1-o
 | `align-top`    | `slds-align-top`    | Align content to top      |
 | `align-middle` | `slds-align-middle` | Center content vertically |
 | `align-bottom` | `slds-align-bottom` | Align content to bottom   |
+
+#### Flex (grow / shrink)
+
+| Attribute     | SLDS Class         | Effect (SLDS documentation)                            |
+| ------------- | ------------------ | ------------------------------------------------------ |
+| `grow-none`   | `slds-grow-none`   | "Prevents column from growing to children's content"   |
+| `shrink-none` | `slds-shrink-none` | "Prevents column from shrinking to children's content" |
+
+Source: the _Flex Utilities_ table of the
+[SLDS Grid System](https://v1.lightningdesignsystem.com/utilities/grid/)
+documentation, which lists both as column utilities.
+
+Only the `-none` variants exist as attributes: `slds-grow` and `slds-shrink`
+match the default of `slds-col` (`flex: 1 1 auto`) and would have no effect.
+SLDS defines no breakpoint variants of these utilities.
+
+##### Interaction with sizes
+
+`grow-none` and `shrink-none` are **not turned into a class while `size` holds a
+valid fraction.** Every `slds-size_*` class sets `flex: none` at every width,
+which overrides both utilities — the class would be inert, so the component
+leaves it off.
+
+- `small-size`, `medium-size` and `large-size` do **not** suppress: their
+  classes set `flex: none` only from their breakpoint on. Below it the utility
+  still takes effect.
+- An invalid `size` (e.g. `1-of-9`) applies no size class, so it does not
+  suppress either.
+- Changing `size` at runtime re-evaluates both classes.
+
+| Attributes                       | `slds-grow-none` set? | `flex-grow` at 390px | at 1100px     |
+| -------------------------------- | --------------------- | -------------------- | ------------- |
+| `grow-none`                      | yes                   | 0                    | 0             |
+| `size="1-of-2" grow-none`        | **no**                | 0 (from size)        | 0 (from size) |
+| `medium-size="1-of-3" grow-none` | yes                   | 0                    | 0 (from size) |
+
+> **Not documented by SLDS.** The grid documentation describes the flex
+> utilities but says nothing about how they interact with the sizing classes.
+> The rule above is derived from the compiled stylesheet and was measured in the
+> browser (computed `flex-grow` / `flex-shrink`, values in the table) against
+> `@salesforce-ux/design-system` **2.30.7**. Re-check it when upgrading SLDS.
+
+##### Interaction with aligned layouts
+
+In a `<slds-layout>` with `align-center`, `align-space`, `align-spread` or
+`align-end`, columns **do not grow in the first place**: SLDS sets
+`flex-grow: 0` on every `slds-col` inside these grids. `grow-none` is
+therefore **redundant** there, while `shrink-none` still takes effect. Values for
+an item without a size:
+
+| Layout attribute                                           | Item attribute | `flex-grow` | `flex-shrink` |
+| ---------------------------------------------------------- | -------------- | ----------- | ------------- |
+| _none_                                                     | _none_         | 1           | 1             |
+| _none_                                                     | `grow-none`    | **0**       | 1             |
+| `align-center`, `align-space`, `align-spread`, `align-end` | _none_         | **0**       | 1             |
+| `align-center`, `align-space`, `align-spread`, `align-end` | `grow-none`    | 0           | 1             |
+| `align-center`, `align-space`, `align-spread`, `align-end` | `shrink-none`  | 0           | **0**         |
+
+Unlike with `size`, `<slds-layout-item>` still sets `slds-grow-none` here. To
+leave it off, the item would have to watch the attributes of its parent layout,
+including changes at runtime — the redundant class does no harm.
+
+> **Not documented by SLDS either.** Derived from the compiled stylesheet and
+> measured in the browser (computed `flex-grow` / `flex-shrink` at 390px and
+> 1100px) against `@salesforce-ux/design-system` **2.30.7**. Re-check it when
+> upgrading SLDS.
 
 ---
 

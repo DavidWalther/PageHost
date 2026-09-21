@@ -1,4 +1,4 @@
-const { DataFacade } = require('../DataFacade.js');
+const { DataFacade, DataFacadeSync } = require('../DataFacade.js');
 const { Environment } = require('../../modules/environment.js');
 const { DataCache2 } = require('../DataCache/DataCache.js');
 const { DataStorage } = require('../DataStorage/DataStorage.js');
@@ -478,5 +478,51 @@ describe('createData', () => {
     });
     // No cache set or get should be called
     expect(mockDataStorage.createRecord).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Das Abräumen des Caches nach einem Löschvorgang.
+ *
+ * Hier stand ein `Promise.all` über alle Schlüssel — jeder mit eigenem
+ * `connect()` / `del()` / `disconnect()` auf **derselben** Verbindung. Der
+ * echte Client lehnt einen zweiten `connect()` ab ("Socket already opened"),
+ * und die Ablehnung hing. Die Folge war keine langsame Antwort, sondern **gar
+ * keine**: Die Zeilen waren gelöscht, die HTTP-Anfrage stand für immer.
+ *
+ * Deshalb zwei Zusagen: **eine** Verbindung für alle Schlüssel, und ein
+ * fehlschlagender Cache darf die Antwort nicht mitnehmen — gelöscht ist
+ * gelöscht.
+ */
+describe('DataFacadeSync.clearCacheFor', () => {
+  const ENVIRONMENT = {
+    APPLICATION_APPLICATION_KEY: 'testApp',
+    CACHE_KEY_PREFIX: 'test',
+  };
+
+  it('räumt alle Schlüssel in einem Rutsch ab', async () => {
+    const facade = new DataFacadeSync(ENVIRONMENT);
+    const cache = { delMany: jest.fn().mockResolvedValue(undefined) };
+    facade.createCache = () => cache;
+
+    await facade.clearCacheFor(
+      { nodes: [], contents: [{ id: 'cn-1', legacy_id: '000p1' }] },
+      '000p1'
+    );
+
+    expect(cache.delMany).toHaveBeenCalledTimes(1);
+    const [keys] = cache.delMany.mock.calls[0];
+    expect(keys.length).toBeGreaterThan(1);
+  });
+
+  it('ein fehlschlagender Cache nimmt das Löschen nicht mit', async () => {
+    const facade = new DataFacadeSync(ENVIRONMENT);
+    facade.createCache = () => ({
+      delMany: jest.fn().mockRejectedValue(new Error('Redis weg')),
+    });
+
+    await expect(
+      facade.clearCacheFor({ nodes: [], contents: [] }, 'cn-1')
+    ).resolves.toBeUndefined();
   });
 });
