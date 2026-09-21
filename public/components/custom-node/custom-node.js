@@ -120,6 +120,7 @@ class CustomNode extends LitElement {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot);
     this.addEventListener('loaded', this._onContentLoaded, true);
+    this.addEventListener('content-deleted', this._onContentDeleted, true);
     this.initializeIntersectionObserver();
     // Kein Laden hier: eine vor dem Upgrade gesetzte `id` steht in der ersten
     // `changedProperties`-Map, `updated` deckt den Fall also mit ab. Beides zu
@@ -129,6 +130,7 @@ class CustomNode extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener('loaded', this._onContentLoaded, true);
+    this.removeEventListener('content-deleted', this._onContentDeleted, true);
     this.cleanupIntersectionObserver();
   }
 
@@ -688,6 +690,24 @@ class CustomNode extends LitElement {
         this._revealAndScroll();
       }
     }
+  };
+
+  /**
+   * Ein Inhalt hat sich abgemeldet.
+   *
+   * Der Inhalt wird aus den **Daten** genommen, nicht aus dem DOM: Sein
+   * Container käme beim nächsten Rendern sonst zurück. Welcher es war, steht in
+   * der Meldung — `event.target` ist am Host auf den Knoten umgeschrieben und
+   * taugt hier nicht (siehe `_onContentLoaded`).
+   */
+  _onContentDeleted = (event) => {
+    const contentId = event.detail?.contentId;
+    if (!contentId || !this._nodeData) return;
+
+    const remaining = this.contents.filter((entry) => entry.id !== contentId);
+    if (remaining.length === this.contents.length) return;
+
+    this._nodeData = { ...this._nodeData, contents: remaining };
   };
 
   async handleIdChange(newId) {

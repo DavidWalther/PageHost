@@ -44,4 +44,24 @@ describe('IndexHtmlEndpointLogic', () => {
       expect.stringContaining('<body onload="initializeApp()"></body>')
     );
   });
+
+  /**
+   * Eine Komponente, die hier fehlt, gibt es im Browser nicht: Die Shell ist
+   * die einzige Stelle, die Module laedt (es gibt keinen Bundler). Das faellt
+   * sonst erst auf, wenn ein Tag stumm nichts rendert.
+   */
+  it('should load the content editing components', async () => {
+    await indexHtmlEndpointLogic.execute();
+
+    expect(mockResponseObject.send).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '<script type="module" src="components/custom-content-edit/custom-content-edit.js"></script>'
+      )
+    );
+    expect(mockResponseObject.send).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '<script type="module" src="components/custom-content-publish/custom-content-publish.js"></script>'
+      )
+    );
+  });
 });
