@@ -512,9 +512,6 @@ class CustomContentEdit extends LitElement {
   }
 
   _validate() {
-    if (!this._form.name?.trim()) {
-      return { valid: false, message: this.labels.nameRequired };
-    }
     return { valid: true };
   }
 

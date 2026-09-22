@@ -155,10 +155,6 @@ _ist_ der Entwurf, also tut `Speichern` genau das.
 
 ## Speichern
 
-`Speichern` prüft nur eines: Der **Name** darf nicht leer sein. Schlägt die
-Prüfung fehl, gibt es einen Toast und keinen Callout — wie im Vorbild, statt
-einer Inline-Meldung im Formular.
-
 Der Payload trägt die Spaltennamen des Datenmodells (`sortnumber`,
 `active_type`). **Ein Feld, das es nicht gibt, kommt nicht mit**: Ein
 `htmlcontent: null` legte sonst eine leere HTML-Zeile an.
