@@ -1,5 +1,7 @@
 const IndexHtmlEndpointLogic = require('../IndexHtmlEndpointLogic');
 const { Logging } = require('../../../modules/logging');
+const fs = require('fs');
+const path = require('path');
 
 jest.mock('../../../modules/logging');
 
@@ -63,5 +65,27 @@ describe('IndexHtmlEndpointLogic', () => {
         '<script type="module" src="components/custom-content-publish/custom-content-publish.js"></script>'
       )
     );
+  });
+
+  /**
+   * Every script the shell delivers must exist under `public/`. There is no
+   * bundler and no build step that would notice a path that leads nowhere: the
+   * browser simply fetches a 404 and the module silently never runs.
+   */
+  it('should only reference scripts that exist in public', async () => {
+    await indexHtmlEndpointLogic.execute();
+
+    const html = mockResponseObject.send.mock.calls[0][0];
+    const sources = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(
+      (match) => match[1]
+    );
+    const publicDir = path.join(__dirname, '../../../../public');
+
+    expect(sources.length).toBeGreaterThan(0);
+
+    const missing = sources.filter(
+      (source) => !fs.existsSync(path.join(publicDir, source))
+    );
+    expect(missing).toEqual([]);
   });
 });
