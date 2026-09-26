@@ -9,6 +9,38 @@ Reine **Formatierung** (Quotes, Semikolons, Einrückung, Trailing Commas)
 regelt Prettier (`.prettierrc`: `singleQuote`, `semi`, `tabWidth: 2`,
 `trailingComma: es5`) und ist hier nicht wiederholt.
 
+## Language
+
+**English is the development language.** Documentation, code, comments, test
+names and commit messages are written in English — it is the default language of
+the trade, and a mixed repository forces every reader to switch.
+
+**German is the language of the visitor-facing surface.** Every label a visitor
+who is not signed in can read is German, and that is the product, not a
+leftover: `Keine Inhalte vorhanden`, `Link kopiert`,
+`Entschuldigung. Da war leider nichts zu finden.` These strings are **never**
+translated.
+
+**The operator surface fixes no language.** Behind the login only the operator
+works, so the mix there (`Kapitelname ist erforderlich` next to `Login`) is not
+a defect and no test asserts its wording.
+
+### The boundary, in practice
+
+| Written in English                                | Stays German                                   |
+| :------------------------------------------------ | :--------------------------------------------- |
+| `doc/`, `README.md`, component READMEs            | visitor-facing labels in `public/`             |
+| code comments, `Logging` messages, variable names | those same labels **quoted in test selectors** |
+| `describe(...)` / `it(...)` / `test(...)` titles  | —                                              |
+| commit subjects and bodies                        | —                                              |
+
+The second column is the one that bites: a Playwright spec matches on rendered
+text (`hasText: 'Speichern'`, `'Keine Inhalte vorhanden'`). Translating such a
+string turns a green test red without changing a single line of production code.
+When a test title is translated, the **selector inside it is not**.
+
+Which labels a use case relies on: **`doc/useCases.md`**.
+
 ## Backend (Node.js)
 
 - **Module:** CommonJS. Import per `require(...)`, Export ausschließlich als
@@ -60,6 +92,15 @@ regelt Prettier (`.prettierrc`: `singleQuote`, `semi`, `tabWidth: 2`,
 Diese Stellen entsprechen dem oben festgelegten Standard noch **nicht**. Beim
 Anfassen angleichen; eine gesammelte Migration ist optional.
 
+- **Deutsche Entwicklungssprache im Bestand** (Standard: Englisch, siehe
+  „Language"). Englisch sind `README.md`, `doc/authentication.md`,
+  `doc/useCases.md` und alle `slds-*`-READMEs. Deutsch sind noch: diese Datei,
+  `doc/architecture.md`, `doc/conventions.md`, `doc/frontend-testing.md`,
+  `doc/datamodel-overhaul/*`, `.github/instructions/epc.instructions.md`, die
+  meisten `custom-*`-READMEs, ein großer Teil der Code-Kommentare und 169 von
+  280 Playwright-Testnamen (Stand 2026-09-26). Beim Anfassen angleichen; eine
+  gesammelte Migration ist optional. **Oberflächentexte und ihre Zitate in
+  Test-Selektoren sind davon ausgenommen** — sie bleiben deutsch.
 - **Test-Dateiname `*.test.js`** (Standard: `*.tests.js`):
   - `private/modules/oAuth2/__tests__/OpenIdConnectClient.test.js`
   - `private/database2/DataCache/__tests__/RedisConnector.test.js`
