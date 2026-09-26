@@ -126,6 +126,34 @@ any more. Ids of the retired model keep working because every lookup matches
 
 ## C — Reading and navigating
 
+The application shows **two nodes** at once: the upper one offers its children as
+a selection, the lower one shows the chosen node's contents. Both are the same
+component — what a node can show follows from its data, what an instance is for
+is set by the page.
+
+| Id      | Use case                                     | Actor   | Precondition                                                      | Trigger                                              | Expected result                                                                |
+| :------ | :------------------------------------------- | :------ | :---------------------------------------------------------------- | :--------------------------------------------------- | :----------------------------------------------------------------------------- |
+| UC-C-01 | Wait for a node                              | visitor | the request is still open                                         | open a node                                          | a large spinner stands in place of the card                                    |
+| UC-C-02 | Show a node's name                           | visitor | the node is loaded                                                | open a node                                          | the name stands in the card header                                             |
+| UC-C-03 | Offer the children as buttons                | visitor | the node has children, at most `child-buttons_number-max` of them | open the node                                        | one button per child                                                           |
+| UC-C-04 | Offer the children as a combobox             | visitor | the node has more children than the threshold                     | open the node                                        | a single combobox labelled "Auswahl" instead of the buttons                    |
+| UC-C-05 | Mark the selected child                      | visitor | a child is selected                                               | —                                                    | its button carries the brand style and is disabled                             |
+| UC-C-06 | Select a child by button                     | visitor | the node has children                                             | click a child button                                 | the lower node shows that child; the selection above stays put                 |
+| UC-C-07 | Select a child from the combobox             | visitor | the combobox is shown                                             | pick an option                                       | same result as UC-C-06                                                         |
+| UC-C-08 | Open a node that only leads further          | visitor | the node has children and no contents                             | open the node                                        | the selection is shown and **no** "Keine Inhalte vorhanden"                    |
+| UC-C-09 | Open a node that leads nowhere               | visitor | the node has neither children nor contents                        | open the node                                        | shows "Keine Inhalte vorhanden"                                                |
+| UC-C-10 | Read a text content                          | visitor | the content's active representation is `text`                     | open the node                                        | the name in bold, line breaks at `\n`                                          |
+| UC-C-11 | Read an HTML content                         | visitor | the active representation is `html`                               | open the node                                        | the stored markup is rendered, without the name                                |
+| UC-C-12 | Read a content with no active representation | visitor | `active_type` is missing and the HTML representation is filled    | open the node                                        | the HTML representation is shown                                               |
+| UC-C-13 | Read contents in reverse order               | visitor | the node is marked `reversed`                                     | open the node                                        | the contents are ordered against `sortnumber`                                  |
+| UC-C-14 | Load only the first chunk                    | visitor | the node has more contents than `loading-chunk-size` (default 10) | open the node                                        | only the first chunk is fetched; the rest stay placeholders that fetch nothing |
+| UC-C-15 | Load the next chunk while reading            | visitor | placeholders are below the fold                                   | scroll down until one comes into view                | that chunk fetches and renders                                                 |
+| UC-C-16 | Open the navigation modal                    | visitor | the content tree is loaded                                        | click the rows icon in the header                    | the modal lists the top level as tiles                                         |
+| UC-C-17 | Drill into a tile                            | visitor | the modal is open                                                 | click a tile                                         | its children are listed and the modal stays open                               |
+| UC-C-18 | Pick a child in the navigation modal         | visitor | a drill-down level is shown                                       | click a child tile                                   | the modal closes and both nodes switch to that child                           |
+| UC-C-19 | Leave the navigation modal without choosing  | visitor | the modal is open                                                 | press Escape, click the close button or the backdrop | the modal closes and nothing else changes                                      |
+| UC-C-20 | Copy a link to the current node              | visitor | —                                                                 | click the link icon                                  | `<origin>/<nodeId>` is in the clipboard; a toast says "Link kopiert"           |
+
 ## D — Settings
 
 ## E — Signing in
