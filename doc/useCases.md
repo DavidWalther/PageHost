@@ -264,3 +264,28 @@ live on as a local draft.
 | UC-G-23 | Look for the publish trigger with `edit` only | operator + edit           | the content is loaded                                   | look at the action bar                                  | the publish trigger is not rendered — this component needs both scopes before it renders anything                                               |
 
 ## H — Visibility (cross-cutting)
+
+Visibility is not one filter but three rules that stack: which app a node belongs
+to, whether the chain of parents lets it through, and whether it is published.
+**Every reading case in B and C is to be checked against these as well** — that
+is why they are gathered here instead of being repeated per case.
+
+An invisible record is an **empty answer, never an error**: a visitor cannot tell
+a withheld node from one that does not exist.
+
+| Id      | Use case                                    | Actor           | Precondition                                                           | Trigger                             | Expected result                                                                     |
+| :------ | :------------------------------------------ | :-------------- | :--------------------------------------------------------------------- | :---------------------------------- | :---------------------------------------------------------------------------------- |
+| UC-H-01 | Read a node of another app                  | visitor         | no `app_node` row for this app and no wildcard row                     | `GET /data/query/node?id=…`         | empty object, not an error                                                          |
+| UC-H-02 | Read a node included by wildcard            | visitor         | an `app_node` row with `app_id IS NULL`                                | same request                        | the node is returned                                                                |
+| UC-H-03 | Read a node excluded for this app           | visitor         | an `app_node` row excluding this app                                   | same request                        | empty object                                                                        |
+| UC-H-04 | Inherit visibility from the parent          | visitor         | the node has `is_parent_controls_visibility` and the parent is visible | same request                        | the node is returned                                                                |
+| UC-H-05 | Read through a broken inheritance chain     | visitor         | an ancestor in the chain is not visible                                | same request                        | empty object                                                                        |
+| UC-H-06 | Read unpublished records as a visitor       | visitor         | some children and contents are unpublished                             | same request                        | only published records; `published_date` is applied on delivery, not in the query   |
+| UC-H-07 | Read unpublished records with `edit`        | operator + edit | same                                                                   | same request with the Bearer token  | unpublished children and contents are included                                      |
+| UC-H-08 | Read with `edit` while a cache entry exists | operator + edit | the node is in the cache                                               | same request                        | answered from the database, and the editing state is **not** written into the cache |
+| UC-H-09 | Read the same node twice                    | visitor         | the node was read once                                                 | the same request again              | answered from the cache without another database query                              |
+| UC-H-10 | Read a node and a content of the same id    | visitor         | a node and a content share an id                                       | read both                           | each answer holds its own record — the cache keeps them apart                       |
+| UC-H-11 | Read another app's node with `edit`         | operator + edit | the node belongs to another app                                        | same request                        | still empty — a scope does not lift the app boundary                                |
+| UC-H-12 | Trim the content tree                       | visitor         | the tree is deeper than two levels                                     | `GET /api/1.0/contents/all?depth=2` | two levels; a missing or non-numeric `depth` returns the full depth                 |
+| UC-H-13 | Look for internal columns in an answer      | visitor         | —                                                                      | any read                            | `publishdate` and the app columns never appear in a response                        |
+| UC-H-14 | Fetch the sitemap while signed in           | operator + edit | unpublished nodes exist                                                | `GET /sitemap.xml`                  | still only published nodes — the sitemap knows no scopes                            |
