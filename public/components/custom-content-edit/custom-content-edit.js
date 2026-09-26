@@ -43,7 +43,6 @@ class CustomContentEdit extends LitElement {
     draftHint: 'Speichern übernimmt einen Entwurf und räumt ihn weg.',
     draftSaved: 'Entwurf lokal gesichert',
     draftDropped: 'Entwurf verworfen',
-    nameRequired: 'Ein Name ist erforderlich',
     versionMissing:
       'Diese Fassung gibt es noch nicht — sie wird erst aktiv, wenn sie Inhalt hat. Es bleibt bei der bisherigen.',
     contentSaved: 'Gespeichert',
@@ -486,12 +485,6 @@ class CustomContentEdit extends LitElement {
   // ==================================================
 
   _handleSave() {
-    const validation = this._validate();
-    if (!validation.valid) {
-      this._dispatchToast(validation.message, 'error');
-      return;
-    }
-
     // Die Wahl geht nur hinaus, wenn es die Fassung gibt (siehe `_payload`).
     // Dass sie liegen bleibt, darf nicht still geschehen.
     if (!this._hasVersion(FIELD_BY_VERSION[this._activeType])) {
@@ -509,10 +502,6 @@ class CustomContentEdit extends LitElement {
         composed: true,
       })
     );
-  }
-
-  _validate() {
-    return { valid: true };
   }
 
   /**
