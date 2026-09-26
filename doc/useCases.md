@@ -156,6 +156,19 @@ is set by the page.
 
 ## D — Settings
 
+The settings modal is open to everyone; signing in is one block inside it. The
+destructive actions sit in a separate, red-bordered zone.
+
+| Id      | Use case                         | Actor    | Precondition                                       | Trigger                   | Expected result                                                                                                     |
+| :------ | :------------------------------- | :------- | :------------------------------------------------- | :------------------------ | :------------------------------------------------------------------------------------------------------------------ |
+| UC-D-01 | Open the settings                | visitor  | —                                                  | click the gear icon       | the modal opens with the login block, the light switch and a red-bordered danger zone                               |
+| UC-D-02 | Switch to light mode             | visitor  | the shell starts dark (`<html class="dark-mode">`) | turn the light switch on  | `dark-mode` is removed from `<html>`                                                                                |
+| UC-D-03 | Switch back to dark mode         | visitor  | light mode is active                               | turn the light switch off | `dark-mode` is set on `<html>` again                                                                                |
+| UC-D-04 | Reload after switching the light | visitor  | light mode is active                               | reload the page           | the app is dark again — the choice is not persisted                                                                 |
+| UC-D-05 | Clear the login session          | operator | a session exists                                   | click "Session löschen"   | `code_exchange_response` is removed from `sessionStorage` and the page reloads, signed out                          |
+| UC-D-06 | Clear the app cache              | visitor  | a precache exists                                  | click "Cache löschen"     | every cache of the origin is deleted, every worker is unregistered, and the page reloads so the precache is rebuilt |
+| UC-D-07 | Fail to clear the app cache      | visitor  | Cache Storage is unavailable in this browser       | click "Cache löschen"     | a toast says "Cache konnte nicht gelöscht werden" and the page does **not** reload                                  |
+
 ## E — Signing in
 
 ## F — Writing nodes
