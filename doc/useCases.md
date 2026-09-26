@@ -60,9 +60,14 @@ all.
 rejected with **403 `Permission denied`** even for a session that carries every
 scope. A deployment can therefore be read-only without touching any identity.
 
-**A missing scope removes the trigger from the screen.** The frontend does not
-render a disabled control — the action is absent, and so is the element that
-would hold it. Cases say _not rendered_, never _disabled_.
+**A missing scope usually removes the trigger from the screen.** The frontend
+does not render a disabled control — the action is absent, and so is the element
+that would hold it. Cases therefore say _not rendered_, not _disabled_.
+
+**Two places differ, on purpose.** The publish toggle inside a node's edit dialog
+is rendered without the scopes and only **disabled**; the same toggle is disabled
+while its safety lock is still on. Where a case says _disabled_, it means one of
+these two.
 
 ## UI language
 
