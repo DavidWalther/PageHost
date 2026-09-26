@@ -47,9 +47,6 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push('<script type="module" src="index.js"></script>');
 
       headerEntries.push(
-        '<script type="module" src="components/global-header/global-header.js"></script>'
-      );
-      headerEntries.push(
         '<script type="module" src="components/custom-paragraph/custom-paragraph.js"></script>'
       );
       headerEntries.push(
