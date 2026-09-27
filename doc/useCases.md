@@ -211,7 +211,7 @@ session must carry the scope. Both are needed — the grant alone renders nothin
 | :------ | :-------------------------------------------- | :-------------------------------- | :---------------------------------------------------- | :--------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UC-F-01 | Create a child node                           | operator + create + edit          | the instance grants `can-create-child`                | open the dialog, enter name and sort number, confirm       | `create` with `object: node` and `parent_node_id`; toast "Kapitel erstellt"; the child appears in the selection                                          |
 | UC-F-02 | Save a node without a name                    | operator + create + edit          | the dialog is open                                    | empty the name field, then save                            | toast "Kapitelname ist erforderlich"; nothing is sent and the dialog stays open — **a node needs a name**, unlike a content                              |
-| UC-F-03 | Clear or zero the sort number                 | operator + create + edit          | the dialog is open                                    | enter `0` or empty the sort number, then save              | `1` is saved — the form cannot produce a sort number below 1                                                                                             |
+| UC-F-03 | Leave the sort number empty or at zero        | operator + create + edit          | the dialog is open                                    | enter `0` or empty the sort number, then save              | `1` is saved, with no message — `1` is the intended silent default                                                                                       |
 | UC-F-04 | Look for the create trigger without the scope | operator                          | the instance grants `can-create-child`                | look at the action bar                                     | the trigger is not rendered, and the bar holds no empty slot where it would be                                                                           |
 | UC-F-05 | Create a child in a read-only deployment      | operator + create + edit          | `create` is missing from `APPLICATION_ACTIVE_ACTIONS` | confirm the dialog                                         | 403 `Permission denied`; toast "Fehler beim Erstellen des Kapitels"                                                                                      |
 | UC-F-06 | Edit a node                                   | operator + edit                   | the node is loaded                                    | change name, sort number or the reverse-order switch, save | the record is updated, toast "Kapitel gespeichert", and the selection above shows the new name without a reload                                          |
@@ -234,11 +234,11 @@ session must carry the scope. Both are needed — the grant alone renders nothin
 section F and section G, and it is intended: UC-F-02 refuses an empty node name
 out loud, while UC-G-05 saves a content without one.
 
-**The sort number is the exception that still swallows its own rule.**
-Confirming is supposed to refuse a value below 1 ("Sortierung muss mindestens 1
-sein"), but that message cannot be produced by typing: an emptied field and a
-typed `0` both fall back to `1` before the check ever sees them. UC-F-03
-describes what the form does, not what the guard intends.
+**The sort number answers instead of complaining.** An emptied field and a typed
+`0` both become `1`, silently — `1` is the agreed default for a number whose only
+sensible smallest value it is. The message "Sortierung muss mindestens 1 sein"
+therefore never appears from the dialog; it guards only a consumer that sets the
+form state directly.
 
 ## G — Writing contents
 

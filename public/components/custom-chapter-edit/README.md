@@ -102,14 +102,19 @@ appears on the edit tab, since the publish toggle acts on its own.
 
 Checked before anything is dispatched, as a toast:
 
-| Rule                   | Message                             |
-| ---------------------- | ----------------------------------- |
-| name must not be empty | "Kapitelname ist erforderlich"      |
-| sort number at least 1 | "Sortierung muss mindestens 1 sein" |
+| Rule                   | Message                             | Reachable from the form |
+| ---------------------- | ----------------------------------- | ----------------------- |
+| name must not be empty | "Kapitelname ist erforderlich"      | yes                     |
+| sort number at least 1 | "Sortierung muss mindestens 1 sein" | no, see below           |
 
-A node therefore still needs a name — unlike a content, where an empty name is
-allowed. The name rule speaks up as intended; the sort number rule cannot be
-reached from the form (see **Known leftovers**).
+**A node needs a name** — unlike a content, which may be saved without one. An
+emptied name field is refused out loud.
+
+**The sort number takes `1` as a silent default.** An emptied field and a typed
+`0` both become `1`, with no message: a number whose only sensible smallest value
+is `1` deserves an answer rather than a complaint. Its rule in `_validate`
+therefore never fires from this form and stays as a net for a consumer that sets
+`chapterData` directly. Both behaviours are pinned in `chapter-edit.spec.js`.
 
 ## Events
 
@@ -147,12 +152,6 @@ the field stays out of the payload.
   `chapter-*`. The labels say "Kapitel" although a node can be anything in the
   tree. Renaming this touches every consumer and is its own task.
 - `mode` is still an attribute although `chapter-id` decides.
-- **A sort number below 1 cannot be entered.** `_handleSortNumberChange` reads
-  `parseInt(input.value) || 1`, so an emptied field and a typed `0` both become
-  `1` before the validation sees them — "Sortierung muss mindestens 1 sein" can
-  therefore never appear. The invariant holds, the message is unreachable. The
-  same shape used to hide the name check until `_handleNameChange` was changed
-  from `||` to `??`.
 
 ## Styling
 

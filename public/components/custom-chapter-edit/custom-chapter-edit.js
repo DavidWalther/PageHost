@@ -393,6 +393,15 @@ class CustomChapterEdit extends LitElement {
     };
   }
 
+  /**
+   * **`1` is the silent default, on purpose.** An emptied field and a typed `0`
+   * both become `1`; nothing is reported. Unlike the name, where an empty value
+   * is a mistake worth a message, a sort number has exactly one sensible
+   * smallest value — falling back to it is an answer, not a swallowed error.
+   *
+   * The check in `_validate` therefore never fires from this form. It stays as a
+   * net for a consumer that sets `chapterData` directly.
+   */
   _handleSortNumberChange(event) {
     const input = event.detail;
     this.chapterData = {
