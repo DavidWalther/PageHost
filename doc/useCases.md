@@ -210,7 +210,7 @@ session must carry the scope. Both are needed — the grant alone renders nothin
 | Id      | Use case                                      | Actor                             | Precondition                                          | Trigger                                                    | Expected result                                                                                                                                          |
 | :------ | :-------------------------------------------- | :-------------------------------- | :---------------------------------------------------- | :--------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UC-F-01 | Create a child node                           | operator + create + edit          | the instance grants `can-create-child`                | open the dialog, enter name and sort number, confirm       | `create` with `object: node` and `parent_node_id`; toast "Kapitel erstellt"; the child appears in the selection                                          |
-| UC-F-02 | Clear the name in the dialog                  | operator + create + edit          | the dialog is open                                    | empty the name field, then save                            | the previous name is saved — the form cannot produce a node without a name (see the note below the table)                                                |
+| UC-F-02 | Save a node without a name                    | operator + create + edit          | the dialog is open                                    | empty the name field, then save                            | toast "Kapitelname ist erforderlich"; nothing is sent and the dialog stays open — **a node needs a name**, unlike a content                              |
 | UC-F-03 | Clear or zero the sort number                 | operator + create + edit          | the dialog is open                                    | enter `0` or empty the sort number, then save              | `1` is saved — the form cannot produce a sort number below 1                                                                                             |
 | UC-F-04 | Look for the create trigger without the scope | operator                          | the instance grants `can-create-child`                | look at the action bar                                     | the trigger is not rendered, and the bar holds no empty slot where it would be                                                                           |
 | UC-F-05 | Create a child in a read-only deployment      | operator + create + edit          | `create` is missing from `APPLICATION_ACTIVE_ACTIONS` | confirm the dialog                                         | 403 `Permission denied`; toast "Fehler beim Erstellen des Kapitels"                                                                                      |
@@ -230,14 +230,15 @@ session must carry the scope. Both are needed — the grant alone renders nothin
 | UC-F-19 | Publish in a read-only deployment             | operator + publish + edit         | `publish` is missing from the active actions          | turn the publish toggle on                                 | 403 `Permission denied`                                                                                                                                  |
 | UC-F-20 | See which actions each instance offers        | operator + create + edit + delete | both nodes are on screen                              | look at both action bars                                   | above only "create child", below only "create content" and "delete"; edit and share on both                                                              |
 
-**The node editor validates, but the form cannot reach it.** Confirming refuses
-an empty name ("Kapitelname ist erforderlich") and a sort number below 1
-("Sortierung muss mindestens 1 sein"). Neither message can be produced by typing:
-the name field falls back to its previous value when emptied, and the sort number
-falls back to `1`. Both guards therefore only bite a consumer that sets the form
-state directly. UC-F-02 and UC-F-03 describe what the form actually does; the
-fallback behind the name field is pinned as a known defect in
-`chapter-edit.spec.js`.
+**A node needs a name; a content does not.** That is the one asymmetry between
+section F and section G, and it is intended: UC-F-02 refuses an empty node name
+out loud, while UC-G-05 saves a content without one.
+
+**The sort number is the exception that still swallows its own rule.**
+Confirming is supposed to refuse a value below 1 ("Sortierung muss mindestens 1
+sein"), but that message cannot be produced by typing: an emptied field and a
+typed `0` both fall back to `1` before the check ever sees them. UC-F-03
+describes what the form does, not what the guard intends.
 
 ## G — Writing contents
 
