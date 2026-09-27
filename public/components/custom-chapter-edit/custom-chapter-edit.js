@@ -270,7 +270,7 @@ class CustomChapterEdit extends LitElement {
             <slds-toggle
               label="${this.labels.reversed}"
               ?checked="${this.chapterData?.reversed || false}"
-              @change="${this._handleReversedChange}"
+              @toggle="${this._handleReversedChange}"
             ></slds-toggle>
           </div>
         </div>
@@ -378,14 +378,30 @@ class CustomChapterEdit extends LitElement {
     this.show();
   }
 
+  /**
+   * **`??`, not `||`.** An emptied field reports `''`, which is falsy: with `||`
+   * the fallback won and the previous name came back silently, so a node could
+   * never lose its name — and the check for it could never speak up. A node does
+   * need a name (unlike a content), and saying so is `_validate`'s job, not a
+   * fallback's.
+   */
   _handleNameChange(event) {
-    const input = event.detail.value || event.target.value;
+    const input = event.detail?.value ?? event.target.value;
     this.chapterData = {
       ...this.chapterData,
       name: input,
     };
   }
 
+  /**
+   * **`1` is the silent default, on purpose.** An emptied field and a typed `0`
+   * both become `1`; nothing is reported. Unlike the name, where an empty value
+   * is a mistake worth a message, a sort number has exactly one sensible
+   * smallest value — falling back to it is an answer, not a swallowed error.
+   *
+   * The check in `_validate` therefore never fires from this form. It stays as a
+   * net for a consumer that sets `chapterData` directly.
+   */
   _handleSortNumberChange(event) {
     const input = event.detail;
     this.chapterData = {
@@ -402,10 +418,16 @@ class CustomChapterEdit extends LitElement {
     };
   }
 
+  /**
+   * `slds-toggle` reports `toggle` and carries the state in the detail — its
+   * host element has no `checked` property to read. The binding used to listen
+   * for `change`, which the toggle never dispatches, so the switch flipped on
+   * screen while the saved value stayed put.
+   */
   _handleReversedChange(event) {
     this.chapterData = {
       ...this.chapterData,
-      reversed: event.target.checked,
+      reversed: event.detail.checked,
     };
   }
 

@@ -356,17 +356,23 @@ test.describe('custom-content-edit: Speichern', () => {
     );
   });
 
-  test('ohne Namen wird nicht gespeichert', async ({ page }) => {
+  test('Auch ohne Namen wird gespeichert', async ({ page }) => {
     const editor = await mount(page);
     await captureSave(page);
     await open(page);
 
+    await editor.locator('#content-input').fill('Gespeicherter Text');
+    // The name has to be cleared: the fixture carries one, and without this the
+    // case would be an ordinary save.
     await editor.locator('#input-text').fill('');
     await editor.locator('#input-text').blur();
     await editor.locator('button', { hasText: 'Speichern' }).click();
 
-    await expect(editor.locator('.slds-modal')).toHaveCount(1);
-    expect(await saved(page)).toBeNull();
+    await expect.poll(() => updated(page)).not.toBeNull();
+    const meldung = await updated(page);
+    expect(meldung.contentData.name).toBe('');
+    expect(meldung.contentData.content).toBe('Gespeicherter Text');
+    await expect(editor.locator('.slds-modal')).toHaveCount(0);
   });
 
   test('Abbrechen speichert nicht und verwirft die Eingabe', async ({
