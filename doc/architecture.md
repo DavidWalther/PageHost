@@ -168,7 +168,8 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
 - Ablauf/Reihenfolge der Test- und Implementierungsschritte:
   **`.github/instructions/epc.instructions.md`**.
 - **Was** zu prüfen ist — die fachlichen Use Cases der Anwendung, je Zeile ein
-  prüfbarer Fall: **`doc/useCases.md`**.
+  prüfbarer Fall: **`doc/useCases.md`**. **Wer** welches Ziel hat, als Diagramm
+  je Datei: **`doc/usecase-diagrams/`**.
 
 ## Umgebung & Deployment
 

@@ -3,6 +3,10 @@
 What this application does, one testable case per row. The list is the basis for
 targeted testing — manual and automated.
 
+Who holds which goal, and how the goals group, is drawn in
+**[`usecase-diagrams/`](usecase-diagrams/README.md)** — one diagram per file, each
+mapping its boxes back to the ids used here.
+
 ## Purpose and how to read this
 
 Every row is **one case**: an actor, a starting situation, one trigger, and an
