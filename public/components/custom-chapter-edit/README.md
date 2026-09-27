@@ -146,11 +146,13 @@ the field stays out of the payload.
   `chapter-*`. The labels say "Kapitel" although a node can be anything in the
   tree. Renaming this touches every consumer and is its own task.
 - `mode` is still an attribute although `chapter-id` decides.
-- **The reverse-order switch does not work.** It listens for `change`, while
-  `slds-toggle` only ever dispatches `toggle`, so `_handleReversedChange` never
-  runs. The switch shows the stored value and flips visually, but saving writes
-  back whatever came in through the `reversed` attribute. Everything else in the
-  form saves normally.
+- **An emptied name field keeps the previous name.** `_handleNameChange` reads
+  `event.detail.value || event.target.value`. `slds-input` reports the typed value
+  in `detail.value` and never updates its own `value`, so an empty string is
+  falsy, the fallback wins, and the old name comes back silently. This also puts
+  the validation out of reach: create mode starts with "Neues Kapitel", edit mode
+  with the stored name, so an empty one cannot be produced. Pinned as the current
+  state in `chapter-edit.spec.js` (test prefixed `FEHLVERHALTEN`).
 
 ## Styling
 

@@ -270,7 +270,7 @@ class CustomChapterEdit extends LitElement {
             <slds-toggle
               label="${this.labels.reversed}"
               ?checked="${this.chapterData?.reversed || false}"
-              @change="${this._handleReversedChange}"
+              @toggle="${this._handleReversedChange}"
             ></slds-toggle>
           </div>
         </div>
@@ -402,10 +402,16 @@ class CustomChapterEdit extends LitElement {
     };
   }
 
+  /**
+   * `slds-toggle` reports `toggle` and carries the state in the detail — its
+   * host element has no `checked` property to read. The binding used to listen
+   * for `change`, which the toggle never dispatches, so the switch flipped on
+   * screen while the saved value stayed put.
+   */
   _handleReversedChange(event) {
     this.chapterData = {
       ...this.chapterData,
-      reversed: event.target.checked,
+      reversed: event.detail.checked,
     };
   }
 
