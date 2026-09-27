@@ -204,6 +204,32 @@ test.describe('custom-chapter-edit: the form', () => {
     await expect(editor.locator('.slds-modal')).toHaveCount(1);
   });
 
+  /**
+   * `1` is the agreed silent default for the sort number: a number with exactly
+   * one sensible smallest value gets an answer, not a complaint. Deliberately
+   * different from the name, which is refused out loud.
+   */
+  for (const entered of ['', '0']) {
+    test(`a sort number of "${entered}" becomes 1 without a word`, async ({
+      page,
+    }) => {
+      const editor = await mount(page);
+      await captureWrites(page);
+      await captureToasts(page);
+      await openThroughTrigger(page);
+
+      await editor.locator('#input-number').fill(entered);
+      await editor.locator('#input-number').blur();
+      await editor.locator('button', { hasText: 'Speichern' }).click();
+
+      const message = await written(page);
+      expect(message.payload.sortnumber).toBe(1);
+      expect(await toasts(page)).not.toContain(
+        'Sortierung muss mindestens 1 sein'
+      );
+    });
+  }
+
   test('saving sends the node columns', async ({ page }) => {
     const editor = await mount(page);
     await captureWrites(page);
