@@ -36,12 +36,16 @@ not a variant — "publish without the scope". The variants are the rows in
 `../useCases.md`, and there are over a hundred of them; they would bury any
 diagram.
 
-**Every file must read without a rendered image.** `usecase-beta` is a beta
-diagram type, and this repository otherwise uses only `graph` and
-`sequenceDiagram`, which have been stable for years. Whether a given Mermaid
-version knows the type cannot be checked from inside the repository, so each file
-carries prose and a table beside the block — if the block renders as source, the
-file still works.
+**The prose and the tables carry the diagram, not the block.** **GitHub does not
+render `usecase-beta`** (checked 2026-09-27): the block shows as source there.
+This repository otherwise uses only `graph` and `sequenceDiagram`, which have been
+supported for years.
+
+The diagrams stay in this form anyway — `usecase-beta` says what is meant, it
+renders in Mermaid Live and in editor previews, and it will render on GitHub once
+the type leaves beta. What follows from it is a requirement, not a fallback: every
+file states in words who wants what, and maps its boxes to the `UC-…` ids. A file
+whose meaning depends on the picture is not finished.
 
 ## Adding a diagram
 

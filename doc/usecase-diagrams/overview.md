@@ -2,6 +2,10 @@
 
 Every goal the application serves, on one level, with the actors that hold them.
 
+> **GitHub shows the block below as source**, not as a picture — it does not
+> support `usecase-beta` yet. Paste it into Mermaid Live or use an editor preview
+> to see the diagram; the two tables below carry the same content either way.
+
 ```mermaid
 usecase-beta
 systemBoundary "Pagehost"
