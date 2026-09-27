@@ -378,8 +378,15 @@ class CustomChapterEdit extends LitElement {
     this.show();
   }
 
+  /**
+   * **`??`, not `||`.** An emptied field reports `''`, which is falsy: with `||`
+   * the fallback won and the previous name came back silently, so a node could
+   * never lose its name — and the check for it could never speak up. A node does
+   * need a name (unlike a content), and saying so is `_validate`'s job, not a
+   * fallback's.
+   */
   _handleNameChange(event) {
-    const input = event.detail.value || event.target.value;
+    const input = event.detail?.value ?? event.target.value;
     this.chapterData = {
       ...this.chapterData,
       name: input,

@@ -92,6 +92,18 @@ async function captureWrites(page) {
 
 const written = (page) => page.evaluate(() => window.__written);
 
+/** Collects the messages of every `toast` the component fires. */
+async function captureToasts(page) {
+  await page.evaluate(() => {
+    window.__toasts = [];
+    document.body.addEventListener('toast', (event) => {
+      window.__toasts.push(event.detail.message);
+    });
+  });
+}
+
+const toasts = (page) => page.evaluate(() => window.__toasts);
+
 /** Flips the reverse-order switch; its input lives in the toggle's shadow root. */
 async function flipReverseSwitch(page) {
   await page.evaluate(async () => {
@@ -172,29 +184,24 @@ test.describe('custom-chapter-edit: the form', () => {
   });
 
   /**
-   * Pins a bug as the current state, so it flips once the bug is fixed.
-   *
-   * `_handleNameChange` reads `event.detail.value || event.target.value`. An
-   * emptied field reports `''`, which is falsy, so the fallback wins — and
-   * `slds-input` never updates its own `value`, so the fallback is the previous
-   * name. An empty name therefore cannot be entered at all, which also puts the
-   * validation "Kapitelname ist erforderlich" out of reach: in create mode the
-   * name starts as "Neues Kapitel", in edit mode with the stored one.
+   * A node needs a name — unlike a content, which may be saved without one. The
+   * refusal has to be **audible**: this used to fail silently, because the
+   * handler's `||` fallback restored the previous name and the check never had
+   * anything to complain about.
    */
-  test('FEHLVERHALTEN: an emptied name field keeps the previous name', async ({
-    page,
-  }) => {
+  test('an empty name is refused, and says so', async ({ page }) => {
     const editor = await mount(page);
     await captureWrites(page);
+    await captureToasts(page);
     await openThroughTrigger(page);
 
     await editor.locator('#input-text').fill('');
     await editor.locator('#input-text').blur();
     await editor.locator('button', { hasText: 'Speichern' }).click();
 
-    const message = await written(page);
-    expect(message).not.toBeNull();
-    expect(message.payload.name).toBe(NODE.name);
+    expect(await written(page)).toBeNull();
+    expect(await toasts(page)).toContain('Kapitelname ist erforderlich');
+    await expect(editor.locator('.slds-modal')).toHaveCount(1);
   });
 
   test('saving sends the node columns', async ({ page }) => {

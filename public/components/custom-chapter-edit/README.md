@@ -108,7 +108,8 @@ Checked before anything is dispatched, as a toast:
 | sort number at least 1 | "Sortierung muss mindestens 1 sein" |
 
 A node therefore still needs a name — unlike a content, where an empty name is
-allowed.
+allowed. The name rule speaks up as intended; the sort number rule cannot be
+reached from the form (see **Known leftovers**).
 
 ## Events
 
@@ -146,13 +147,12 @@ the field stays out of the payload.
   `chapter-*`. The labels say "Kapitel" although a node can be anything in the
   tree. Renaming this touches every consumer and is its own task.
 - `mode` is still an attribute although `chapter-id` decides.
-- **An emptied name field keeps the previous name.** `_handleNameChange` reads
-  `event.detail.value || event.target.value`. `slds-input` reports the typed value
-  in `detail.value` and never updates its own `value`, so an empty string is
-  falsy, the fallback wins, and the old name comes back silently. This also puts
-  the validation out of reach: create mode starts with "Neues Kapitel", edit mode
-  with the stored name, so an empty one cannot be produced. Pinned as the current
-  state in `chapter-edit.spec.js` (test prefixed `FEHLVERHALTEN`).
+- **A sort number below 1 cannot be entered.** `_handleSortNumberChange` reads
+  `parseInt(input.value) || 1`, so an emptied field and a typed `0` both become
+  `1` before the validation sees them — "Sortierung muss mindestens 1 sein" can
+  therefore never appear. The invariant holds, the message is unreachable. The
+  same shape used to hide the name check until `_handleNameChange` was changed
+  from `||` to `??`.
 
 ## Styling
 
