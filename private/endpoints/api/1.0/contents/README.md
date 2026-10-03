@@ -75,8 +75,12 @@ nimmt seinen ganzen Teilbaum mit.
 - Dedizierter Cache-Key **`contentsTree`** (`ContentsTreeCacheKeyGenerator`).
 - Gecacht wird der **volle** Baum (inkl. unveröffentlichter Nodes); gefiltert wird erst bei
   Auslieferung. Kleinere `depth`-Werte werden im Code aus dem vollen Baum zugeschnitten.
-- TTL = `CACHE_CONTAINER_EXPIRATION_SECONDS` (Standard 1 Tag). Kurz genug, dass eine **aktive
-  Invalidierung entfällt** — Create/Update/Delete/Publish berühren den Baum-Key nicht.
+- TTL = `CACHE_CONTAINER_EXPIRATION_SECONDS` (Standard 1 Tag).
+- **Aktive Invalidierung:** Jedes Anlegen, Ändern (auch Verschieben), Veröffentlichen,
+  Zurückziehen und Löschen eines **Knotens** leert `contentsTree`, auch bei `skipCache`.
+  Ohne das sähen Besucher bis zum Ablauf der TTL den alten Baum; mit `edit`-Scope fiel es
+  nicht auf, weil der Cache dort übergangen wird. Inhalte stehen nicht im Baum und leeren
+  ihn nicht.
 
 ## Datenherkunft
 

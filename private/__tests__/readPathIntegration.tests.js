@@ -455,10 +455,7 @@ describe('Lesepfad', () => {
       expect(locations(xml)).toEqual([]);
     });
   });
-  // ─── Target behaviour of #202 ─────────────────────────────────────────────
-  // Written before the implementation as `it.failing`: green while the
-  // behaviour is missing, red once it arrives. The implementing step turns
-  // each of them into `it`.
+  // ─── Contents tree in any depth ──────────────────────────────────────────
 
   describe('Contents tree in any depth', () => {
     const node = (id, parent, sortnumber, published_date = GESTERN) => ({

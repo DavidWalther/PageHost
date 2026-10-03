@@ -19,6 +19,11 @@ The full tree only comes out through `setIncludeUnpublished(true)`, which the
 contents endpoint sets for the `edit` scope. A consumer therefore cannot leak
 unpublished nodes by forgetting a filter call: it would have to ask for them.
 
+Every write to a **node** — create, update (including a new parent), publish,
+unpublish, delete — drops the cached tree, whether or not the write skips the
+cache (`invalidateContentsTreeAfterWrite`, `clearCacheFor`). Content writes
+leave it alone; contents are not part of the tree.
+
 ### DataCache
 
 - Manages caching of data to improve performance and reduce database load.
