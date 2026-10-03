@@ -148,6 +148,57 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
     await expect(current).toHaveText('Mock Chapter 2 for Story 1');
   });
 
+  test('FEHLVERHALTEN: the modal loses the location when the tree carries the new ids', async ({
+    page,
+  }) => {
+    // The test above only passes because the shared mock tree carries the
+    // retired ids. The backend sends the record id (`ContentsEndpoint.mapToNodes`
+    // → `record.id`), while `bookstore._setCurrentLocation` prefers the
+    // `legacy_id`. With a tree shaped like the real response the two never
+    // match: the modal opens on the top level and marks nothing.
+    // Flips once the location is kept in the id the tree delivers.
+    const backendShapedTree = {
+      result: [
+        {
+          id: '000n00000000000011',
+          label: 'Mock Story 1',
+          name: 'Mock Story 1',
+          childnodes: [
+            {
+              id: '000n00000000000001',
+              label: 'Mock Chapter 1 for Story 1',
+              name: 'Mock Chapter 1 for Story 1',
+              childnodes: [],
+            },
+            {
+              id: '000n00000000000002',
+              label: 'Mock Chapter 2 for Story 1',
+              name: 'Mock Chapter 2 for Story 1',
+              childnodes: [],
+            },
+          ],
+        },
+      ],
+    };
+    await mockBookstoreCallouts(page);
+    await page.route('**/api/1.0/contents/**', (route) =>
+      route.fulfill({ json: backendShapedTree })
+    );
+    await cacheLitBundle(page);
+    await page.goto('/000c00000000000002');
+    await expect
+      .poll(async () => (await readEntry(page)).content.name)
+      .toBe('Mock Chapter 2 for Story 1');
+
+    await page.locator('#button-navigation_open').click();
+
+    const tiles = page.locator('custom-navigation-modal button.tile');
+    await expect(tiles).toHaveText(['Mock Story 1']);
+    await expect(
+      page.locator('custom-navigation-modal button.tile_current')
+    ).toHaveCount(0);
+  });
+
   test('eine unbekannte Id fällt auf den Einstieg zurück', async ({ page }) => {
     await open(page, '/000x99999999999999');
 
