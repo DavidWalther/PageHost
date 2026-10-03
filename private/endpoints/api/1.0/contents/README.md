@@ -63,10 +63,12 @@ Ebene nach `sortnumber` sortiert.
 
 Ein ungültiger Bearer-Token führt zu `401 Unauthorized`.
 
-Das Entfernen unveröffentlichter Nodes passiert **zur Laufzeit bei Auslieferung** über das
-geteilte Modul [`ContentVisibilityFilter`](../../../../modules/ContentVisibilityFilter.js)
-(`setTree(t).setDate(d).getResult()`). Dieselbe Komponente wird später für `sitemap.xml`
-wiederverwendet. Ein Node gilt als sichtbar, wenn sein `publishdate` gesetzt und `<=` heute ist.
+Unveröffentlichte Nodes entfernt die `DataFacade`: Sie wendet das geteilte Modul
+[`ContentVisibilityFilter`](../../../../modules/ContentVisibilityFilter.js) nach dem Cache an
+und gibt standardmäßig den veröffentlichten Baum heraus. Der Endpunkt fordert nur mit
+`edit`-Scope mehr an (`setIncludeUnpublished(true)`) und filtert selbst nicht. Ein Node ist
+sichtbar, wenn `published_date` gesetzt und nicht später als jetzt ist; ein versteckter Node
+nimmt seinen ganzen Teilbaum mit.
 
 ## Caching
 
@@ -86,7 +88,7 @@ unter `nodes`. Konstant zwei DB-Round-Trips, unabhängig von der Tiefe.
 ## Beteiligte Dateien
 
 - `ContentsEndpoint.js` — Mapping (`mapToNodes`), `depth`-Parsing, Scope-/Filter-Steuerung
-- `private/modules/ContentVisibilityFilter.js` — Laufzeit-Publish-Filter (geteilt mit sitemap.xml)
+- `private/modules/ContentVisibilityFilter.js` — Publish-Filter, angewendet von der `DataFacade`
 - `private/database2/DataFacade.js` — `getContentsTree` / `buildContentsTree`
 - `private/database2/repositories/NodeContentRepository.js` — `getContentsTree`
 - `private/modules/NodeVisibility.js` — Auflösung der App-Zugehörigkeit

@@ -105,14 +105,17 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
    → Vollständige Beschreibung der Zusammenarbeit von Facade/Cache/Storage:
    **`private/database2/README.md`**.
 
-### Cache & Publish-Filter
+### Cache & publish filter
 
-- Der **Inhaltsbaum** (`contents`) wird **vollständig** (veröffentlicht _und_
-  unveröffentlicht) im Cache gehalten; der Publish-Filter läuft erst bei der
-  Auslieferung als eigenes Modul (`private/modules/ContentVisibilityFilter.js`),
-  damit dieselbe Baum-Quelle z. B. auch für `sitemap.xml` nutzbar ist.
-- Cache-Konzept, Key-Präfixe und Env-Vars: **`README.md`** (Abschnitt „Cache")
-  und **`private/database2/DataCache/README.md`**.
+- The **content tree** (`contents`) is cached **in full** — every level,
+  published _and_ unpublished — so one cached source serves the navigation,
+  `sitemap.xml` and later features of the site.
+- The publish filter (`private/modules/ContentVisibilityFilter.js`) runs in
+  the **`DataFacade`**, after the cache: every reader gets the published tree
+  unless it asks for more with `setIncludeUnpublished(true)` (only the `edit`
+  scope does). Consumers do not filter themselves.
+- Cache concept, key prefixes and env vars: **`README.md`** (section „Cache“)
+  and **`private/database2/DataCache/README.md`**.
 
 ## Auth (OAuth2 / OIDC)
 
