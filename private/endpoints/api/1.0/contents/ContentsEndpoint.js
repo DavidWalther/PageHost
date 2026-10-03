@@ -1,7 +1,6 @@
 const { Logging } = require('../../../../modules/logging');
 const { EndpointLogic } = require('../../../EndpointLogic');
 const { DataFacade } = require('../../../../database2/DataFacade');
-const ContentVisibilityFilter = require('../../../../modules/ContentVisibilityFilter');
 
 // No depth given: the whole tree, however deep it is.
 const FULL_DEPTH = Infinity;
@@ -11,10 +10,9 @@ const FULL_DEPTH = Infinity;
  *
  * Node = { id, label, name, childnodes: Node[] }  (label is a copy of name)
  *
- * - The DataFacade returns the full tree (published + unpublished).
- * - edit scope: fresh tree (cache skipped), no publish filtering.
- * - otherwise: cached tree, unpublished nodes removed at delivery time via the
- *   shared ContentVisibilityFilter.
+ * - The DataFacade hands out the published tree; it owns the publish filter.
+ * - edit scope: fresh tree (cache skipped) including unpublished nodes, asked
+ *   for explicitly through setIncludeUnpublished(true).
  * - ?depth=N trims the tree to N levels (default: full depth).
  */
 class ContentsEndpoint extends EndpointLogic {
@@ -34,9 +32,10 @@ class ContentsEndpoint extends EndpointLogic {
     const isEdit = this.scopes?.has('edit');
     const depth = ContentsEndpoint.parseDepth(this.requestObject?.query?.depth);
 
-    let dataFacade = new DataFacade(this.environment);
+    const dataFacade = new DataFacade(this.environment);
     if (isEdit) {
       dataFacade.setSkipCache(true);
+      dataFacade.setIncludeUnpublished(true);
     }
 
     let parameterObject = {
@@ -44,23 +43,14 @@ class ContentsEndpoint extends EndpointLogic {
       request: { table: 'contents', id: null },
     };
 
-    return dataFacade.getData(parameterObject).then((rawTree) => {
+    return dataFacade.getData(parameterObject).then((tree) => {
       Logging.debugMessage({
         severity: 'FINER',
         message: `Contents tree returned (edit: ${!!isEdit}, depth: ${depth})`,
         location: LOCATION,
       });
 
-      const visibleTree = isEdit
-        ? rawTree
-        : new ContentVisibilityFilter()
-            .setTree(rawTree)
-            .setChildrenKey('nodes')
-            .setDateField('published_date')
-            .setDate(new Date())
-            .getResult();
-
-      const nodes = ContentsEndpoint.mapToNodes(visibleTree, depth);
+      const nodes = ContentsEndpoint.mapToNodes(tree, depth);
       this.responseObject.json({ result: nodes });
     });
   }
