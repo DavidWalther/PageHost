@@ -368,5 +368,50 @@ describe('Lesepfad', () => {
       expect(result[0]).not.toHaveProperty('applicationincluded');
       expect(result[0].childnodes[0]).not.toHaveProperty('publishdate');
     });
+
+    it('keeps only the allowlisted fields on every level', async () => {
+      const { result } = await getContents({ scopes: ['edit'] });
+      const allowed = ['childnodes', 'id', 'label', 'name'];
+
+      expect(Object.keys(result[0]).sort()).toEqual(allowed);
+      result[0].childnodes.forEach((child) => {
+        expect(Object.keys(child).sort()).toEqual(allowed);
+      });
+    });
+
+    it('drops the unpublished child for a visitor', async () => {
+      const { result } = await getContents();
+
+      expect(result[0].childnodes.map((node) => node.id)).toEqual([
+        'n-kapitel',
+      ]);
+    });
+
+    it('trims to the roots with depth=1', async () => {
+      const { result } = await getContents({ query: { depth: '1' } });
+
+      expect(result.map((node) => node.id)).toEqual(['n-story']);
+      expect(result[0].childnodes).toEqual([]);
+    });
+
+    it('reads the tree from the cache for a visitor', async () => {
+      await getContents();
+      executedStatements = [];
+
+      await getContents();
+
+      expect(cacheGet).toHaveBeenCalledWith('contentsTree');
+      expect(queriedDatabase()).toBe(false);
+    });
+
+    it('bypasses the cache with the edit scope', async () => {
+      await getContents();
+      executedStatements = [];
+
+      await getContents({ scopes: ['edit'] });
+
+      expect(queriedDatabase()).toBe(true);
+    });
   });
+
 });
