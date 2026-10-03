@@ -4,6 +4,7 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import { findNode, findPath } from '/modules/content-tree.mjs';
 
 class NavigationModal extends LitElement {
   //===========================
@@ -12,8 +13,7 @@ class NavigationModal extends LitElement {
 
   labels = {
     modalTitle: 'Navigation',
-    empty: 'Keine Stories vorhanden.',
-    emptyChapters: 'Keine Kapitel vorhanden.',
+    empty: 'Keine Inhalte vorhanden.',
     back: '< zurück',
   };
 
@@ -63,14 +63,17 @@ class NavigationModal extends LitElement {
   static properties = {
     currentLocation: { type: String, attribute: 'current-location' },
     _tree: { state: true },
-    _selectedStory: { state: true },
+    _openPath: { state: true },
   };
 
   constructor() {
     super();
     this.currentLocation = null;
     this._tree = [];
-    this._selectedStory = null;
+    // Ids of the nodes whose children are listed, top down. Empty: the roots.
+    this._openPath = [];
+    // show() ran before the tree arrived; position once it is there.
+    this._positionPending = false;
   }
 
   connectedCallback() {
@@ -94,9 +97,10 @@ class NavigationModal extends LitElement {
               return;
             }
             this._tree = Array.isArray(data) ? data : [];
-            // If show() ran before the tree was available, pre-position now.
-            if (this._isOpen && this._selectedStory === null) {
-              this._selectedStory = this._resolveInitialStory();
+            // If show() ran before the tree was available, position now.
+            if (this._isOpen && this._positionPending) {
+              this._positionPending = false;
+              this._openPath = this._resolveInitialPath();
             }
           },
         },
@@ -106,66 +110,69 @@ class NavigationModal extends LitElement {
     );
   }
 
+  /** The path from a root down to the current location, or [] if unknown. */
+  _locationPath() {
+    return this.currentLocation
+      ? findPath(this._tree, this.currentLocation)
+      : [];
+  }
+
   /**
-   * Steht die aktuelle Stelle auf der obersten Ebene des Baums?
-   *
-   * Früher entschied das Id-Präfix (`000s`). Gefragt wird jetzt der Baum
-   * selbst: Wer dort ganz oben steht, ist oben — unabhängig davon, wie seine
-   * Id aussieht. Ids ohne Präfix gibt es seit der Umstellung.
+   * The levels to open for the current location: every ancestor of it, so the
+   * modal lists the location among its siblings. A root (or no location)
+   * keeps the modal on the top level.
    */
-  _isTopLevelLocation() {
-    return this._tree.some((story) => story.id === this.currentLocation);
+  _resolveInitialPath() {
+    return this._locationPath()
+      .slice(0, -1)
+      .map((node) => node.id);
   }
 
-  _storyIdForLocation() {
-    const location = this.currentLocation;
-    if (!location) {
-      return null;
+  /** The nodes listed on the open level. */
+  _currentLevel() {
+    if (this._openPath.length === 0) {
+      return this._tree;
     }
-    if (this._isTopLevelLocation()) {
-      return location;
-    }
-    const parentStory = this._tree.find((story) =>
-      (story.childnodes || []).some((chapter) => chapter.id === location)
+    const parent = findNode(
+      this._tree,
+      this._openPath[this._openPath.length - 1]
     );
-    return parentStory ? parentStory.id : null;
-  }
-
-  _resolveInitialStory() {
-    // Only a child location pre-opens the list of its parent; a top-level
-    // location (or none) keeps the modal on the upper level.
-    if (!this.currentLocation || this._isTopLevelLocation()) {
-      return null;
-    }
-    const storyId = this._storyIdForLocation();
-    return this._tree.find((story) => story.id === storyId) || null;
+    return parent?.childnodes || [];
   }
 
   render() {
     return html`
       <slds-modal heading="${this.labels.modalTitle}" footless>
-        ${
-          this._selectedStory === null
-            ? this._renderStories()
-            : this._renderChapters()
-        }
+        ${this._openPath.length > 0 ? this._renderBack() : ''}
+        ${this._renderLevel(this._currentLevel())}
       </slds-modal>
     `;
   }
 
-  _renderStories() {
-    if (this._tree.length === 0) {
+  _renderBack() {
+    return html`
+      <div class="slds-m-bottom_small">
+        <button class="back-button" @click="${this._handleBack}">
+          ${this.labels.back}
+        </button>
+      </div>
+    `;
+  }
+
+  _renderLevel(nodes) {
+    if (nodes.length === 0) {
       return html`
         <div class="slds-align_absolute-center slds-p-around_medium">
           <span>${this.labels.empty}</span>
         </div>
       `;
     }
-    const currentStoryId = this._storyIdForLocation();
+    // Every node on the way to the location is marked, not only the location.
+    const onPath = new Set(this._locationPath().map((node) => node.id));
     return html`
       <slds-layout wrap gutters-small>
-        ${this._tree.map(
-          (story) => html`
+        ${nodes.map(
+          (node) => html`
             <slds-layout-item
               size="1-of-2"
               medium-size="1-of-3"
@@ -173,12 +180,10 @@ class NavigationModal extends LitElement {
             >
               <div class="slds-p-vertical_x-small">
                 <button
-                  class="tile ${
-                    story.id === currentStoryId ? 'tile_current' : ''
-                  }"
-                  @click="${() => this._handleStoryClick(story)}"
+                  class="tile ${onPath.has(node.id) ? 'tile_current' : ''}"
+                  @click="${() => this._handleTileClick(node)}"
                 >
-                  <span>${story.name}</span>
+                  <span>${node.name}</span>
                 </button>
               </div>
             </slds-layout-item>
@@ -188,66 +193,30 @@ class NavigationModal extends LitElement {
     `;
   }
 
-  _renderChapters() {
-    const chapters = this._selectedStory.childnodes || [];
-    return html`
-      <div class="slds-m-bottom_small">
-        <button class="back-button" @click="${this._handleBack}">
-          ${this.labels.back}
-        </button>
-      </div>
-      ${
-        chapters.length === 0
-          ? html`
-              <div class="slds-align_absolute-center slds-p-around_medium">
-                <span>${this.labels.emptyChapters}</span>
-              </div>
-            `
-          : html`
-              <slds-layout wrap gutters-small>
-                ${chapters.map(
-                  (chapter) => html`
-                    <slds-layout-item
-                      size="1-of-2"
-                      medium-size="1-of-3"
-                      large-size="1-of-4"
-                    >
-                      <div class="slds-p-vertical_x-small">
-                        <button
-                          class="tile ${
-                            chapter.id === this.currentLocation
-                              ? 'tile_current'
-                              : ''
-                          }"
-                          @click="${() => this._handleChapterClick(chapter.id)}"
-                        >
-                          <span>${chapter.name}</span>
-                        </button>
-                      </div>
-                    </slds-layout-item>
-                  `
-                )}
-              </slds-layout>
-            `
-      }
-    `;
-  }
-
-  _handleStoryClick(story) {
-    this._selectedStory = story;
-    this.dispatchEvent(
-      new CustomEvent('story-select', {
-        detail: { id: story.id },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  _handleChapterClick(chapterId) {
+  /**
+   * A node with children opens its level; the page behind follows (it shows
+   * that node, a cover node loads). A node without children is the choice:
+   * the modal reports it and the host closes the modal.
+   */
+  _handleTileClick(node) {
+    if ((node.childnodes || []).length > 0) {
+      this._openPath = [...this._openPath, node.id];
+      this.dispatchEvent(
+        new CustomEvent('story-select', {
+          detail: { id: node.id },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      return;
+    }
+    const parentId =
+      this._openPath.length > 0
+        ? this._openPath[this._openPath.length - 1]
+        : null;
     this.dispatchEvent(
       new CustomEvent('chapter-select', {
-        detail: { storyId: this._selectedStory.id, chapterId },
+        detail: { storyId: parentId, chapterId: node.id },
         bubbles: true,
         composed: true,
       })
@@ -255,7 +224,7 @@ class NavigationModal extends LitElement {
   }
 
   _handleBack() {
-    this._selectedStory = null;
+    this._openPath = this._openPath.slice(0, -1);
   }
 
   //===========================
@@ -264,7 +233,8 @@ class NavigationModal extends LitElement {
 
   show() {
     this._isOpen = true;
-    this._selectedStory = this._resolveInitialStory();
+    this._positionPending = this._tree.length === 0;
+    this._openPath = this._resolveInitialPath();
     this.shadowRoot.querySelector('slds-modal').show();
   }
 

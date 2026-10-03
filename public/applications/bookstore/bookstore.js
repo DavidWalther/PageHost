@@ -282,6 +282,17 @@ class Bookstore extends LitElement {
   handleChapterSelect(event) {
     const { storyId, chapterId } = event.detail;
 
+    if (!storyId) {
+      // A root without children: it has no parent to fill the selection, so
+      // it takes the selection itself — like a deep link to a root (UC-B-03).
+      this.navigationNode.setAttribute('id', chapterId);
+      this.contentNode.removeAttribute('id');
+      this.navigationNode.removeAttribute('selected-child');
+      this._setCurrentLocation(chapterId);
+      this.shadowRoot.querySelector('custom-navigation-modal').hide();
+      return;
+    }
+
     const currentParentId = this.navigationNode.getAttribute('id');
     if (currentParentId !== storyId) {
       // Suppress the cover override in handleNavigationNodeLoaded for this

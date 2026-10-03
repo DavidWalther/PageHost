@@ -200,8 +200,8 @@ test.describe('Navigation modal in any depth', () => {
   const back = (page) => page.locator('custom-navigation-modal .back-button');
   const openModal = (page) => page.locator('#button-navigation_open').click();
 
-  // A missing tile must fail the click quickly, not run into the test
-  // timeout: test.fail() does not count a timeout as the expected failure.
+  // A missing tile fails the click quickly instead of running into the
+  // test timeout, so a broken level reports where it broke.
   test.use({ actionTimeout: 5000 });
 
   test.beforeEach(async ({ page }) => {
@@ -215,7 +215,6 @@ test.describe('Navigation modal in any depth', () => {
   });
 
   test('drills down to the fourth level', async ({ page }) => {
-    test.fail(true, 'the modal knows two levels only (#202)');
     await openModal(page);
     await tile(page, 'Deep Root').click();
     await tile(page, 'Deep Level 2').click();
@@ -225,7 +224,6 @@ test.describe('Navigation modal in any depth', () => {
   });
 
   test('goes up exactly one level with back', async ({ page }) => {
-    test.fail(true, 'the modal knows two levels only (#202)');
     await openModal(page);
     await tile(page, 'Deep Root').click();
     await tile(page, 'Deep Level 2').click();
@@ -239,7 +237,6 @@ test.describe('Navigation modal in any depth', () => {
   test('a tile without children selects the node and closes', async ({
     page,
   }) => {
-    test.fail(true, 'the modal knows two levels only (#202)');
     await openModal(page);
     await tile(page, 'Deep Root').click();
     await tile(page, 'Deep Level 2').click();
@@ -253,7 +250,6 @@ test.describe('Navigation modal in any depth', () => {
   test('reopens on the level of a deep location and marks the whole path', async ({
     page,
   }) => {
-    test.fail(true, 'the modal knows two levels only (#202)');
     await openModal(page);
     await tile(page, 'Deep Root').click();
     await tile(page, 'Deep Level 2').click();
@@ -277,7 +273,6 @@ test.describe('Navigation modal in any depth', () => {
   test('a root without children selects the node and closes', async ({
     page,
   }) => {
-    test.fail(true, 'the modal drills into every root (#202)');
     await openModal(page);
 
     await tile(page, 'Other Root').click();
