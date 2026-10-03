@@ -454,4 +454,80 @@ describe('Lesepfad', () => {
       expect(locations(xml)).toEqual([]);
     });
   });
+  // ─── Target behaviour of #202 ─────────────────────────────────────────────
+  // Written before the implementation as `it.failing`: green while the
+  // behaviour is missing, red once it arrives. The implementing step turns
+  // each of them into `it`.
+
+  describe('Contents tree in any depth', () => {
+    const node = (id, parent, sortnumber, published_date = GESTERN) => ({
+      ...KAPITEL_NODE,
+      id,
+      name: id,
+      legacy_id: null,
+      parent_node_id: parent,
+      sortnumber,
+      reversed: null,
+      published_date,
+    });
+
+    /**
+     * Four levels below the root:
+     *   n-story
+     *   ├─ n-kapitel
+     *   │  ├─ n-szene-2 (sortnumber 1)
+     *   │  │  └─ n-ebene-4
+     *   │  ├─ n-szene-1 (sortnumber 2)
+     *   │  └─ n-szene-morgen (unpublished)
+     *   └─ n-kapitel-morgen (unpublished)
+     *      └─ n-szene-versteckt (published, but below an unpublished parent)
+     *         └─ n-ebene-4-versteckt
+     */
+    const DEEP_NODES = [
+      STORY_NODE,
+      KAPITEL_NODE,
+      KAPITEL_UNVEROEFFENTLICHT,
+      node('n-szene-1', 'n-kapitel', 2),
+      node('n-szene-2', 'n-kapitel', 1),
+      node('n-szene-morgen', 'n-kapitel', 3, MORGEN),
+      node('n-ebene-4', 'n-szene-2', 1),
+      node('n-szene-versteckt', 'n-kapitel-morgen', 1),
+      node('n-ebene-4-versteckt', 'n-szene-versteckt', 1),
+    ];
+
+    beforeEach(() => {
+      rows.nodes = DEEP_NODES;
+    });
+
+    const childIds = (node) => node.childnodes.map((child) => child.id);
+    const allIds = (nodes, key = 'childnodes') =>
+      (nodes || []).flatMap((node) => [node.id, ...allIds(node[key], key)]);
+    const kapitel = (result) =>
+      result[0].childnodes.find((child) => child.id === 'n-kapitel');
+
+    it.failing('delivers every level when no depth is given', async () => {
+      const { result } = await getContents();
+
+      const szene2 = kapitel(result).childnodes[0];
+      expect(childIds(szene2)).toEqual(['n-ebene-4']);
+    });
+
+    it.failing('sorts every level by sortnumber', async () => {
+      const { result } = await getContents();
+
+      expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
+    });
+
+    it.failing(
+      'depth=3 trims below the third level of the filtered tree',
+      async () => {
+        const { result } = await getContents({ query: { depth: '3' } });
+
+        expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
+        kapitel(result).childnodes.forEach((szene) => {
+          expect(szene.childnodes).toEqual([]);
+        });
+      }
+    );
+  });
 });
