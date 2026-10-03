@@ -97,10 +97,13 @@ class NavigationModal extends LitElement {
               return;
             }
             this._tree = Array.isArray(data) ? data : [];
-            // If show() ran before the tree was available, position now.
             if (this._isOpen && this._positionPending) {
+              // show() ran before the tree was available: position now.
               this._positionPending = false;
               this._openPath = this._resolveInitialPath();
+            } else {
+              // A reload: stay on the open level as far as it still exists.
+              this._openPath = this._existingPrefix(this._openPath);
             }
           },
         },
@@ -108,6 +111,18 @@ class NavigationModal extends LitElement {
         composed: true,
       })
     );
+  }
+
+  /** The leading part of `path` whose nodes are all still in the tree. */
+  _existingPrefix(path) {
+    const kept = [];
+    for (const id of path) {
+      if (!findNode(this._tree, id)) {
+        break;
+      }
+      kept.push(id);
+    }
+    return kept;
   }
 
   /** The path from a root down to the current location, or [] if unknown. */
@@ -241,6 +256,15 @@ class NavigationModal extends LitElement {
   hide() {
     this._isOpen = false;
     this.shadowRoot.querySelector('slds-modal').hide();
+  }
+
+  /**
+   * Loads the content tree again — after a node was created, changed,
+   * deleted, published or unpublished. An open modal stays on its level as
+   * far as that level still exists.
+   */
+  reload() {
+    this._loadContents();
   }
 }
 

@@ -77,7 +77,6 @@ test.describe('Navigation modal reload', () => {
 
   for (const [name, detail] of NODE_CHANGES) {
     test(`shows the new tree after ${name}`, async ({ page }) => {
-      test.fail(true, 'the modal does not reload yet (#202)');
       await open(page);
 
       await dispatchFromNavigationNode(page, name, detail);
@@ -103,7 +102,6 @@ test.describe('Navigation modal reload', () => {
   test('keeps the open level when it still exists after the reload', async ({
     page,
   }) => {
-    test.fail(true, 'the modal does not reload yet (#202)');
     await open(page);
     await openModal(page);
     await tile(page, 'Mock Story 1').click();
@@ -120,7 +118,6 @@ test.describe('Navigation modal reload', () => {
   test('falls back to the nearest level that still exists', async ({
     page,
   }) => {
-    test.fail(true, 'the modal does not reload yet (#202)');
     await open(page);
     await page.unroute('**/api/1.0/contents/**');
     await page.route('**/api/1.0/contents/**', (route) => {
