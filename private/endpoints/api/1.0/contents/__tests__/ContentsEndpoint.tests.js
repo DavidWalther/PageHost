@@ -55,15 +55,18 @@ describe('ContentsEndpoint', () => {
   let mockEnvironment;
   let mockGetData;
   let mockSetSkipCache;
+  let mockSetIncludeUnpublished;
 
   beforeEach(() => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = { json: jest.fn() };
     mockGetData = jest.fn().mockResolvedValue(buildRawTree());
     mockSetSkipCache = jest.fn();
+    mockSetIncludeUnpublished = jest.fn();
 
     DataFacade.mockImplementation(() => ({
       setSkipCache: mockSetSkipCache,
+      setIncludeUnpublished: mockSetIncludeUnpublished,
       getData: mockGetData,
     }));
 
@@ -100,24 +103,24 @@ describe('ContentsEndpoint', () => {
     expect(node.childnodes[0].label).toBe(node.childnodes[0].name);
   });
 
-  it('removes unpublished chapters for anonymous requests', async () => {
+  it('leaves filtering to the facade for anonymous requests', async () => {
+    // The facade hands out the published tree; the endpoint neither asks for
+    // more nor filters a second time. What the facade returns is mapped as is.
     await endpoint.execute();
-    const { result } = mockResponseObject.json.mock.calls[0][0];
 
+    expect(mockSetIncludeUnpublished).not.toHaveBeenCalled();
+    const { result } = mockResponseObject.json.mock.calls[0][0];
     const storyA = result.find((n) => n.id === 'story-1');
-    // draft chapter (future publishdate) is filtered out
-    expect(storyA.childnodes.map((c) => c.id)).toEqual(['c-a1']);
+    expect(storyA.childnodes.map((c) => c.id)).toEqual(['c-a1', 'c-a2']);
   });
 
-  it('keeps unpublished chapters for edit scope and skips the cache', async () => {
+  it('asks for unpublished nodes and skips the cache with the edit scope', async () => {
     endpoint.setScopes(new Set(['edit']));
 
     await endpoint.execute();
 
     expect(mockSetSkipCache).toHaveBeenCalledWith(true);
-    const { result } = mockResponseObject.json.mock.calls[0][0];
-    const storyA = result.find((n) => n.id === 'story-1');
-    expect(storyA.childnodes.map((c) => c.id)).toEqual(['c-a1', 'c-a2']);
+    expect(mockSetIncludeUnpublished).toHaveBeenCalledWith(true);
   });
 
   it('does not skip the cache for anonymous requests', async () => {

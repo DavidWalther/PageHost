@@ -5,6 +5,7 @@ const {
   NodeContentRepository,
 } = require('./repositories/NodeContentRepository.js');
 const { ContentRepository } = require('./repositories/ContentRepository.js');
+const ContentVisibilityFilter = require('../modules/ContentVisibilityFilter.js');
 
 class DataFacadePromise {
   constructor(environmentObject) {
@@ -24,10 +25,16 @@ class DataFacadePromise {
     return this;
   }
 
+  setIncludeUnpublished(includeUnpublished) {
+    this.includeUnpublished = includeUnpublished;
+    return this;
+  }
+
   getData(parameterObject) {
     return new Promise((resolve) => {
       let syncResult = new DataFacadeSync(this.environment)
         .setSkipCache(this.skipCache)
+        .setIncludeUnpublished(this.includeUnpublished)
         .setScopes(this.scopes)
         .getData(parameterObject);
       resolve(syncResult);
@@ -75,6 +82,19 @@ class DataFacadeSync {
   }
   getSkipCache() {
     return this._skipCache === true ? true : false; // this enforces a boolean value
+  }
+
+  /**
+   * Hand out the content tree **with** unpublished nodes. Off by default:
+   * every reader gets the published tree unless it asks for more — only the
+   * edit scope does. See `getVisibleContentsTree`.
+   */
+  setIncludeUnpublished(includeUnpublished) {
+    this._includeUnpublished = includeUnpublished;
+    return this;
+  }
+  getIncludeUnpublished() {
+    return this._includeUnpublished === true;
   }
 
   /**
@@ -147,10 +167,7 @@ class DataFacadeSync {
       return this.getIdentityByKeyWithoutCache(parameterObject);
     }
     if (parameterObject.request.table == 'contents') {
-      if (!this.getSkipCache()) {
-        return this.getContentsTree();
-      }
-      return this.getContentsTreeWithoutCache();
+      return this.getVisibleContentsTree();
     }
   }
 
@@ -421,6 +438,30 @@ class DataFacadeSync {
     return product;
   }
 
+  /**
+   * The content tree as a reader may see it.
+   *
+   * The cache holds the **full** tree, published and unpublished nodes
+   * alike. The publish filter runs here, after the cache and before anything
+   * leaves the facade — in one place, so no consumer (contents endpoint,
+   * sitemap, a later title search) can forget it. The full tree only comes
+   * out through `setIncludeUnpublished(true)`.
+   */
+  async getVisibleContentsTree() {
+    const tree = this.getSkipCache()
+      ? await this.getContentsTreeWithoutCache()
+      : await this.getContentsTree();
+    if (this.getIncludeUnpublished()) {
+      return tree;
+    }
+    return new ContentVisibilityFilter()
+      .setTree(tree)
+      .setChildrenKey('nodes')
+      .setDateField('published_date')
+      .setDate(new Date())
+      .getResult();
+  }
+
   async getContentsTreeWithoutCache() {
     const LOCATION = 'DataFacadeSync.getContentsTreeWithoutCache';
     Logging.debugMessage({
@@ -571,15 +612,24 @@ class DataFacade {
     this._skipCache = skipCache;
     return this;
   }
+
+  /** See `DataFacadeSync.setIncludeUnpublished`. */
+  setIncludeUnpublished(includeUnpublished) {
+    this._includeUnpublished = includeUnpublished;
+    return this;
+  }
+
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
       return new DataFacadePromise(this.environment)
         .setSkipCache(this._skipCache)
+        .setIncludeUnpublished(this._includeUnpublished)
         .setScopes(this.scopes)
         .getData(parameterObject);
     } else {
       return new DataFacadeSync(this.environment)
         .setSkipCache(this._skipCache)
+        .setIncludeUnpublished(this._includeUnpublished)
         .setScopes(this.scopes)
         .getData(parameterObject);
     }

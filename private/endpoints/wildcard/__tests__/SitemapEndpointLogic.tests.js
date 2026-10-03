@@ -5,10 +5,11 @@ jest.mock('../../../database2/DataFacade.js');
 jest.mock('../../../modules/logging');
 
 /**
- * `sitemap.xml` lieferte lange 404, obwohl der `ContentVisibilityFilter` genau
- * dafür als wiederverwendbares Modul gebaut wurde. Diese Suite hält fest, was
- * daraus geworden ist — und vor allem, dass Unveröffentlichtes **nicht** darin
- * steht.
+ * `sitemap.xml` lists the node ids of the tree the facade hands out. The
+ * facade owns the publish filter; this suite mocks it and checks that the
+ * sitemap asks for the public tree and turns it into XML. That nothing
+ * unpublished ends up in the sitemap is covered on the real read path
+ * (`private/__tests__/readPathIntegration.tests.js`).
  */
 
 const GESTERN = '2020-01-01T00:00:00.000Z';
@@ -81,19 +82,27 @@ describe('SitemapEndpointLogic', () => {
     expect(xml).toContain('<loc>https://example.test/n-kind</loc>');
   });
 
-  it('lässt unveröffentlichte Knoten heraus', async () => {
-    const xml = await run();
+  it('never asks the facade for unpublished nodes', async () => {
+    // Filtering is the facade's job; what reaches the sitemap is already the
+    // public tree. That the result holds nothing unpublished is covered on the
+    // real read path in readPathIntegration.tests.js.
+    const facade = {
+      getData: jest.fn(async () => tree),
+      setIncludeUnpublished: jest.fn(),
+      setSkipCache: jest.fn(),
+    };
+    DataFacade.mockImplementation(() => facade);
 
-    expect(xml).not.toContain('n-kind-morgen');
+    await run();
+
+    expect(facade.setIncludeUnpublished).not.toHaveBeenCalled();
+    expect(facade.setSkipCache).not.toHaveBeenCalled();
   });
 
-  it('lässt einen unveröffentlichten Teilbaum ganz heraus', async () => {
-    // Der Filter verwirft einen versteckten Knoten samt allem darunter.
-    tree[0].published_date = null;
-
+  it('lists the tree the facade hands out without filtering it again', async () => {
     const xml = await run();
 
-    expect(xml).not.toContain('<loc>');
+    expect(xml).toContain('<loc>https://example.test/n-kind-morgen</loc>');
   });
 
   it('fragt den Inhaltsbaum, nicht die Knoten einzeln', async () => {

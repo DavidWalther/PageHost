@@ -8,6 +8,17 @@ This document describes how the `DataFacade`, `DataCache`, and `DataStorage` cla
 - Determines whether to return a promise or synchronous data based on the `parameterObject`.
 - Uses `DataCache` and `DataStorage` to fetch and cache data.
 
+#### The content tree and the publish filter
+
+`getData({ request: { table: 'contents' } })` returns the content tree. The
+cache holds it **in full** — every level, published and unpublished nodes
+alike — so one cached source can serve every consumer (navigation, sitemap,
+later a title search). The facade runs the `ContentVisibilityFilter` on the
+way out, **after** the cache, and hands out the **published** tree by default.
+The full tree only comes out through `setIncludeUnpublished(true)`, which the
+contents endpoint sets for the `edit` scope. A consumer therefore cannot leak
+unpublished nodes by forgetting a filter call: it would have to ask for them.
+
 ### DataCache
 
 - Manages caching of data to improve performance and reduce database load.

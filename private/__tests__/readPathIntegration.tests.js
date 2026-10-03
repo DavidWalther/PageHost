@@ -574,31 +574,25 @@ describe('Lesepfad', () => {
           request: { table: 'contents', id: null },
         });
 
-      it.failing(
-        'the facade hands out the filtered tree by default',
-        async () => {
-          const tree = await readTree(new DataFacade(ENVIRONMENT));
+      it('the facade hands out the filtered tree by default', async () => {
+        const tree = await readTree(new DataFacade(ENVIRONMENT));
 
-          const ids = allIds(tree, 'nodes');
-          expect(ids).toContain('n-ebene-4');
-          expect(ids).not.toContain('n-kapitel-morgen');
-          expect(ids).not.toContain('n-szene-morgen');
-        }
-      );
+        const ids = allIds(tree, 'nodes');
+        expect(ids).toContain('n-ebene-4');
+        expect(ids).not.toContain('n-kapitel-morgen');
+        expect(ids).not.toContain('n-szene-morgen');
+      });
 
-      it.failing(
-        'the facade hands out the full tree only when asked to',
-        async () => {
-          const tree = await readTree(
-            new DataFacade(ENVIRONMENT).setIncludeUnpublished(true)
-          );
+      it('the facade hands out the full tree only when asked to', async () => {
+        const tree = await readTree(
+          new DataFacade(ENVIRONMENT).setIncludeUnpublished(true)
+        );
 
-          const ids = allIds(tree, 'nodes');
-          expect(ids).toEqual(
-            expect.arrayContaining(['n-kapitel-morgen', 'n-ebene-4-versteckt'])
-          );
-        }
-      );
+        const ids = allIds(tree, 'nodes');
+        expect(ids).toEqual(
+          expect.arrayContaining(['n-kapitel-morgen', 'n-ebene-4-versteckt'])
+        );
+      });
 
       it('the sitemap lists published nodes on every level', async () => {
         const responseObject = { set: jest.fn(), send: jest.fn() };
