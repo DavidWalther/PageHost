@@ -23,6 +23,7 @@ const {
   TypeFreeQueryEndpoint,
 } = require('../endpoints/data/query/TypeFreeQueryEndpoint');
 const ContentsEndpoint = require('../endpoints/api/1.0/contents/ContentsEndpoint');
+const SitemapEndpointLogic = require('../endpoints/wildcard/SitemapEndpointLogic.js');
 
 const APPLICATION_KEY = 'nodeApp';
 const FREMDE_APP = 'andereApp';
@@ -367,6 +368,90 @@ describe('Lesepfad', () => {
       expect(result[0]).not.toHaveProperty('publishdate');
       expect(result[0]).not.toHaveProperty('applicationincluded');
       expect(result[0].childnodes[0]).not.toHaveProperty('publishdate');
+    });
+
+    it('keeps only the allowlisted fields on every level', async () => {
+      const { result } = await getContents({ scopes: ['edit'] });
+      const allowed = ['childnodes', 'id', 'label', 'name'];
+
+      expect(Object.keys(result[0]).sort()).toEqual(allowed);
+      result[0].childnodes.forEach((child) => {
+        expect(Object.keys(child).sort()).toEqual(allowed);
+      });
+    });
+
+    it('drops the unpublished child for a visitor', async () => {
+      const { result } = await getContents();
+
+      expect(result[0].childnodes.map((node) => node.id)).toEqual([
+        'n-kapitel',
+      ]);
+    });
+
+    it('trims to the roots with depth=1', async () => {
+      const { result } = await getContents({ query: { depth: '1' } });
+
+      expect(result.map((node) => node.id)).toEqual(['n-story']);
+      expect(result[0].childnodes).toEqual([]);
+    });
+
+    it('reads the tree from the cache for a visitor', async () => {
+      await getContents();
+      executedStatements = [];
+
+      await getContents();
+
+      expect(cacheGet).toHaveBeenCalledWith('contentsTree');
+      expect(queriedDatabase()).toBe(false);
+    });
+
+    it('bypasses the cache with the edit scope', async () => {
+      await getContents();
+      executedStatements = [];
+
+      await getContents({ scopes: ['edit'] });
+
+      expect(queriedDatabase()).toBe(true);
+    });
+  });
+
+  describe('Sitemap', () => {
+    function getSitemap() {
+      const responseObject = { set: jest.fn(), send: jest.fn() };
+      responseObject.set.mockReturnValue(responseObject);
+      return new SitemapEndpointLogic()
+        .setEnvironment(ENVIRONMENT)
+        .setRequestObject({
+          protocol: 'https',
+          headers: { host: 'example.org' },
+        })
+        .setResponseObject(responseObject)
+        .execute()
+        .then(() => responseObject.send.mock.calls[0][0]);
+    }
+
+    const locations = (xml) =>
+      [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+
+    it('lists only published nodes, parents before children', async () => {
+      const xml = await getSitemap();
+
+      expect(locations(xml)).toEqual([
+        'https://example.org/n-story',
+        'https://example.org/n-kapitel',
+      ]);
+    });
+
+    it('leaves out a published child below an unpublished parent', async () => {
+      rows.nodes = [
+        { ...STORY_NODE, published_date: MORGEN },
+        KAPITEL_NODE,
+        KAPITEL_UNVEROEFFENTLICHT,
+      ];
+
+      const xml = await getSitemap();
+
+      expect(locations(xml)).toEqual([]);
     });
   });
 });
