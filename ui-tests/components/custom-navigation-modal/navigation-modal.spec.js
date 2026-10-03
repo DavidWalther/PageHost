@@ -87,4 +87,59 @@ test.describe('Navigation modal', () => {
         chapterId: '000c00000000000002',
       });
   });
+
+  test('opens on the top level and marks the entry node', async ({ page }) => {
+    await openModal(page);
+
+    await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
+    await expect(tileByText(page, 'Mock Story 2')).not.toHaveClass(
+      /tile_current/
+    );
+  });
+
+  test('reopens on the level of a chosen child and marks the path', async ({
+    page,
+  }) => {
+    await openModal(page);
+    await tileByText(page, 'Mock Story 1').click();
+    await tileByText(page, 'Mock Chapter 2 for Story 1').click();
+    await expect(tiles(page).first()).toBeHidden();
+
+    await openModal(page);
+
+    // Opens straight on the child level, the chosen child is marked …
+    await expect(tileByText(page, 'Mock Chapter 2 for Story 1')).toHaveClass(
+      /tile_current/
+    );
+    await expect(
+      tileByText(page, 'Mock Chapter 1 for Story 1')
+    ).not.toHaveClass(/tile_current/);
+
+    // … and one level up its parent is marked as well.
+    await page.locator('custom-navigation-modal .back-button').click();
+    await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
+  });
+
+  test('closing with Escape changes nothing behind the modal', async ({
+    page,
+  }) => {
+    const readNodes = () =>
+      page.evaluate(() => {
+        const app = document.querySelector('app-bookstore');
+        return ['navigation', 'content'].map((role) => {
+          const node = app.shadowRoot.querySelector(
+            `custom-node[data-role="${role}"]`
+          );
+          return [node.getAttribute('id'), node.getAttribute('selected-child')];
+        });
+      });
+    await openModal(page);
+    await expect(tiles(page).first()).toBeVisible();
+    const before = await readNodes();
+
+    await page.keyboard.press('Escape');
+
+    await expect(tiles(page).first()).toBeHidden();
+    expect(await readNodes()).toEqual(before);
+  });
 });
