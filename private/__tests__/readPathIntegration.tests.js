@@ -24,6 +24,7 @@ const {
 } = require('../endpoints/data/query/TypeFreeQueryEndpoint');
 const ContentsEndpoint = require('../endpoints/api/1.0/contents/ContentsEndpoint');
 const SitemapEndpointLogic = require('../endpoints/wildcard/SitemapEndpointLogic.js');
+const { DataFacade } = require('../database2/DataFacade');
 
 const APPLICATION_KEY = 'nodeApp';
 const FREMDE_APP = 'andereApp';
@@ -580,5 +581,59 @@ describe('Lesepfad', () => {
         );
       }
     );
+
+    describe('visibility in one place', () => {
+      const readTree = (facade) =>
+        facade.getData({
+          returnPromise: true,
+          request: { table: 'contents', id: null },
+        });
+
+      it.failing(
+        'the facade hands out the filtered tree by default',
+        async () => {
+          const tree = await readTree(new DataFacade(ENVIRONMENT));
+
+          const ids = allIds(tree, 'nodes');
+          expect(ids).toContain('n-ebene-4');
+          expect(ids).not.toContain('n-kapitel-morgen');
+          expect(ids).not.toContain('n-szene-morgen');
+        }
+      );
+
+      it.failing(
+        'the facade hands out the full tree only when asked to',
+        async () => {
+          const tree = await readTree(
+            new DataFacade(ENVIRONMENT).setIncludeUnpublished(true)
+          );
+
+          const ids = allIds(tree, 'nodes');
+          expect(ids).toEqual(
+            expect.arrayContaining(['n-kapitel-morgen', 'n-ebene-4-versteckt'])
+          );
+        }
+      );
+
+      it.failing(
+        'the sitemap lists published nodes on every level',
+        async () => {
+          const responseObject = { set: jest.fn(), send: jest.fn() };
+          responseObject.set.mockReturnValue(responseObject);
+          await new SitemapEndpointLogic()
+            .setEnvironment(ENVIRONMENT)
+            .setRequestObject({
+              protocol: 'https',
+              headers: { host: 'example.org' },
+            })
+            .setResponseObject(responseObject)
+            .execute();
+          const xml = responseObject.send.mock.calls[0][0];
+
+          expect(xml).toContain('https://example.org/n-ebene-4<');
+          expect(xml).not.toContain('n-szene-versteckt');
+        }
+      );
+    });
   });
 });
