@@ -24,6 +24,7 @@ const {
 } = require('../endpoints/data/query/TypeFreeQueryEndpoint');
 const ContentsEndpoint = require('../endpoints/api/1.0/contents/ContentsEndpoint');
 const SitemapEndpointLogic = require('../endpoints/wildcard/SitemapEndpointLogic.js');
+const { DataFacade } = require('../database2/DataFacade');
 
 const APPLICATION_KEY = 'nodeApp';
 const FREMDE_APP = 'andereApp';
@@ -452,6 +453,187 @@ describe('Lesepfad', () => {
       const xml = await getSitemap();
 
       expect(locations(xml)).toEqual([]);
+    });
+  });
+  // ─── Target behaviour of #202 ─────────────────────────────────────────────
+  // Written before the implementation as `it.failing`: green while the
+  // behaviour is missing, red once it arrives. The implementing step turns
+  // each of them into `it`.
+
+  describe('Contents tree in any depth', () => {
+    const node = (id, parent, sortnumber, published_date = GESTERN) => ({
+      ...KAPITEL_NODE,
+      id,
+      name: id,
+      legacy_id: null,
+      parent_node_id: parent,
+      sortnumber,
+      reversed: null,
+      published_date,
+    });
+
+    /**
+     * Four levels below the root:
+     *   n-story
+     *   ├─ n-kapitel
+     *   │  ├─ n-szene-2 (sortnumber 1)
+     *   │  │  └─ n-ebene-4
+     *   │  ├─ n-szene-1 (sortnumber 2)
+     *   │  └─ n-szene-morgen (unpublished)
+     *   └─ n-kapitel-morgen (unpublished)
+     *      └─ n-szene-versteckt (published, but below an unpublished parent)
+     *         └─ n-ebene-4-versteckt
+     */
+    const DEEP_NODES = [
+      STORY_NODE,
+      KAPITEL_NODE,
+      KAPITEL_UNVEROEFFENTLICHT,
+      node('n-szene-1', 'n-kapitel', 2),
+      node('n-szene-2', 'n-kapitel', 1),
+      node('n-szene-morgen', 'n-kapitel', 3, MORGEN),
+      node('n-ebene-4', 'n-szene-2', 1),
+      node('n-szene-versteckt', 'n-kapitel-morgen', 1),
+      node('n-ebene-4-versteckt', 'n-szene-versteckt', 1),
+    ];
+
+    beforeEach(() => {
+      rows.nodes = DEEP_NODES;
+    });
+
+    const childIds = (node) => node.childnodes.map((child) => child.id);
+    const allIds = (nodes, key = 'childnodes') =>
+      (nodes || []).flatMap((node) => [node.id, ...allIds(node[key], key)]);
+    const kapitel = (result) =>
+      result[0].childnodes.find((child) => child.id === 'n-kapitel');
+
+    it.failing('delivers every level when no depth is given', async () => {
+      const { result } = await getContents();
+
+      const szene2 = kapitel(result).childnodes[0];
+      expect(childIds(szene2)).toEqual(['n-ebene-4']);
+    });
+
+    it.failing('sorts every level by sortnumber', async () => {
+      const { result } = await getContents();
+
+      expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
+    });
+
+    it.failing(
+      'depth=3 trims below the third level of the filtered tree',
+      async () => {
+        const { result } = await getContents({ query: { depth: '3' } });
+
+        expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
+        kapitel(result).childnodes.forEach((szene) => {
+          expect(szene.childnodes).toEqual([]);
+        });
+      }
+    );
+
+    it.failing(
+      'drops an unpublished node on level 3 and keeps its siblings',
+      async () => {
+        const { result } = await getContents();
+
+        expect(childIds(kapitel(result))).not.toContain('n-szene-morgen');
+        expect(childIds(kapitel(result))).toHaveLength(2);
+      }
+    );
+
+    it.failing(
+      'hides everything below an unpublished node, however deep',
+      async () => {
+        const { result } = await getContents();
+
+        const ids = allIds(result);
+        expect(ids).toContain('n-ebene-4');
+        expect(ids).not.toContain('n-kapitel-morgen');
+        expect(ids).not.toContain('n-szene-versteckt');
+        expect(ids).not.toContain('n-ebene-4-versteckt');
+      }
+    );
+
+    it.failing(
+      'keeps only the allowlisted fields on the deeper levels',
+      async () => {
+        const { result } = await getContents();
+        const allowed = ['childnodes', 'id', 'label', 'name'];
+
+        const szene2 = kapitel(result).childnodes[0];
+        expect(Object.keys(szene2).sort()).toEqual(allowed);
+        expect(Object.keys(szene2.childnodes[0]).sort()).toEqual(allowed);
+      }
+    );
+
+    it.failing(
+      'shows every level including unpublished nodes with the edit scope',
+      async () => {
+        const { result } = await getContents({ scopes: ['edit'] });
+
+        const ids = allIds(result);
+        expect(ids).toEqual(
+          expect.arrayContaining([
+            'n-szene-morgen',
+            'n-szene-versteckt',
+            'n-ebene-4-versteckt',
+          ])
+        );
+      }
+    );
+
+    describe('visibility in one place', () => {
+      const readTree = (facade) =>
+        facade.getData({
+          returnPromise: true,
+          request: { table: 'contents', id: null },
+        });
+
+      it.failing(
+        'the facade hands out the filtered tree by default',
+        async () => {
+          const tree = await readTree(new DataFacade(ENVIRONMENT));
+
+          const ids = allIds(tree, 'nodes');
+          expect(ids).toContain('n-ebene-4');
+          expect(ids).not.toContain('n-kapitel-morgen');
+          expect(ids).not.toContain('n-szene-morgen');
+        }
+      );
+
+      it.failing(
+        'the facade hands out the full tree only when asked to',
+        async () => {
+          const tree = await readTree(
+            new DataFacade(ENVIRONMENT).setIncludeUnpublished(true)
+          );
+
+          const ids = allIds(tree, 'nodes');
+          expect(ids).toEqual(
+            expect.arrayContaining(['n-kapitel-morgen', 'n-ebene-4-versteckt'])
+          );
+        }
+      );
+
+      it.failing(
+        'the sitemap lists published nodes on every level',
+        async () => {
+          const responseObject = { set: jest.fn(), send: jest.fn() };
+          responseObject.set.mockReturnValue(responseObject);
+          await new SitemapEndpointLogic()
+            .setEnvironment(ENVIRONMENT)
+            .setRequestObject({
+              protocol: 'https',
+              headers: { host: 'example.org' },
+            })
+            .setResponseObject(responseObject)
+            .execute();
+          const xml = responseObject.send.mock.calls[0][0];
+
+          expect(xml).toContain('https://example.org/n-ebene-4<');
+          expect(xml).not.toContain('n-szene-versteckt');
+        }
+      );
     });
   });
 });
