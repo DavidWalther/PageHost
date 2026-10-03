@@ -615,25 +615,22 @@ describe('Lesepfad', () => {
         }
       );
 
-      it.failing(
-        'the sitemap lists published nodes on every level',
-        async () => {
-          const responseObject = { set: jest.fn(), send: jest.fn() };
-          responseObject.set.mockReturnValue(responseObject);
-          await new SitemapEndpointLogic()
-            .setEnvironment(ENVIRONMENT)
-            .setRequestObject({
-              protocol: 'https',
-              headers: { host: 'example.org' },
-            })
-            .setResponseObject(responseObject)
-            .execute();
-          const xml = responseObject.send.mock.calls[0][0];
+      it('the sitemap lists published nodes on every level', async () => {
+        const responseObject = { set: jest.fn(), send: jest.fn() };
+        responseObject.set.mockReturnValue(responseObject);
+        await new SitemapEndpointLogic()
+          .setEnvironment(ENVIRONMENT)
+          .setRequestObject({
+            protocol: 'https',
+            headers: { host: 'example.org' },
+          })
+          .setResponseObject(responseObject)
+          .execute();
+        const xml = responseObject.send.mock.calls[0][0];
 
-          expect(xml).toContain('https://example.org/n-ebene-4<');
-          expect(xml).not.toContain('n-szene-versteckt');
-        }
-      );
+        expect(xml).toContain('https://example.org/n-ebene-4<');
+        expect(xml).not.toContain('n-szene-versteckt');
+      });
     });
   });
 });
