@@ -1,7 +1,7 @@
 # Contents Endpoint — `GET /api/1.0/contents/*`
 
-Liefert die Navigation als Baum aus **Nodes** — Wurzelknoten mit ihren Kindern
-(perspektivisch mehr als zwei Ebenen). Er ist seit dem Wegfall des alten
+Liefert die Navigation als Baum aus **Nodes** — Wurzelknoten mit ihren Kindern,
+in beliebiger Tiefe. Er ist seit dem Wegfall des alten
 Datenmodells die einzige Quelle der Navigation.
 
 ## Request
@@ -12,10 +12,10 @@ Authorization: Bearer <jwt>   (optional)
 ```
 
 - **`depth`** (optional, Query-Parameter): Anzahl der Ebenen.
-  - `1` → nur Stories (`childnodes: []`)
-  - `2` → Stories + Chapters
-  - weggelassen / ungültig (nicht-numerisch, `< 1`, nicht ganzzahlig) → **volle Tiefe** (aktuell 2)
-  - Werte `> 2` werden auf die verfügbare Tiefe begrenzt.
+  - `1` → nur die Wurzelknoten (`childnodes: []`)
+  - `n` → die obersten `n` Ebenen, darunter `childnodes: []`
+  - weggelassen / ungültig (nicht-numerisch, `< 1`, nicht ganzzahlig) → **volle Tiefe**
+  - Es gibt keine Obergrenze; `depth` kürzt nur.
 - **`/*`**: Das Pfad-Wildcard ist aktuell **reserviert**, wird aber noch nicht ausgewertet —
   der Endpunkt liefert immer den kompletten Baum ab Root.
 
@@ -25,12 +25,12 @@ Authorization: Bearer <jwt>   (optional)
 {
   "result": [
     {
-      "id": "000s00000000000011",
+      "id": "000n00000000000011",
       "label": "Mock Story 1",
       "name": "Mock Story 1",
       "childnodes": [
         {
-          "id": "000c00000000000001",
+          "id": "000n00000000000001",
           "label": "Mock Chapter 1 for Story 1",
           "name": "Mock Chapter 1 for Story 1",
           "childnodes": []
@@ -45,7 +45,7 @@ Authorization: Bearer <jwt>   (optional)
 
 | Feld         | Bedeutung                                             |
 | ------------ | ----------------------------------------------------- |
-| `id`         | Datensatz-ID (Story- bzw. Chapter-ID)                 |
+| `id`         | Id des Knotens — die neue Id, **nicht** `legacy_id`   |
 | `name`       | Anzeigename                                           |
 | `label`      | Kopie von `name` (Frontend entscheidet die Anzeige)   |
 | `childnodes` | Kind-Nodes (nächste Ebene), `[]` an der Tiefen-Grenze |

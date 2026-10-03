@@ -136,18 +136,18 @@ describe('ContentsEndpoint', () => {
 
   describe('parseDepth', () => {
     it('defaults to full depth when missing or invalid', () => {
-      expect(ContentsEndpoint.parseDepth(undefined)).toBe(2);
-      expect(ContentsEndpoint.parseDepth('')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('abc')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('0')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('-3')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('1.5')).toBe(2);
+      expect(ContentsEndpoint.parseDepth(undefined)).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('abc')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('0')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('-3')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('1.5')).toBe(Infinity);
     });
 
-    it('clamps to MAX_DEPTH and accepts valid values', () => {
+    it('accepts any positive whole number without an upper bound', () => {
       expect(ContentsEndpoint.parseDepth('1')).toBe(1);
       expect(ContentsEndpoint.parseDepth('2')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('9')).toBe(2);
+      expect(ContentsEndpoint.parseDepth('9')).toBe(9);
     });
   });
 });
