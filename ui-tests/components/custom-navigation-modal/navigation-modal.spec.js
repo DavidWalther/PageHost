@@ -83,8 +83,8 @@ test.describe('Navigation modal', () => {
     await expect
       .poll(() => page.evaluate(() => window.__chapterSelect))
       .toEqual({
-        storyId: '000s00000000000011',
-        chapterId: '000c00000000000002',
+        storyId: '000n00000000000011',
+        chapterId: '000n00000000000002',
       });
   });
 

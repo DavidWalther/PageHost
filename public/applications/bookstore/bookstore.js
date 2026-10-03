@@ -250,14 +250,13 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Merkt sich, wo der Nutzer gerade steht — in der Id-Form des
-   * **Inhaltsbaums**.
+   * Remembers where the visitor stands — in the id the **content tree** uses.
    *
-   * Der Baum (`/api/1.0/contents/*`) liefert weiterhin die alten Ids; das
-   * Navigations-Modal vergleicht dagegen. Die neue Id des Knotens würde dort
-   * nie treffen, und die aktuelle Stelle bliebe unmarkiert. Deshalb nimmt
-   * diese Stelle einen Datensatz entgegen und wählt daraus die alte Id, solange
-   * es eine gibt. Fällt die Kompat-Id weg, bleibt automatisch die neue übrig.
+   * The tree (`/api/1.0/contents/*`) carries the record id, never the
+   * `legacy_id`; the navigation modal compares against it. A record therefore
+   * contributes its `id`. A plain string is taken as given — it may still be
+   * a retired id (the default entry is one); `handleNavigationNodeLoaded`
+   * swaps it for the record id once that node has loaded.
    */
   _setCurrentLocation(record) {
     if (!record) {
@@ -265,9 +264,7 @@ class Bookstore extends LitElement {
       return;
     }
     this._currentLocation =
-      typeof record === 'string'
-        ? record
-        : (record.legacy_id ?? record.id ?? null);
+      typeof record === 'string' ? record : (record.id ?? null);
   }
 
   handleStorySelect(event) {
@@ -512,6 +509,13 @@ class Bookstore extends LitElement {
     const nodeData = event.detail?.nodeData;
     if (!nodeData?.id) {
       return;
+    }
+
+    // The location may have been set from a retired id (the default entry
+    // without a deep link). Once the node is known, keep it in the id the
+    // content tree uses, or the modal would never find it.
+    if (nodeData.legacy_id && this._currentLocation === nodeData.legacy_id) {
+      this._setCurrentLocation(nodeData);
     }
 
     if (this._pendingChildSelection) {
