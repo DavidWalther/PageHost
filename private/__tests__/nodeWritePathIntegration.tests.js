@@ -222,9 +222,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.status).toHaveBeenCalledWith(403);
       expect(statementsMatching('INSERT INTO node')).toHaveLength(0);
     });
-
-    // Target behaviour of #202 (it.failing until the facade clears the tree).
-    it.failing('creating a node clears the cached contents tree', async () => {
+    it('creating a node clears the cached contents tree', async () => {
       await runEndpoint(UpsertEndpoint, {
         body: {
           object: 'node',
@@ -289,9 +287,7 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
         'Record not found'
       );
     });
-
-    // Target behaviour of #202 (it.failing until the facade clears the tree).
-    it.failing('renaming a node clears the cached contents tree', async () => {
+    it('renaming a node clears the cached contents tree', async () => {
       await runEndpoint(UpsertEndpoint, {
         body: {
           object: 'node',
@@ -302,22 +298,19 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(clearedKeys()).toContain('contentsTree');
     });
 
-    it.failing(
-      'moving a node to another parent clears the cached contents tree',
-      async () => {
-        await runEndpoint(UpsertEndpoint, {
-          body: {
-            object: 'node',
-            payload: {
-              id: '000c00000000000022',
-              parent_node_id: 'n-andere-story',
-            },
+    it('moving a node to another parent clears the cached contents tree', async () => {
+      await runEndpoint(UpsertEndpoint, {
+        body: {
+          object: 'node',
+          payload: {
+            id: '000c00000000000022',
+            parent_node_id: 'n-andere-story',
           },
-        });
+        },
+      });
 
-        expect(clearedKeys()).toContain('contentsTree');
-      }
-    );
+      expect(clearedKeys()).toContain('contentsTree');
+    });
   });
 
   describe('Löschen', () => {
@@ -469,32 +462,24 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.status).toHaveBeenCalledWith(400);
       expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
     });
+    it('publishing a node clears the cached contents tree', async () => {
+      seedRead({ published: false });
 
-    // Target behaviour of #202 (it.failing until the facade clears the tree).
-    it.failing(
-      'publishing a node clears the cached contents tree',
-      async () => {
-        seedRead({ published: false });
+      await runEndpoint(PublishEndpoint, {
+        body: { object: 'node', id: '000c00000000000022' },
+      });
 
-        await runEndpoint(PublishEndpoint, {
-          body: { object: 'node', id: '000c00000000000022' },
-        });
+      expect(clearedKeys()).toContain('contentsTree');
+    });
 
-        expect(clearedKeys()).toContain('contentsTree');
-      }
-    );
+    it('unpublishing a node clears the cached contents tree', async () => {
+      seedRead({ published: true });
 
-    it.failing(
-      'unpublishing a node clears the cached contents tree',
-      async () => {
-        seedRead({ published: true });
+      await runEndpoint(UnpublishEndpoint, {
+        body: { object: 'node', id: '000c00000000000022' },
+      });
 
-        await runEndpoint(UnpublishEndpoint, {
-          body: { object: 'node', id: '000c00000000000022' },
-        });
-
-        expect(clearedKeys()).toContain('contentsTree');
-      }
-    );
+      expect(clearedKeys()).toContain('contentsTree');
+    });
   });
 });
