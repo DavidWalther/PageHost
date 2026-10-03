@@ -97,10 +97,15 @@ All events bubble and are composed.
 
 ## Methods
 
-| Method   | Description                                                           |
-| -------- | --------------------------------------------------------------------- |
-| `show()` | Opens the modal and positions it from `current-location` (see above). |
-| `hide()` | Closes the modal (delegates to `slds-modal`).                         |
+| Method     | Description                                                                            |
+| ---------- | -------------------------------------------------------------------------------------- |
+| `show()`   | Opens the modal and positions it from `current-location` (see above).                  |
+| `hide()`   | Closes the modal (delegates to `slds-modal`).                                          |
+| `reload()` | Loads the content tree again; an open modal keeps its level as far as it still exists. |
+
+The host calls `reload()` whenever a node was created, changed, deleted, published or
+unpublished (`app-bookstore` listens for `chapter-created`, `chapter-updated`,
+`node-deleted`, `published`, `unpublished`; a published **content** does not reload).
 
 The modal can also be closed via the ESC key, the close button, or a backdrop
 click — these are handled by the underlying `slds-modal`.

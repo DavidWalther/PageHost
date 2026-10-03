@@ -390,6 +390,28 @@ class Bookstore extends LitElement {
       this._handleChildUpdated.bind(this)
     );
     this.addEventListener('node-deleted', this._handleNodeDeleted.bind(this));
+
+    // Every change to a node changes the content tree of the navigation modal.
+    const reloadTree = this._reloadNavigationTree.bind(this);
+    [
+      'chapter-created',
+      'chapter-updated',
+      'node-deleted',
+      'published',
+      'unpublished',
+    ].forEach((name) => this.addEventListener(name, reloadTree));
+  }
+
+  /**
+   * Asks the navigation modal to load the tree again after a node changed.
+   * Publishing a content leaves the tree alone — contents are not in it.
+   */
+  _reloadNavigationTree(event) {
+    const objectName = event.detail?.objectName;
+    if (objectName && objectName !== 'node') {
+      return;
+    }
+    this.shadowRoot.querySelector('custom-navigation-modal')?.reload();
   }
 
   /**
