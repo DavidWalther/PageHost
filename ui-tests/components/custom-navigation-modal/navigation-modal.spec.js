@@ -3,15 +3,15 @@ const { mockBookstoreCallouts } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
- * UI-Tests für das Navigations-Modal (`custom-navigation-modal`).
+ * UI tests for the navigation modal (`custom-navigation-modal`).
  *
- * Das Modal lädt beim App-Start den Inhaltsbaum (`contents`-Callout, gemockt)
- * und zeigt beim Öffnen alle Stories als Kacheln. Ein Klick auf eine Story
- * blendet deren Kapitel ein; „< zurück" führt zur Story-Ebene zurück. Ein
- * Kapitel-Klick feuert das `chapter-select`-Event mit story- und chapter-id.
+ * The modal loads the content tree on app start (`contents` callout, mocked)
+ * and lists the roots as tiles. A tile with children opens its level and
+ * reports `navigation-level-open`; one without children reports
+ * `navigation-node-select` and the modal closes. „< zurück" goes up one level.
  *
- * Läuft anonym (kein Auth nötig) — alle Datencallouts sind per `page.route()`
- * gemockt, es ist kein echtes Postgres/Redis im Spiel.
+ * Runs anonymously — every data callout is mocked via `page.route()`, no
+ * Postgres or Redis involved.
  */
 test.describe('Navigation modal', () => {
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
@@ -59,32 +59,49 @@ test.describe('Navigation modal', () => {
     await expect(tileByText(page, 'Mock Story 2')).toBeVisible();
   });
 
-  test('Kapitel-Klick feuert chapter-select mit story- und chapter-id', async ({
+  /** Records the detail of the next `name` event on document. */
+  function recordNext(page, name) {
+    return page.evaluate((eventName) => {
+      window.__recorded = null;
+      // composed + bubbles: the event leaves the shadow DOM up to document.
+      document.addEventListener(
+        eventName,
+        (event) => {
+          window.__recorded = event.detail;
+        },
+        { once: true }
+      );
+    }, name);
+  }
+  const recorded = (page) => page.evaluate(() => window.__recorded);
+
+  test('a tile with children reports navigation-level-open with its id', async ({
+    page,
+  }) => {
+    await openModal(page);
+    await recordNext(page, 'navigation-level-open');
+
+    await tileByText(page, 'Mock Story 1').click();
+
+    await expect
+      .poll(() => recorded(page))
+      .toEqual({ id: '000n00000000000011' });
+  });
+
+  test('a tile without children reports navigation-node-select with id and parent', async ({
     page,
   }) => {
     await openModal(page);
     await tileByText(page, 'Mock Story 1').click();
-
-    // Listener registrieren, bevor geklickt wird; das Event ist composed und
-    // bubbelt aus dem Shadow-DOM bis zum document.
-    await page.evaluate(() => {
-      window.__chapterSelect = null;
-      document.addEventListener(
-        'chapter-select',
-        (event) => {
-          window.__chapterSelect = event.detail;
-        },
-        { once: true }
-      );
-    });
+    await recordNext(page, 'navigation-node-select');
 
     await tileByText(page, 'Mock Chapter 2 for Story 1').click();
 
     await expect
-      .poll(() => page.evaluate(() => window.__chapterSelect))
+      .poll(() => recorded(page))
       .toEqual({
-        storyId: '000n00000000000011',
-        chapterId: '000n00000000000002',
+        id: '000n00000000000002',
+        parentId: '000n00000000000011',
       });
   });
 

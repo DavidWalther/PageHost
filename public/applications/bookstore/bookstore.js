@@ -168,8 +168,8 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
-        @story-select="${this.handleStorySelect}"
-        @chapter-select="${this.handleChapterSelect}"
+        @navigation-level-open="${this.handleNavigationLevelOpen}"
+        @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
 
       <!--
@@ -267,7 +267,8 @@ class Bookstore extends LitElement {
       typeof record === 'string' ? record : (record.id ?? null);
   }
 
-  handleStorySelect(event) {
+  /** A level opened in the modal: the page shows that node (F13/F14). */
+  handleNavigationLevelOpen(event) {
     const { id } = event.detail;
     this._setCurrentLocation(id);
     this.dispatchEvent(
@@ -276,33 +277,34 @@ class Bookstore extends LitElement {
         bubbles: true,
       })
     );
-    // Modal stays open so the user can drill down into the story's chapters.
+    // The modal stays open; the visitor may go deeper or choose.
   }
 
-  handleChapterSelect(event) {
-    const { storyId, chapterId } = event.detail;
+  /** A node chosen in the modal: its parent above, the node below. */
+  handleNavigationNodeSelect(event) {
+    const { id, parentId } = event.detail;
 
-    if (!storyId) {
+    if (!parentId) {
       // A root without children: it has no parent to fill the selection, so
       // it takes the selection itself — like a deep link to a root (UC-B-03).
-      this.navigationNode.setAttribute('id', chapterId);
+      this.navigationNode.setAttribute('id', id);
       this.contentNode.removeAttribute('id');
       this.navigationNode.removeAttribute('selected-child');
-      this._setCurrentLocation(chapterId);
+      this._setCurrentLocation(id);
       this.shadowRoot.querySelector('custom-navigation-modal').hide();
       return;
     }
 
     const currentParentId = this.navigationNode.getAttribute('id');
-    if (currentParentId !== storyId) {
+    if (currentParentId !== parentId) {
       // Suppress the cover override in handleNavigationNodeLoaded for this
       // reload, so the explicitly selected child is kept.
-      this._pendingChildSelection = chapterId;
-      this.navigationNode.setAttribute('id', storyId);
+      this._pendingChildSelection = id;
+      this.navigationNode.setAttribute('id', parentId);
     }
-    this.contentNode.setAttribute('id', chapterId);
-    this.navigationNode.setAttribute('selected-child', chapterId);
-    this._setCurrentLocation(chapterId);
+    this.contentNode.setAttribute('id', id);
+    this.navigationNode.setAttribute('selected-child', id);
+    this._setCurrentLocation(id);
 
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }

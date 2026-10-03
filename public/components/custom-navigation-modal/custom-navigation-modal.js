@@ -202,7 +202,7 @@ class NavigationModal extends LitElement {
     if ((node.childnodes || []).length > 0) {
       this._openPath = [...this._openPath, node.id];
       this.dispatchEvent(
-        new CustomEvent('story-select', {
+        new CustomEvent('navigation-level-open', {
           detail: { id: node.id },
           bubbles: true,
           composed: true,
@@ -215,8 +215,8 @@ class NavigationModal extends LitElement {
         ? this._openPath[this._openPath.length - 1]
         : null;
     this.dispatchEvent(
-      new CustomEvent('chapter-select', {
-        detail: { storyId: parentId, chapterId: node.id },
+      new CustomEvent('navigation-node-select', {
+        detail: { id: node.id, parentId },
         bubbles: true,
         composed: true,
       })
