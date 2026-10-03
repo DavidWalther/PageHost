@@ -98,6 +98,14 @@ async function runEndpoint(EndpointClass, request) {
   return response;
 }
 
+/** Every cache key removed during the test, by del or delMany. */
+function clearedKeys() {
+  return [
+    ...cacheDel.mock.calls.map(([key]) => key),
+    ...cacheDelMany.mock.calls.flatMap(([keys]) => keys),
+  ];
+}
+
 describe('Schreibpfad auf dem neuen Datenmodell', () => {
   describe('Zuständigkeit', () => {
     // Die Umstellung betrifft Inhalte. `identity` trägt den Refresh-Token und
@@ -214,6 +222,22 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.status).toHaveBeenCalledWith(403);
       expect(statementsMatching('INSERT INTO node')).toHaveLength(0);
     });
+
+    // Target behaviour of #202 (it.failing until the facade clears the tree).
+    it.failing('creating a node clears the cached contents tree', async () => {
+      await runEndpoint(UpsertEndpoint, {
+        body: {
+          object: 'node',
+          payload: {
+            parent_node_id: 'n-story',
+            name: 'Kapitel',
+            sortnumber: 1,
+          },
+        },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
+    });
   });
 
   describe('Ändern', () => {
@@ -265,6 +289,35 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
         'Record not found'
       );
     });
+
+    // Target behaviour of #202 (it.failing until the facade clears the tree).
+    it.failing('renaming a node clears the cached contents tree', async () => {
+      await runEndpoint(UpsertEndpoint, {
+        body: {
+          object: 'node',
+          payload: { id: '000c00000000000022', name: 'Neu' },
+        },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
+    });
+
+    it.failing(
+      'moving a node to another parent clears the cached contents tree',
+      async () => {
+        await runEndpoint(UpsertEndpoint, {
+          body: {
+            object: 'node',
+            payload: {
+              id: '000c00000000000022',
+              parent_node_id: 'n-andere-story',
+            },
+          },
+        });
+
+        expect(clearedKeys()).toContain('contentsTree');
+      }
+    );
   });
 
   describe('Löschen', () => {
@@ -416,5 +469,32 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.status).toHaveBeenCalledWith(400);
       expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
     });
+
+    // Target behaviour of #202 (it.failing until the facade clears the tree).
+    it.failing(
+      'publishing a node clears the cached contents tree',
+      async () => {
+        seedRead({ published: false });
+
+        await runEndpoint(PublishEndpoint, {
+          body: { object: 'node', id: '000c00000000000022' },
+        });
+
+        expect(clearedKeys()).toContain('contentsTree');
+      }
+    );
+
+    it.failing(
+      'unpublishing a node clears the cached contents tree',
+      async () => {
+        seedRead({ published: true });
+
+        await runEndpoint(UnpublishEndpoint, {
+          body: { object: 'node', id: '000c00000000000022' },
+        });
+
+        expect(clearedKeys()).toContain('contentsTree');
+      }
+    );
   });
 });
