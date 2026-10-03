@@ -529,5 +529,56 @@ describe('Lesepfad', () => {
         });
       }
     );
+
+    it.failing(
+      'drops an unpublished node on level 3 and keeps its siblings',
+      async () => {
+        const { result } = await getContents();
+
+        expect(childIds(kapitel(result))).not.toContain('n-szene-morgen');
+        expect(childIds(kapitel(result))).toHaveLength(2);
+      }
+    );
+
+    it.failing(
+      'hides everything below an unpublished node, however deep',
+      async () => {
+        const { result } = await getContents();
+
+        const ids = allIds(result);
+        expect(ids).toContain('n-ebene-4');
+        expect(ids).not.toContain('n-kapitel-morgen');
+        expect(ids).not.toContain('n-szene-versteckt');
+        expect(ids).not.toContain('n-ebene-4-versteckt');
+      }
+    );
+
+    it.failing(
+      'keeps only the allowlisted fields on the deeper levels',
+      async () => {
+        const { result } = await getContents();
+        const allowed = ['childnodes', 'id', 'label', 'name'];
+
+        const szene2 = kapitel(result).childnodes[0];
+        expect(Object.keys(szene2).sort()).toEqual(allowed);
+        expect(Object.keys(szene2.childnodes[0]).sort()).toEqual(allowed);
+      }
+    );
+
+    it.failing(
+      'shows every level including unpublished nodes with the edit scope',
+      async () => {
+        const { result } = await getContents({ scopes: ['edit'] });
+
+        const ids = allIds(result);
+        expect(ids).toEqual(
+          expect.arrayContaining([
+            'n-szene-morgen',
+            'n-szene-versteckt',
+            'n-ebene-4-versteckt',
+          ])
+        );
+      }
+    );
   });
 });
