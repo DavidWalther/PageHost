@@ -28,12 +28,13 @@ public/                       Frontend (statisch ausgeliefert)
   components/                 App-Komponenten,   HTML-Tag-Präfix custom-*
                               custom-node stellt einen Knoten dar (Auswahl + Inhalte)
   slds-components/            Wiederverwendbare SLDS-Bausteine, Präfix slds-*
-  modules/                    Frontend-Util (global-styles, authTokenManager …)
+  modules/                    Frontend-Util (global-styles, content-tree, authTokenManager …)
   applications/               Einstiegsseiten (z. B. bookstore)
 ui-tests/                     Playwright-UI-Tests — spiegelt public/
   components/                 Specs zu public/components/
   slds-components/            Specs zu public/slds-components/
   applications/               Specs zu public/applications/
+  modules/                    Specs zu public/modules/
   support/                    Test-Helfer (Callout-Mocks, Seiten-Setup)
 doc/                          Dokumentation (diese Datei, authentication.md …)
 ```
@@ -142,6 +143,13 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
     Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
     beauftragt. → `public/components/custom-node/README.md`
+  - **`custom-navigation-modal`** zeigt den Inhaltsbaum als Kacheln, **Ebene
+    für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
+    (die Seite dahinter folgt, ein Titel-Knoten lädt), eine ohne Kinder wählt
+    aus. Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
+    der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
+    einem Knoten lädt der `bookstore` den Baum neu.
+    → `public/components/custom-navigation-modal/README.md`
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und
