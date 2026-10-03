@@ -3,9 +3,8 @@ const { EndpointLogic } = require('../../../EndpointLogic');
 const { DataFacade } = require('../../../../database2/DataFacade');
 const ContentVisibilityFilter = require('../../../../modules/ContentVisibilityFilter');
 
-// Currently delivered levels: root nodes -> their children. Raised when deeper
-// (parent/grandparent stories) get a data model.
-const MAX_DEPTH = 2;
+// No depth given: the whole tree, however deep it is.
+const FULL_DEPTH = Infinity;
 
 /**
  * GET /api/1.0/contents/* — delivers the navigation as a tree of Nodes.
@@ -68,16 +67,17 @@ class ContentsEndpoint extends EndpointLogic {
 
   /**
    * Tolerant parsing: missing / non-numeric / < 1 falls back to full depth.
+   * A valid value only trims; the tree itself has no upper bound.
    */
   static parseDepth(raw) {
     if (raw === undefined || raw === null || raw === '') {
-      return MAX_DEPTH;
+      return FULL_DEPTH;
     }
     const value = Number(raw);
     if (!Number.isInteger(value) || value < 1) {
-      return MAX_DEPTH;
+      return FULL_DEPTH;
     }
-    return Math.min(value, MAX_DEPTH);
+    return value;
   }
 
   /**

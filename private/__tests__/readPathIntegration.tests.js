@@ -506,81 +506,66 @@ describe('Lesepfad', () => {
     const kapitel = (result) =>
       result[0].childnodes.find((child) => child.id === 'n-kapitel');
 
-    it.failing('delivers every level when no depth is given', async () => {
+    it('delivers every level when no depth is given', async () => {
       const { result } = await getContents();
 
       const szene2 = kapitel(result).childnodes[0];
       expect(childIds(szene2)).toEqual(['n-ebene-4']);
     });
 
-    it.failing('sorts every level by sortnumber', async () => {
+    it('sorts every level by sortnumber', async () => {
       const { result } = await getContents();
 
       expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
     });
 
-    it.failing(
-      'depth=3 trims below the third level of the filtered tree',
-      async () => {
-        const { result } = await getContents({ query: { depth: '3' } });
+    it('depth=3 trims below the third level of the filtered tree', async () => {
+      const { result } = await getContents({ query: { depth: '3' } });
 
-        expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
-        kapitel(result).childnodes.forEach((szene) => {
-          expect(szene.childnodes).toEqual([]);
-        });
-      }
-    );
+      expect(childIds(kapitel(result))).toEqual(['n-szene-2', 'n-szene-1']);
+      kapitel(result).childnodes.forEach((szene) => {
+        expect(szene.childnodes).toEqual([]);
+      });
+    });
 
-    it.failing(
-      'drops an unpublished node on level 3 and keeps its siblings',
-      async () => {
-        const { result } = await getContents();
+    it('drops an unpublished node on level 3 and keeps its siblings', async () => {
+      const { result } = await getContents();
 
-        expect(childIds(kapitel(result))).not.toContain('n-szene-morgen');
-        expect(childIds(kapitel(result))).toHaveLength(2);
-      }
-    );
+      expect(childIds(kapitel(result))).not.toContain('n-szene-morgen');
+      expect(childIds(kapitel(result))).toHaveLength(2);
+    });
 
-    it.failing(
-      'hides everything below an unpublished node, however deep',
-      async () => {
-        const { result } = await getContents();
+    it('hides everything below an unpublished node, however deep', async () => {
+      const { result } = await getContents();
 
-        const ids = allIds(result);
-        expect(ids).toContain('n-ebene-4');
-        expect(ids).not.toContain('n-kapitel-morgen');
-        expect(ids).not.toContain('n-szene-versteckt');
-        expect(ids).not.toContain('n-ebene-4-versteckt');
-      }
-    );
+      const ids = allIds(result);
+      expect(ids).toContain('n-ebene-4');
+      expect(ids).not.toContain('n-kapitel-morgen');
+      expect(ids).not.toContain('n-szene-versteckt');
+      expect(ids).not.toContain('n-ebene-4-versteckt');
+    });
 
-    it.failing(
-      'keeps only the allowlisted fields on the deeper levels',
-      async () => {
-        const { result } = await getContents();
-        const allowed = ['childnodes', 'id', 'label', 'name'];
+    it('keeps only the allowlisted fields on the deeper levels', async () => {
+      const { result } = await getContents();
+      const allowed = ['childnodes', 'id', 'label', 'name'];
 
-        const szene2 = kapitel(result).childnodes[0];
-        expect(Object.keys(szene2).sort()).toEqual(allowed);
-        expect(Object.keys(szene2.childnodes[0]).sort()).toEqual(allowed);
-      }
-    );
+      const szene2 = kapitel(result).childnodes[0];
+      expect(Object.keys(szene2).sort()).toEqual(allowed);
+      expect(Object.keys(szene2.childnodes[0]).sort()).toEqual(allowed);
+    });
 
-    it.failing(
-      'shows every level including unpublished nodes with the edit scope',
-      async () => {
-        const { result } = await getContents({ scopes: ['edit'] });
+    it('shows every level including unpublished nodes with the edit scope', async () => {
+      const { result } = await getContents({ scopes: ['edit'] });
 
-        const ids = allIds(result);
-        expect(ids).toEqual(
-          expect.arrayContaining([
-            'n-szene-morgen',
-            'n-szene-versteckt',
-            'n-ebene-4-versteckt',
-          ])
-        );
-      }
-    );
+      const ids = allIds(result);
+      expect(ids).toEqual(
+        expect.arrayContaining([
+          'n-szene-morgen',
+          'n-szene-versteckt',
+          'n-ebene-4-versteckt',
+        ])
+      );
+    });
 
     describe('visibility in one place', () => {
       const readTree = (facade) =>
