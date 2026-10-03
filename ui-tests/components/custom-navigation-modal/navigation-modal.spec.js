@@ -143,3 +143,145 @@ test.describe('Navigation modal', () => {
     expect(await readNodes()).toEqual(before);
   });
 });
+
+test.describe('Navigation modal in any depth', () => {
+  // Spec-local tree with four levels; the shared MOCK_CONTENTS stays as it is
+  // because other specs rely on it.
+  const DEEP_TREE = {
+    result: [
+      {
+        id: 'd-root',
+        label: 'Deep Root',
+        name: 'Deep Root',
+        childnodes: [
+          {
+            id: 'd-2',
+            label: 'Deep Level 2',
+            name: 'Deep Level 2',
+            childnodes: [
+              {
+                id: 'd-3',
+                label: 'Deep Level 3',
+                name: 'Deep Level 3',
+                childnodes: [
+                  {
+                    id: 'd-4',
+                    label: 'Deep Level 4',
+                    name: 'Deep Level 4',
+                    childnodes: [],
+                  },
+                  {
+                    id: 'd-4-b',
+                    label: 'Deep Level 4 B',
+                    name: 'Deep Level 4 B',
+                    childnodes: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'd-other',
+        label: 'Other Root',
+        name: 'Other Root',
+        childnodes: [],
+      },
+    ],
+  };
+
+  const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  const tile = (page, text) =>
+    page.locator('custom-navigation-modal button.tile', {
+      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    });
+  const modal = (page) => page.locator('custom-navigation-modal slds-modal');
+  const back = (page) => page.locator('custom-navigation-modal .back-button');
+  const openModal = (page) => page.locator('#button-navigation_open').click();
+
+  // A missing tile must fail the click quickly, not run into the test
+  // timeout: test.fail() does not count a timeout as the expected failure.
+  test.use({ actionTimeout: 5000 });
+
+  test.beforeEach(async ({ page }) => {
+    await mockBookstoreCallouts(page);
+    await page.route('**/api/1.0/contents/**', (route) =>
+      route.fulfill({ json: DEEP_TREE })
+    );
+    await cacheLitBundle(page);
+    await page.goto('/');
+    await expect(page.locator('app-bookstore')).toBeAttached();
+  });
+
+  test('drills down to the fourth level', async ({ page }) => {
+    test.fail(true, 'the modal knows two levels only (#202)');
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+
+    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+  });
+
+  test('goes up exactly one level with back', async ({ page }) => {
+    test.fail(true, 'the modal knows two levels only (#202)');
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+
+    await back(page).click();
+
+    await expect(tiles(page)).toHaveText(['Deep Level 3']);
+  });
+
+  test('a tile without children selects the node and closes', async ({
+    page,
+  }) => {
+    test.fail(true, 'the modal knows two levels only (#202)');
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+
+    await tile(page, 'Deep Level 4 B').click();
+
+    await expect(modal(page)).not.toHaveAttribute('open');
+  });
+
+  test('reopens on the level of a deep location and marks the whole path', async ({
+    page,
+  }) => {
+    test.fail(true, 'the modal knows two levels only (#202)');
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+    await tile(page, 'Deep Level 4 B').click();
+    await expect(modal(page)).not.toHaveAttribute('open');
+
+    await openModal(page);
+
+    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tile(page, 'Deep Level 4 B')).toHaveClass(/tile_current/);
+    await back(page).click();
+    await expect(tile(page, 'Deep Level 3')).toHaveClass(/tile_current/);
+    await back(page).click();
+    await expect(tile(page, 'Deep Level 2')).toHaveClass(/tile_current/);
+    await back(page).click();
+    await expect(tile(page, 'Deep Root')).toHaveClass(/tile_current/);
+    await expect(tile(page, 'Other Root')).not.toHaveClass(/tile_current/);
+  });
+
+  test('a root without children selects the node and closes', async ({
+    page,
+  }) => {
+    test.fail(true, 'the modal drills into every root (#202)');
+    await openModal(page);
+
+    await tile(page, 'Other Root').click();
+
+    await expect(modal(page)).not.toHaveAttribute('open');
+  });
+});
