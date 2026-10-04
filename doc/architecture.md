@@ -153,6 +153,10 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     der ganze Pfad (`public/modules/content-tree.mjs`). Den Baum lädt und
     besitzt der `bookstore` — einmal beim Start und nach jeder Änderung an
     einem Knoten —, das Modal bekommt ihn nur übergeben.
+    Mit Scope `create` endet jede Ebene in einer
+    „+“-Kachel (neues Geschwister, oben eine Wurzel), Kacheln ohne Kinder
+    tragen ein kleines „+“ für ihr erstes Kind; beide öffnen den Anlege-Dialog
+    von `custom-chapter-edit` über dem Modal.
     → `public/components/custom-navigation-modal/README.md`
   - **Breadcrumbs** (`slds-breadcrumbs` im `bookstore`, Zeile unter der
     Kopfzeile) führen **nach oben**: Sie listen die Vorfahren des aktuellen

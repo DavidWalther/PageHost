@@ -27,7 +27,7 @@ Consumer über Attribute (siehe unten). Der `bookstore` hält **eine** Instanz:
 Sie zeigt den Knoten, auf dem der Besucher steht, Kinder oben, Inhalte darunter,
 und erlaubt `can-create-content` und `can-delete`. `can-create-child` setzt er
 nicht — neben „Inhalt anlegen“ wäre es ein zweites, gleich aussehendes „+“; das
-Anlegen von Kindern kommt ins Navigations-Modal (#187).
+Anlegen von Kindern geschieht im Navigations-Modal (Kacheln „+“).
 
 Früher standen zwei Instanzen übereinander (oben die Auswahl, unten der gewählte
 Knoten). Aus dieser Zeit stammen `no-child-navigation`, `no-contents` und
