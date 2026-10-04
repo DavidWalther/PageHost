@@ -757,6 +757,10 @@ class CustomNode extends LitElement {
       return;
     }
     this._loading = false;
+    // Like a fetch through handleIdChange: what is left of a previous jump
+    // belongs to the previous node. Since the bookstore shows every node
+    // through adoptNode, a leftover would otherwise hide the next card.
+    this._resetJumpState();
     this.applyNodeData(record);
     // Das **Attribut**, nicht nur die Eigenschaft: alle Consumer setzen und
     // lesen die Id als Attribut. Liefe hier nur die Eigenschaft mit, gingen
