@@ -234,4 +234,75 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.navSlot).toBe('header');
     expect(res.labels).toEqual(['Home', 'Accounts', 'Contacts', 'ACME Corp']);
   });
+
+  test.describe('icon per item', () => {
+    const ICON_ITEMS = [
+      { key: 'home', label: 'Startseite', href: '/', icon: 'utility:home' },
+      { key: 'book', label: 'Buch', href: '/book' },
+    ];
+
+    /** What the first item shows: icon reference, visible and hidden text. */
+    async function readFirstItem(page, items) {
+      await mountBreadcrumbs(page, { items });
+      return page.evaluate(() => {
+        const anchor = document
+          .querySelector('slds-breadcrumbs')
+          .shadowRoot.querySelector('li a');
+        const use = anchor.querySelector('svg use');
+        const assistive = anchor.querySelector('.slds-assistive-text');
+        return {
+          // The resolved reference, not the attribute string (doc/conventions.md).
+          iconHref: use ? use.href.baseVal : null,
+          svgHidden: use ? use.parentElement.getAttribute('aria-hidden') : null,
+          assistive: assistive ? assistive.textContent.trim() : null,
+          title: anchor.getAttribute('title'),
+          visibleText: [...anchor.childNodes]
+            .filter((node) => node.nodeType === Node.TEXT_NODE)
+            .map((node) => node.textContent.trim())
+            .join(''),
+        };
+      });
+    }
+
+    test('an item with icon shows the SLDS sprite icon', async ({ page }) => {
+      const first = await readFirstItem(page, ICON_ITEMS);
+
+      expect(first.iconHref).toBe(
+        '/assets/icons/utility-sprite/svg/symbols.svg#home'
+      );
+      expect(first.svgHidden).toBe('true');
+    });
+
+    test('the label of an icon item becomes assistive text and title', async ({
+      page,
+    }) => {
+      const first = await readFirstItem(page, ICON_ITEMS);
+
+      expect(first.assistive).toBe('Startseite');
+      expect(first.title).toBe('Startseite');
+      expect(first.visibleText).toBe('');
+    });
+
+    test('an icon item still fires breadcrumb-select', async ({ page }) => {
+      await mountBreadcrumbs(page, { items: ICON_ITEMS });
+
+      const { details } = await clickCrumb(page, 0);
+
+      expect(details).toEqual([
+        { key: 'home', label: 'Startseite', href: '/', index: 0 },
+      ]);
+    });
+
+    test('an invalid icon falls back to the label as text', async ({
+      page,
+    }) => {
+      const first = await readFirstItem(page, [
+        { key: 'home', label: 'Startseite', href: '/', icon: 'home' },
+        { key: 'book', label: 'Buch' },
+      ]);
+
+      expect(first.iconHref).toBeNull();
+      expect(first.visibleText).toBe('Startseite');
+    });
+  });
 });

@@ -42,11 +42,12 @@ Each entry in the `items` array must be an object with the following fields:
 }
 ```
 
-| Field   | Type   | Required | Description                                                 |
-| ------- | ------ | -------- | ----------------------------------------------------------- |
-| `key`   | String | Yes      | Unique identifier; passed through in `breadcrumb-select`    |
-| `label` | String | Yes      | Text shown in the breadcrumb item                           |
-| `href`  | String | No       | Navigation URL; omit to render the anchor without an `href` |
+| Field   | Type   | Required | Description                                                                      |
+| ------- | ------ | -------- | -------------------------------------------------------------------------------- |
+| `key`   | String | Yes      | Unique identifier; passed through in `breadcrumb-select`                         |
+| `label` | String | Yes      | Text shown in the breadcrumb item                                                |
+| `href`  | String | No       | Navigation URL; omit to render the anchor without an `href`                      |
+| `icon`  | String | No       | SLDS icon as `type:name` (e.g. `utility:home`); the label becomes assistive text |
 
 ---
 
@@ -199,3 +200,22 @@ current page. Set `no-current-item` to drop it; usually together with
   ]'
 ></slds-breadcrumbs>
 ```
+
+### Icon items
+
+An item with `icon` shows that icon from the SLDS sprite instead of its label;
+the label stays as assistive text for screen readers and as `title`. Icons
+apply to linked items — a last item rendered as `<span>` (without
+`last-item-as-link`) shows its label.
+
+```html
+<slds-breadcrumbs
+  items='[
+    {"key":"home","label":"Startseite","href":"/","icon":"utility:home"},
+    {"key":"book","label":"Book","href":"/book"}
+  ]'
+></slds-breadcrumbs>
+```
+
+An `icon` that is not `type:name` is ignored and the label shows as text — no
+error, no console message (project rule for `slds-*`).
