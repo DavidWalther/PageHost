@@ -92,6 +92,20 @@ corner (`2 ›`, icon `utility:chevronright`); screen readers hear „2 Einträg
 „1 Eintrag“ instead. The name sits in `.tile__name` — find a tile by it, not by
 the tile's whole text.
 
+### Creating nodes
+
+With the `create` scope (checked by the embedded `custom-chapter-edit`):
+
+- every level ends in a **„+“ tile** — a new node on that level, on the top level
+  a new root;
+- every tile **without** children carries a small **„+“** in its corner — the
+  first child of that node (its level can never be opened: such a tile selects).
+
+Both open the create dialog of `custom-chapter-edit` (`no-trigger`,
+`openCreate()`) over the open modal, with the highest `sortnumber` of the
+siblings plus one. After creating, the host reloads the tree and the modal stays
+on its level. Escape in the dialog closes only the dialog.
+
 An empty level reads „Keine Inhalte vorhanden.“
 
 ---

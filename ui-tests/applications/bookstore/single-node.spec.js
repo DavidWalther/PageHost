@@ -55,7 +55,8 @@ const tile = (page, text) =>
       hasText: new RegExp(`^\\s*${text}\\s*$`),
     }),
   });
-const modal = (page) => page.locator('custom-navigation-modal slds-modal');
+const modal = (page) =>
+  page.locator('custom-navigation-modal slds-modal[heading="Navigation"]');
 
 async function open(page, path, extraRoutes) {
   await mockBookstoreCallouts(page);
