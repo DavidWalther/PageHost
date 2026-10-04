@@ -104,4 +104,62 @@ test.describe('content-tree module', () => {
       expect(node).toBeNull();
     });
   });
+
+  test.describe('findSiblings', () => {
+    const pair = (siblings) => [
+      siblings.previous?.id ?? null,
+      siblings.next?.id ?? null,
+    ];
+
+    test('returns the neighbours in tree order', async ({ page }) => {
+      test.fail(true, 'findSiblings does not exist yet');
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'level-2')
+      );
+
+      expect(pair(result)).toEqual([null, 'level-2-b']);
+    });
+
+    test('has no next on the last sibling', async ({ page }) => {
+      test.fail(true, 'findSiblings does not exist yet');
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'level-2-b')
+      );
+
+      expect(pair(result)).toEqual(['level-2', null]);
+    });
+
+    test('has neither for an only child', async ({ page }) => {
+      test.fail(true, 'findSiblings does not exist yet');
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'level-4')
+      );
+
+      expect(pair(result)).toEqual([null, null]);
+    });
+
+    test('treats the roots as siblings of each other', async ({ page }) => {
+      test.fail(true, 'findSiblings does not exist yet');
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'root-2')
+      );
+
+      expect(pair(result)).toEqual(['root-1', null]);
+    });
+
+    test('has neither for an unknown id or a missing tree', async ({
+      page,
+    }) => {
+      test.fail(true, 'findSiblings does not exist yet');
+      const results = await inPage(page, (m, tree) => [
+        m.findSiblings(tree, 'nope'),
+        m.findSiblings(undefined, 'root-1'),
+      ]);
+
+      expect(results.map(pair)).toEqual([
+        [null, null],
+        [null, null],
+      ]);
+    });
+  });
 });
