@@ -19,6 +19,9 @@ console.log('Bookstore.js file loaded');
  */
 const DEFAULT_ENTRY_NODE_ID = '000s00000000000011';
 
+/** Key of the home breadcrumb — never a node id, so it cannot clash with one. */
+const HOME_BREADCRUMB_KEY = '#home';
+
 class Bookstore extends LitElement {
   static properties = {
     isHydrated: { type: Boolean, state: true },
@@ -38,6 +41,8 @@ class Bookstore extends LitElement {
     this._pendingChildSelection = null;
     // A breadcrumb asked to show a node itself: skip its cover node once.
     this._skipCoverOnce = false;
+    // Bound once, so the same function can be removed again.
+    this._handlePopState = this.handlePopState.bind(this);
     this._currentLocation = null;
     this._tree = [];
   }
@@ -47,6 +52,7 @@ class Bookstore extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    window.addEventListener('popstate', this._handlePopState);
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
@@ -251,28 +257,33 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * The ancestors of the current node, root first — never the node itself,
-   * which the node card already names. Empty for a root or an unknown node.
+   * Home first, then the ancestors of the current node, root first — never
+   * the node itself, which the node card already names. On a root node (or an
+   * unknown one) only home remains.
    */
   get breadcrumbItems() {
-    return findPath(this._tree, this._currentLocation)
+    const home = {
+      key: HOME_BREADCRUMB_KEY,
+      label: 'Startseite',
+      href: '/',
+      icon: 'utility:home',
+    };
+    const ancestors = findPath(this._tree, this._currentLocation)
       .slice(0, -1)
       .map((node) => ({ key: node.id, label: node.name, href: `/${node.id}` }));
+    return [home, ...ancestors];
   }
 
-  /** A row below the header for going up; nothing when there is no way up. */
+  /** A row below the header for going up — always there, home at its start. */
   renderBreadcrumbs() {
     const items = this.breadcrumbItems;
-    if (items.length === 0) {
-      return '';
-    }
     // The last item is the parent, not the current node: it must be a link,
     // and it must not be announced as the current page.
     return html`
       <div class="slds-m-horizontal_small slds-m-top_x-small">
         <slds-breadcrumbs
           overflow
-          overflow_limit="2"
+          overflow_limit="3"
           last-item-as-link
           no-current-item
           .items="${items}"
@@ -292,6 +303,10 @@ class Bookstore extends LitElement {
     if (!id) {
       return;
     }
+    if (id === HOME_BREADCRUMB_KEY) {
+      this.handleHome();
+      return;
+    }
     if (this.navigationNode.getAttribute('id') !== id) {
       this._skipCoverOnce = true;
       this.navigationNode.setAttribute('id', id);
@@ -299,6 +314,57 @@ class Bookstore extends LitElement {
     this.navigationNode.removeAttribute('selected-child');
     this.contentNode.removeAttribute('id');
     this._setCurrentLocation(id);
+  }
+
+  /**
+   * Home: the start page inside the app, without a reload — like `GET /`.
+   *
+   * The node the visitor leaves becomes the previous history entry, then the
+   * address turns into the root address; browser back leads to that node
+   * again. Already on the start node, nothing is added to the history: only
+   * the start page is applied anew.
+   */
+  async handleHome() {
+    const entry = await this.resolveEntryPoint(DEFAULT_ENTRY_NODE_ID);
+    const startIds = [DEFAULT_ENTRY_NODE_ID, entry.node?.id];
+    const here = this._currentLocation;
+    if (here && !startIds.includes(here)) {
+      window.history.replaceState({}, '', `/${here}`);
+      window.history.pushState({}, '', '/');
+    }
+    this.showEntryPoint(entry);
+  }
+
+  /**
+   * Browser back/forward: the address names a node (or none for the start
+   * page); it is shown inside the app, like a deep link but without a reload.
+   * Only home writes history entries, so these are the addresses it left.
+   */
+  async handlePopState() {
+    if (!this.isHydrated) {
+      return;
+    }
+    const id = window.location.pathname.split('/').pop();
+    const entry = await this.resolveEntryPoint(id || DEFAULT_ENTRY_NODE_ID);
+    this.showEntryPoint(entry);
+  }
+
+  /**
+   * Applies an entry on a page that already shows something. The lower node
+   * and the selection are cleared first — an entry without a cover node would
+   * otherwise leave the old content below — and no pending choice survives.
+   */
+  showEntryPoint(entry) {
+    this._pendingChildSelection = null;
+    this._skipCoverOnce = false;
+    // The paragraph number belongs to the first address only.
+    if (this._initPara) {
+      this._initPara.paragraphnumber = null;
+    }
+    this.contentNode.removeAttribute('contentnumber');
+    this.contentNode.removeAttribute('id');
+    this.navigationNode.removeAttribute('selected-child');
+    this.applyEntryPoint(entry);
   }
 
   handleOpenSettings() {
@@ -405,6 +471,7 @@ class Bookstore extends LitElement {
     this.removeEventListener('navigation', this.handleNavigationEvent);
     this.removeEventListener('chapter-updated', this._handleChildUpdated);
     this.removeEventListener('node-deleted', this._handleNodeDeleted);
+    window.removeEventListener('popstate', this._handlePopState);
   }
 
   _handleChildUpdated(event) {
@@ -439,6 +506,9 @@ class Bookstore extends LitElement {
     // Die Knoten müssen im Shadow-DOM stehen, bevor sie Attribute bekommen.
     await this.updateComplete;
 
+    // Once, before any entry is applied: `adoptNode` reports `loaded` at
+    // once, and every later entry (home, browser back) reuses the same node.
+    this._attachNavigationNodeListeners();
     const entry = await this.resolveEntryPoint(this._initPara.initId);
     this.applyEntryPoint(entry);
 
@@ -518,8 +588,8 @@ class Bookstore extends LitElement {
    *
    * Der aufgelöste Datensatz wird **übergeben**, nicht nur seine Id: sonst
    * holte der Knoten genau das noch einmal, was hier gerade angekommen ist.
-   * Die Listener hängen deshalb **vor** der Übergabe — `adoptNode` meldet
-   * `loaded` sofort, nicht erst nach einer Antwort aus dem Netz.
+   * The listeners are therefore attached **before** any handover, once in
+   * `hydrate` — `adoptNode` reports `loaded` at once, not after a network reply.
    */
   applyEntryPoint(entry) {
     if (entry.kind === 'node') {
@@ -529,7 +599,6 @@ class Bookstore extends LitElement {
         // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
         this.showChildOf(parentId, entry.node);
       } else {
-        this._attachNavigationNodeListeners();
         this._setCurrentLocation(entry.node);
         this.navigationNode.adoptNode(entry.node);
       }
@@ -569,13 +638,11 @@ class Bookstore extends LitElement {
     // überschreiben.
     this._pendingChildSelection = childId;
     this._setCurrentLocation(childNode);
-    this._attachNavigationNodeListeners();
     // Den Elternknoten kennen wir nur mit Id — den holt er sich selbst.
     this.navigationNode.setAttribute('id', parentId);
   }
 
   initWithoutParameter() {
-    this._attachNavigationNodeListeners();
     this.navigationNode.setAttribute('id', DEFAULT_ENTRY_NODE_ID);
     this._setCurrentLocation(DEFAULT_ENTRY_NODE_ID);
   }
@@ -596,7 +663,10 @@ class Bookstore extends LitElement {
     });
   }
 
-  /** Auswahl-Knoten: Navigation und „geladen" hängen immer zusammen. */
+  /**
+   * Selection node: navigation and "loaded" always go together. Attached
+   * exactly once (in `hydrate`) — a second call would run every handler twice.
+   */
   _attachNavigationNodeListeners() {
     this.navigationNode.addEventListener(
       'navigation',

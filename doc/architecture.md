@@ -155,6 +155,12 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     Kopfzeile) führen **nach oben**: Sie listen die Vorfahren des aktuellen
     Knotens, nie ihn selbst. Ein Klick zeigt den Vorfahren selbst, ohne seinen
     Titel-Knoten. Pfad und Modal rechnen auf demselben Baum des `bookstore`.
+    Das erste Element ist **Home** (`utility:home`): Es lädt den Startknoten
+    in der App, ohne Reload. Vorher wird der verlassene Knoten zum vorigen
+    Eintrag der Browser-Historie, die URL wird `/`; „Zurück“/„Vor“ laden den
+    Knoten der jeweiligen URL in der App (`popstate`). Am Startknoten legt Home
+    keinen Eintrag an. Ein vollständiges „URL folgt jeder Navigation“ (#101)
+    ist das noch nicht.
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und

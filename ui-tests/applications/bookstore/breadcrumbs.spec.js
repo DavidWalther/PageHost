@@ -50,7 +50,7 @@ async function open(page, path) {
 test.describe('Breadcrumbs', () => {
   test.use({ actionTimeout: 5000 });
 
-  test('shows no row on a root node', async ({ page }) => {
+  test('shows only the home item on a root node', async ({ page }) => {
     await open(page, '/');
     await expect
       .poll(async () => (await readNodes(page)).navigation.id)
@@ -59,7 +59,20 @@ test.describe('Breadcrumbs', () => {
     await openModal(page);
     await expect(tile(page, 'Mock Story 1')).toHaveClass(/tile_current/);
 
-    await expect(page.locator('app-bookstore slds-breadcrumbs')).toHaveCount(0);
+    await expect(crumbs(page)).toHaveText(['Startseite']);
+  });
+
+  test('the home item links the start page and shows the home icon', async ({
+    page,
+  }) => {
+    await open(page, '/000c00000000000002');
+
+    const home = page.locator('app-bookstore slds-breadcrumbs li').first();
+    await expect(home.locator('a')).toHaveAttribute('href', '/');
+    const iconHref = await home
+      .locator('svg use')
+      .evaluate((use) => use.href.baseVal);
+    expect(iconHref).toBe('/assets/icons/utility-sprite/svg/symbols.svg#home');
   });
 
   test('lists the ancestors of the shown node, not the node itself', async ({
@@ -67,7 +80,7 @@ test.describe('Breadcrumbs', () => {
   }) => {
     await open(page, '/000c00000000000002');
 
-    await expect(crumbs(page)).toHaveText(['Mock Story 1']);
+    await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
     await expect(crumbLink(page, 'Mock Story 1')).toHaveAttribute(
       'href',
       '/000n00000000000011'
@@ -76,7 +89,7 @@ test.describe('Breadcrumbs', () => {
 
   test('marks no item as the current page', async ({ page }) => {
     await open(page, '/000c00000000000002');
-    await expect(crumbs(page)).toHaveText(['Mock Story 1']);
+    await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
 
     // The last item is the parent, not the page — a screen reader must not
     // announce it as the current one.
@@ -89,7 +102,7 @@ test.describe('Breadcrumbs', () => {
     page,
   }) => {
     await open(page, '/000c00000000000002');
-    await expect(crumbs(page)).toHaveText(['Mock Story 1']);
+    await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
 
     await crumbLink(page, 'Mock Story 1').click();
 
@@ -101,14 +114,14 @@ test.describe('Breadcrumbs', () => {
     const nodes = await readNodes(page);
     expect(nodes.navigation.id).toBe('000n00000000000011');
     expect(nodes.navigation.selectedChild).toBeNull();
-    await expect(page.locator('app-bookstore slds-breadcrumbs')).toHaveCount(0);
+    await expect(crumbs(page)).toHaveText(['Startseite']);
   });
 
   test('follows a reload of the tree after a node changed', async ({
     page,
   }) => {
     await open(page, '/000c00000000000002');
-    await expect(crumbs(page)).toHaveText(['Mock Story 1']);
+    await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
     const renamed = {
       result: [
         { ...MOCK_CONTENTS.result[0], name: 'Mock Story 1 (renamed)' },
@@ -132,7 +145,10 @@ test.describe('Breadcrumbs', () => {
         )
     );
 
-    await expect(crumbs(page)).toHaveText(['Mock Story 1 (renamed)']);
+    await expect(crumbs(page)).toHaveText([
+      'Startseite',
+      'Mock Story 1 (renamed)',
+    ]);
   });
 });
 
@@ -191,7 +207,10 @@ test.describe('Breadcrumbs in a deep tree', () => {
       cover_node_id: 'd-2',
       nodes: [record('d-2', 'Deep Level 2', 'd-root')],
     }),
-    'd-2': record('d-2', 'Deep Level 2', 'd-root'),
+    'd-2': record('d-2', 'Deep Level 2', 'd-root', {
+      cover_node_id: 'd-3',
+      nodes: [record('d-3', 'Deep Level 3', 'd-2')],
+    }),
     'd-3': record('d-3', 'Deep Level 3', 'd-2', {
       nodes: [record('d-4', 'Deep Level 4', 'd-3')],
     }),
@@ -221,25 +240,37 @@ test.describe('Breadcrumbs in a deep tree', () => {
     await tile(page, 'Deep Level 4').click();
   });
 
-  test('collapses a long path to root › … › parent', async ({ page }) => {
-    await expect(crumbs(page)).toHaveText(['Deep Root', '…', 'Deep Level 3']);
+  test('collapses a long path to home › … › grandparent › parent', async ({
+    page,
+  }) => {
+    await expect(crumbs(page)).toHaveText([
+      'Startseite',
+      '…',
+      'Deep Level 2',
+      'Deep Level 3',
+    ]);
   });
 
   test('clicking a distant ancestor shows it without its cover node', async ({
     page,
   }) => {
-    await expect(crumbs(page)).toHaveText(['Deep Root', '…', 'Deep Level 3']);
+    await expect(crumbs(page)).toHaveText([
+      'Startseite',
+      '…',
+      'Deep Level 2',
+      'Deep Level 3',
+    ]);
 
-    await crumbLink(page, 'Deep Root').click();
+    await crumbLink(page, 'Deep Level 2').click();
 
     await expect
       .poll(async () => (await readNodes(page)).navigation.id)
-      .toBe('d-root');
-    // Wait for the root to load: without the guard its cover d-2 would land
+      .toBe('d-2');
+    // Wait for the node to load: without the guard its cover d-3 would land
     // below now.
     await page.waitForTimeout(500);
     expect((await readNodes(page)).content.id).toBeNull();
-    await expect(page.locator('app-bookstore slds-breadcrumbs')).toHaveCount(0);
+    await expect(crumbs(page)).toHaveText(['Startseite', 'Deep Root']);
   });
 
   test('clicking the parent keeps it above and lists its ancestors', async ({
@@ -251,6 +282,10 @@ test.describe('Breadcrumbs in a deep tree', () => {
       .poll(async () => (await readNodes(page)).content.id)
       .toBeNull();
     expect((await readNodes(page)).navigation.id).toBe('d-3');
-    await expect(crumbs(page)).toHaveText(['Deep Root', 'Deep Level 2']);
+    await expect(crumbs(page)).toHaveText([
+      'Startseite',
+      'Deep Root',
+      'Deep Level 2',
+    ]);
   });
 });
