@@ -266,13 +266,15 @@ class Bookstore extends LitElement {
     if (items.length === 0) {
       return '';
     }
-    // The last item is the parent, not the current node — it must be a link.
+    // The last item is the parent, not the current node: it must be a link,
+    // and it must not be announced as the current page.
     return html`
       <div class="slds-m-horizontal_small slds-m-top_x-small">
         <slds-breadcrumbs
           overflow
           overflow_limit="2"
           last-item-as-link
+          no-current-item
           .items="${items}"
           @breadcrumb-select="${this.handleBreadcrumbSelect}"
         ></slds-breadcrumbs>

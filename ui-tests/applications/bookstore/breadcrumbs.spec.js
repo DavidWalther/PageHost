@@ -74,6 +74,17 @@ test.describe('Breadcrumbs', () => {
     );
   });
 
+  test('marks no item as the current page', async ({ page }) => {
+    await open(page, '/000c00000000000002');
+    await expect(crumbs(page)).toHaveText(['Mock Story 1']);
+
+    // The last item is the parent, not the page — a screen reader must not
+    // announce it as the current one.
+    await expect(
+      page.locator('app-bookstore slds-breadcrumbs li[aria-current]')
+    ).toHaveCount(0);
+  });
+
   test('clicking the parent empties the lower node and keeps no cover', async ({
     page,
   }) => {
