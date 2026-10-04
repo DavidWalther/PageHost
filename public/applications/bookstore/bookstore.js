@@ -448,6 +448,9 @@ class Bookstore extends LitElement {
     // Die Knoten müssen im Shadow-DOM stehen, bevor sie Attribute bekommen.
     await this.updateComplete;
 
+    // Once, before any entry is applied: `adoptNode` reports `loaded` at
+    // once, and every later entry (home, browser back) reuses the same node.
+    this._attachNavigationNodeListeners();
     const entry = await this.resolveEntryPoint(this._initPara.initId);
     this.applyEntryPoint(entry);
 
@@ -527,8 +530,8 @@ class Bookstore extends LitElement {
    *
    * Der aufgelöste Datensatz wird **übergeben**, nicht nur seine Id: sonst
    * holte der Knoten genau das noch einmal, was hier gerade angekommen ist.
-   * Die Listener hängen deshalb **vor** der Übergabe — `adoptNode` meldet
-   * `loaded` sofort, nicht erst nach einer Antwort aus dem Netz.
+   * The listeners are therefore attached **before** any handover, once in
+   * `hydrate` — `adoptNode` reports `loaded` at once, not after a network reply.
    */
   applyEntryPoint(entry) {
     if (entry.kind === 'node') {
@@ -538,7 +541,6 @@ class Bookstore extends LitElement {
         // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
         this.showChildOf(parentId, entry.node);
       } else {
-        this._attachNavigationNodeListeners();
         this._setCurrentLocation(entry.node);
         this.navigationNode.adoptNode(entry.node);
       }
@@ -578,13 +580,11 @@ class Bookstore extends LitElement {
     // überschreiben.
     this._pendingChildSelection = childId;
     this._setCurrentLocation(childNode);
-    this._attachNavigationNodeListeners();
     // Den Elternknoten kennen wir nur mit Id — den holt er sich selbst.
     this.navigationNode.setAttribute('id', parentId);
   }
 
   initWithoutParameter() {
-    this._attachNavigationNodeListeners();
     this.navigationNode.setAttribute('id', DEFAULT_ENTRY_NODE_ID);
     this._setCurrentLocation(DEFAULT_ENTRY_NODE_ID);
   }
@@ -605,7 +605,10 @@ class Bookstore extends LitElement {
     });
   }
 
-  /** Auswahl-Knoten: Navigation und „geladen" hängen immer zusammen. */
+  /**
+   * Selection node: navigation and "loaded" always go together. Attached
+   * exactly once (in `hydrate`) — a second call would run every handler twice.
+   */
   _attachNavigationNodeListeners() {
     this.navigationNode.addEventListener(
       'navigation',
