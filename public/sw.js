@@ -13,6 +13,7 @@ const STATIC_FILES = [
   '/modules/global-styles.mjs',
   '/modules/oIdcComponent.js',
   '/modules/authTokenManager.js',
+  '/modules/content-tree.mjs',
 
   // Styles
   '/styles/darkmode.css',

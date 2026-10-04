@@ -129,12 +129,13 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
     expect(content.contentNumber).toBe('1');
   });
 
-  test('das Navigations-Modal kennt die Stelle nach einem Deep-Link', async ({
+  test('the navigation modal knows the location after a deep link with a retired id', async ({
     page,
   }) => {
-    // Der Inhaltsbaum spricht weiter die ALTEN Ids. Würde die App ihre Stelle
-    // in der neuen Id merken, träfe sie dort nie — das Modal öffnete auf der
-    // obersten Ebene und markierte nichts.
+    // The deep link uses the retired id, the content tree carries the record
+    // id (like the backend). The app keeps its location in the record id, so
+    // the modal opens on the child level with the location marked. This was
+    // pinned as FEHLVERHALTEN while the app kept the legacy_id instead.
     await open(page, '/000c00000000000002');
 
     await expect
@@ -143,7 +144,6 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
 
     await page.locator('#button-navigation_open').click();
 
-    // Es öffnet direkt auf der Kind-Ebene der Story, mit markierter Stelle.
     const current = page.locator('custom-navigation-modal button.tile_current');
     await expect(current).toHaveText('Mock Chapter 2 for Story 1');
   });

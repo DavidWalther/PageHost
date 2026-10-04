@@ -168,8 +168,8 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
-        @story-select="${this.handleStorySelect}"
-        @chapter-select="${this.handleChapterSelect}"
+        @navigation-level-open="${this.handleNavigationLevelOpen}"
+        @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
 
       <!--
@@ -250,14 +250,13 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Merkt sich, wo der Nutzer gerade steht — in der Id-Form des
-   * **Inhaltsbaums**.
+   * Remembers where the visitor stands — in the id the **content tree** uses.
    *
-   * Der Baum (`/api/1.0/contents/*`) liefert weiterhin die alten Ids; das
-   * Navigations-Modal vergleicht dagegen. Die neue Id des Knotens würde dort
-   * nie treffen, und die aktuelle Stelle bliebe unmarkiert. Deshalb nimmt
-   * diese Stelle einen Datensatz entgegen und wählt daraus die alte Id, solange
-   * es eine gibt. Fällt die Kompat-Id weg, bleibt automatisch die neue übrig.
+   * The tree (`/api/1.0/contents/*`) carries the record id, never the
+   * `legacy_id`; the navigation modal compares against it. A record therefore
+   * contributes its `id`. A plain string is taken as given — it may still be
+   * a retired id (the default entry is one); `handleNavigationNodeLoaded`
+   * swaps it for the record id once that node has loaded.
    */
   _setCurrentLocation(record) {
     if (!record) {
@@ -265,12 +264,11 @@ class Bookstore extends LitElement {
       return;
     }
     this._currentLocation =
-      typeof record === 'string'
-        ? record
-        : (record.legacy_id ?? record.id ?? null);
+      typeof record === 'string' ? record : (record.id ?? null);
   }
 
-  handleStorySelect(event) {
+  /** A level opened in the modal: the page shows that node (F13/F14). */
+  handleNavigationLevelOpen(event) {
     const { id } = event.detail;
     this._setCurrentLocation(id);
     this.dispatchEvent(
@@ -279,22 +277,34 @@ class Bookstore extends LitElement {
         bubbles: true,
       })
     );
-    // Modal stays open so the user can drill down into the story's chapters.
+    // The modal stays open; the visitor may go deeper or choose.
   }
 
-  handleChapterSelect(event) {
-    const { storyId, chapterId } = event.detail;
+  /** A node chosen in the modal: its parent above, the node below. */
+  handleNavigationNodeSelect(event) {
+    const { id, parentId } = event.detail;
+
+    if (!parentId) {
+      // A root without children: it has no parent to fill the selection, so
+      // it takes the selection itself — like a deep link to a root (UC-B-03).
+      this.navigationNode.setAttribute('id', id);
+      this.contentNode.removeAttribute('id');
+      this.navigationNode.removeAttribute('selected-child');
+      this._setCurrentLocation(id);
+      this.shadowRoot.querySelector('custom-navigation-modal').hide();
+      return;
+    }
 
     const currentParentId = this.navigationNode.getAttribute('id');
-    if (currentParentId !== storyId) {
+    if (currentParentId !== parentId) {
       // Suppress the cover override in handleNavigationNodeLoaded for this
       // reload, so the explicitly selected child is kept.
-      this._pendingChildSelection = chapterId;
-      this.navigationNode.setAttribute('id', storyId);
+      this._pendingChildSelection = id;
+      this.navigationNode.setAttribute('id', parentId);
     }
-    this.contentNode.setAttribute('id', chapterId);
-    this.navigationNode.setAttribute('selected-child', chapterId);
-    this._setCurrentLocation(chapterId);
+    this.contentNode.setAttribute('id', id);
+    this.navigationNode.setAttribute('selected-child', id);
+    this._setCurrentLocation(id);
 
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
@@ -380,6 +390,28 @@ class Bookstore extends LitElement {
       this._handleChildUpdated.bind(this)
     );
     this.addEventListener('node-deleted', this._handleNodeDeleted.bind(this));
+
+    // Every change to a node changes the content tree of the navigation modal.
+    const reloadTree = this._reloadNavigationTree.bind(this);
+    [
+      'chapter-created',
+      'chapter-updated',
+      'node-deleted',
+      'published',
+      'unpublished',
+    ].forEach((name) => this.addEventListener(name, reloadTree));
+  }
+
+  /**
+   * Asks the navigation modal to load the tree again after a node changed.
+   * Publishing a content leaves the tree alone — contents are not in it.
+   */
+  _reloadNavigationTree(event) {
+    const objectName = event.detail?.objectName;
+    if (objectName && objectName !== 'node') {
+      return;
+    }
+    this.shadowRoot.querySelector('custom-navigation-modal')?.reload();
   }
 
   /**
@@ -512,6 +544,13 @@ class Bookstore extends LitElement {
     const nodeData = event.detail?.nodeData;
     if (!nodeData?.id) {
       return;
+    }
+
+    // The location may have been set from a retired id (the default entry
+    // without a deep link). Once the node is known, keep it in the id the
+    // content tree uses, or the modal would never find it.
+    if (nodeData.legacy_id && this._currentLocation === nodeData.legacy_id) {
+      this._setCurrentLocation(nodeData);
     }
 
     if (this._pendingChildSelection) {

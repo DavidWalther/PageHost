@@ -20,25 +20,26 @@ const MOCK_METADATA = {
   meta: {},
 };
 
-// Inhaltsbaum wie vom Endpoint `/api/1.0/contents/all` geliefert:
-// Node = { id, label, name, childnodes: Node[] } (allowlist, siehe
-// private/endpoints/api/1.0/contents/README.md). Zwei Stories, damit das
-// Navigations-Modal das Listen *aller* Stories zeigt.
+// Content tree as `/api/1.0/contents/all` delivers it:
+// Node = { id, label, name, childnodes: Node[] } (allowlist, see
+// private/endpoints/api/1.0/contents/README.md). The ids are the record ids
+// of MOCK_NODES below, never the legacy_id — exactly what the backend sends.
+// Two roots, so the navigation modal shows a list of more than one.
 const MOCK_CONTENTS = {
   result: [
     {
-      id: '000s00000000000011',
+      id: '000n00000000000011',
       label: 'Mock Story 1',
       name: 'Mock Story 1',
       childnodes: [
         {
-          id: '000c00000000000001',
+          id: '000n00000000000001',
           label: 'Mock Chapter 1 for Story 1',
           name: 'Mock Chapter 1 for Story 1',
           childnodes: [],
         },
         {
-          id: '000c00000000000002',
+          id: '000n00000000000002',
           label: 'Mock Chapter 2 for Story 1',
           name: 'Mock Chapter 2 for Story 1',
           childnodes: [],
@@ -46,12 +47,12 @@ const MOCK_CONTENTS = {
       ],
     },
     {
-      id: '000s00000000000012',
+      id: '000n00000000000012',
       label: 'Mock Story 2',
       name: 'Mock Story 2',
       childnodes: [
         {
-          id: '000c00000000000003',
+          id: '000n00000000000003',
           label: 'Mock Chapter 1 for Story 2',
           name: 'Mock Chapter 1 for Story 2',
           childnodes: [],

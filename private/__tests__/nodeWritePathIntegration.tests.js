@@ -98,6 +98,14 @@ async function runEndpoint(EndpointClass, request) {
   return response;
 }
 
+/** Every cache key removed during the test, by del or delMany. */
+function clearedKeys() {
+  return [
+    ...cacheDel.mock.calls.map(([key]) => key),
+    ...cacheDelMany.mock.calls.flatMap(([keys]) => keys),
+  ];
+}
+
 describe('Schreibpfad auf dem neuen Datenmodell', () => {
   describe('Zuständigkeit', () => {
     // Die Umstellung betrifft Inhalte. `identity` trägt den Refresh-Token und
@@ -214,6 +222,20 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.status).toHaveBeenCalledWith(403);
       expect(statementsMatching('INSERT INTO node')).toHaveLength(0);
     });
+    it('creating a node clears the cached contents tree', async () => {
+      await runEndpoint(UpsertEndpoint, {
+        body: {
+          object: 'node',
+          payload: {
+            parent_node_id: 'n-story',
+            name: 'Kapitel',
+            sortnumber: 1,
+          },
+        },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
+    });
   });
 
   describe('Ändern', () => {
@@ -264,6 +286,30 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
       expect(response.json.mock.calls[0][0].error).toContain(
         'Record not found'
       );
+    });
+    it('renaming a node clears the cached contents tree', async () => {
+      await runEndpoint(UpsertEndpoint, {
+        body: {
+          object: 'node',
+          payload: { id: '000c00000000000022', name: 'Neu' },
+        },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
+    });
+
+    it('moving a node to another parent clears the cached contents tree', async () => {
+      await runEndpoint(UpsertEndpoint, {
+        body: {
+          object: 'node',
+          payload: {
+            id: '000c00000000000022',
+            parent_node_id: 'n-andere-story',
+          },
+        },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
     });
   });
 
@@ -415,6 +461,25 @@ describe('Schreibpfad auf dem neuen Datenmodell', () => {
 
       expect(response.status).toHaveBeenCalledWith(400);
       expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
+    });
+    it('publishing a node clears the cached contents tree', async () => {
+      seedRead({ published: false });
+
+      await runEndpoint(PublishEndpoint, {
+        body: { object: 'node', id: '000c00000000000022' },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
+    });
+
+    it('unpublishing a node clears the cached contents tree', async () => {
+      seedRead({ published: true });
+
+      await runEndpoint(UnpublishEndpoint, {
+        body: { object: 'node', id: '000c00000000000022' },
+      });
+
+      expect(clearedKeys()).toContain('contentsTree');
     });
   });
 });

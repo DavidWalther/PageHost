@@ -526,3 +526,105 @@ describe('DataFacadeSync.clearCacheFor', () => {
     ).resolves.toBeUndefined();
   });
 });
+
+describe('contents tree visibility', () => {
+  const PAST = '2020-01-01T00:00:00.000Z';
+  const FUTURE = '2999-01-01T00:00:00.000Z';
+  const TREE = [
+    {
+      id: 'root',
+      published_date: PAST,
+      nodes: [
+        { id: 'published', published_date: PAST, nodes: [] },
+        { id: 'unpublished', published_date: FUTURE, nodes: [] },
+      ],
+    },
+  ];
+  const childIds = (tree) => tree[0].nodes.map((node) => node.id);
+  const request = { request: { table: 'contents', id: null } };
+
+  let facade;
+  beforeEach(() => {
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'getContentsTree').mockResolvedValue(TREE);
+    jest.spyOn(facade, 'getContentsTreeWithoutCache').mockResolvedValue(TREE);
+  });
+
+  it('hands out the published tree by default', async () => {
+    const tree = await facade.getData(request);
+
+    expect(childIds(tree)).toEqual(['published']);
+  });
+
+  it('hands out the full tree only with setIncludeUnpublished(true)', async () => {
+    const tree = await facade.setIncludeUnpublished(true).getData(request);
+
+    expect(childIds(tree)).toEqual(['published', 'unpublished']);
+  });
+
+  it('filters a freshly built tree as well when the cache is skipped', async () => {
+    const tree = await facade.setSkipCache(true).getData(request);
+
+    expect(facade.getContentsTreeWithoutCache).toHaveBeenCalled();
+    expect(facade.getContentsTree).not.toHaveBeenCalled();
+    expect(childIds(tree)).toEqual(['published']);
+  });
+
+  it('leaves the tree it got from the cache untouched', async () => {
+    await facade.getData(request);
+
+    expect(childIds(TREE)).toEqual(['published', 'unpublished']);
+  });
+});
+
+describe('clearing the cached contents tree after a write', () => {
+  let facade;
+  let cacheDel;
+
+  beforeEach(() => {
+    cacheDel = jest.fn();
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'createCache').mockReturnValue({
+      del: cacheDel,
+      set: jest.fn(),
+    });
+    jest.spyOn(facade, 'createContentRepository').mockReturnValue({
+      updateRecord: jest.fn().mockResolvedValue({ id: 'n-1' }),
+      createRecord: jest.fn().mockResolvedValue({ id: 'n-2' }),
+    });
+  });
+
+  it('clears the tree after a node was updated', async () => {
+    await facade.updateData({ object: 'node', payload: { id: 'n-1' } });
+
+    expect(cacheDel).toHaveBeenCalledWith('contentsTree');
+  });
+
+  it('clears the tree after a node was created', async () => {
+    await facade.createData({ object: 'node', payload: { name: 'Neu' } });
+
+    expect(cacheDel).toHaveBeenCalledWith('contentsTree');
+  });
+
+  it('clears the tree even when the write skips the cache', async () => {
+    await facade
+      .setSkipCache(true)
+      .updateData({ object: 'node', payload: { id: 'n-1' } });
+
+    expect(cacheDel).toHaveBeenCalledWith('contentsTree');
+  });
+
+  it('leaves the tree alone when a content was written', async () => {
+    await facade.updateData({ object: 'content', payload: { id: 'cn-1' } });
+
+    expect(cacheDel).not.toHaveBeenCalledWith('contentsTree');
+  });
+
+  it('still answers the write when the cache cannot be reached', async () => {
+    cacheDel.mockRejectedValue(new Error('redis down'));
+
+    await expect(
+      facade.updateData({ object: 'node', payload: { id: 'n-1' } })
+    ).resolves.toEqual({ id: 'n-1' });
+  });
+});

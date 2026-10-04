@@ -28,12 +28,13 @@ public/                       Frontend (statisch ausgeliefert)
   components/                 App-Komponenten,   HTML-Tag-Präfix custom-*
                               custom-node stellt einen Knoten dar (Auswahl + Inhalte)
   slds-components/            Wiederverwendbare SLDS-Bausteine, Präfix slds-*
-  modules/                    Frontend-Util (global-styles, authTokenManager …)
+  modules/                    Frontend-Util (global-styles, content-tree, authTokenManager …)
   applications/               Einstiegsseiten (z. B. bookstore)
 ui-tests/                     Playwright-UI-Tests — spiegelt public/
   components/                 Specs zu public/components/
   slds-components/            Specs zu public/slds-components/
   applications/               Specs zu public/applications/
+  modules/                    Specs zu public/modules/
   support/                    Test-Helfer (Callout-Mocks, Seiten-Setup)
 doc/                          Dokumentation (diese Datei, authentication.md …)
 ```
@@ -105,14 +106,17 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
    → Vollständige Beschreibung der Zusammenarbeit von Facade/Cache/Storage:
    **`private/database2/README.md`**.
 
-### Cache & Publish-Filter
+### Cache & publish filter
 
-- Der **Inhaltsbaum** (`contents`) wird **vollständig** (veröffentlicht _und_
-  unveröffentlicht) im Cache gehalten; der Publish-Filter läuft erst bei der
-  Auslieferung als eigenes Modul (`private/modules/ContentVisibilityFilter.js`),
-  damit dieselbe Baum-Quelle z. B. auch für `sitemap.xml` nutzbar ist.
-- Cache-Konzept, Key-Präfixe und Env-Vars: **`README.md`** (Abschnitt „Cache")
-  und **`private/database2/DataCache/README.md`**.
+- The **content tree** (`contents`) is cached **in full** — every level,
+  published _and_ unpublished — so one cached source serves the navigation,
+  `sitemap.xml` and later features of the site.
+- The publish filter (`private/modules/ContentVisibilityFilter.js`) runs in
+  the **`DataFacade`**, after the cache: every reader gets the published tree
+  unless it asks for more with `setIncludeUnpublished(true)` (only the `edit`
+  scope does). Consumers do not filter themselves.
+- Cache concept, key prefixes and env vars: **`README.md`** (section „Cache“)
+  and **`private/database2/DataCache/README.md`**.
 
 ## Auth (OAuth2 / OIDC)
 
@@ -139,6 +143,13 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
     Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
     beauftragt. → `public/components/custom-node/README.md`
+  - **`custom-navigation-modal`** zeigt den Inhaltsbaum als Kacheln, **Ebene
+    für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
+    (die Seite dahinter folgt, ein Titel-Knoten lädt), eine ohne Kinder wählt
+    aus. Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
+    der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
+    einem Knoten lädt der `bookstore` den Baum neu.
+    → `public/components/custom-navigation-modal/README.md`
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und
