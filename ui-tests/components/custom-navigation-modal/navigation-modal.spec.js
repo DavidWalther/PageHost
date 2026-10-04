@@ -18,8 +18,11 @@ const { cacheLitBundle } = require('../../support/component-page');
  */
 test.describe('Navigation modal', () => {
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  // A tile is found by its name, not by its whole text (which may carry more).
   const tileByText = (page, text) =>
-    page.locator('custom-navigation-modal button.tile', { hasText: text });
+    page
+      .locator('custom-navigation-modal button.tile')
+      .filter({ has: page.locator('.tile__name', { hasText: text }) });
 
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
@@ -222,9 +225,13 @@ test.describe('Navigation modal in any depth', () => {
   };
 
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  const tileNames = (page) =>
+    page.locator('custom-navigation-modal button.tile .tile__name');
   const tile = (page, text) =>
-    page.locator('custom-navigation-modal button.tile', {
-      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    page.locator('custom-navigation-modal button.tile').filter({
+      has: page.locator('.tile__name', {
+        hasText: new RegExp(`^\\s*${text}\\s*$`),
+      }),
     });
   const modal = (page) => page.locator('custom-navigation-modal slds-modal');
   const back = (page) => page.locator('custom-navigation-modal .back-button');
@@ -250,7 +257,10 @@ test.describe('Navigation modal in any depth', () => {
     await tile(page, 'Deep Level 2').click();
     await tile(page, 'Deep Level 3').click();
 
-    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tileNames(page)).toHaveText([
+      'Deep Level 4',
+      'Deep Level 4 B',
+    ]);
   });
 
   test('goes up exactly one level with back', async ({ page }) => {
@@ -261,7 +271,7 @@ test.describe('Navigation modal in any depth', () => {
 
     await back(page).click();
 
-    await expect(tiles(page)).toHaveText(['Deep Level 3']);
+    await expect(tileNames(page)).toHaveText(['Deep Level 3']);
   });
 
   test('a tile without children selects the node and closes', async ({
@@ -289,7 +299,10 @@ test.describe('Navigation modal in any depth', () => {
 
     await openModal(page);
 
-    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tileNames(page)).toHaveText([
+      'Deep Level 4',
+      'Deep Level 4 B',
+    ]);
     await expect(tile(page, 'Deep Level 4 B')).toHaveClass(/tile_current/);
     await back(page).click();
     await expect(tile(page, 'Deep Level 3')).toHaveClass(/tile_current/);
