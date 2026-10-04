@@ -16,8 +16,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * and the modal stays on its level.
  */
 
-const FAIL = 'no create tiles yet (#187)';
-
 /** Dummy JWT with a far expiry — the client does not verify it. */
 function fakeJwt() {
   const encode = (value) =>
@@ -104,7 +102,11 @@ const plusTile = (page) =>
 const firstChildButton = (page, text) =>
   page
     .locator('custom-navigation-modal .tile-wrap')
-    .filter({ has: tile(page, text) })
+    .filter({
+      has: page.locator('button.tile .tile__name', {
+        hasText: new RegExp(`^\\s*${text}\\s*$`),
+      }),
+    })
     .locator('button.tile__add');
 const dialog = (page) =>
   page.locator('custom-navigation-modal custom-chapter-edit slds-modal');
@@ -129,7 +131,6 @@ test.describe('Navigation modal: create', () => {
   test('every level ends in a "+" tile, also the top level', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await expect(tiles(page).last()).toHaveClass(/tile_add/);
@@ -139,7 +140,6 @@ test.describe('Navigation modal: create', () => {
   });
 
   test('only tiles without children carry a small "+"', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
     await tile(page, 'Mock Story 1').click();
 
@@ -151,7 +151,6 @@ test.describe('Navigation modal: create', () => {
   });
 
   test('the "+" tile on the top level creates a root', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await plusTile(page).click();
@@ -168,7 +167,6 @@ test.describe('Navigation modal: create', () => {
   test('the "+" tile on a level creates a child of that level', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
     await tile(page, 'Mock Story 1').click();
 
@@ -182,7 +180,6 @@ test.describe('Navigation modal: create', () => {
   });
 
   test('the small "+" creates a first child of that tile', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
     await tile(page, 'Mock Story 1').click();
 
@@ -197,7 +194,6 @@ test.describe('Navigation modal: create', () => {
   test('after creating the modal stays on its level and shows the new tile', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await plusTile(page).click();
@@ -209,7 +205,6 @@ test.describe('Navigation modal: create', () => {
   });
 
   test('Escape in the dialog closes only the dialog', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
     await plusTile(page).click();
     await expect(dialog(page)).toHaveAttribute('open');
