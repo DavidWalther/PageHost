@@ -1,5 +1,8 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const {
+  mockBookstoreCallouts,
+  MOCK_CONTENTS,
+} = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
@@ -88,6 +91,37 @@ test.describe('Breadcrumbs', () => {
     expect(nodes.navigation.id).toBe('000n00000000000011');
     expect(nodes.navigation.selectedChild).toBeNull();
     await expect(page.locator('app-bookstore slds-breadcrumbs')).toHaveCount(0);
+  });
+
+  test('follows a reload of the tree after a node changed', async ({
+    page,
+  }) => {
+    await open(page, '/000c00000000000002');
+    await expect(crumbs(page)).toHaveText(['Mock Story 1']);
+    const renamed = {
+      result: [
+        { ...MOCK_CONTENTS.result[0], name: 'Mock Story 1 (renamed)' },
+        ...MOCK_CONTENTS.result.slice(1),
+      ],
+    };
+    await page.route('**/api/1.0/contents/**', (route) =>
+      route.fulfill({ json: renamed })
+    );
+
+    await page.evaluate(() =>
+      document
+        .querySelector('app-bookstore')
+        .shadowRoot.querySelector('custom-node[data-role="navigation"]')
+        .dispatchEvent(
+          new CustomEvent('chapter-updated', {
+            detail: { chapterData: { id: '000n00000000000011' } },
+            bubbles: true,
+            composed: true,
+          })
+        )
+    );
+
+    await expect(crumbs(page)).toHaveText(['Mock Story 1 (renamed)']);
   });
 });
 
