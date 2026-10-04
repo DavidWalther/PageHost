@@ -542,6 +542,23 @@ describe('Lesepfad', () => {
       expect(ids).not.toContain('n-ebene-4-versteckt');
     });
 
+    // Target behaviour of #187 (it.failing until the tree carries it): the
+    // navigation modal proposes "highest sortnumber + 1" for a new node.
+    it.failing(
+      'carries the sortnumber of every node on every level',
+      async () => {
+        const { result } = await getContents();
+
+        expect(result[0].sortnumber).toBe(STORY_NODE.sortnumber);
+        const szenen = kapitel(result).childnodes;
+        expect(szenen.map((node) => [node.id, node.sortnumber])).toEqual([
+          ['n-szene-2', 1],
+          ['n-szene-1', 2],
+        ]);
+        expect(szenen[0].childnodes[0].sortnumber).toBe(1);
+      }
+    );
+
     it('keeps only the allowlisted fields on the deeper levels', async () => {
       const { result } = await getContents();
       const allowed = ['childnodes', 'id', 'label', 'name'];
