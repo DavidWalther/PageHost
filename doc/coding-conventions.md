@@ -17,9 +17,8 @@ the trade, and a mixed repository forces every reader to switch.
 
 **German is the language of the visitor-facing surface.** Every label a visitor
 who is not signed in can read is German, and that is the product, not a
-leftover: `Keine Inhalte vorhanden`, `Link kopiert`,
-`Entschuldigung. Da war leider nichts zu finden.` These strings are **never**
-translated.
+leftover: `Keine Inhalte vorhanden`, `Link kopiert`, `Startseite`. These
+strings are **never** translated.
 
 **The operator surface fixes no language.** Behind the login only the operator
 works, so the mix there (`Kapitelname ist erforderlich` next to `Login`) is not
