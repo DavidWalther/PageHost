@@ -75,7 +75,6 @@ test.describe('Breadcrumbs', () => {
   });
 
   test('marks no item as the current page', async ({ page }) => {
-    test.fail(true, 'the bookstore does not set no-current-item yet');
     await open(page, '/000c00000000000002');
     await expect(crumbs(page)).toHaveText(['Mock Story 1']);
 
