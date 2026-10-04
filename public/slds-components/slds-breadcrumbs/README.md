@@ -17,15 +17,16 @@ A Web Component (LitElement) that renders a Salesforce Lightning Design System (
 
 ## Attributes
 
-| Attribute           | Type    | Required | Default         | Description                                                                |
-| ------------------- | ------- | -------- | --------------- | -------------------------------------------------------------------------- |
-| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see [Item shape](#item-shape))           |
-| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                                   |
-| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                                   |
-| `card-container`    | Boolean | No       | `false`         | Wraps the breadcrumbs inside an `slds-card`                                |
-| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; collapses middle items into `…`                   |
-| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored without `overflow`)     |
-| `last-item-as-link` | Boolean | No       | `false`         | Renders the last (current) item as a clickable `<a>` instead of a `<span>` |
+| Attribute           | Type    | Required | Default         | Description                                                                          |
+| ------------------- | ------- | -------- | --------------- | ------------------------------------------------------------------------------------ |
+| `items`             | Array   | Yes      | `[]`            | Array of breadcrumb item objects (see [Item shape](#item-shape))                     |
+| `aria-label`        | String  | No       | `"Breadcrumbs"` | Accessible label for the `<nav>` element                                             |
+| `size`              | String  | No       | `"medium"`      | Text size: `small`, `medium`, or `large`                                             |
+| `card-container`    | Boolean | No       | `false`         | Wraps the breadcrumbs inside an `slds-card`                                          |
+| `overflow`          | Boolean | No       | `false`         | Activates overflow mode; collapses middle items into `…`                             |
+| `overflow_limit`    | Number  | No       | `3`             | Max visible items when overflow is active (ignored without `overflow`)               |
+| `last-item-as-link` | Boolean | No       | `false`         | Renders the last (current) item as a clickable `<a>` instead of a `<span>`           |
+| `no-current-item`   | Boolean | No       | `false`         | No item carries `aria-current="page"` — for a trail that ends above the current page |
 
 ---
 
@@ -179,3 +180,22 @@ Set `last-item-as-link` to render it as a clickable `<a>` instead:
 ```
 
 `aria-current="page"` is applied to the last item's `<li>` in both cases.
+
+### No current item
+
+By default the last item is the current page and its `<li>` carries
+`aria-current="page"`. When the trail lists only the **ancestors** of the page —
+the page itself is named elsewhere — that marking would announce the parent as the
+current page. Set `no-current-item` to drop it; usually together with
+`last-item-as-link`, since the last item then is a place to go to:
+
+```html
+<slds-breadcrumbs
+  no-current-item
+  last-item-as-link
+  items='[
+    {"key":"root","label":"Book","href":"/book"},
+    {"key":"parent","label":"Part 2","href":"/part-2"}
+  ]'
+></slds-breadcrumbs>
+```

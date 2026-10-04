@@ -157,7 +157,6 @@ test.describe('slds-breadcrumbs', () => {
   test('no-current-item marks no item as the current page', async ({
     page,
   }) => {
-    test.fail(true, 'no-current-item does not exist yet');
     const res = await mountBreadcrumbs(page, {
       attrs: { 'no-current-item': true },
     });
@@ -169,7 +168,6 @@ test.describe('slds-breadcrumbs', () => {
   test('no-current-item with last-item-as-link: every item a link, none current', async ({
     page,
   }) => {
-    test.fail(true, 'no-current-item does not exist yet');
     const res = await mountBreadcrumbs(page, {
       attrs: { 'no-current-item': true, 'last-item-as-link': true },
     });
