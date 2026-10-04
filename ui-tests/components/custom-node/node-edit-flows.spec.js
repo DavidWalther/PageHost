@@ -50,9 +50,9 @@ async function openAsEditor(page) {
   await expect(page.locator('app-bookstore')).toBeAttached();
 }
 
-/** Der untere Knoten — der mit den Inhalten. */
+/** The one node on the page. */
 function contentNode(page) {
-  return page.locator('custom-node[data-role="content"]');
+  return page.locator('custom-node');
 }
 
 test.describe('custom-node: Bearbeiten', () => {
@@ -107,9 +107,7 @@ test.describe('custom-node: Bearbeiten', () => {
     expect(sent.payload).not.toHaveProperty('storyId');
   });
 
-  test('Löschen schickt object "node" und räumt die Auswahl auf', async ({
-    page,
-  }) => {
+  test('delete sends object "node" and shows the parent', async ({ page }) => {
     await openAsEditor(page);
     await expect(contentNode(page).locator('#button-delete')).toBeVisible();
 
@@ -126,21 +124,16 @@ test.describe('custom-node: Bearbeiten', () => {
     await expect.poll(() => deleteUrl).toContain('object=node');
     expect(deleteUrl).toContain('id=000n00000000000001');
 
-    // Der obere Knoten nimmt das gelöschte Kind aus seiner Auswahl.
+    // The shown node is gone: the page shows its parent instead.
     await expect
-      .poll(async () =>
-        page.evaluate(() => {
-          const app = document.querySelector('app-bookstore');
-          const navigation = app.shadowRoot.querySelector(
-            'custom-node[data-role="navigation"]'
-          );
-          return [
-            ...navigation.shadowRoot.querySelectorAll(
-              '#child-navigation button'
-            ),
-          ].map((button) => button.dataset.nodeId);
-        })
+      .poll(() =>
+        page.evaluate(() =>
+          document
+            .querySelector('app-bookstore')
+            .shadowRoot.querySelector('custom-node')
+            .getAttribute('id')
+        )
       )
-      .toEqual(['000n00000000000002']);
+      .toBe('000n00000000000011');
   });
 });

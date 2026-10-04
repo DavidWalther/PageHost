@@ -21,7 +21,7 @@ const {
 
 /** Der untere Knoten — der mit den Inhalten. */
 function contentNode(page) {
-  return page.locator('custom-node[data-role="content"]');
+  return page.locator('custom-node');
 }
 
 test.describe('custom-node: gelöschter Inhalt', () => {
@@ -141,7 +141,7 @@ test.describe('custom-node: gelöschter Inhalt in einer Liste', () => {
     return page.evaluate(() => {
       const app = document.querySelector('app-bookstore');
       const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="content"]'
+        'custom-node'
       );
       return [...node.shadowRoot.querySelectorAll('custom-paragraph')].map(
         (element) => ({

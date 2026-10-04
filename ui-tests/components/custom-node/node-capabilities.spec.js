@@ -6,26 +6,16 @@ const {
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
- * Die Rolle einer `custom-node`-Instanz hat eine Wirkung.
+ * What the one node on the page offers and shows.
  *
- * Der `bookstore` hält zwei Instanzen derselben Komponente und gibt ihnen über
- * `data-role` verschiedene Rollen. `data-role` ist dabei ein reiner Selektor für
- * den Consumer — **die Komponente liest es nicht**. Was sich unterscheidet, sind
- * ausdrückliche Attribute, die der Consumer je Instanz setzt:
+ * The `bookstore` holds a single `custom-node`. The **data** say what a node
+ * has (children, contents), the attributes the bookstore sets say what this
+ * instance may do (`can-create-content`, `can-delete`). Creating a child is
+ * not offered on the page: next to "create content" it would be a second,
+ * identical "+"; it returns as the "+" tile in the navigation modal (#187).
  *
- *   Rendering (`no-…`, Voreinstellung an):  no-child-navigation, no-contents
- *   Aktionen  (`can-…`, Voreinstellung aus): can-create-child,
- *                                            can-create-content, can-delete
- *
- * Damit bleibt der Knoten typfrei: Die **Daten** sagen, was er hat, der
- * **Consumer** sagt, wofür diese Instanz da ist. Vor dieser Trennung rendeten
- * beide Instanzen dasselbe — unter anderem zwei optisch identische
- * `utility:add`-Buttons nebeneinander, einer für einen Kind-Knoten, einer für
- * einen Inhalt.
- *
- * Alle Zusicherungen laufen über den `bookstore`: Die Rollen entstehen erst
- * durch dessen Verdrahtung, eine isolierte Montage der Komponente würde genau
- * das nicht prüfen.
+ * Every assertion runs through the bookstore — the attributes only exist
+ * through its wiring.
  */
 
 const SESSION_SCOPES = ['read', 'edit', 'create', 'delete'];
@@ -58,124 +48,66 @@ async function withSession(page, scopes = SESSION_SCOPES) {
   );
 }
 
-const navigationNode = (page) =>
-  page.locator('custom-node[data-role="navigation"]');
-const contentNode = (page) => page.locator('custom-node[data-role="content"]');
+const node = (page) => page.locator('app-bookstore custom-node');
 
-/** Wartet, bis beide Knoten geladen sind — sonst misst man den leeren Zustand. */
-async function awaitBothNodes(page) {
-  await expect(navigationNode(page).locator('#node-name')).toHaveText(
-    'Mock Story 1'
-  );
-  await expect(contentNode(page).locator('#node-name')).toHaveText(
-    'Mock Chapter 1 for Story 1'
-  );
+/** Waits until the node has loaded — otherwise one measures the empty state. */
+async function awaitNode(page, name = 'Mock Chapter 1 for Story 1') {
+  await expect(node(page).locator('#node-name')).toHaveText(name);
 }
 
-// Einstieg über einen Kind-Knoten: oben die Wurzel mit ihrer Auswahl, unten das
-// Kind mit seinen Inhalten — die Aufteilung, um die es hier geht.
 const ENTRY = '/000c00000000000001';
 
-test.describe('Knoten-Rollen: Aktionen', () => {
+test.describe('Node: actions', () => {
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
     await cacheLitBundle(page);
     await withSession(page);
     await page.goto(ENTRY);
-    await awaitBothNodes(page);
+    await awaitNode(page);
   });
 
-  test('oben nur „Kind anlegen", nicht „Inhalt anlegen" oder „Löschen"', async ({
+  test('offers create content and delete, but not create child', async ({
     page,
   }) => {
+    await expect(node(page).locator('#button-create-content')).toBeVisible();
+    await expect(node(page).locator('#button-delete')).toBeVisible();
+    await expect(node(page).locator('#node-create-child')).toHaveCount(0);
+  });
+
+  test('shows exactly one "+"', async ({ page }) => {
+    // Two utility:add buttons side by side — one for a child, one for a
+    // content — could not be told apart. That is why creating a child waits
+    // for the navigation modal.
     await expect(
-      navigationNode(page).locator('#node-create-child')
+      node(page).locator('slds-button-icon[icon="utility:add"]')
     ).toHaveCount(1);
-    await expect(
-      navigationNode(page).locator('#button-create-content')
-    ).toHaveCount(0);
-    // Löscht der obere Knoten sich selbst, kann der Consumer das nicht
-    // auffangen: `_handleNodeDeleted` nimmt die Id aus der Kinderliste genau
-    // dieses Knotens. Die Aktion gehört deshalb nicht an diese Stelle.
-    await expect(navigationNode(page).locator('#button-delete')).toHaveCount(0);
   });
 
-  test('unten nur „Inhalt anlegen" und „Löschen", nicht „Kind anlegen"', async ({
-    page,
-  }) => {
-    await expect(contentNode(page).locator('#node-create-child')).toHaveCount(
-      0
-    );
-    await expect(
-      contentNode(page).locator('#button-create-content')
-    ).toBeVisible();
-    await expect(contentNode(page).locator('#button-delete')).toBeVisible();
-  });
-
-  test('je Instanz genau ein „+" — nicht zwei nebeneinander', async ({
-    page,
-  }) => {
-    // Der eigentliche Befund: Vor der Trennung standen auf **beiden** Knoten
-    // zwei `utility:add`-Buttons — einer aus `custom-chapter-edit` (Kind
-    // anlegen), einer als `#button-create-content` (Inhalt anlegen). Für den
-    // Nutzer waren sie nicht zu unterscheiden.
-    const plus = 'slds-button-icon[icon="utility:add"]';
-    await expect(navigationNode(page).locator(plus)).toHaveCount(1);
-    await expect(contentNode(page).locator(plus)).toHaveCount(1);
-  });
-
-  test('„Bearbeiten" und „Teilen" bleiben auf beiden Knoten', async ({
-    page,
-  }) => {
-    // Bewusst ohne Attribut: Beide Rollen haben sie, ein Attribut, das beide
-    // setzen müssten, wäre nur Rauschen. Bricht diese Entscheidung, soll es
-    // auffallen und nicht stillschweigend passieren.
-    for (const node of [navigationNode(page), contentNode(page)]) {
-      await expect(node.locator('#node-edit')).toHaveCount(1);
-      await expect(node.locator('#button-share')).toHaveCount(1);
-    }
+  test('keeps edit and share', async ({ page }) => {
+    await expect(node(page).locator('#node-edit')).toHaveCount(1);
+    await expect(node(page).locator('#button-share')).toHaveCount(1);
   });
 });
 
-test.describe('Knoten-Rollen: Attribut und Scope gelten zusammen', () => {
-  // Zweite Zeile der Wahrheitstabelle. Die erste (Sitzung vorhanden, Attribut
-  // gesetzt bzw. nicht) steht oben; zusammen belegen beide, dass das Attribut
-  // die Scope-Prüfung **ergänzt** und nicht ersetzt.
+test.describe('Node: attribute and scope apply together', () => {
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
     await cacheLitBundle(page);
     await page.goto(ENTRY);
-    await awaitBothNodes(page);
+    await awaitNode(page);
   });
 
-  test('ohne Sitzung fehlen die Aktionen trotz gesetzter Attribute', async ({
+  test('without a session the actions are missing despite the attributes', async ({
     page,
   }) => {
-    await expect(
-      contentNode(page).locator('#button-create-content')
-    ).toHaveCount(0);
-    await expect(contentNode(page).locator('#button-delete')).toHaveCount(0);
-  });
-
-  test('ohne Sitzung wird „Kind anlegen" gar nicht erst gerendert', async ({
-    page,
-  }) => {
-    // `can-create-child` ist gesetzt, aber ohne `create`-Scope rendert
-    // `custom-node` das Element nicht — statt eines leeren Rahmens, in dem
-    // `custom-chapter-edit` seinen Button ohnehin nicht zeigen würde.
-    await expect(
-      navigationNode(page).locator('#node-create-child')
-    ).toHaveCount(0);
-    await expect(
-      navigationNode(page).locator('slds-button-icon[icon="utility:add"]')
-    ).toHaveCount(0);
+    await expect(node(page).locator('#button-create-content')).toHaveCount(0);
+    await expect(node(page).locator('#button-delete')).toHaveCount(0);
   });
 });
 
-test.describe('Knoten-Rollen: Rendering', () => {
-  // Ein Knoten, der Kinder **und** Inhalte hat — im typfreien Modell erlaubt,
-  // in den geteilten Mocks aber nicht vorgesehen. Nur hier überschrieben, damit
-  // kein anderer Spec mitverschoben wird.
+test.describe('Node: rendering', () => {
+  // Nodes that have children **and** contents, or a child that has children
+  // of its own — allowed in the type-free model, absent from the shared mocks.
   const WURZEL_MIT_INHALT = {
     ...MOCK_NODES.wurzel,
     contents: [
@@ -211,50 +143,35 @@ test.describe('Knoten-Rollen: Rendering', () => {
       const id = new URL(route.request().url()).searchParams.get('id');
       const overrides = [WURZEL_MIT_INHALT, KIND_MIT_KIND];
       const match =
-        overrides.find((node) => node.id === id || node.legacy_id === id) ??
+        overrides.find((n) => n.id === id || n.legacy_id === id) ??
         Object.values(MOCK_NODES).find(
-          (node) => node.id === id || node.legacy_id === id
+          (n) => n.id === id || n.legacy_id === id
         );
       return route.fulfill({ json: match || {} });
     });
+  });
+
+  test('a node with children and contents shows both', async ({ page }) => {
+    await page.goto('/000s00000000000011');
+    await awaitNode(page, 'Mock Story 1');
+
+    await expect(node(page).locator('#child-navigation')).toHaveCount(1);
+    await expect(node(page).locator('custom-paragraph')).not.toHaveCount(0);
+  });
+
+  test('a child with children of its own shows them', async ({ page }) => {
+    // Was hidden while the lower of two nodes carried no-child-navigation.
     await page.goto(ENTRY);
-    await awaitBothNodes(page);
-  });
+    await awaitNode(page);
 
-  test('der obere Knoten zeigt die Auswahl, aber keine Inhalte', async ({
-    page,
-  }) => {
-    await expect(navigationNode(page).locator('#child-navigation')).toHaveCount(
-      1
-    );
-    // Obwohl der Knoten Inhalte **hat**: Sie gehören in den unteren Bereich.
-    await expect(navigationNode(page).locator('custom-paragraph')).toHaveCount(
-      0
-    );
-    // Und auch nicht der Hinweis — dieser Knoten ist für Inhalte nicht
-    // zuständig, „keine vorhanden" wäre eine Aussage, die ihm nicht zusteht.
-    await expect(navigationNode(page).locator('#no-contents')).toHaveCount(0);
-  });
-
-  test('der untere Knoten zeigt Inhalte, aber keine Auswahl', async ({
-    page,
-  }) => {
-    await expect(contentNode(page).locator('custom-paragraph')).not.toHaveCount(
-      0
-    );
-    // Obwohl der Knoten Kinder **hat**: Ein Klick darauf blieb hier wirkungslos
-    // — `bookstore.handleNavigationEvent` wertet nur Meldungen des oberen
-    // Knotens aus. Die Auswahl wird deshalb gar nicht erst angeboten.
-    await expect(contentNode(page).locator('#child-navigation')).toHaveCount(0);
+    await expect(
+      node(page).locator('#child-navigation', { hasText: 'Enkel-Knoten' })
+    ).toHaveCount(1);
+    await expect(node(page).locator('#no-contents')).toHaveCount(0);
   });
 });
 
-test.describe('Knoten-Rollen: der Sprung zu einem Inhalt bleibt heil', () => {
-  // Regressionsnetz für die Kehrseite von `no-contents`: Es legt im oberen
-  // Knoten `setupContentObserving()` und `_buildPendingDisplaySet()` still.
-  // Wird dabei zu viel abgeschaltet, bliebe der **untere** Knoten hinter
-  // `?hidden=${this._scrollPending}` verborgen — der Fortschrittsbalken liefe
-  // nie zu Ende, weil niemand mehr zählt.
+test.describe('Node: the jump to a content stays intact', () => {
   const INHALTE = [1, 2, 3, 4, 5].map((nummer) => ({
     id: `00cn0000000000009${nummer}`,
     name: `Absatz ${nummer}`,
@@ -268,11 +185,9 @@ test.describe('Knoten-Rollen: der Sprung zu einem Inhalt bleibt heil', () => {
     await page.route('**/data/query/node**', (route) => {
       const id = new URL(route.request().url()).searchParams.get('id');
       const base = Object.values(MOCK_NODES).find(
-        (node) => node.id === id || node.legacy_id === id
+        (n) => n.id === id || n.legacy_id === id
       );
       if (!base) return route.fulfill({ json: {} });
-      // Beide Knoten bekommen Inhalte: der untere, um zu springen, der obere,
-      // damit „rendert keine Inhalte" hier tatsächlich etwas zu bedeuten hat.
       return route.fulfill({ json: { ...base, contents: INHALTE } });
     });
     await page.route('**/data/query/content**', (route) => {
@@ -289,31 +204,19 @@ test.describe('Knoten-Rollen: der Sprung zu einem Inhalt bleibt heil', () => {
       });
     });
     await page.goto(`${ENTRY}?paragraphnumber=3`);
-    await awaitBothNodes(page);
+    await awaitNode(page);
   });
 
-  test('der Zielabsatz wird sichtbar und der Fortschritt läuft zu Ende', async ({
+  test('the target paragraph shows and the progress runs to its end', async ({
     page,
   }) => {
-    // Attribut-Selektor, nicht `#…`: Die Id beginnt mit einer Ziffer und ist
-    // damit kein gültiger CSS-Id-Selektor.
-    const ziel = contentNode(page).locator(
+    // Attribute selector, not #…: the id starts with a digit.
+    const target = node(page).locator(
       'custom-paragraph[id="00cn00000000000093"]'
     );
-    await expect(ziel).toBeVisible();
-    await expect(ziel).not.toHaveAttribute('no-display', /.*/);
-    await expect(contentNode(page).locator('slds-progress-bar')).toHaveCount(0);
-    await expect(contentNode(page).locator('custom-paragraph')).toHaveCount(5);
-  });
-
-  test('der obere Knoten bleibt aus der Inhalts-Mechanik heraus', async ({
-    page,
-  }) => {
-    await expect(navigationNode(page).locator('custom-paragraph')).toHaveCount(
-      0
-    );
-    await expect(navigationNode(page).locator('slds-progress-bar')).toHaveCount(
-      0
-    );
+    await expect(target).toBeVisible();
+    await expect(target).not.toHaveAttribute('no-display', /.*/);
+    await expect(node(page).locator('slds-progress-bar')).toHaveCount(0);
+    await expect(node(page).locator('custom-paragraph')).toHaveCount(5);
   });
 });
