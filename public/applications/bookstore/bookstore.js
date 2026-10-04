@@ -297,8 +297,11 @@ class Bookstore extends LitElement {
    */
   handleBreadcrumbSelect(event) {
     const id = event.detail?.key;
-    if (!id || id === HOME_BREADCRUMB_KEY) {
-      // Home: wired in a later step.
+    if (!id) {
+      return;
+    }
+    if (id === HOME_BREADCRUMB_KEY) {
+      this.handleHome();
       return;
     }
     if (this.navigationNode.getAttribute('id') !== id) {
@@ -308,6 +311,39 @@ class Bookstore extends LitElement {
     this.navigationNode.removeAttribute('selected-child');
     this.contentNode.removeAttribute('id');
     this._setCurrentLocation(id);
+  }
+
+  /**
+   * Home: the start page inside the app, without a reload — like `GET /`.
+   *
+   * The node the visitor leaves becomes the previous history entry, then the
+   * address turns into the root address; browser back leads to that node
+   * again. Already on the start node, nothing is added to the history: only
+   * the start page is applied anew.
+   */
+  async handleHome() {
+    const entry = await this.resolveEntryPoint(DEFAULT_ENTRY_NODE_ID);
+    const startIds = [DEFAULT_ENTRY_NODE_ID, entry.node?.id];
+    const here = this._currentLocation;
+    if (here && !startIds.includes(here)) {
+      window.history.replaceState({}, '', `/${here}`);
+      window.history.pushState({}, '', '/');
+    }
+    this.showEntryPoint(entry);
+  }
+
+  /**
+   * Applies an entry on a page that already shows something. The lower node
+   * and the selection are cleared first — an entry without a cover node would
+   * otherwise leave the old content below — and no pending choice survives.
+   */
+  showEntryPoint(entry) {
+    this._pendingChildSelection = null;
+    this._skipCoverOnce = false;
+    this.contentNode.removeAttribute('contentnumber');
+    this.contentNode.removeAttribute('id');
+    this.navigationNode.removeAttribute('selected-child');
+    this.applyEntryPoint(entry);
   }
 
   handleOpenSettings() {

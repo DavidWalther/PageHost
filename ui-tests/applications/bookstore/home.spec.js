@@ -48,7 +48,6 @@ test.describe('Home', () => {
   test('loads the start page inside the app, without a reload', async ({
     page,
   }) => {
-    test.fail(true, 'home does nothing yet (#151)');
     await open(page, '/000c00000000000002');
     await expect
       .poll(async () => (await readNodes(page)).content)
@@ -68,7 +67,6 @@ test.describe('Home', () => {
   test('leaves the current node in the history and shows the root address', async ({
     page,
   }) => {
-    test.fail(true, 'home does nothing yet (#151)');
     await open(page, '/000c00000000000002');
     await expect
       .poll(async () => (await readNodes(page)).content)
@@ -89,7 +87,6 @@ test.describe('Home', () => {
   test('adds no history entry when already on the start node', async ({
     page,
   }) => {
-    test.fail(true, 'home does nothing yet (#151)');
     await open(page, '/');
     await expect
       .poll(async () => (await readNodes(page)).content)
