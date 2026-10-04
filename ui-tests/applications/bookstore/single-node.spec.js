@@ -15,8 +15,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * way shows exactly the node that was chosen.
  */
 
-const FAIL = 'the page still shows two nodes (#209)';
-
 /** What the one node shows. */
 function readNode(page) {
   return page.evaluate(() => {
@@ -95,7 +93,6 @@ test.describe('One node on the page', () => {
   test.use({ actionTimeout: 5000 });
 
   test('the page holds exactly one node', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page, '/000c00000000000002');
     await expect.poll(async () => (await readNode(page)).name).toBeTruthy();
 
@@ -105,7 +102,6 @@ test.describe('One node on the page', () => {
   test('the start page shows the cover node of the entry node', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page, '/');
 
     await expect
@@ -119,7 +115,6 @@ test.describe('One node on the page', () => {
   test('a deep link to a root shows the root itself, with its children', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page, '/000s00000000000011');
 
     await expect
@@ -134,7 +129,6 @@ test.describe('One node on the page', () => {
   });
 
   test('a deep link to a child shows that child', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page, '/000c00000000000002');
 
     await expect
@@ -144,7 +138,6 @@ test.describe('One node on the page', () => {
   });
 
   test('choosing a child in the node shows the child', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page, '/000s00000000000011');
     await expect
       .poll(async () => (await readNode(page)).childButtons.length)
@@ -163,7 +156,6 @@ test.describe('One node on the page', () => {
   });
 
   test('more than two children show as a combobox', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(
       page,
       '/n-three',
@@ -187,7 +179,6 @@ test.describe('One node on the page', () => {
   test('a node with children and contents lists the children first', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(
       page,
       '/n-both',
@@ -208,7 +199,6 @@ test.describe('One node on the page', () => {
   test('drilling into a node in the modal shows its cover node', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page, '/000c00000000000002');
     await expect
       .poll(async () => (await readNode(page)).id)
@@ -228,7 +218,6 @@ test.describe('One node on the page', () => {
   test('choosing a tile without children shows that node and closes', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page, '/000s00000000000011');
     await openModal(page);
     await tile(page, 'Mock Story 1').click();
@@ -245,7 +234,6 @@ test.describe('One node on the page', () => {
   test('a root without children chosen in the modal shows its contents', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     const tree = {
       result: [
         ...MOCK_CONTENTS.result,
@@ -268,6 +256,8 @@ test.describe('One node on the page', () => {
       })(p);
     });
     await openModal(page);
+    // The start page stands on a cover node, so the modal opens on its level.
+    await page.locator('custom-navigation-modal .back-button').click();
 
     await tile(page, 'Lonely Root').click();
 
@@ -278,7 +268,6 @@ test.describe('One node on the page', () => {
   test('a breadcrumb shows the ancestor itself, not its cover node', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page, '/000c00000000000002');
     await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
 
@@ -294,7 +283,6 @@ test.describe('One node on the page', () => {
   });
 
   test('deleting the shown node shows its parent', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page, '/000c00000000000002');
     await expect
       .poll(async () => (await readNode(page)).id)
