@@ -62,7 +62,6 @@ test.describe('Breadcrumbs', () => {
   test('lists the ancestors of the shown node, not the node itself', async ({
     page,
   }) => {
-    test.fail(true, 'no breadcrumbs yet (#150)');
     await open(page, '/000c00000000000002');
 
     await expect(crumbs(page)).toHaveText(['Mock Story 1']);
@@ -75,7 +74,6 @@ test.describe('Breadcrumbs', () => {
   test('clicking the parent empties the lower node and keeps no cover', async ({
     page,
   }) => {
-    test.fail(true, 'no breadcrumbs yet (#150)');
     await open(page, '/000c00000000000002');
     await expect(crumbs(page)).toHaveText(['Mock Story 1']);
 
@@ -179,14 +177,12 @@ test.describe('Breadcrumbs in a deep tree', () => {
   });
 
   test('collapses a long path to root › … › parent', async ({ page }) => {
-    test.fail(true, 'no breadcrumbs yet (#150)');
     await expect(crumbs(page)).toHaveText(['Deep Root', '…', 'Deep Level 3']);
   });
 
   test('clicking a distant ancestor shows it without its cover node', async ({
     page,
   }) => {
-    test.fail(true, 'no breadcrumbs yet (#150)');
     await expect(crumbs(page)).toHaveText(['Deep Root', '…', 'Deep Level 3']);
 
     await crumbLink(page, 'Deep Root').click();
@@ -204,7 +200,6 @@ test.describe('Breadcrumbs in a deep tree', () => {
   test('clicking the parent keeps it above and lists its ancestors', async ({
     page,
   }) => {
-    test.fail(true, 'no breadcrumbs yet (#150)');
     await crumbLink(page, 'Deep Level 3').click();
 
     await expect

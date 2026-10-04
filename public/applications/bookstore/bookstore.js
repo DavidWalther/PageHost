@@ -5,6 +5,7 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
+import { findPath } from '/modules/content-tree.mjs';
 
 console.log('Bookstore.js file loaded');
 
@@ -34,6 +35,8 @@ class Bookstore extends LitElement {
     this.isHydrated = false;
     this._initPara = null;
     this._pendingChildSelection = null;
+    // A breadcrumb asked to show a node itself: skip its cover node once.
+    this._skipCoverOnce = false;
     this._currentLocation = null;
     this._tree = [];
   }
@@ -102,6 +105,7 @@ class Bookstore extends LitElement {
           </slds-layout-item>
         </slds-layout>
       </slds-card>
+      ${this.renderBreadcrumbs()}
       <custom-settings-modal>
         <slds-layout wrap vertical>
           <slds-layout-item size="1-of-1">
@@ -243,6 +247,55 @@ class Bookstore extends LitElement {
     let modalCmp = this.shadowRoot.querySelector('slds-modal');
     modalCmp.setAttribute('title', 'testmodal');
     modalCmp.show();
+  }
+
+  /**
+   * The ancestors of the current node, root first — never the node itself,
+   * which the node card already names. Empty for a root or an unknown node.
+   */
+  get breadcrumbItems() {
+    return findPath(this._tree, this._currentLocation)
+      .slice(0, -1)
+      .map((node) => ({ key: node.id, label: node.name, href: `/${node.id}` }));
+  }
+
+  /** A row below the header for going up; nothing when there is no way up. */
+  renderBreadcrumbs() {
+    const items = this.breadcrumbItems;
+    if (items.length === 0) {
+      return '';
+    }
+    // The last item is the parent, not the current node — it must be a link.
+    return html`
+      <div class="slds-m-horizontal_small slds-m-top_x-small">
+        <slds-breadcrumbs
+          overflow
+          overflow_limit="2"
+          last-item-as-link
+          .items="${items}"
+          @breadcrumb-select="${this.handleBreadcrumbSelect}"
+        ></slds-breadcrumbs>
+      </div>
+    `;
+  }
+
+  /**
+   * Going up: the page shows the ancestor itself — above, with nothing below
+   * and without its cover node. When it already is the upper node, only the
+   * lower one empties.
+   */
+  handleBreadcrumbSelect(event) {
+    const id = event.detail?.key;
+    if (!id) {
+      return;
+    }
+    if (this.navigationNode.getAttribute('id') !== id) {
+      this._skipCoverOnce = true;
+      this.navigationNode.setAttribute('id', id);
+    }
+    this.navigationNode.removeAttribute('selected-child');
+    this.contentNode.removeAttribute('id');
+    this._setCurrentLocation(id);
   }
 
   handleOpenSettings() {
@@ -562,6 +615,12 @@ class Bookstore extends LitElement {
     // content tree uses, or the modal would never find it.
     if (nodeData.legacy_id && this._currentLocation === nodeData.legacy_id) {
       this._setCurrentLocation(nodeData);
+    }
+
+    if (this._skipCoverOnce) {
+      // A breadcrumb asked for the node itself, not for its cover node.
+      this._skipCoverOnce = false;
+      return;
     }
 
     if (this._pendingChildSelection) {
