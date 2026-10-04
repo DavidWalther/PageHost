@@ -23,11 +23,19 @@ zeigen kann, steht in seiner Antwort:
 Ein Knoten weiß nicht, ob er einmal eine Story war.
 
 **Wofür** eine einzelne Instanz da ist, weiß er ebenso wenig — das sagt der
-Consumer über Attribute (siehe unten). Beides ist nötig und ersetzt einander
-nicht: Der `bookstore` stellt zwei Instanzen übereinander, oben die Auswahl,
-unten den gewählten Knoten. Ohne diese Angabe böte die obere Instanz Aktionen
-an, die an ihrer Stelle ins Leere führen — etwa das Löschen des Knotens, an dem
-die ganze Auswahl hängt.
+Consumer über Attribute (siehe unten). Der `bookstore` hält **eine** Instanz:
+Sie zeigt den Knoten, auf dem der Besucher steht, Kinder oben, Inhalte darunter,
+und erlaubt `can-create-content` und `can-delete`. `can-create-child` setzt er
+nicht — neben „Inhalt anlegen“ wäre es ein zweites, gleich aussehendes „+“; das
+Anlegen von Kindern kommt ins Navigations-Modal (#187).
+
+Früher standen zwei Instanzen übereinander (oben die Auswahl, unten der gewählte
+Knoten). Aus dieser Zeit stammen `no-child-navigation`, `no-contents` und
+`selected-child`. Sie funktionieren weiter und bleiben als Bausteine erhalten,
+haben in der App aber derzeit keinen Verwender.
+
+Gezeigt wird ein Knoten über `adoptNode(record)`. Dabei wird auch der Stand
+eines Sprungs zu einem Inhalt zurückgesetzt — er gehört zum vorigen Knoten.
 
 ## Attribute
 
@@ -58,7 +66,7 @@ Die `can-…`-Attribute für schreibende Aktionen ersetzen die Scope-Prüfung
 gesetztem Attribut nicht — und zwar ganz: Die Leiste bekommt dann auch kein
 leeres Element, das als Lücke stehen bliebe.
 
-**`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
+**`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Jede Instanz trägt
 sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.
 `Bearbeiten` hängt trotzdem am Scope `edit`; `Teilen` erscheint immer.
 Kommt eine Rolle dazu, für die das nicht mehr gilt, ist das der Moment, es
