@@ -37,3 +37,26 @@ export function findNode(tree, id) {
   const path = findPath(tree, id);
   return path.length > 0 ? path[path.length - 1] : null;
 }
+
+/**
+ * The siblings just before and after a node, under the same parent (the roots
+ * count as siblings of each other), in tree order — the backend sorts each
+ * level by `sortnumber`.
+ *
+ * @param {Array<object>} tree root nodes
+ * @param {string} id
+ * @returns {{ previous: object|null, next: object|null }}
+ */
+export function findSiblings(tree, id) {
+  const path = findPath(tree, id);
+  if (path.length === 0) {
+    return { previous: null, next: null };
+  }
+  const level =
+    path.length === 1 ? tree : path[path.length - 2].childnodes || [];
+  const index = level.findIndex((node) => node.id === id);
+  return {
+    previous: index > 0 ? level[index - 1] : null,
+    next: index < level.length - 1 ? level[index + 1] : null,
+  };
+}

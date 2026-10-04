@@ -112,7 +112,6 @@ test.describe('content-tree module', () => {
     ];
 
     test('returns the neighbours in tree order', async ({ page }) => {
-      test.fail(true, 'findSiblings does not exist yet');
       const result = await inPage(page, (m, tree) =>
         m.findSiblings(tree, 'level-2')
       );
@@ -121,7 +120,6 @@ test.describe('content-tree module', () => {
     });
 
     test('has no next on the last sibling', async ({ page }) => {
-      test.fail(true, 'findSiblings does not exist yet');
       const result = await inPage(page, (m, tree) =>
         m.findSiblings(tree, 'level-2-b')
       );
@@ -130,7 +128,6 @@ test.describe('content-tree module', () => {
     });
 
     test('has neither for an only child', async ({ page }) => {
-      test.fail(true, 'findSiblings does not exist yet');
       const result = await inPage(page, (m, tree) =>
         m.findSiblings(tree, 'level-4')
       );
@@ -139,7 +136,6 @@ test.describe('content-tree module', () => {
     });
 
     test('treats the roots as siblings of each other', async ({ page }) => {
-      test.fail(true, 'findSiblings does not exist yet');
       const result = await inPage(page, (m, tree) =>
         m.findSiblings(tree, 'root-2')
       );
@@ -150,7 +146,6 @@ test.describe('content-tree module', () => {
     test('has neither for an unknown id or a missing tree', async ({
       page,
     }) => {
-      test.fail(true, 'findSiblings does not exist yet');
       const results = await inPage(page, (m, tree) => [
         m.findSiblings(tree, 'nope'),
         m.findSiblings(undefined, 'root-1'),
