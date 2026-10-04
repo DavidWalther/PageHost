@@ -151,6 +151,10 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     besitzt der `bookstore` — einmal beim Start und nach jeder Änderung an
     einem Knoten —, das Modal bekommt ihn nur übergeben.
     → `public/components/custom-navigation-modal/README.md`
+  - **Breadcrumbs** (`slds-breadcrumbs` im `bookstore`, Zeile unter der
+    Kopfzeile) führen **nach oben**: Sie listen die Vorfahren des aktuellen
+    Knotens, nie ihn selbst. Ein Klick zeigt den Vorfahren selbst, ohne seinen
+    Titel-Knoten. Pfad und Modal rechnen auf demselben Baum des `bookstore`.
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und

@@ -136,7 +136,8 @@ any more. Ids of the retired model keep working because every lookup matches
 ## C — Reading and navigating
 
 The application shows **two nodes** at once: the upper one offers its children as
-a selection, the lower one shows the chosen node's contents. Both are the same
+a selection, the lower one shows the chosen node's contents. A breadcrumb row
+below the header leads **up**: it lists the ancestors of the current node. Both are the same
 component — what a node can show follows from its data, what an instance is for
 is set by the page.
 
@@ -168,6 +169,12 @@ is set by the page.
 | UC-C-24 | Pick a root without children                 | visitor                   | the top level holds a root without children                       | click its tile                                                           | the modal closes and the root fills the selection, like a deep link to a root (UC-B-03)                            |
 | UC-C-25 | See the tree after a node changed            | operator + edit           | the modal has loaded the tree                                     | create, rename, delete, publish or unpublish a node, then open the modal | the modal shows the new state; an open level stays as far as it still exists, otherwise the nearest one above      |
 | UC-C-26 | Publish a content without reloading the tree | operator + publish + edit | the modal has loaded the tree                                     | publish or unpublish a content                                           | the tree is not loaded again — contents are not part of it                                                         |
+| UC-C-27 | See where the current node sits              | visitor                   | the current node has ancestors                                    | look below the header                                                    | a row lists its ancestors, root first; the current node itself is not in it — the node card already names it       |
+| UC-C-28 | See no path on a root node                   | visitor                   | the current node is a root, or the tree is not loaded yet         | look below the header                                                    | there is no breadcrumb row                                                                                         |
+| UC-C-29 | See a long path collapsed                    | visitor                   | the current node has more than two ancestors                      | look below the header                                                    | `<root> › … › <parent>`                                                                                            |
+| UC-C-30 | Go up to the parent                          | visitor                   | the row is shown                                                  | click the last item                                                      | the parent stays above, the lower node empties; the row lists the parent's ancestors                               |
+| UC-C-31 | Go up to a distant ancestor                  | visitor                   | the row shows an ancestor beyond the parent                       | click it                                                                 | that ancestor is shown above, nothing below — **not** its cover node, even where one is set                        |
+| UC-C-32 | Open an ancestor in a new tab                | visitor                   | the row is shown                                                  | middle-click an item                                                     | a new tab opens `<origin>/<nodeId>` as a deep link                                                                 |
 
 ## D — Settings
 
