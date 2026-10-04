@@ -114,3 +114,82 @@ test.describe('Home', () => {
     expect(await isSameDocument(page)).toBe(true);
   });
 });
+
+test.describe('Browser back and forward after home', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const contentNumber = (page) =>
+    page.evaluate(() =>
+      document
+        .querySelector('app-bookstore')
+        .shadowRoot.querySelector('custom-node[data-role="content"]')
+        .getAttribute('contentnumber')
+    );
+
+  test('back shows the left node inside the app', async ({ page }) => {
+    await open(page, '/000c00000000000002');
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000002');
+    await homeLink(page).click();
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000001');
+    await markDocument(page);
+
+    await page.evaluate(() => history.back());
+
+    // The child below, its parent above — not the parent's cover node, which a
+    // doubled "loaded" handler would put there over the explicit choice.
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000002');
+    await page.waitForTimeout(300);
+    expect(await readNodes(page)).toEqual({
+      navigation: '000n00000000000011',
+      content: '000n00000000000002',
+    });
+    expect(await isSameDocument(page)).toBe(true);
+    await expect(page.locator('app-bookstore slds-breadcrumbs li')).toHaveText([
+      'Startseite',
+      'Mock Story 1',
+    ]);
+  });
+
+  test('forward shows the start page again', async ({ page }) => {
+    await open(page, '/000c00000000000002');
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000002');
+    await homeLink(page).click();
+    await page.evaluate(() => history.back());
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000002');
+
+    await page.evaluate(() => history.forward());
+
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000001');
+    expect(await page.evaluate(() => location.pathname)).toBe('/');
+  });
+
+  test('back does not jump to the paragraph number of the first address', async ({
+    page,
+  }) => {
+    await open(page, '/000c00000000000002?paragraphnumber=3');
+    await expect.poll(() => contentNumber(page)).toBe('3');
+    await homeLink(page).click();
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000001');
+
+    await page.evaluate(() => history.back());
+
+    await expect
+      .poll(async () => (await readNodes(page)).content)
+      .toBe('000n00000000000002');
+    expect(await contentNumber(page)).toBeNull();
+  });
+});
