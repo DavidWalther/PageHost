@@ -307,3 +307,114 @@ test.describe('One node on the page', () => {
       .toBe('000n00000000000011');
   });
 });
+
+test.describe('Previous and next below the node', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const sibling = (page, direction) =>
+    page.locator(
+      `app-bookstore custom-sibling-navigation button[data-direction="${direction}"]`
+    );
+
+  test('the first sibling offers only next', async ({ page }) => {
+    await open(page, '/000c00000000000001');
+
+    await expect(sibling(page, 'next')).toHaveText(
+      'Mock Chapter 2 for Story 1 ›'
+    );
+    await expect(sibling(page, 'previous')).toHaveCount(0);
+  });
+
+  test('next shows the next sibling, which offers only previous', async ({
+    page,
+  }) => {
+    await open(page, '/000c00000000000001');
+
+    await sibling(page, 'next').click();
+
+    await expect
+      .poll(async () => (await readNode(page)).id)
+      .toBe('000n00000000000002');
+    await expect(sibling(page, 'previous')).toHaveText(
+      '‹ Mock Chapter 1 for Story 1'
+    );
+    await expect(sibling(page, 'next')).toHaveCount(0);
+  });
+
+  test('previous shows the previous sibling', async ({ page }) => {
+    await open(page, '/000c00000000000002');
+
+    await sibling(page, 'previous').click();
+
+    await expect
+      .poll(async () => (await readNode(page)).id)
+      .toBe('000n00000000000001');
+  });
+
+  test('an only child has no buttons at all', async ({ page }) => {
+    await open(
+      page,
+      '/000n00000000000003',
+      routeNodes({
+        '000n00000000000003': child(
+          '000n00000000000003',
+          'Mock Chapter 1 for Story 2',
+          '000n00000000000012'
+        ),
+      })
+    );
+    await expect
+      .poll(async () => (await readNode(page)).id)
+      .toBe('000n00000000000003');
+
+    await expect(
+      page.locator('app-bookstore custom-sibling-navigation button')
+    ).toHaveCount(0);
+  });
+
+  test('a node without contents has the buttons below its children', async ({
+    page,
+  }) => {
+    // The root Mock Story 1 has children, no contents; its sibling is the
+    // other root.
+    await open(page, '/000s00000000000011');
+    await expect(sibling(page, 'next')).toHaveText('Mock Story 2 ›');
+
+    const below = await page.evaluate(() => {
+      const root = document.querySelector('app-bookstore').shadowRoot;
+      const node = root.querySelector('custom-node');
+      const bar = root.querySelector('custom-sibling-navigation');
+      return !!(
+        node.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+    });
+    expect(below).toBe(true);
+  });
+
+  test('the names follow a reload of the tree', async ({ page }) => {
+    await open(page, '/000c00000000000001');
+    await expect(sibling(page, 'next')).toHaveText(
+      'Mock Chapter 2 for Story 1 ›'
+    );
+    const renamed = JSON.parse(JSON.stringify(MOCK_CONTENTS));
+    renamed.result[0].childnodes[1].name = 'Renamed Chapter';
+    await page.route('**/api/1.0/contents/**', (route) =>
+      route.fulfill({ json: renamed })
+    );
+
+    await page.evaluate(() =>
+      document
+        .querySelector('app-bookstore')
+        .shadowRoot.querySelector('custom-node')
+        .dispatchEvent(
+          new CustomEvent('chapter-updated', {
+            detail: { chapterData: { id: '000n00000000000002' } },
+            bubbles: true,
+            composed: true,
+          })
+        )
+    );
+
+    await expect(sibling(page, 'next')).toHaveText('Renamed Chapter ›');
+  });
+});

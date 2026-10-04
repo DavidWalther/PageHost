@@ -5,7 +5,8 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
-import { findPath } from '/modules/content-tree.mjs';
+import { findPath, findSiblings } from '/modules/content-tree.mjs';
+import '/components/custom-sibling-navigation/custom-sibling-navigation.js';
 
 console.log('Bookstore.js file loaded');
 
@@ -205,6 +206,7 @@ class Bookstore extends LitElement {
             can-create-content
             can-delete
           ></custom-node>
+          ${this.renderSiblingNavigation()}
         </div>
       </div>
     `;
@@ -274,6 +276,26 @@ class Bookstore extends LitElement {
         ></slds-breadcrumbs>
       </div>
     `;
+  }
+
+  /**
+   * Previous / next below the node: its siblings under the same parent, from
+   * the content tree. Nothing at an edge, nothing for an only child.
+   */
+  renderSiblingNavigation() {
+    const { previous, next } = findSiblings(this._tree, this._currentLocation);
+    const asSibling = (node) =>
+      node ? { id: node.id, name: node.name } : null;
+    return html`<custom-sibling-navigation
+      .previous=${asSibling(previous)}
+      .next=${asSibling(next)}
+      @sibling-select=${this.handleSiblingSelect}
+    ></custom-sibling-navigation>`;
+  }
+
+  /** A sibling chosen below the node: exactly that node, no cover rule. */
+  handleSiblingSelect(event) {
+    this.showNode(event.detail.id);
   }
 
   /** Going up: the page shows the ancestor itself, not its cover node. */
