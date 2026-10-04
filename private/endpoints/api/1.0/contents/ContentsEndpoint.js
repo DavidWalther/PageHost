@@ -73,6 +73,7 @@ class ContentsEndpoint extends EndpointLogic {
   /**
    * Maps raw node records to Node objects. Allow-list mapping, so
    * published_date and internal columns never reach the response.
+   * `sortnumber` is in it: a client creating a node proposes the next one.
    */
   static mapToNodes(records, depth) {
     if (!Array.isArray(records)) {
@@ -82,6 +83,7 @@ class ContentsEndpoint extends EndpointLogic {
       id: record.id,
       name: record.name,
       label: record.name,
+      sortnumber: record.sortnumber ?? null,
       childnodes:
         depth > 1 ? ContentsEndpoint.mapToNodes(record.nodes, depth - 1) : [],
     }));

@@ -97,6 +97,7 @@ describe('ContentsEndpoint', () => {
       id: expect.any(String),
       name: expect.any(String),
       label: node.name,
+      sortnumber: expect.any(Number),
       childnodes: expect.any(Array),
     });
     expect(node.label).toBe(node.name);
