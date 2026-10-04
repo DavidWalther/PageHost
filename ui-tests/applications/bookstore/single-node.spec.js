@@ -317,7 +317,6 @@ test.describe('Previous and next below the node', () => {
     );
 
   test('the first sibling offers only next', async ({ page }) => {
-    test.fail(true, 'no sibling buttons yet (#209)');
     await open(page, '/000c00000000000001');
 
     await expect(sibling(page, 'next')).toHaveText(
@@ -329,7 +328,6 @@ test.describe('Previous and next below the node', () => {
   test('next shows the next sibling, which offers only previous', async ({
     page,
   }) => {
-    test.fail(true, 'no sibling buttons yet (#209)');
     await open(page, '/000c00000000000001');
 
     await sibling(page, 'next').click();
@@ -344,7 +342,6 @@ test.describe('Previous and next below the node', () => {
   });
 
   test('previous shows the previous sibling', async ({ page }) => {
-    test.fail(true, 'no sibling buttons yet (#209)');
     await open(page, '/000c00000000000002');
 
     await sibling(page, 'previous').click();
@@ -378,7 +375,6 @@ test.describe('Previous and next below the node', () => {
   test('a node without contents has the buttons below its children', async ({
     page,
   }) => {
-    test.fail(true, 'no sibling buttons yet (#209)');
     // The root Mock Story 1 has children, no contents; its sibling is the
     // other root.
     await open(page, '/000s00000000000011');
@@ -396,7 +392,6 @@ test.describe('Previous and next below the node', () => {
   });
 
   test('the names follow a reload of the tree', async ({ page }) => {
-    test.fail(true, 'no sibling buttons yet (#209)');
     await open(page, '/000c00000000000001');
     await expect(sibling(page, 'next')).toHaveText(
       'Mock Chapter 2 for Story 1 ›'
