@@ -54,7 +54,7 @@ signIn --> IdentityProvider
 | `shareOrOpenALink`       | UC-B-02 – UC-B-10, UC-C-20, UC-C-32, UC-C-37                                                                     |
 | `adjustTheApp`           | UC-D-01 – UC-D-07                                                                                                |
 | `signIn`                 | UC-E-01 – UC-E-18                                                                                                |
-| `manageTheNodeTree`      | UC-F-01 – UC-F-12, UC-F-20, UC-C-25                                                                              |
+| `manageTheNodeTree`      | UC-F-01 – UC-F-12, UC-F-20 – UC-F-23, UC-C-25                                                                    |
 | `manageContents`         | UC-G-01 – UC-G-20                                                                                                |
 | `publishOrWithdraw`      | UC-F-13 – UC-F-19, UC-G-21 – UC-G-23, UC-C-26                                                                    |
 | `discoverPublishedPages` | UC-A-04 – UC-A-05, UC-H-14                                                                                       |
