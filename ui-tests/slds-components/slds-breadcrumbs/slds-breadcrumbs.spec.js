@@ -154,6 +154,29 @@ test.describe('slds-breadcrumbs', () => {
     expect(res.ariaCurrent[3]).toBe('page');
   });
 
+  test('no-current-item marks no item as the current page', async ({
+    page,
+  }) => {
+    test.fail(true, 'no-current-item does not exist yet');
+    const res = await mountBreadcrumbs(page, {
+      attrs: { 'no-current-item': true },
+    });
+    expect(res.ariaCurrent).toEqual([null, null, null, null]);
+    // Only the marking goes; the last item stays a span as before.
+    expect(res.tags).toEqual(['A', 'A', 'A', 'SPAN']);
+  });
+
+  test('no-current-item with last-item-as-link: every item a link, none current', async ({
+    page,
+  }) => {
+    test.fail(true, 'no-current-item does not exist yet');
+    const res = await mountBreadcrumbs(page, {
+      attrs: { 'no-current-item': true, 'last-item-as-link': true },
+    });
+    expect(res.tags).toEqual(['A', 'A', 'A', 'A']);
+    expect(res.ariaCurrent).toEqual([null, null, null, null]);
+  });
+
   test('Klick feuert breadcrumb-select mit detail { key, label, href, index }', async ({
     page,
   }) => {
