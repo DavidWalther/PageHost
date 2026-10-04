@@ -418,3 +418,54 @@ test.describe('slds-modal', () => {
     expect(await focusedId(page)).toBe('outside');
   });
 });
+
+test.describe('slds-modal stacked', () => {
+  // A dialog opened over another (the create dialog over the navigation
+  // modal): Escape belongs to the one on top.
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+    await page.evaluate(async () => {
+      await import('/slds-components/slds-modal/slds-modal.js');
+      document.querySelectorAll('slds-modal').forEach((el) => el.remove());
+      for (const id of ['lower', 'upper']) {
+        const el = document.createElement('slds-modal');
+        el.id = id;
+        document.body.appendChild(el);
+        await el.updateComplete;
+      }
+      document.getElementById('lower').show();
+      await document.getElementById('lower').updateComplete;
+      document.getElementById('upper').show();
+      await document.getElementById('upper').updateComplete;
+    });
+  });
+
+  const openState = (page) =>
+    page.evaluate(() => ({
+      lower: document.getElementById('lower').open,
+      upper: document.getElementById('upper').open,
+    }));
+  const pressEscape = (page) =>
+    page.evaluate(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+      await document.getElementById('upper').updateComplete;
+      await document.getElementById('lower').updateComplete;
+    });
+
+  test('Escape closes only the modal opened last', async ({ page }) => {
+    test.fail(true, 'every open modal reacts to Escape (#187)');
+    await pressEscape(page);
+
+    expect(await openState(page)).toEqual({ lower: true, upper: false });
+  });
+
+  test('a second Escape then closes the one below', async ({ page }) => {
+    // Guard: once only the top modal reacts, the lower one must still close.
+    await pressEscape(page);
+    await pressEscape(page);
+
+    expect(await openState(page)).toEqual({ lower: false, upper: false });
+  });
+});
