@@ -21,7 +21,7 @@ const MOCK_METADATA = {
 };
 
 // Content tree as `/api/1.0/contents/all` delivers it:
-// Node = { id, label, name, childnodes: Node[] } (allowlist, see
+// Node = { id, label, name, sortnumber, childnodes: Node[] } (allowlist, see
 // private/endpoints/api/1.0/contents/README.md). The ids are the record ids
 // of MOCK_NODES below, never the legacy_id — exactly what the backend sends.
 // Two roots, so the navigation modal shows a list of more than one.
@@ -31,17 +31,20 @@ const MOCK_CONTENTS = {
       id: '000n00000000000011',
       label: 'Mock Story 1',
       name: 'Mock Story 1',
+      sortnumber: 1,
       childnodes: [
         {
           id: '000n00000000000001',
           label: 'Mock Chapter 1 for Story 1',
           name: 'Mock Chapter 1 for Story 1',
+          sortnumber: 1,
           childnodes: [],
         },
         {
           id: '000n00000000000002',
           label: 'Mock Chapter 2 for Story 1',
           name: 'Mock Chapter 2 for Story 1',
+          sortnumber: 2,
           childnodes: [],
         },
       ],
@@ -50,11 +53,13 @@ const MOCK_CONTENTS = {
       id: '000n00000000000012',
       label: 'Mock Story 2',
       name: 'Mock Story 2',
+      sortnumber: 2,
       childnodes: [
         {
           id: '000n00000000000003',
           label: 'Mock Chapter 1 for Story 2',
           name: 'Mock Chapter 1 for Story 2',
+          sortnumber: 1,
           childnodes: [],
         },
       ],
