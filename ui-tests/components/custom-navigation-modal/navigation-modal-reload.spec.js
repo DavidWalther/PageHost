@@ -97,7 +97,9 @@ test.describe('Navigation modal reload', () => {
     });
     await openModal(page);
 
-    await expect(tile(page, 'Mock Story 1')).toHaveText('Mock Story 1');
+    await expect(tile(page, 'Mock Story 1').locator('.tile__name')).toHaveText(
+      'Mock Story 1'
+    );
     expect(contentsCalls).toBe(1);
   });
 
