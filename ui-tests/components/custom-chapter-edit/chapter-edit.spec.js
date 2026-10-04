@@ -269,3 +269,127 @@ test.describe('custom-chapter-edit: reverse order', () => {
     expect(message.payload.reversed).toBe(true);
   });
 });
+
+test.describe('custom-chapter-edit: opened from outside', () => {
+  // The navigation modal is the trigger: no button of its own, openCreate()
+  // instead. The siblings come in as `chapters` (with their sortnumber).
+  const SIBLINGS = [
+    { id: 'n-a', name: 'A', sortnumber: 10 },
+    { id: 'n-b', name: 'B', sortnumber: 30 },
+    { id: 'n-c', name: 'C', sortnumber: 20 },
+  ];
+
+  async function mountWithoutTrigger(
+    page,
+    { scopes = ['create', 'edit'], parentId = 'n-parent' } = {}
+  ) {
+    await page.evaluate(
+      async ({ scopes, parentId, siblings }) => {
+        sessionStorage.setItem(
+          'code_exchange_response',
+          JSON.stringify({ authenticationResult: { access: { scopes } } })
+        );
+        await import('/slds-components/slds-button-icon/slds-button-icon.js');
+        await import('/slds-components/slds-modal/slds-modal.js');
+        await import('/slds-components/slds-input/slds-input.js');
+        await import('/slds-components/slds-toggle/slds-toggle.js');
+        await import('/components/custom-publishing/custom-publishing.js');
+        await import('/components/custom-chapter-edit/custom-chapter-edit.js');
+        document
+          .querySelectorAll('custom-chapter-edit')
+          .forEach((el) => el.remove());
+
+        const el = document.createElement('custom-chapter-edit');
+        el.setAttribute('no-trigger', '');
+        if (parentId) {
+          el.setAttribute('story-id', parentId);
+        }
+        el.chapters = siblings;
+        document.body.appendChild(el);
+        await el.updateComplete;
+      },
+      { scopes, parentId, siblings: SIBLINGS }
+    );
+    return page.locator('custom-chapter-edit');
+  }
+
+  const openCreate = (page) =>
+    page.evaluate(async () => {
+      const el = document.querySelector('custom-chapter-edit');
+      el.openCreate();
+      await el.updateComplete;
+    });
+
+  const modalOpen = (page) =>
+    page.locator('custom-chapter-edit slds-modal[open]');
+
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('no-trigger renders no button of its own', async ({ page }) => {
+    test.fail(true, 'no-trigger does not exist yet (#187)');
+    const editor = await mountWithoutTrigger(page);
+
+    await expect(editor.locator('slds-button-icon')).toHaveCount(0);
+  });
+
+  test('openCreate opens the dialog with a name and the next sort number', async ({
+    page,
+  }) => {
+    test.fail(true, 'openCreate does not exist yet (#187)');
+    const editor = await mountWithoutTrigger(page);
+
+    await openCreate(page);
+
+    await expect(modalOpen(page)).toHaveCount(1);
+    await expect(editor.locator('slds-input').first()).toHaveAttribute(
+      'value',
+      'Neues Kapitel'
+    );
+    // Highest sortnumber among the siblings (30) plus one.
+    await expect(editor.locator('slds-input').nth(1)).toHaveAttribute(
+      'value',
+      '31'
+    );
+  });
+
+  test('confirming creates a child of story-id', async ({ page }) => {
+    test.fail(true, 'openCreate does not exist yet (#187)');
+    const editor = await mountWithoutTrigger(page);
+    await captureWrites(page);
+    await openCreate(page);
+
+    await editor.locator('button', { hasText: 'Erstellen' }).click();
+
+    const message = await written(page);
+    expect(message.event).toBe('create');
+    expect(message.object).toBe('node');
+    expect(message.payload.parent_node_id).toBe('n-parent');
+    expect(message.payload.sortnumber).toBe(31);
+  });
+
+  test('without story-id it creates a root', async ({ page }) => {
+    test.fail(true, 'openCreate does not exist yet (#187)');
+    const editor = await mountWithoutTrigger(page, { parentId: null });
+    await captureWrites(page);
+    await openCreate(page);
+
+    await editor.locator('button', { hasText: 'Erstellen' }).click();
+
+    expect((await written(page)).payload.parent_node_id).toBeFalsy();
+  });
+
+  test('without the create scope openCreate opens nothing', async ({
+    page,
+  }) => {
+    test.fail(true, 'openCreate does not exist yet (#187)');
+    await mountWithoutTrigger(page, { scopes: ['edit'] });
+
+    await openCreate(page);
+
+    await expect(
+      page.locator('custom-chapter-edit slds-modal')
+    ).not.toHaveAttribute('open');
+  });
+});
