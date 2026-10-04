@@ -140,9 +140,12 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     Auswahl, seine Inhalte als Text. Es gibt keinen Modus und keine
     Tiefenangabe — die Daten sagen, **was** ein Knoten hat. **Wofür** eine
     Instanz da ist, sagt der Consumer über Attribute (`no-…` fürs Rendering,
-    `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
-    Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
-    beauftragt. → `public/components/custom-node/README.md`
+    `can-…` für Aktionen). Die App (`bookstore`) hält **eine** Instanz: den
+    Knoten, auf dem der Besucher steht — Kinder oben (Buttons, ab drei eine
+    Combobox), Inhalte darunter. Darunter führt **`custom-sibling-navigation`**
+    zum vorigen bzw. nächsten Geschwister. Der Ort ist immer die Id dieses
+    Knotens; der Titel-Knoten eines Knotens wird nur auf der Startseite und beim
+    Drill-Down im Modal gezeigt. → `public/components/custom-node/README.md`
   - **`custom-navigation-modal`** zeigt den Inhaltsbaum als Kacheln, **Ebene
     für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
     (die Seite dahinter folgt, ein Titel-Knoten lädt), eine ohne Kinder wählt
