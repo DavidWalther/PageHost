@@ -24,8 +24,8 @@ const { cacheLitBundle } = require('../../support/component-page');
 // Gutter der Kind-Navigation: slds-gutters, 12px je Seite.
 const GUTTER = 24;
 
-const navigationNode = (page) =>
-  page.locator('custom-node[data-role="navigation"]');
+// The one node on the page; on a root it lists the root's children.
+const navigationNode = (page) => page.locator('app-bookstore custom-node');
 
 function readChildNavigation(node) {
   return node.evaluate((host) => {
@@ -71,7 +71,7 @@ test.describe('Knoten: Aufbau der Kind-Navigation', () => {
   test('Buttons: jedes Element ist so breit wie sein Button plus Gutter', async ({
     page,
   }) => {
-    await page.goto('/000c00000000000001');
+    await page.goto('/000s00000000000011');
     await expect(
       navigationNode(page).locator('#child-navigation button')
     ).toHaveCount(2);
@@ -97,7 +97,7 @@ test.describe('Knoten: Aufbau der Kind-Navigation', () => {
             );
       return route.fulfill({ json: match || {} });
     });
-    await page.goto('/');
+    await page.goto('/000s00000000000011');
     await expect(
       navigationNode(page).locator('#child-navigation slds-combobox')
     ).toHaveCount(1);

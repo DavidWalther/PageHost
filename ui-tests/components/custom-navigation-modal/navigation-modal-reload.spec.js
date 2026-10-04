@@ -35,7 +35,8 @@ async function open(page) {
     route.fulfill({ json: contentsCalls === 1 ? MOCK_CONTENTS : CHANGED_TREE });
   });
   await cacheLitBundle(page);
-  await page.goto('/');
+  // A root deep link: the modal opens on the top level.
+  await page.goto('/000s00000000000011');
   await expect(page.locator('app-bookstore')).toBeAttached();
   await expect.poll(() => contentsCalls).toBe(1);
 }
@@ -46,7 +47,7 @@ function dispatchFromNavigationNode(page, name, detail) {
     ({ eventName, eventDetail }) => {
       const node = document
         .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="navigation"]');
+        .shadowRoot.querySelector('custom-node');
       node.dispatchEvent(
         new CustomEvent(eventName, {
           detail: eventDetail,
@@ -60,7 +61,9 @@ function dispatchFromNavigationNode(page, name, detail) {
 }
 
 const tile = (page, text) =>
-  page.locator('custom-navigation-modal button.tile', { hasText: text });
+  page
+    .locator('custom-navigation-modal button.tile')
+    .filter({ has: page.locator('.tile__name', { hasText: text }) });
 const openModal = (page) => page.locator('#button-navigation_open').click();
 
 test.describe('Navigation modal reload', () => {
@@ -95,7 +98,9 @@ test.describe('Navigation modal reload', () => {
     });
     await openModal(page);
 
-    await expect(tile(page, 'Mock Story 1')).toHaveText('Mock Story 1');
+    await expect(tile(page, 'Mock Story 1').locator('.tile__name')).toHaveText(
+      'Mock Story 1'
+    );
     expect(contentsCalls).toBe(1);
   });
 

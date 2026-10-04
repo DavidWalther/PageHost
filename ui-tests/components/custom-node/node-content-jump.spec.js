@@ -28,9 +28,7 @@ const INHALTE = [1, 2, 3, 4, 5].map((nummer) => ({
 /** Der erste Absatz antwortet nie — die Anfrage bleibt offen. */
 const NIE_ANTWORTENDER_INHALT = INHALTE[0].id;
 
-const navigationNode = (page) =>
-  page.locator('custom-node[data-role="navigation"]');
-const contentNode = (page) => page.locator('custom-node[data-role="content"]');
+const contentNode = (page) => page.locator('app-bookstore custom-node');
 
 test.describe('Knoten: ein Sprung, der nicht fertig wird', () => {
   test.beforeEach(async ({ page }) => {
@@ -68,8 +66,8 @@ test.describe('Knoten: ein Sprung, der nicht fertig wird', () => {
     });
 
     await page.goto('/000c00000000000001?paragraphnumber=3');
-    await expect(navigationNode(page).locator('#node-name')).toHaveText(
-      'Mock Story 1'
+    await expect(contentNode(page).locator('#node-name')).toHaveText(
+      'Mock Chapter 1 for Story 1'
     );
   });
 
@@ -83,13 +81,15 @@ test.describe('Knoten: ein Sprung, der nicht fertig wird', () => {
     await expect(contentNode(page).locator('slds-card')).toBeHidden();
   });
 
-  test('nach dem Wechsel ist der nächste Knoten sichtbar', async ({ page }) => {
-    await navigationNode(page)
-      .locator('button[data-node-id="000n00000000000002"]')
+  test('after a switch the next node is visible', async ({ page }) => {
+    // The card of the waiting node is hidden, and its children with it — the
+    // switch goes through the breadcrumb row, which sits outside the node.
+    await page
+      .locator('app-bookstore slds-breadcrumbs a', { hasText: 'Mock Story 1' })
       .click();
 
     await expect(contentNode(page).locator('#node-name')).toHaveText(
-      'Mock Chapter 2 for Story 1'
+      'Mock Story 1'
     );
     // Der Zählstand des vorigen Knotens darf diesen hier nicht verstecken.
     await expect(contentNode(page).locator('slds-card')).toBeVisible();

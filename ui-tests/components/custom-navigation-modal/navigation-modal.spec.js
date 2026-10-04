@@ -13,15 +13,22 @@ const { cacheLitBundle } = require('../../support/component-page');
  * Runs anonymously — every data callout is mocked via `page.route()`, no
  * Postgres or Redis involved.
  */
+// A deep link to the root: the location is the root itself, so the modal
+// opens on the top level. (The start page stands on the root's cover node.)
+const ROOT = '/000s00000000000011';
+
 test.describe('Navigation modal', () => {
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  // A tile is found by its name, not by its whole text (which may carry more).
   const tileByText = (page, text) =>
-    page.locator('custom-navigation-modal button.tile', { hasText: text });
+    page
+      .locator('custom-navigation-modal button.tile')
+      .filter({ has: page.locator('.tile__name', { hasText: text }) });
 
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
     await cacheLitBundle(page);
-    await page.goto('/');
+    await page.goto(ROOT);
     await expect(page.locator('app-bookstore')).toBeAttached();
   });
 
@@ -141,15 +148,12 @@ test.describe('Navigation modal', () => {
     page,
   }) => {
     const readNodes = () =>
-      page.evaluate(() => {
-        const app = document.querySelector('app-bookstore');
-        return ['navigation', 'content'].map((role) => {
-          const node = app.shadowRoot.querySelector(
-            `custom-node[data-role="${role}"]`
-          );
-          return [node.getAttribute('id'), node.getAttribute('selected-child')];
-        });
-      });
+      page.evaluate(() =>
+        document
+          .querySelector('app-bookstore')
+          .shadowRoot.querySelector('custom-node')
+          .getAttribute('id')
+      );
     await openModal(page);
     await expect(tiles(page).first()).toBeVisible();
     const before = await readNodes();
@@ -160,6 +164,16 @@ test.describe('Navigation modal', () => {
     expect(await readNodes()).toEqual(before);
   });
 });
+
+/** A node of a content tree by id, on any level. */
+function findDeep(nodes, id) {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const below = findDeep(node.childnodes || [], id);
+    if (below) return below;
+  }
+  return null;
+}
 
 test.describe('Navigation modal in any depth', () => {
   // Spec-local tree with four levels; the shared MOCK_CONTENTS stays as it is
@@ -209,9 +223,13 @@ test.describe('Navigation modal in any depth', () => {
   };
 
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  const tileNames = (page) =>
+    page.locator('custom-navigation-modal button.tile .tile__name');
   const tile = (page, text) =>
-    page.locator('custom-navigation-modal button.tile', {
-      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    page.locator('custom-navigation-modal button.tile').filter({
+      has: page.locator('.tile__name', {
+        hasText: new RegExp(`^\\s*${text}\\s*$`),
+      }),
     });
   const modal = (page) => page.locator('custom-navigation-modal slds-modal');
   const back = (page) => page.locator('custom-navigation-modal .back-button');
@@ -226,6 +244,24 @@ test.describe('Navigation modal in any depth', () => {
     await page.route('**/api/1.0/contents/**', (route) =>
       route.fulfill({ json: DEEP_TREE })
     );
+    // The page shows a chosen node only once its record arrives: answer every
+    // node of the deep tree with a minimal record.
+    await page.route('**/data/query/node**', (route) => {
+      const id = new URL(route.request().url()).searchParams.get('id');
+      const node = findDeep(DEEP_TREE.result, id);
+      return node
+        ? route.fulfill({
+            json: {
+              id: node.id,
+              name: node.name,
+              parent_node_id: null,
+              cover_node_id: null,
+              nodes: node.childnodes,
+              contents: [],
+            },
+          })
+        : route.fallback();
+    });
     await cacheLitBundle(page);
     await page.goto('/');
     await expect(page.locator('app-bookstore')).toBeAttached();
@@ -237,7 +273,10 @@ test.describe('Navigation modal in any depth', () => {
     await tile(page, 'Deep Level 2').click();
     await tile(page, 'Deep Level 3').click();
 
-    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tileNames(page)).toHaveText([
+      'Deep Level 4',
+      'Deep Level 4 B',
+    ]);
   });
 
   test('goes up exactly one level with back', async ({ page }) => {
@@ -248,7 +287,7 @@ test.describe('Navigation modal in any depth', () => {
 
     await back(page).click();
 
-    await expect(tiles(page)).toHaveText(['Deep Level 3']);
+    await expect(tileNames(page)).toHaveText(['Deep Level 3']);
   });
 
   test('a tile without children selects the node and closes', async ({
@@ -276,7 +315,10 @@ test.describe('Navigation modal in any depth', () => {
 
     await openModal(page);
 
-    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tileNames(page)).toHaveText([
+      'Deep Level 4',
+      'Deep Level 4 B',
+    ]);
     await expect(tile(page, 'Deep Level 4 B')).toHaveClass(/tile_current/);
     await back(page).click();
     await expect(tile(page, 'Deep Level 3')).toHaveClass(/tile_current/);
@@ -295,5 +337,70 @@ test.describe('Navigation modal in any depth', () => {
     await tile(page, 'Other Root').click();
 
     await expect(modal(page)).not.toHaveAttribute('open');
+  });
+});
+
+test.describe('Navigation modal child marker', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const tile = (page, text) =>
+    page
+      .locator('custom-navigation-modal button.tile')
+      .filter({ has: page.locator('.tile__name', { hasText: text }) });
+
+  /** What a tile shows next to its name. */
+  function readMarker(page, text) {
+    return tile(page, text).evaluate((button) => {
+      const marker = button.querySelector('.tile__children');
+      if (!marker) {
+        return null;
+      }
+      const use = marker.querySelector('svg use');
+      return {
+        count: marker.querySelector('.tile__count')?.textContent.trim() ?? null,
+        // The resolved reference, not the attribute string (doc/conventions.md).
+        iconHref: use ? use.href.baseVal : null,
+        iconHidden: use?.parentElement.getAttribute('aria-hidden') ?? null,
+        assistive:
+          marker.querySelector('.slds-assistive-text')?.textContent.trim() ??
+          null,
+      };
+    });
+  }
+
+  test.beforeEach(async ({ page }) => {
+    await mockBookstoreCallouts(page);
+    await cacheLitBundle(page);
+    await page.goto(ROOT);
+    await expect(page.locator('app-bookstore')).toBeAttached();
+    await page.locator('#button-navigation_open').click();
+    await expect(tile(page, 'Mock Story 1')).toBeVisible();
+  });
+
+  test('a tile with children shows their number and a chevron', async ({
+    page,
+  }) => {
+    const marker = await readMarker(page, 'Mock Story 1');
+
+    expect(marker.count).toBe('2');
+    expect(marker.iconHref).toBe(
+      '/assets/icons/utility-sprite/svg/symbols.svg#chevronright'
+    );
+    expect(marker.iconHidden).toBe('true');
+  });
+
+  test('screen readers hear the number as words', async ({ page }) => {
+    expect((await readMarker(page, 'Mock Story 1')).assistive).toBe(
+      '2 Einträge'
+    );
+    expect((await readMarker(page, 'Mock Story 2')).assistive).toBe(
+      '1 Eintrag'
+    );
+  });
+
+  test('a tile without children shows no marker', async ({ page }) => {
+    await tile(page, 'Mock Story 1').click();
+
+    expect(await readMarker(page, 'Mock Chapter 1 for Story 1')).toBeNull();
   });
 });

@@ -33,6 +33,7 @@ const STATIC_FILES = [
   '/components/custom-login-module/custom-login-module.js',
   '/components/custom-settings-modal/custom-settings-modal.js',
   '/components/custom-navigation-modal/custom-navigation-modal.js',
+  '/components/custom-sibling-navigation/custom-sibling-navigation.js',
 
   // SLDS Components - JS
   '/slds-components/slds-combobox/slds-combobox.js',

@@ -43,7 +43,7 @@ test.describe('Content tree requests', () => {
     await page.evaluate(() =>
       document
         .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="navigation"]')
+        .shadowRoot.querySelector('custom-node')
         .dispatchEvent(
           new CustomEvent('chapter-updated', {
             detail: { chapterData: { id: '000n00000000000002' } },

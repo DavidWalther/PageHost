@@ -10,8 +10,7 @@ const { cacheLitBundle } = require('../../support/component-page');
  *
  * It lists the **ancestors** of the node the page stands on — never that node
  * itself, which the node card below already names. Its job is to go up: a
- * click shows the ancestor itself (above), with nothing below and without the
- * ancestor's cover node.
+ * click shows the ancestor itself, not the ancestor's cover node.
  */
 
 const crumbs = (page) => page.locator('app-bookstore slds-breadcrumbs li');
@@ -19,26 +18,20 @@ const crumbLink = (page, text) =>
   page.locator('app-bookstore slds-breadcrumbs a', { hasText: text });
 const openModal = (page) => page.locator('#button-navigation_open').click();
 const tile = (page, text) =>
-  page.locator('custom-navigation-modal button.tile', {
-    hasText: new RegExp(`^\\s*${text}\\s*$`),
+  page.locator('custom-navigation-modal button.tile').filter({
+    has: page.locator('.tile__name', {
+      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    }),
   });
 
-/** id and selected-child of both nodes on the page. */
-function readNodes(page) {
-  return page.evaluate(() => {
-    const app = document.querySelector('app-bookstore');
-    const read = (role) => {
-      const node = app.shadowRoot.querySelector(
-        `custom-node[data-role="${role}"]`
-      );
-      return {
-        id: node.getAttribute('id'),
-        selectedChild: node.getAttribute('selected-child'),
-      };
-    };
-    return { navigation: read('navigation'), content: read('content') };
-  });
-}
+/** id of the one node on the page. */
+const nodeId = (page) =>
+  page.evaluate(() =>
+    document
+      .querySelector('app-bookstore')
+      .shadowRoot.querySelector('custom-node')
+      .getAttribute('id')
+  );
 
 async function open(page, path) {
   await mockBookstoreCallouts(page);
@@ -51,11 +44,9 @@ test.describe('Breadcrumbs', () => {
   test.use({ actionTimeout: 5000 });
 
   test('shows only the home item on a root node', async ({ page }) => {
-    await open(page, '/');
-    await expect
-      .poll(async () => (await readNodes(page)).navigation.id)
-      .toBe('000s00000000000011');
-    // The tree has arrived (the modal knows the entry) — still no row.
+    await open(page, '/000s00000000000011');
+    await expect.poll(() => nodeId(page)).toBe('000n00000000000011');
+    // The tree has arrived (the modal knows the location) — still only home.
     await openModal(page);
     await expect(tile(page, 'Mock Story 1')).toHaveClass(/tile_current/);
 
@@ -98,7 +89,7 @@ test.describe('Breadcrumbs', () => {
     ).toHaveCount(0);
   });
 
-  test('clicking the parent empties the lower node and keeps no cover', async ({
+  test('clicking the parent shows the parent itself, not its cover', async ({
     page,
   }) => {
     await open(page, '/000c00000000000002');
@@ -107,13 +98,10 @@ test.describe('Breadcrumbs', () => {
     await crumbLink(page, 'Mock Story 1').click();
 
     // Mock Story 1 has a cover node (000n…01). Going up shows the story
-    // itself: it stays above, nothing below — not its cover.
-    await expect
-      .poll(async () => (await readNodes(page)).content.id)
-      .toBeNull();
-    const nodes = await readNodes(page);
-    expect(nodes.navigation.id).toBe('000n00000000000011');
-    expect(nodes.navigation.selectedChild).toBeNull();
+    // itself — not its cover.
+    await expect.poll(() => nodeId(page)).toBe('000n00000000000011');
+    await page.waitForTimeout(300);
+    expect(await nodeId(page)).toBe('000n00000000000011');
     await expect(crumbs(page)).toHaveText(['Startseite']);
   });
 
@@ -135,7 +123,7 @@ test.describe('Breadcrumbs', () => {
     await page.evaluate(() =>
       document
         .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="navigation"]')
+        .shadowRoot.querySelector('custom-node')
         .dispatchEvent(
           new CustomEvent('chapter-updated', {
             detail: { chapterData: { id: '000n00000000000011' } },
@@ -263,25 +251,20 @@ test.describe('Breadcrumbs in a deep tree', () => {
 
     await crumbLink(page, 'Deep Level 2').click();
 
-    await expect
-      .poll(async () => (await readNodes(page)).navigation.id)
-      .toBe('d-2');
-    // Wait for the node to load: without the guard its cover d-3 would land
-    // below now.
+    await expect.poll(() => nodeId(page)).toBe('d-2');
+    // Wait for the node to load: shown with the cover rule, its cover d-3
+    // would replace it now.
     await page.waitForTimeout(500);
-    expect((await readNodes(page)).content.id).toBeNull();
+    expect(await nodeId(page)).toBe('d-2');
     await expect(crumbs(page)).toHaveText(['Startseite', 'Deep Root']);
   });
 
-  test('clicking the parent keeps it above and lists its ancestors', async ({
+  test('clicking the parent shows it and lists its ancestors', async ({
     page,
   }) => {
     await crumbLink(page, 'Deep Level 3').click();
 
-    await expect
-      .poll(async () => (await readNodes(page)).content.id)
-      .toBeNull();
-    expect((await readNodes(page)).navigation.id).toBe('d-3');
+    await expect.poll(() => nodeId(page)).toBe('d-3');
     await expect(crumbs(page)).toHaveText([
       'Startseite',
       'Deep Root',

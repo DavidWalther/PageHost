@@ -27,8 +27,10 @@ test.describe('Bookstore smoke', () => {
     // Grundlayout ist sichtbar (Playwright durchdringt offene Shadow Roots).
     await expect(page.locator('#bookshelf')).toBeVisible();
 
-    // Gemockter Knoten-Callout ist bis in die UI durchgeflossen: der obere
-    // custom-node rendert seinen Namen in der Titelzeile.
-    await expect(page.locator('#node-name').first()).toHaveText('Mock Story 1');
+    // The mocked node callout reached the UI: the one custom-node renders the
+    // name of the start page — the cover node of the entry node.
+    await expect(page.locator('#node-name').first()).toHaveText(
+      'Mock Chapter 1 for Story 1'
+    );
   });
 });

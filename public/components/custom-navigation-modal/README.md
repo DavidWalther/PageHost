@@ -87,6 +87,11 @@ The open level is internal state: while the modal is open, clicks move it;
 | a tile **without** children | reports `navigation-node-select`; the host closes the modal                       |
 | `< zurück`                  | goes up exactly one level (shown on every level below the top)                    |
 
+A tile **with** children shows how many there are and a chevron in its bottom right
+corner (`2 ›`, icon `utility:chevronright`); screen readers hear „2 Einträge“ /
+„1 Eintrag“ instead. The name sits in `.tile__name` — find a tile by it, not by
+the tile's whole text.
+
 An empty level reads „Keine Inhalte vorhanden.“
 
 ---
