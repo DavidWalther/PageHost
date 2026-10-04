@@ -184,7 +184,7 @@ class NavigationModal extends LitElement {
                   class="tile ${onPath.has(node.id) ? 'tile_current' : ''}"
                   @click="${() => this._handleTileClick(node)}"
                 >
-                  <span>${node.name}</span>
+                  <span class="tile__name">${node.name}</span>
                 </button>
               </div>
             </slds-layout-item>

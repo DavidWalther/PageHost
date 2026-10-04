@@ -60,7 +60,9 @@ function dispatchFromNavigationNode(page, name, detail) {
 }
 
 const tile = (page, text) =>
-  page.locator('custom-navigation-modal button.tile', { hasText: text });
+  page
+    .locator('custom-navigation-modal button.tile')
+    .filter({ has: page.locator('.tile__name', { hasText: text }) });
 const openModal = (page) => page.locator('#button-navigation_open').click();
 
 test.describe('Navigation modal reload', () => {
