@@ -60,6 +60,8 @@ the next sort number can be proposed:
 | `reversed`     | `reversed`    | Boolean | Whether the node's contents are shown against `sortnumber`.                   |
 | `publish-date` | `publishDate` | String  | Current publication date, handed to the publish tab. Empty means unpublished. |
 | `mode`         | `mode`        | String  | Legacy; `chapter-id` decides (see above).                                     |
+| `no-trigger`   | `noTrigger`   | Boolean | No button of its own — the host is the trigger and calls `openCreate()`.      |
+| —              | `chapters`    | Array   | Siblings with `sortnumber`; create proposes the highest plus one.             |
 | —              | `chapters`    | Array   | Existing siblings. Property only (`.chapters`).                               |
 | —              | `chapterData` | Object  | The form state. Property only.                                                |
 
@@ -140,10 +142,11 @@ the field stays out of the payload.
 
 ## Methods
 
-| Method   | Description       |
-| -------- | ----------------- |
-| `show()` | Opens the modal.  |
-| `hide()` | Closes the modal. |
+| Method         | Description                                                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show()`       | Opens the modal.                                                                                                                                                                  |
+| `hide()`       | Closes the modal.                                                                                                                                                                 |
+| `openCreate()` | Opens the modal in create mode: name „Neues Kapitel“, sort number = highest of `chapters` + 1, parent = `story-id` (a root without it). Opens nothing without the `create` scope. |
 
 ## Known leftovers
 

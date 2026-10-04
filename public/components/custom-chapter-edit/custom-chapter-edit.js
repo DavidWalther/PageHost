@@ -42,6 +42,9 @@ class CustomChapterEdit extends LitElement {
     mode: { type: String }, // 'create' or 'edit' (kept for backward compatibility)
     chapterData: { type: Object },
     chapters: { type: Array }, // Array of existing chapters for sort number calculation
+    // The host is the trigger (e.g. the "+" tile of the navigation modal):
+    // no button of its own; the host calls openCreate().
+    noTrigger: { type: Boolean, attribute: 'no-trigger' },
     _activeTab: { state: true },
   };
 
@@ -68,6 +71,7 @@ class CustomChapterEdit extends LitElement {
     this.mode = 'create';
     this.chapterData = {};
     this.chapters = [];
+    this.noTrigger = false;
     this._activeTab = 'edit';
   }
 
@@ -98,8 +102,9 @@ class CustomChapterEdit extends LitElement {
   }
 
   render() {
-    const canCreate = this.checkCreatePermission();
-    const canEdit = this._isEditMode && this.checkEditPermission();
+    const canCreate = !this.noTrigger && this.checkCreatePermission();
+    const canEdit =
+      !this.noTrigger && this._isEditMode && this.checkEditPermission();
     const modalTitle = this._isEditMode
       ? this.labels.modalTitleEdit
       : this.labels.modalTitle;
@@ -357,6 +362,19 @@ class CustomChapterEdit extends LitElement {
   // ==================================================
 
   _handleCreateButtonClick() {
+    this.openCreate();
+  }
+
+  /**
+   * Opens the dialog in create mode — for a host that is its own trigger
+   * (`no-trigger`). Proposes "Neues Kapitel" and the highest sortnumber of
+   * `chapters` plus one; the new node becomes a child of `story-id`, or a
+   * root without it. Without the create scope nothing opens.
+   */
+  openCreate() {
+    if (!this.checkCreatePermission()) {
+      return;
+    }
     // Calculate next sort number
     let nextSortNumber = 1;
     if (this.chapters && this.chapters.length > 0) {
