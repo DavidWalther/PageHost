@@ -328,7 +328,6 @@ test.describe('custom-chapter-edit: opened from outside', () => {
   });
 
   test('no-trigger renders no button of its own', async ({ page }) => {
-    test.fail(true, 'no-trigger does not exist yet (#187)');
     const editor = await mountWithoutTrigger(page);
 
     await expect(editor.locator('slds-button-icon')).toHaveCount(0);
@@ -337,7 +336,6 @@ test.describe('custom-chapter-edit: opened from outside', () => {
   test('openCreate opens the dialog with a name and the next sort number', async ({
     page,
   }) => {
-    test.fail(true, 'openCreate does not exist yet (#187)');
     const editor = await mountWithoutTrigger(page);
 
     await openCreate(page);
@@ -355,7 +353,6 @@ test.describe('custom-chapter-edit: opened from outside', () => {
   });
 
   test('confirming creates a child of story-id', async ({ page }) => {
-    test.fail(true, 'openCreate does not exist yet (#187)');
     const editor = await mountWithoutTrigger(page);
     await captureWrites(page);
     await openCreate(page);
@@ -370,7 +367,6 @@ test.describe('custom-chapter-edit: opened from outside', () => {
   });
 
   test('without story-id it creates a root', async ({ page }) => {
-    test.fail(true, 'openCreate does not exist yet (#187)');
     const editor = await mountWithoutTrigger(page, { parentId: null });
     await captureWrites(page);
     await openCreate(page);
@@ -383,7 +379,6 @@ test.describe('custom-chapter-edit: opened from outside', () => {
   test('without the create scope openCreate opens nothing', async ({
     page,
   }) => {
-    test.fail(true, 'openCreate does not exist yet (#187)');
     await mountWithoutTrigger(page, { scopes: ['edit'] });
 
     await openCreate(page);
