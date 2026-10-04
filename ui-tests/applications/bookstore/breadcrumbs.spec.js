@@ -19,8 +19,10 @@ const crumbLink = (page, text) =>
   page.locator('app-bookstore slds-breadcrumbs a', { hasText: text });
 const openModal = (page) => page.locator('#button-navigation_open').click();
 const tile = (page, text) =>
-  page.locator('custom-navigation-modal button.tile', {
-    hasText: new RegExp(`^\\s*${text}\\s*$`),
+  page.locator('custom-navigation-modal button.tile').filter({
+    has: page.locator('.tile__name', {
+      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    }),
   });
 
 /** id and selected-child of both nodes on the page. */
