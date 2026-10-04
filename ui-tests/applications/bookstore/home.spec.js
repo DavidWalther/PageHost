@@ -12,16 +12,14 @@ const { cacheLitBundle } = require('../../support/component-page');
  * adds no history entry.
  */
 
-/** id of both nodes on the page. */
+/** id of the one node on the page. */
 function readNodes(page) {
-  return page.evaluate(() => {
-    const app = document.querySelector('app-bookstore');
-    const read = (role) =>
-      app.shadowRoot
-        .querySelector(`custom-node[data-role="${role}"]`)
-        .getAttribute('id');
-    return { navigation: read('navigation'), content: read('content') };
-  });
+  return page.evaluate(() => ({
+    node: document
+      .querySelector('app-bookstore')
+      .shadowRoot.querySelector('custom-node')
+      .getAttribute('id'),
+  }));
 }
 
 const homeLink = (page) =>
@@ -50,17 +48,16 @@ test.describe('Home', () => {
   }) => {
     await open(page, '/000c00000000000002');
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
     await markDocument(page);
 
     await homeLink(page).click();
 
-    // Like GET /: the entry node above, its cover node below.
+    // Like GET /: the cover node of the entry node.
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000001');
-    expect((await readNodes(page)).navigation).toBe('000n00000000000011');
     expect(await isSameDocument(page)).toBe(true);
   });
 
@@ -69,7 +66,7 @@ test.describe('Home', () => {
   }) => {
     await open(page, '/000c00000000000002');
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
     const lengthBefore = await page.evaluate(() => history.length);
 
@@ -89,24 +86,16 @@ test.describe('Home', () => {
   }) => {
     await open(page, '/');
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000001');
-    // Leave the cover for another child of the start node; the location stays
-    // on the start node (UC-C-06 changes only the lower node).
-    await page.evaluate(() =>
-      document
-        .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="content"]')
-        .setAttribute('id', '000n00000000000002')
-    );
     const lengthBefore = await page.evaluate(() => history.length);
     await markDocument(page);
 
     await homeLink(page).click();
 
-    // The start page is applied again: the cover node is back below …
+    // The start page stays: its cover node …
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000001');
     // … but nothing was added to the history, and nothing reloaded.
     expect(await page.evaluate(() => history.length)).toBe(lengthBefore);
@@ -122,33 +111,30 @@ test.describe('Browser back and forward after home', () => {
     page.evaluate(() =>
       document
         .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="content"]')
+        .shadowRoot.querySelector('custom-node')
         .getAttribute('contentnumber')
     );
 
   test('back shows the left node inside the app', async ({ page }) => {
     await open(page, '/000c00000000000002');
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
     await homeLink(page).click();
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000001');
     await markDocument(page);
 
     await page.evaluate(() => history.back());
 
-    // The child below, its parent above — not the parent's cover node, which a
-    // doubled "loaded" handler would put there over the explicit choice.
+    // Exactly the node that was left — not a cover node, which a doubled
+    // "loaded" handler would put there over the explicit choice.
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
     await page.waitForTimeout(300);
-    expect(await readNodes(page)).toEqual({
-      navigation: '000n00000000000011',
-      content: '000n00000000000002',
-    });
+    expect(await readNodes(page)).toEqual({ node: '000n00000000000002' });
     expect(await isSameDocument(page)).toBe(true);
     await expect(page.locator('app-bookstore slds-breadcrumbs li')).toHaveText([
       'Startseite',
@@ -159,18 +145,20 @@ test.describe('Browser back and forward after home', () => {
   test('forward shows the start page again', async ({ page }) => {
     await open(page, '/000c00000000000002');
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
     await homeLink(page).click();
+    // Home writes the history once it has resolved the start node.
+    await expect.poll(() => page.evaluate(() => location.pathname)).toBe('/');
     await page.evaluate(() => history.back());
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
 
     await page.evaluate(() => history.forward());
 
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000001');
     expect(await page.evaluate(() => location.pathname)).toBe('/');
   });
@@ -182,13 +170,13 @@ test.describe('Browser back and forward after home', () => {
     await expect.poll(() => contentNumber(page)).toBe('3');
     await homeLink(page).click();
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000001');
 
     await page.evaluate(() => history.back());
 
     await expect
-      .poll(async () => (await readNodes(page)).content)
+      .poll(async () => (await readNodes(page)).node)
       .toBe('000n00000000000002');
     expect(await contentNumber(page)).toBeNull();
   });

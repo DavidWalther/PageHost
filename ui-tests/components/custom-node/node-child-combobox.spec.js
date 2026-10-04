@@ -43,26 +43,30 @@ test.describe('Knoten: Auswahl eines Kindes per Combobox', () => {
     // Mehr Kinder als child-buttons_number-max (2) -> die Combobox erscheint.
     await page.route('**/data/query/node**', (route) => {
       const id = new URL(route.request().url()).searchParams.get('id');
+      const child = NODE_WITH_MANY_CHILDREN.nodes.find(
+        (node) => node.id === id
+      );
       const match =
         id === ROOT.id || id === ROOT.legacy_id
           ? NODE_WITH_MANY_CHILDREN
-          : Object.values(MOCK_NODES).find(
-              (node) => node.id === id || node.legacy_id === id
-            );
+          : child
+            ? { ...child, nodes: [], contents: [] }
+            : Object.values(MOCK_NODES).find(
+                (node) => node.id === id || node.legacy_id === id
+              );
       return route.fulfill({ json: match || {} });
     });
 
-    await page.goto('/');
+    // A deep link to the root: the page shows the root with its children.
+    await page.goto('/000s00000000000011');
     await expect(page.locator('app-bookstore')).toBeAttached();
   });
 
-  // Greift auf die Combobox im Shadow-DOM des oberen custom-node zu.
+  // Reads the combobox in the shadow DOM of the one custom-node.
   async function readCombobox(page) {
     return page.evaluate(() => {
       const app = document.querySelector('app-bookstore');
-      const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="navigation"]'
-      );
+      const node = app.shadowRoot.querySelector('custom-node');
       const combobox = node?.shadowRoot?.querySelector('slds-combobox');
       if (!combobox) return { present: false };
 
@@ -98,22 +102,20 @@ test.describe('Knoten: Auswahl eines Kindes per Combobox', () => {
     const attribut = await page.evaluate(() =>
       document
         .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="navigation"]')
+        .shadowRoot.querySelector('custom-node')
         .getAttribute('child-buttons_number-max')
     );
     expect(attribut).toBe('2');
   });
 
-  test('Options-Klick stellt das Kind im Consumer um', async ({ page }) => {
+  test('choosing an option shows that child', async ({ page }) => {
     await expect
       .poll(async () => (await readCombobox(page)).present)
       .toBe(true);
 
     const result = await page.evaluate(async () => {
       const app = document.querySelector('app-bookstore');
-      const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="navigation"]'
-      );
+      const node = app.shadowRoot.querySelector('custom-node');
       const combobox = node.shadowRoot.querySelector('slds-combobox');
 
       combobox.shadowRoot.querySelector('.slds-combobox').click();
@@ -128,9 +130,20 @@ test.describe('Knoten: Auswahl eines Kindes per Combobox', () => {
       };
     });
 
-    // Der Consumer hört auf `combobox-select` — bricht der Event-Name, bleibt
-    // selectedChild unverändert und dieser Test schlägt fehl.
+    // custom-node listens for combobox-select — if the event name broke,
+    // selectedChild would stay and this test would fail.
     expect(result.selectedChild).toBe('000c00000000000003');
     expect(result.inputText).toBe('Mock Chapter 3');
+    // The page follows the choice and shows the child.
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          document
+            .querySelector('app-bookstore')
+            .shadowRoot.querySelector('custom-node')
+            .getAttribute('id')
+        )
+      )
+      .toBe('000c00000000000003');
   });
 });

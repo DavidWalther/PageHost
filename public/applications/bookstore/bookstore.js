@@ -13,7 +13,7 @@ console.log('Bookstore.js file loaded');
  * Entry without a deep link.
  *
  * Still a retired id: the backend resolves it through `legacy_id`, and
- * `handleNavigationNodeLoaded` moves the location to the record id the
+ * `handleNodeLoaded` moves the location to the record id the
  * content tree carries once the node has loaded. Goes away once there is a
  * configuration for it (start node per app).
  */
@@ -38,9 +38,9 @@ class Bookstore extends LitElement {
     // Initialize component state
     this.isHydrated = false;
     this._initPara = null;
-    this._pendingChildSelection = null;
-    // A breadcrumb asked to show a node itself: skip its cover node once.
-    this._skipCoverOnce = false;
+    // Show the cover node of the next node that loads (start page, drilling
+    // into a node in the modal) — once, then it is consumed.
+    this._coverOnLoad = false;
     // Bound once, so the same function can be removed again.
     this._handlePopState = this.handlePopState.bind(this);
     this._currentLocation = null;
@@ -188,16 +188,12 @@ class Bookstore extends LitElement {
       ></custom-navigation-modal>
 
       <!--
-        Zwei Knoten, nicht zwei Typen: oben der Knoten, dessen Kinder zur
-        Auswahl stehen, unten der ausgewählte Knoten mit seinen Inhalten.
-        Welche Rolle ein Knoten spielt, entscheidet allein seine Position hier
-        — die Komponente ist beide Male dieselbe.
-
-        data-role ist dabei nur der Selektor für die Getter unten. Wirksam
-        wird die Rolle über die Attribute: Die Daten sagen, WAS ein Knoten hat,
-        diese Zeilen sagen, WOFÜR die jeweilige Instanz da ist. Sie stehen im
-        Template, weil sie sich nie ändern — damit gelten sie vor der ersten
-        Zuweisung von id oder contentnumber.
+        One node: it shows the node the visitor stands on — its children as a
+        selection on top, then its contents. The attributes say what this one
+        instance may do; they stand in the template so they hold before the
+        first node arrives. No child-creating here: next to "create content"
+        it would be a second identical "+"; it returns as the "+" tile in the
+        navigation modal (#187). Deleting moves there later as well (#200).
       -->
       <div
         id="bookshelf"
@@ -205,22 +201,9 @@ class Bookstore extends LitElement {
       >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
           <custom-node
-            data-role="navigation"
             child-buttons_number-max="2"
-            can-create-child
-            no-contents
-          ></custom-node>
-        </div>
-        <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <!-- Keine Kind-Auswahl: handleNavigationEvent wertet nur Meldungen
-               des oberen Knotens aus, ein Klick bliebe hier wirkungslos.
-               Kein "Kind anlegen": Das Angelegte erschiene in genau der
-               Auswahl, die hier nicht gezeigt wird. -->
-          <custom-node
-            data-role="content"
             can-create-content
             can-delete
-            no-child-navigation
           ></custom-node>
         </div>
       </div>
@@ -293,11 +276,7 @@ class Bookstore extends LitElement {
     `;
   }
 
-  /**
-   * Going up: the page shows the ancestor itself — above, with nothing below
-   * and without its cover node. When it already is the upper node, only the
-   * lower one empties.
-   */
+  /** Going up: the page shows the ancestor itself, not its cover node. */
   handleBreadcrumbSelect(event) {
     const id = event.detail?.key;
     if (!id) {
@@ -307,13 +286,7 @@ class Bookstore extends LitElement {
       this.handleHome();
       return;
     }
-    if (this.navigationNode.getAttribute('id') !== id) {
-      this._skipCoverOnce = true;
-      this.navigationNode.setAttribute('id', id);
-    }
-    this.navigationNode.removeAttribute('selected-child');
-    this.contentNode.removeAttribute('id');
-    this._setCurrentLocation(id);
+    this.showNode(id);
   }
 
   /**
@@ -326,13 +299,18 @@ class Bookstore extends LitElement {
    */
   async handleHome() {
     const entry = await this.resolveEntryPoint(DEFAULT_ENTRY_NODE_ID);
-    const startIds = [DEFAULT_ENTRY_NODE_ID, entry.node?.id];
+    // The start page shows the entry node or, where it has one, its cover.
+    const startIds = [
+      DEFAULT_ENTRY_NODE_ID,
+      entry.node?.id,
+      entry.node?.cover_node_id,
+    ];
     const here = this._currentLocation;
     if (here && !startIds.includes(here)) {
       window.history.replaceState({}, '', `/${here}`);
       window.history.pushState({}, '', '/');
     }
-    this.showEntryPoint(entry);
+    this.showStart(entry);
   }
 
   /**
@@ -345,26 +323,43 @@ class Bookstore extends LitElement {
       return;
     }
     const id = window.location.pathname.split('/').pop();
-    const entry = await this.resolveEntryPoint(id || DEFAULT_ENTRY_NODE_ID);
-    this.showEntryPoint(entry);
+    if (!id) {
+      this.showStart();
+      return;
+    }
+    this.applyEntryPoint(await this.resolveEntryPoint(id));
   }
 
   /**
-   * Applies an entry on a page that already shows something. The lower node
-   * and the selection are cleared first — an entry without a cover node would
-   * otherwise leave the old content below — and no pending choice survives.
+   * The one way to show a node. Fetches the record (unless it is given) and
+   * hands it to the node, so `loaded` always follows — also when the same
+   * node is shown again, where only setting `id` would do nothing.
+   *
+   * `cover`: show the node's cover node instead, where it has one (start
+   * page, drilling into a node in the modal). `contentNumber`: jump to that
+   * content after loading.
    */
-  showEntryPoint(entry) {
-    this._pendingChildSelection = null;
-    this._skipCoverOnce = false;
-    // The paragraph number belongs to the first address only.
-    if (this._initPara) {
-      this._initPara.paragraphnumber = null;
+  async showNode(target, { cover = false, contentNumber = null } = {}) {
+    const record =
+      typeof target === 'string'
+        ? await this.queryRecord({ object: 'node', id: target })
+        : target;
+    if (!record?.id) {
+      return;
     }
-    this.contentNode.removeAttribute('contentnumber');
-    this.contentNode.removeAttribute('id');
-    this.navigationNode.removeAttribute('selected-child');
-    this.applyEntryPoint(entry);
+    this._coverOnLoad = cover;
+    if (contentNumber) {
+      this.node.setAttribute('contentnumber', contentNumber);
+    } else {
+      this.node.removeAttribute('contentnumber');
+    }
+    this.node.adoptNode(record);
+  }
+
+  /** The start page: the entry node, shown as its cover where it has one. */
+  showStart(entry) {
+    const start = entry?.kind === 'node' ? entry.node : DEFAULT_ENTRY_NODE_ID;
+    this.showNode(start, { cover: true });
   }
 
   handleOpenSettings() {
@@ -381,7 +376,7 @@ class Bookstore extends LitElement {
    * The tree (`/api/1.0/contents/*`) carries the record id, never the
    * `legacy_id`; the navigation modal compares against it. A record therefore
    * contributes its `id`. A plain string is taken as given — it may still be
-   * a retired id (the default entry is one); `handleNavigationNodeLoaded`
+   * a retired id (the default entry is one); `handleNodeLoaded`
    * swaps it for the record id once that node has loaded.
    */
   _setCurrentLocation(record) {
@@ -393,45 +388,17 @@ class Bookstore extends LitElement {
       typeof record === 'string' ? record : (record.id ?? null);
   }
 
-  /** A level opened in the modal: the page shows that node (F13/F14). */
+  /**
+   * A level opened in the modal: the page follows and shows that node — its
+   * cover node where it has one. The modal stays open.
+   */
   handleNavigationLevelOpen(event) {
-    const { id } = event.detail;
-    this._setCurrentLocation(id);
-    this.dispatchEvent(
-      new CustomEvent('navigation', {
-        detail: { type: 'story', value: id },
-        bubbles: true,
-      })
-    );
-    // The modal stays open; the visitor may go deeper or choose.
+    this.showNode(event.detail.id, { cover: true });
   }
 
-  /** A node chosen in the modal: its parent above, the node below. */
+  /** A node without children chosen in the modal: shown, the modal closes. */
   handleNavigationNodeSelect(event) {
-    const { id, parentId } = event.detail;
-
-    if (!parentId) {
-      // A root without children: it has no parent to fill the selection, so
-      // it takes the selection itself — like a deep link to a root (UC-B-03).
-      this.navigationNode.setAttribute('id', id);
-      this.contentNode.removeAttribute('id');
-      this.navigationNode.removeAttribute('selected-child');
-      this._setCurrentLocation(id);
-      this.shadowRoot.querySelector('custom-navigation-modal').hide();
-      return;
-    }
-
-    const currentParentId = this.navigationNode.getAttribute('id');
-    if (currentParentId !== parentId) {
-      // Suppress the cover override in handleNavigationNodeLoaded for this
-      // reload, so the explicitly selected child is kept.
-      this._pendingChildSelection = id;
-      this.navigationNode.setAttribute('id', parentId);
-    }
-    this.contentNode.setAttribute('id', id);
-    this.navigationNode.setAttribute('selected-child', id);
-    this._setCurrentLocation(id);
-
+    this.showNode(event.detail.id);
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
 
@@ -468,7 +435,6 @@ class Bookstore extends LitElement {
 
   disconnectedCallback() {
     // Remove event listener when the component is disconnected
-    this.removeEventListener('navigation', this.handleNavigationEvent);
     this.removeEventListener('chapter-updated', this._handleChildUpdated);
     this.removeEventListener('node-deleted', this._handleNodeDeleted);
     window.removeEventListener('popstate', this._handlePopState);
@@ -476,19 +442,26 @@ class Bookstore extends LitElement {
 
   _handleChildUpdated(event) {
     const updated = event.detail?.chapterData;
-    if (updated && this.navigationNode) {
-      this.navigationNode.applyChildUpdate(updated);
+    if (updated && this.node) {
+      this.node.applyChildUpdate(updated);
     }
   }
 
   _handleNodeDeleted(event) {
     const nodeId = event.detail?.nodeId;
     if (!nodeId) return;
-    if (this.navigationNode) {
-      this.navigationNode.removeChildNode(nodeId);
+    if (nodeId !== this._currentLocation) {
+      this.node?.removeChildNode(nodeId);
+      return;
     }
-    if (this.contentNode?.getAttribute('id') === nodeId) {
-      this.contentNode.removeAttribute('id');
+    // The shown node is gone: show its parent, or the start page for a root.
+    // The tree still holds it here; its reload runs after this handler.
+    const path = findPath(this._tree, nodeId);
+    const parent = path.length > 1 ? path[path.length - 2] : null;
+    if (parent) {
+      this.showNode(parent.id);
+    } else {
+      this.showStart();
     }
   }
 
@@ -508,12 +481,11 @@ class Bookstore extends LitElement {
 
     // Once, before any entry is applied: `adoptNode` reports `loaded` at
     // once, and every later entry (home, browser back) reuses the same node.
-    this._attachNavigationNodeListeners();
+    this._attachNodeListeners();
     const entry = await this.resolveEntryPoint(this._initPara.initId);
-    this.applyEntryPoint(entry);
+    this.applyEntryPoint(entry, this._initPara.paragraphnumber);
 
     this.isHydrated = true;
-    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
     // `custom-chapter-edit` meldet weiterhin `chapter-updated` — die
     // Editierkomponente trägt ihren alten Namen noch.
     this.addEventListener(
@@ -584,67 +556,23 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Setzt die beiden Knoten entsprechend dem aufgelösten Einstieg.
+   * Shows what an address names — a deep link at start or browser back:
+   * exactly that node, never its cover node. A content shows the node it
+   * hangs on and jumps to it. Nothing found: the start page.
    *
-   * Der aufgelöste Datensatz wird **übergeben**, nicht nur seine Id: sonst
-   * holte der Knoten genau das noch einmal, was hier gerade angekommen ist.
-   * The listeners are therefore attached **before** any handover, once in
-   * `hydrate` — `adoptNode` reports `loaded` at once, not after a network reply.
+   * `paragraphNumber` comes from the first address only (`?paragraphnumber=`).
    */
-  applyEntryPoint(entry) {
+  applyEntryPoint(entry, paragraphNumber = null) {
     if (entry.kind === 'node') {
-      const parentId = entry.node.parent_node_id;
-      if (parentId) {
-        // Ein Knoten mit Eltern: er füllt den Inhalt, sein Elternknoten die
-        // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
-        this.showChildOf(parentId, entry.node);
-      } else {
-        this._setCurrentLocation(entry.node);
-        this.navigationNode.adoptNode(entry.node);
-      }
+      this.showNode(entry.node, { contentNumber: paragraphNumber });
       return;
     }
-
     if (entry.kind === 'content') {
-      // Deep-Link auf einen Inhalt: gezeigt wird der Knoten, an dem er hängt,
-      // und darin wird zu ihm gesprungen.
-      this.contentNode.setAttribute(
-        'contentnumber',
-        this._initPara?.paragraphnumber ?? entry.content.sortnumber
-      );
-      this.resolveEntryPoint(entry.content.node_id).then((nodeEntry) =>
-        this.applyEntryPoint(nodeEntry)
-      );
+      const contentNumber = paragraphNumber ?? entry.content.sortnumber;
+      this.showNode(entry.content.node_id, { contentNumber });
       return;
     }
-
-    this.initWithoutParameter();
-  }
-
-  /** Auswahl oben, Inhalt unten — der Regelfall nach einem Deep-Link. */
-  showChildOf(parentId, childNode) {
-    const childId = childNode.id;
-    if (this._initPara?.paragraphnumber) {
-      // Muss vor der Übergabe stehen: der Knoten wertet es beim Übernehmen aus.
-      this.contentNode.setAttribute(
-        'contentnumber',
-        this._initPara.paragraphnumber
-      );
-    }
-    this.contentNode.adoptNode(childNode);
-
-    this.navigationNode.setAttribute('selected-child', childId);
-    // Der Titel-Knoten des Elternteils darf die ausdrückliche Wahl nicht
-    // überschreiben.
-    this._pendingChildSelection = childId;
-    this._setCurrentLocation(childNode);
-    // Den Elternknoten kennen wir nur mit Id — den holt er sich selbst.
-    this.navigationNode.setAttribute('id', parentId);
-  }
-
-  initWithoutParameter() {
-    this.navigationNode.setAttribute('id', DEFAULT_ENTRY_NODE_ID);
-    this._setCurrentLocation(DEFAULT_ENTRY_NODE_ID);
+    this.showStart();
   }
 
   /** Einen Datensatz über den Callout-Layer holen, als Promise. */
@@ -664,49 +592,44 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Selection node: navigation and "loaded" always go together. Attached
-   * exactly once (in `hydrate`) — a second call would run every handler twice.
+   * The node reports a chosen child (`navigation`) and that it has loaded
+   * (`loaded`). Attached exactly once (in `hydrate`) — a second call would
+   * run every handler twice.
    */
-  _attachNavigationNodeListeners() {
-    this.navigationNode.addEventListener(
-      'navigation',
-      this.handleNavigationEvent.bind(this)
+  _attachNodeListeners() {
+    this.node.addEventListener('navigation', (event) =>
+      this.handleNodeChildSelect(event)
     );
-    this.navigationNode.addEventListener('loaded', (event) =>
-      this.handleNavigationNodeLoaded(event)
+    this.node.addEventListener('loaded', (event) =>
+      this.handleNodeLoaded(event)
     );
   }
 
-  handleNavigationNodeLoaded(event) {
+  /** A child chosen in the node: the page shows that child. */
+  handleNodeChildSelect(event) {
+    event.stopPropagation();
+    if (!this.isHydrated) {
+      return;
+    }
+    const { node, value } = event.detail;
+    this.showNode(node?.id ? node : value);
+  }
+
+  /**
+   * The location is the node that has loaded — in its record id, the id the
+   * content tree uses. Where a cover node was asked for, it replaces the node.
+   */
+  handleNodeLoaded(event) {
     const nodeData = event.detail?.nodeData;
     if (!nodeData?.id) {
       return;
     }
+    this._setCurrentLocation(nodeData);
 
-    // The location may have been set from a retired id (the default entry
-    // without a deep link). Once the node is known, keep it in the id the
-    // content tree uses, or the modal would never find it.
-    if (nodeData.legacy_id && this._currentLocation === nodeData.legacy_id) {
-      this._setCurrentLocation(nodeData);
-    }
-
-    if (this._skipCoverOnce) {
-      // A breadcrumb asked for the node itself, not for its cover node.
-      this._skipCoverOnce = false;
-      return;
-    }
-
-    if (this._pendingChildSelection) {
-      // Ein Kind wurde ausdrücklich gewählt — im Navigations-Modal oder über
-      // einen Deep-Link. Diese Wahl schlägt den Titel-Knoten.
-      this._pendingChildSelection = null;
-      return;
-    }
-
-    const coverId = nodeData.cover_node_id;
-    if (coverId) {
-      this.navigationNode.setAttribute('selected-child', coverId);
-      this.contentNode.setAttribute('id', coverId);
+    const cover = this._coverOnLoad;
+    this._coverOnLoad = false;
+    if (cover && nodeData.cover_node_id) {
+      this.showNode(nodeData.cover_node_id);
     }
   }
 
@@ -807,33 +730,6 @@ class Bookstore extends LitElement {
       .classList.toggle('dark-mode', !event.detail.checked);
   }
 
-  handleNavigationEvent(event) {
-    event.stopPropagation();
-    if (!this.isHydrated) {
-      return;
-    }
-
-    const { type, value } = event.detail;
-    // Beide Knoten sind dieselbe Komponente — der Tag-Name unterscheidet sie
-    // nicht mehr. Maßgeblich ist, WELCHER der beiden gemeldet hat.
-    const fromNavigationNode = event.target === this.navigationNode;
-    const fromPanel = event.target === this;
-
-    if (fromPanel && type === 'story') {
-      this.navigationNode.setAttribute('id', value);
-      this.contentNode.removeAttribute('id');
-      this.navigationNode.removeAttribute('selected-child');
-      this._setCurrentLocation(value);
-      return;
-    }
-    if (fromNavigationNode && type === 'node') {
-      this.contentNode.setAttribute('id', value);
-      this.navigationNode.setAttribute('selected-child', value);
-      this._setCurrentLocation(event.detail.node ?? value);
-      return;
-    }
-  }
-
   // ============ action methods ============
 
   fireToast(message, variant) {
@@ -924,14 +820,9 @@ class Bookstore extends LitElement {
     return this.shadowRoot.querySelector('span#page-header-headline');
   }
 
-  /** Der Knoten, dessen Kinder zur Auswahl stehen. */
-  get navigationNode() {
-    return this.shadowRoot.querySelector('custom-node[data-role="navigation"]');
-  }
-
-  /** Der ausgewählte Knoten, dessen Inhalte gezeigt werden. */
-  get contentNode() {
-    return this.shadowRoot.querySelector('custom-node[data-role="content"]');
+  /** The one node on the page. */
+  get node() {
+    return this.shadowRoot.querySelector('custom-node');
   }
 
   get storyContainer() {

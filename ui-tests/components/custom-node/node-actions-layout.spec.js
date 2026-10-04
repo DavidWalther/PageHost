@@ -48,15 +48,9 @@ async function withSession(page, scopes = SESSION_SCOPES) {
   );
 }
 
-const ROLES = {
-  navigation: 'Mock Story 1',
-  content: 'Mock Chapter 1 for Story 1',
-};
+// The one node on the page carries every action.
+const node = (page) => page.locator('app-bookstore custom-node');
 
-const nodeByRole = (page, role) =>
-  page.locator(`custom-node[data-role="${role}"]`);
-
-// Einstieg über einen Kind-Knoten: beide Instanzen haben Aktionen.
 const ENTRY = '/000c00000000000001';
 
 // Die IDs der Aktionen — stabil, egal wie das Grid darum gebaut ist.
@@ -99,107 +93,39 @@ test.describe('Knoten: Aufbau der Actions-Leiste', () => {
     await cacheLitBundle(page);
     await withSession(page);
     await page.goto(ENTRY);
-    for (const [role, name] of Object.entries(ROLES)) {
-      await expect(nodeByRole(page, role).locator('#node-name')).toHaveText(
-        name
-      );
-    }
+    await expect(node(page).locator('#node-name')).toHaveText(
+      'Mock Chapter 1 for Story 1'
+    );
   });
 
-  for (const role of Object.keys(ROLES)) {
-    test(`${role}: die Leiste ist ein umbrechender Flex-Container`, async ({
-      page,
-    }) => {
-      const actions = await readActions(nodeByRole(page, role));
-      expect(actions.display).toBe('flex');
-      expect(actions.flexWrap).toBe('wrap');
-    });
+  test('the bar is a wrapping flex container', async ({ page }) => {
+    const actions = await readActions(node(page));
+    expect(actions.display).toBe('flex');
+    expect(actions.flexWrap).toBe('wrap');
+  });
 
-    test(`${role}: jede Aktion steht in einem eigenen Element`, async ({
-      page,
-    }) => {
-      const actions = await readActions(nodeByRole(page, role));
-      const placed = actions.items.flatMap((item) => item.ids);
+  test('every action sits in its own element', async ({ page }) => {
+    const actions = await readActions(node(page));
+    const placed = actions.items.flatMap((item) => item.ids);
 
-      expect(actions.items.every((item) => item.ids.length <= 1)).toBe(true);
-      expect([...placed].sort()).toEqual([...actions.present].sort());
-    });
+    expect(actions.items.every((item) => item.ids.length <= 1)).toBe(true);
+    expect([...placed].sort()).toEqual([...actions.present].sort());
+    // With every scope the one node offers every action except creating a
+    // child, which waits for the "+" tile in the navigation modal (#187).
+    expect([...actions.present].sort()).toEqual(
+      ACTION_IDS.filter((id) => id !== 'node-create-child').sort()
+    );
+  });
 
-    test(`${role}: jedes Element ist so breit wie seine Aktion plus 4px Gutter`, async ({
-      page,
-    }) => {
-      const actions = await readActions(nodeByRole(page, role));
-      expect(actions.items.length).toBeGreaterThan(0);
-      for (const item of actions.items) {
-        expect(
-          Math.abs(item.width - (item.contentWidth + GUTTER))
-        ).toBeLessThanOrEqual(0.5);
-      }
-    });
-  }
-});
-
-/**
- * Leere Elemente: Eine Aktion, deren Button wegen der Rolle oder eines fehlenden
- * Scopes nicht erscheint, bekommt auch kein Element — sonst bliebe ein leerer
- * Rahmen mit 4px Gutter als Lücke in der Leiste stehen.
- */
-const ONLY_VISIBLE = [
-  {
-    name: 'ohne Sitzung',
-    scopes: null,
-    expected: { navigation: ['button-share'], content: ['button-share'] },
-  },
-  {
-    name: 'nur Scope read',
-    scopes: ['read'],
-    expected: { navigation: ['button-share'], content: ['button-share'] },
-  },
-  {
-    name: 'nur Scope edit',
-    scopes: ['edit'],
-    expected: {
-      navigation: ['node-edit', 'button-share'],
-      content: ['node-edit', 'button-share'],
-    },
-  },
-  {
-    name: 'alle Scopes',
-    scopes: SESSION_SCOPES,
-    expected: {
-      navigation: ['node-create-child', 'node-edit', 'button-share'],
-      content: [
-        'node-edit',
-        'button-share',
-        'button-create-content',
-        'button-delete',
-      ],
-    },
-  },
-];
-
-test.describe('Knoten: Actions-Leiste ohne leere Elemente', () => {
-  for (const scenario of ONLY_VISIBLE) {
-    for (const role of Object.keys(ROLES)) {
-      test(`${scenario.name}: ${role} hat nur Elemente mit sichtbarer Aktion`, async ({
-        page,
-      }) => {
-        await mockBookstoreCallouts(page);
-        await cacheLitBundle(page);
-        if (scenario.scopes) {
-          await withSession(page, scenario.scopes);
-        }
-        await page.goto(ENTRY);
-        await expect(nodeByRole(page, role).locator('#node-name')).toHaveText(
-          ROLES[role]
-        );
-
-        const actions = await readActions(nodeByRole(page, role));
-        expect(actions.items.every((item) => item.contentWidth > 0)).toBe(true);
-        expect(actions.items.map((item) => item.ids[0])).toEqual(
-          scenario.expected[role]
-        );
-      });
+  test('every element is as wide as its action plus the 4px gutter', async ({
+    page,
+  }) => {
+    const actions = await readActions(node(page));
+    expect(actions.items.length).toBeGreaterThan(0);
+    for (const item of actions.items) {
+      expect(
+        Math.abs(item.width - (item.contentWidth + GUTTER))
+      ).toBeLessThanOrEqual(0.5);
     }
-  }
+  });
 });

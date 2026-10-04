@@ -22,7 +22,7 @@ function geometry(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
     const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
+      'custom-node'
     );
     const editor = node.shadowRoot
       .querySelector('custom-paragraph')
@@ -52,7 +52,7 @@ function wrapState(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
     const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
+      'custom-node'
     );
     const field = node.shadowRoot
       .querySelector('custom-paragraph')
@@ -72,7 +72,7 @@ function toggleWrap(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
     const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
+      'custom-node'
     );
     node.shadowRoot
       .querySelector('custom-paragraph')
@@ -202,7 +202,7 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
     return page.evaluate(() => {
       const app = document.querySelector('app-bookstore');
       const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="content"]'
+        'custom-node'
       );
       const root = node.shadowRoot
         .querySelector('custom-paragraph')
@@ -253,7 +253,7 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
       await page.evaluate(() => {
         const app = document.querySelector('app-bookstore');
         const node = app.shadowRoot.querySelector(
-          'custom-node[data-role="content"]'
+          'custom-node'
         );
         const scroller = node.shadowRoot
           .querySelector('custom-paragraph')
