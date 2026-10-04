@@ -18,9 +18,8 @@ modal's events into page changes.
 ```
 
 The component depends on `slds-modal`, `slds-layout` and `slds-layout-item` being
-registered, and imports `/modules/content-tree.mjs` for path lookups. On connect it
-loads the content tree by dispatching a `query` event (`{ object: 'contents' }`)
-which the host wires to the backend.
+registered, and imports `/modules/content-tree.mjs` for path lookups. It does **not**
+load the content tree: the host owns it and hands it over as the `tree` property.
 
 ---
 
@@ -32,6 +31,7 @@ programmatically:
 ```html
 <custom-navigation-modal
   current-location="000n00000000000002"
+  .tree="${this._tree}"
   @navigation-level-open="${this.handleNavigationLevelOpen}"
   @navigation-node-select="${this.handleNavigationNodeSelect}"
 ></custom-navigation-modal>
@@ -47,9 +47,17 @@ nav.hide(); // close the modal
 
 ## Attributes
 
-| Attribute          | Property          | Type     | Description                                  |
-| ------------------ | ----------------- | -------- | -------------------------------------------- |
-| `current-location` | `currentLocation` | `String` | Id of the node the page currently stands on. |
+| Attribute          | Property          | Type     | Description                                                           |
+| ------------------ | ----------------- | -------- | --------------------------------------------------------------------- |
+| `current-location` | `currentLocation` | `String` | Id of the node the page currently stands on.                          |
+| —                  | `tree`            | `Array`  | The content tree as `/api/1.0/contents` delivers it; set by the host. |
+
+### `tree`
+
+The host loads the tree and passes it in (`app-bookstore` loads it once on start and
+again after every change to a node, and shares it with the breadcrumbs). A new tree
+positions a modal that was opened before the tree arrived; otherwise an open modal
+keeps its level as far as that level still exists.
 
 ### `current-location`
 
@@ -85,11 +93,10 @@ An empty level reads „Keine Inhalte vorhanden.“
 
 ## Events
 
-| Event                    | `detail`                | Description                                                                |
-| ------------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `navigation-level-open`  | `{ id }`                | A tile with children was opened. The page behind may follow (cover node).  |
-| `navigation-node-select` | `{ id, parentId }`      | A tile without children was chosen. `parentId` is `null` on the top level. |
-| `query`                  | `{ payload, callback }` | Internal: requests the content tree (`{ object: 'contents' }`).            |
+| Event                    | `detail`           | Description                                                                |
+| ------------------------ | ------------------ | -------------------------------------------------------------------------- |
+| `navigation-level-open`  | `{ id }`           | A tile with children was opened. The page behind may follow (cover node).  |
+| `navigation-node-select` | `{ id, parentId }` | A tile without children was chosen. `parentId` is `null` on the top level. |
 
 All events bubble and are composed.
 
@@ -97,15 +104,10 @@ All events bubble and are composed.
 
 ## Methods
 
-| Method     | Description                                                                            |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `show()`   | Opens the modal and positions it from `current-location` (see above).                  |
-| `hide()`   | Closes the modal (delegates to `slds-modal`).                                          |
-| `reload()` | Loads the content tree again; an open modal keeps its level as far as it still exists. |
-
-The host calls `reload()` whenever a node was created, changed, deleted, published or
-unpublished (`app-bookstore` listens for `chapter-created`, `chapter-updated`,
-`node-deleted`, `published`, `unpublished`; a published **content** does not reload).
+| Method   | Description                                                           |
+| -------- | --------------------------------------------------------------------- |
+| `show()` | Opens the modal and positions it from `current-location` (see above). |
+| `hide()` | Closes the modal (delegates to `slds-modal`).                         |
 
 The modal can also be closed via the ESC key, the close button, or a backdrop
 click — these are handled by the underlying `slds-modal`.
