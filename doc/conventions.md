@@ -99,17 +99,18 @@ einzuführen.
 
 **Festgeschrieben in:**
 
-| Komponente          | Angabe                          | Verhalten                        | Spec                        |
-| :------------------ | :------------------------------ | :------------------------------- | :-------------------------- |
-| `slds-layout-item`  | `size="1-of-9"`                 | keine Größenklasse               | `slds-layout.spec.js`       |
-| `slds-layout-item`  | `grow-none` mit gültiger `size` | keine `slds-grow-none`-Klasse    | `slds-layout.spec.js`       |
-| `slds-button-icon`  | ungültige `variant` / `size`    | keine Variant- bzw. Größenklasse | `slds-button-icon.spec.js`  |
-| `slds-breadcrumbs`  | unbekannte `size`               | fällt auf `medium` zurück        | `slds-breadcrumbs.spec.js`  |
-| `slds-toast`        | ungültiger `state`              | fällt auf `info` zurück          | `slds-toast.spec.js`        |
-| `slds-input`        | unbekannter `type`              | fällt auf den Text-Input zurück  | `slds-input.spec.js`        |
-| `slds-progress-bar` | unbekannte `size`               | keine Größenklasse               | `slds-progress-bar.spec.js` |
-| `slds-progress-bar` | nicht-numerisches `percent`     | `0` statt `NaN`                  | `slds-progress-bar.spec.js` |
-| `slds-modal`        | unbekannte `size`               | keine Größenklasse               | `slds-modal.spec.js`        |
+| Komponente          | Angabe                             | Verhalten                        | Spec                        |
+| :------------------ | :--------------------------------- | :------------------------------- | :-------------------------- |
+| `slds-layout-item`  | `size="1-of-9"`                    | keine Größenklasse               | `slds-layout.spec.js`       |
+| `slds-layout-item`  | `grow-none` mit gültiger `size`    | keine `slds-grow-none`-Klasse    | `slds-layout.spec.js`       |
+| `slds-button-icon`  | ungültige `variant` / `size`       | keine Variant- bzw. Größenklasse | `slds-button-icon.spec.js`  |
+| `slds-breadcrumbs`  | unbekannte `size`                  | fällt auf `medium` zurück        | `slds-breadcrumbs.spec.js`  |
+| `slds-breadcrumbs`  | `icon` eines Items ohne `typ:name` | Label als Text statt Icon        | `slds-breadcrumbs.spec.js`  |
+| `slds-toast`        | ungültiger `state`                 | fällt auf `info` zurück          | `slds-toast.spec.js`        |
+| `slds-input`        | unbekannter `type`                 | fällt auf den Text-Input zurück  | `slds-input.spec.js`        |
+| `slds-progress-bar` | unbekannte `size`                  | keine Größenklasse               | `slds-progress-bar.spec.js` |
+| `slds-progress-bar` | nicht-numerisches `percent`        | `0` statt `NaN`                  | `slds-progress-bar.spec.js` |
+| `slds-modal`        | unbekannte `size`                  | keine Größenklasse               | `slds-modal.spec.js`        |
 
 ## Historie: abgelöste Muster
 

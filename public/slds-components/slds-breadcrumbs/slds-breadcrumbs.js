@@ -139,6 +139,26 @@ class SldsBreadcrumbs extends LitElement {
     `;
   }
 
+  /**
+   * An item with `icon: "type:name"` shows that SLDS sprite icon; its label
+   * turns into assistive text. Anything else as `icon` is ignored and the
+   * label shows as text — misuse falls back silently (doc/conventions.md).
+   */
+  _renderLinkContent(item) {
+    const [type, name] = String(item.icon || '').split(':');
+    if (!type || !name) {
+      return item.label;
+    }
+    return html`<svg
+        class="slds-icon slds-icon_x-small slds-icon-text-default"
+        aria-hidden="true"
+      >
+        <use
+          href="/assets/icons/${type}-sprite/svg/symbols.svg#${name}"
+        ></use></svg
+      ><span class="slds-assistive-text">${item.label}</span>`;
+  }
+
   _renderItem(item, index, isLast = false) {
     const innerContent =
       isLast && !this.lastItemAsLink
@@ -151,7 +171,7 @@ class SldsBreadcrumbs extends LitElement {
             href="${item.href ?? nothing}"
             title="${item.label}"
             @click="${(event) => this._handleClick(event, item, index)}"
-            >${item.label}</a
+            >${this._renderLinkContent(item)}</a
           >`;
 
     return html`

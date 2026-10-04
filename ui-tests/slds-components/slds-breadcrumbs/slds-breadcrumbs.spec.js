@@ -265,7 +265,6 @@ test.describe('slds-breadcrumbs', () => {
     }
 
     test('an item with icon shows the SLDS sprite icon', async ({ page }) => {
-      test.fail(true, 'icon per item does not exist yet');
       const first = await readFirstItem(page, ICON_ITEMS);
 
       expect(first.iconHref).toBe(
@@ -277,7 +276,6 @@ test.describe('slds-breadcrumbs', () => {
     test('the label of an icon item becomes assistive text and title', async ({
       page,
     }) => {
-      test.fail(true, 'icon per item does not exist yet');
       const first = await readFirstItem(page, ICON_ITEMS);
 
       expect(first.assistive).toBe('Startseite');
