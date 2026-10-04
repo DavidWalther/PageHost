@@ -5,15 +5,17 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
+import { findPath } from '/modules/content-tree.mjs';
 
 console.log('Bookstore.js file loaded');
 
 /**
- * Einstieg ohne Deep-Link.
+ * Entry without a deep link.
  *
- * Trägt noch eine alte Id: der Inhaltsbaum liefert sie so, und das Backend
- * löst sie über `legacy_id` auf. Sobald es hier eine Konfiguration gibt
- * (Startknoten je App), fällt die Konstante weg.
+ * Still a retired id: the backend resolves it through `legacy_id`, and
+ * `handleNavigationNodeLoaded` moves the location to the record id the
+ * content tree carries once the node has loaded. Goes away once there is a
+ * configuration for it (start node per app).
  */
 const DEFAULT_ENTRY_NODE_ID = '000s00000000000011';
 
@@ -22,6 +24,8 @@ class Bookstore extends LitElement {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
     _currentLocation: { type: String, state: true },
+    // The content tree — loaded here, consumed by the modal and the breadcrumbs.
+    _tree: { state: true },
   };
 
   constructor() {
@@ -32,7 +36,10 @@ class Bookstore extends LitElement {
     this.isHydrated = false;
     this._initPara = null;
     this._pendingChildSelection = null;
+    // A breadcrumb asked to show a node itself: skip its cover node once.
+    this._skipCoverOnce = false;
     this._currentLocation = null;
+    this._tree = [];
   }
 
   // =========== Lifecycle methods ============
@@ -99,6 +106,7 @@ class Bookstore extends LitElement {
           </slds-layout-item>
         </slds-layout>
       </slds-card>
+      ${this.renderBreadcrumbs()}
       <custom-settings-modal>
         <slds-layout wrap vertical>
           <slds-layout-item size="1-of-1">
@@ -168,6 +176,7 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
+        .tree="${this._tree}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
@@ -239,6 +248,57 @@ class Bookstore extends LitElement {
     let modalCmp = this.shadowRoot.querySelector('slds-modal');
     modalCmp.setAttribute('title', 'testmodal');
     modalCmp.show();
+  }
+
+  /**
+   * The ancestors of the current node, root first — never the node itself,
+   * which the node card already names. Empty for a root or an unknown node.
+   */
+  get breadcrumbItems() {
+    return findPath(this._tree, this._currentLocation)
+      .slice(0, -1)
+      .map((node) => ({ key: node.id, label: node.name, href: `/${node.id}` }));
+  }
+
+  /** A row below the header for going up; nothing when there is no way up. */
+  renderBreadcrumbs() {
+    const items = this.breadcrumbItems;
+    if (items.length === 0) {
+      return '';
+    }
+    // The last item is the parent, not the current node: it must be a link,
+    // and it must not be announced as the current page.
+    return html`
+      <div class="slds-m-horizontal_small slds-m-top_x-small">
+        <slds-breadcrumbs
+          overflow
+          overflow_limit="2"
+          last-item-as-link
+          no-current-item
+          .items="${items}"
+          @breadcrumb-select="${this.handleBreadcrumbSelect}"
+        ></slds-breadcrumbs>
+      </div>
+    `;
+  }
+
+  /**
+   * Going up: the page shows the ancestor itself — above, with nothing below
+   * and without its cover node. When it already is the upper node, only the
+   * lower one empties.
+   */
+  handleBreadcrumbSelect(event) {
+    const id = event.detail?.key;
+    if (!id) {
+      return;
+    }
+    if (this.navigationNode.getAttribute('id') !== id) {
+      this._skipCoverOnce = true;
+      this.navigationNode.setAttribute('id', id);
+    }
+    this.navigationNode.removeAttribute('selected-child');
+    this.contentNode.removeAttribute('id');
+    this._setCurrentLocation(id);
   }
 
   handleOpenSettings() {
@@ -374,6 +434,7 @@ class Bookstore extends LitElement {
     }
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
+    this._loadContentTree();
 
     // Die Knoten müssen im Shadow-DOM stehen, bevor sie Attribute bekommen.
     await this.updateComplete;
@@ -403,15 +464,21 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Asks the navigation modal to load the tree again after a node changed.
-   * Publishing a content leaves the tree alone — contents are not in it.
+   * Loads the content tree again after a node changed. Publishing a content
+   * leaves the tree alone — contents are not in it.
    */
   _reloadNavigationTree(event) {
     const objectName = event.detail?.objectName;
     if (objectName && objectName !== 'node') {
       return;
     }
-    this.shadowRoot.querySelector('custom-navigation-modal')?.reload();
+    this._loadContentTree();
+  }
+
+  /** One request for everyone who needs the tree. */
+  async _loadContentTree() {
+    const tree = await this.queryRecord({ object: 'contents' });
+    this._tree = Array.isArray(tree) ? tree : [];
   }
 
   /**
@@ -551,6 +618,12 @@ class Bookstore extends LitElement {
     // content tree uses, or the modal would never find it.
     if (nodeData.legacy_id && this._currentLocation === nodeData.legacy_id) {
       this._setCurrentLocation(nodeData);
+    }
+
+    if (this._skipCoverOnce) {
+      // A breadcrumb asked for the node itself, not for its cover node.
+      this._skipCoverOnce = false;
+      return;
     }
 
     if (this._pendingChildSelection) {

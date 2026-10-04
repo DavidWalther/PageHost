@@ -42,6 +42,8 @@ class SldsBreadcrumbs extends LitElement {
     overflow: { type: Boolean }, // Enable overflow behavior. Overflow will render only a limited number of items
     overflowLimit: { type: Number, attribute: 'overflow_limit' }, // Number of items to show when overflow is enabled.
     lastItemAsLink: { type: Boolean, attribute: 'last-item-as-link' },
+    // The trail ends above the current page: no item is the current one.
+    noCurrentItem: { type: Boolean, attribute: 'no-current-item' },
   };
 
   static styles = css`
@@ -63,6 +65,7 @@ class SldsBreadcrumbs extends LitElement {
     this.overflow = false;
     this.overflowLimit = 3;
     this.lastItemAsLink = false;
+    this.noCurrentItem = false;
   }
 
   connectedCallback() {
@@ -154,7 +157,7 @@ class SldsBreadcrumbs extends LitElement {
     return html`
       <li
         class="slds-breadcrumb__item"
-        aria-current="${isLast ? 'page' : nothing}"
+        aria-current="${isLast && !this.noCurrentItem ? 'page' : nothing}"
       >
         ${innerContent}
       </li>
