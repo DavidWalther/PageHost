@@ -310,3 +310,70 @@ test.describe('Navigation modal in any depth', () => {
     await expect(modal(page)).not.toHaveAttribute('open');
   });
 });
+
+test.describe('Navigation modal child marker', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const tile = (page, text) =>
+    page
+      .locator('custom-navigation-modal button.tile')
+      .filter({ has: page.locator('.tile__name', { hasText: text }) });
+
+  /** What a tile shows next to its name. */
+  function readMarker(page, text) {
+    return tile(page, text).evaluate((button) => {
+      const marker = button.querySelector('.tile__children');
+      if (!marker) {
+        return null;
+      }
+      const use = marker.querySelector('svg use');
+      return {
+        count: marker.querySelector('.tile__count')?.textContent.trim() ?? null,
+        // The resolved reference, not the attribute string (doc/conventions.md).
+        iconHref: use ? use.href.baseVal : null,
+        iconHidden: use?.parentElement.getAttribute('aria-hidden') ?? null,
+        assistive:
+          marker.querySelector('.slds-assistive-text')?.textContent.trim() ??
+          null,
+      };
+    });
+  }
+
+  test.beforeEach(async ({ page }) => {
+    await mockBookstoreCallouts(page);
+    await cacheLitBundle(page);
+    await page.goto('/');
+    await expect(page.locator('app-bookstore')).toBeAttached();
+    await page.locator('#button-navigation_open').click();
+    await expect(tile(page, 'Mock Story 1')).toBeVisible();
+  });
+
+  test('a tile with children shows their number and a chevron', async ({
+    page,
+  }) => {
+    test.fail(true, 'no child marker yet (#209)');
+    const marker = await readMarker(page, 'Mock Story 1');
+
+    expect(marker.count).toBe('2');
+    expect(marker.iconHref).toBe(
+      '/assets/icons/utility-sprite/svg/symbols.svg#chevronright'
+    );
+    expect(marker.iconHidden).toBe('true');
+  });
+
+  test('screen readers hear the number as words', async ({ page }) => {
+    test.fail(true, 'no child marker yet (#209)');
+    expect((await readMarker(page, 'Mock Story 1')).assistive).toBe(
+      '2 Einträge'
+    );
+    expect((await readMarker(page, 'Mock Story 2')).assistive).toBe(
+      '1 Eintrag'
+    );
+  });
+
+  test('a tile without children shows no marker', async ({ page }) => {
+    await tile(page, 'Mock Story 1').click();
+
+    expect(await readMarker(page, 'Mock Chapter 1 for Story 1')).toBeNull();
+  });
+});
