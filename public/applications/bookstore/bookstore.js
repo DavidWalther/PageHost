@@ -22,6 +22,8 @@ class Bookstore extends LitElement {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
     _currentLocation: { type: String, state: true },
+    // The content tree — loaded here, consumed by the modal and the breadcrumbs.
+    _tree: { state: true },
   };
 
   constructor() {
@@ -33,6 +35,7 @@ class Bookstore extends LitElement {
     this._initPara = null;
     this._pendingChildSelection = null;
     this._currentLocation = null;
+    this._tree = [];
   }
 
   // =========== Lifecycle methods ============
@@ -168,6 +171,7 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
+        .tree="${this._tree}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
@@ -374,6 +378,7 @@ class Bookstore extends LitElement {
     }
 
     this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
+    this._loadContentTree();
 
     // Die Knoten müssen im Shadow-DOM stehen, bevor sie Attribute bekommen.
     await this.updateComplete;
@@ -403,15 +408,21 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Asks the navigation modal to load the tree again after a node changed.
-   * Publishing a content leaves the tree alone — contents are not in it.
+   * Loads the content tree again after a node changed. Publishing a content
+   * leaves the tree alone — contents are not in it.
    */
   _reloadNavigationTree(event) {
     const objectName = event.detail?.objectName;
     if (objectName && objectName !== 'node') {
       return;
     }
-    this.shadowRoot.querySelector('custom-navigation-modal')?.reload();
+    this._loadContentTree();
+  }
+
+  /** One request for everyone who needs the tree. */
+  async _loadContentTree() {
+    const tree = await this.queryRecord({ object: 'contents' });
+    this._tree = Array.isArray(tree) ? tree : [];
   }
 
   /**

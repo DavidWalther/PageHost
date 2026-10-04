@@ -147,8 +147,9 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
     (die Seite dahinter folgt, ein Titel-Knoten lädt), eine ohne Kinder wählt
     aus. Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
-    der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
-    einem Knoten lädt der `bookstore` den Baum neu.
+    der ganze Pfad (`public/modules/content-tree.mjs`). Den Baum lädt und
+    besitzt der `bookstore` — einmal beim Start und nach jeder Änderung an
+    einem Knoten —, das Modal bekommt ihn nur übergeben.
     → `public/components/custom-navigation-modal/README.md`
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
