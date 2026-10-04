@@ -455,7 +455,6 @@ test.describe('slds-modal stacked', () => {
     });
 
   test('Escape closes only the modal opened last', async ({ page }) => {
-    test.fail(true, 'every open modal reacts to Escape (#187)');
     await pressEscape(page);
 
     expect(await openState(page)).toEqual({ lower: true, upper: false });
