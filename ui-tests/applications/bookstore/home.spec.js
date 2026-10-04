@@ -127,7 +127,6 @@ test.describe('Browser back and forward after home', () => {
     );
 
   test('back shows the left node inside the app', async ({ page }) => {
-    test.fail(true, 'popstate is not handled yet (#151)');
     await open(page, '/000c00000000000002');
     await expect
       .poll(async () => (await readNodes(page)).content)
@@ -158,7 +157,6 @@ test.describe('Browser back and forward after home', () => {
   });
 
   test('forward shows the start page again', async ({ page }) => {
-    test.fail(true, 'popstate is not handled yet (#151)');
     await open(page, '/000c00000000000002');
     await expect
       .poll(async () => (await readNodes(page)).content)
@@ -180,7 +178,6 @@ test.describe('Browser back and forward after home', () => {
   test('back does not jump to the paragraph number of the first address', async ({
     page,
   }) => {
-    test.fail(true, 'popstate is not handled yet (#151)');
     await open(page, '/000c00000000000002?paragraphnumber=3');
     await expect.poll(() => contentNumber(page)).toBe('3');
     await homeLink(page).click();

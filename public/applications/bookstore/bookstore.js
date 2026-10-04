@@ -41,6 +41,8 @@ class Bookstore extends LitElement {
     this._pendingChildSelection = null;
     // A breadcrumb asked to show a node itself: skip its cover node once.
     this._skipCoverOnce = false;
+    // Bound once, so the same function can be removed again.
+    this._handlePopState = this.handlePopState.bind(this);
     this._currentLocation = null;
     this._tree = [];
   }
@@ -50,6 +52,7 @@ class Bookstore extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    window.addEventListener('popstate', this._handlePopState);
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
@@ -333,6 +336,20 @@ class Bookstore extends LitElement {
   }
 
   /**
+   * Browser back/forward: the address names a node (or none for the start
+   * page); it is shown inside the app, like a deep link but without a reload.
+   * Only home writes history entries, so these are the addresses it left.
+   */
+  async handlePopState() {
+    if (!this.isHydrated) {
+      return;
+    }
+    const id = window.location.pathname.split('/').pop();
+    const entry = await this.resolveEntryPoint(id || DEFAULT_ENTRY_NODE_ID);
+    this.showEntryPoint(entry);
+  }
+
+  /**
    * Applies an entry on a page that already shows something. The lower node
    * and the selection are cleared first — an entry without a cover node would
    * otherwise leave the old content below — and no pending choice survives.
@@ -340,6 +357,10 @@ class Bookstore extends LitElement {
   showEntryPoint(entry) {
     this._pendingChildSelection = null;
     this._skipCoverOnce = false;
+    // The paragraph number belongs to the first address only.
+    if (this._initPara) {
+      this._initPara.paragraphnumber = null;
+    }
     this.contentNode.removeAttribute('contentnumber');
     this.contentNode.removeAttribute('id');
     this.navigationNode.removeAttribute('selected-child');
@@ -450,6 +471,7 @@ class Bookstore extends LitElement {
     this.removeEventListener('navigation', this.handleNavigationEvent);
     this.removeEventListener('chapter-updated', this._handleChildUpdated);
     this.removeEventListener('node-deleted', this._handleNodeDeleted);
+    window.removeEventListener('popstate', this._handlePopState);
   }
 
   _handleChildUpdated(event) {
