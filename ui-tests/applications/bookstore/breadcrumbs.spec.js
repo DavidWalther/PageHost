@@ -51,7 +51,6 @@ test.describe('Breadcrumbs', () => {
   test.use({ actionTimeout: 5000 });
 
   test('shows only the home item on a root node', async ({ page }) => {
-    test.fail(true, 'no home item yet (#151)');
     await open(page, '/');
     await expect
       .poll(async () => (await readNodes(page)).navigation.id)
@@ -66,7 +65,6 @@ test.describe('Breadcrumbs', () => {
   test('the home item links the start page and shows the home icon', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await open(page, '/000c00000000000002');
 
     const home = page.locator('app-bookstore slds-breadcrumbs li').first();
@@ -80,7 +78,6 @@ test.describe('Breadcrumbs', () => {
   test('lists the ancestors of the shown node, not the node itself', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await open(page, '/000c00000000000002');
 
     await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
@@ -91,7 +88,6 @@ test.describe('Breadcrumbs', () => {
   });
 
   test('marks no item as the current page', async ({ page }) => {
-    test.fail(true, 'no home item yet (#151)');
     await open(page, '/000c00000000000002');
     await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
 
@@ -105,7 +101,6 @@ test.describe('Breadcrumbs', () => {
   test('clicking the parent empties the lower node and keeps no cover', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await open(page, '/000c00000000000002');
     await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
 
@@ -125,7 +120,6 @@ test.describe('Breadcrumbs', () => {
   test('follows a reload of the tree after a node changed', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await open(page, '/000c00000000000002');
     await expect(crumbs(page)).toHaveText(['Startseite', 'Mock Story 1']);
     const renamed = {
@@ -249,7 +243,6 @@ test.describe('Breadcrumbs in a deep tree', () => {
   test('collapses a long path to home › … › grandparent › parent', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await expect(crumbs(page)).toHaveText([
       'Startseite',
       '…',
@@ -261,7 +254,6 @@ test.describe('Breadcrumbs in a deep tree', () => {
   test('clicking a distant ancestor shows it without its cover node', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await expect(crumbs(page)).toHaveText([
       'Startseite',
       '…',
@@ -284,7 +276,6 @@ test.describe('Breadcrumbs in a deep tree', () => {
   test('clicking the parent keeps it above and lists its ancestors', async ({
     page,
   }) => {
-    test.fail(true, 'no home item yet (#151)');
     await crumbLink(page, 'Deep Level 3').click();
 
     await expect

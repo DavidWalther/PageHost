@@ -19,6 +19,9 @@ console.log('Bookstore.js file loaded');
  */
 const DEFAULT_ENTRY_NODE_ID = '000s00000000000011';
 
+/** Key of the home breadcrumb — never a node id, so it cannot clash with one. */
+const HOME_BREADCRUMB_KEY = '#home';
+
 class Bookstore extends LitElement {
   static properties = {
     isHydrated: { type: Boolean, state: true },
@@ -251,28 +254,33 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * The ancestors of the current node, root first — never the node itself,
-   * which the node card already names. Empty for a root or an unknown node.
+   * Home first, then the ancestors of the current node, root first — never
+   * the node itself, which the node card already names. On a root node (or an
+   * unknown one) only home remains.
    */
   get breadcrumbItems() {
-    return findPath(this._tree, this._currentLocation)
+    const home = {
+      key: HOME_BREADCRUMB_KEY,
+      label: 'Startseite',
+      href: '/',
+      icon: 'utility:home',
+    };
+    const ancestors = findPath(this._tree, this._currentLocation)
       .slice(0, -1)
       .map((node) => ({ key: node.id, label: node.name, href: `/${node.id}` }));
+    return [home, ...ancestors];
   }
 
-  /** A row below the header for going up; nothing when there is no way up. */
+  /** A row below the header for going up — always there, home at its start. */
   renderBreadcrumbs() {
     const items = this.breadcrumbItems;
-    if (items.length === 0) {
-      return '';
-    }
     // The last item is the parent, not the current node: it must be a link,
     // and it must not be announced as the current page.
     return html`
       <div class="slds-m-horizontal_small slds-m-top_x-small">
         <slds-breadcrumbs
           overflow
-          overflow_limit="2"
+          overflow_limit="3"
           last-item-as-link
           no-current-item
           .items="${items}"
@@ -289,7 +297,8 @@ class Bookstore extends LitElement {
    */
   handleBreadcrumbSelect(event) {
     const id = event.detail?.key;
-    if (!id) {
+    if (!id || id === HOME_BREADCRUMB_KEY) {
+      // Home: wired in a later step.
       return;
     }
     if (this.navigationNode.getAttribute('id') !== id) {
