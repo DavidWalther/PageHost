@@ -10,11 +10,12 @@ import { findPath } from '/modules/content-tree.mjs';
 console.log('Bookstore.js file loaded');
 
 /**
- * Einstieg ohne Deep-Link.
+ * Entry without a deep link.
  *
- * Trägt noch eine alte Id: der Inhaltsbaum liefert sie so, und das Backend
- * löst sie über `legacy_id` auf. Sobald es hier eine Konfiguration gibt
- * (Startknoten je App), fällt die Konstante weg.
+ * Still a retired id: the backend resolves it through `legacy_id`, and
+ * `handleNavigationNodeLoaded` moves the location to the record id the
+ * content tree carries once the node has loaded. Goes away once there is a
+ * configuration for it (start node per app).
  */
 const DEFAULT_ENTRY_NODE_ID = '000s00000000000011';
 
