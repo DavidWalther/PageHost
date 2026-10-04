@@ -21,6 +21,7 @@ class NavigationModal extends LitElement {
 
   static styles = css`
     .tile {
+      position: relative;
       width: 100%;
       aspect-ratio: 2 / 1;
       display: flex;
@@ -34,6 +35,23 @@ class NavigationModal extends LitElement {
       color: inherit;
       font: inherit;
       cursor: pointer;
+    }
+
+    /* Bottom right: how many children wait below this tile. */
+    .tile__children {
+      position: absolute;
+      right: 0.5rem;
+      bottom: 0.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.125rem;
+      font-size: 0.75rem;
+    }
+
+    .tile__children svg {
+      width: 0.75rem;
+      height: 0.75rem;
+      fill: currentColor;
     }
 
     .tile:hover {
@@ -185,6 +203,7 @@ class NavigationModal extends LitElement {
                   @click="${() => this._handleTileClick(node)}"
                 >
                   <span class="tile__name">${node.name}</span>
+                  ${this._renderChildMarker(node)}
                 </button>
               </div>
             </slds-layout-item>
@@ -192,6 +211,27 @@ class NavigationModal extends LitElement {
         )}
       </slds-layout>
     `;
+  }
+
+  /**
+   * Shows that a tile leads further: the number of its children and a
+   * chevron. Screen readers hear the number as words instead.
+   */
+  _renderChildMarker(node) {
+    const count = (node.childnodes || []).length;
+    if (count === 0) {
+      return '';
+    }
+    const words = count === 1 ? '1 Eintrag' : `${count} Einträge`;
+    return html`<span class="tile__children">
+      <span class="tile__count" aria-hidden="true">${count}</span>
+      <svg aria-hidden="true">
+        <use
+          href="/assets/icons/utility-sprite/svg/symbols.svg#chevronright"
+        ></use>
+      </svg>
+      <span class="slds-assistive-text">${words}</span>
+    </span>`;
   }
 
   /**

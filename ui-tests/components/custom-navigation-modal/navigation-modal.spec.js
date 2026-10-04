@@ -351,7 +351,6 @@ test.describe('Navigation modal child marker', () => {
   test('a tile with children shows their number and a chevron', async ({
     page,
   }) => {
-    test.fail(true, 'no child marker yet (#209)');
     const marker = await readMarker(page, 'Mock Story 1');
 
     expect(marker.count).toBe('2');
@@ -362,7 +361,6 @@ test.describe('Navigation modal child marker', () => {
   });
 
   test('screen readers hear the number as words', async ({ page }) => {
-    test.fail(true, 'no child marker yet (#209)');
     expect((await readMarker(page, 'Mock Story 1')).assistive).toBe(
       '2 Einträge'
     );
