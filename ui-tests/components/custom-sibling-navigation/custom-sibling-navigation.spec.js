@@ -39,7 +39,6 @@ test.describe('custom-sibling-navigation', () => {
   });
 
   test('shows both neighbours with their names', async ({ page }) => {
-    test.fail(true, 'component does not exist yet (#209)');
     await mount(page, { previous: PREVIOUS, next: NEXT });
 
     await expect(button(page, 'previous')).toHaveText('‹ Kapitel 1');
@@ -48,7 +47,6 @@ test.describe('custom-sibling-navigation', () => {
   });
 
   test('leaves out the button of a missing neighbour', async ({ page }) => {
-    test.fail(true, 'component does not exist yet (#209)');
     await mount(page, { next: NEXT });
 
     await expect(button(page, 'previous')).toHaveCount(0);
@@ -56,7 +54,6 @@ test.describe('custom-sibling-navigation', () => {
   });
 
   test('renders nothing without neighbours', async ({ page }) => {
-    test.fail(true, 'component does not exist yet (#209)');
     await mount(page);
 
     const rendered = await page.evaluate(
@@ -72,7 +69,6 @@ test.describe('custom-sibling-navigation', () => {
   });
 
   test('reports the chosen neighbour as sibling-select', async ({ page }) => {
-    test.fail(true, 'component does not exist yet (#209)');
     await mount(page, { previous: PREVIOUS, next: NEXT });
     await page.evaluate(() => {
       window.__selected = [];
