@@ -5,9 +5,14 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 // A tabset without tabs is useless — the consumer imports one file, not two.
-import '/slds-components/slds-tabset/slds-tab.js';
+import { TAB_CHANGE_EVENT } from '/slds-components/slds-tabset/slds-tab.js';
 
 const PANEL_CLASS = 'slds-tabs_default__content';
+
+// Only `standard` is built so far; an unknown variant falls back to it, like
+// `lightning-tabset` does.
+const VARIANT_CLASSES = { standard: 'slds-tabs_default' };
+const DEFAULT_VARIANT = 'standard';
 
 // Values for tabs that come without one, like `lightning-tabset` does. Unique
 // per page, so two tabsets never hand out the same value.
@@ -18,10 +23,15 @@ let generatedValueCount = 0;
  *
  * The tab bar lives in this element's shadow root; the `slds-tab` children are
  * projected through the default slot and stay in the consumer's light DOM.
+ *
+ * Which tab is shown: the one named by `active-tab-value`, else the first. A
+ * click sets `activeTabValue`, so the property always names the shown tab once
+ * the user has chosen one. Each tab that becomes the shown one fires `active`.
  */
 class SldsTabset extends LitElement {
   static properties = {
     activeTabValue: { type: String, attribute: 'active-tab-value' },
+    variant: { type: String },
     _tabs: { state: true },
   };
 
@@ -34,7 +44,15 @@ class SldsTabset extends LitElement {
   constructor() {
     super();
     this.activeTabValue = undefined;
+    this.variant = DEFAULT_VARIANT;
     this._tabs = [];
+    this._shownTab = undefined;
+    this._activationPending = false;
+    // A tab reports a changed label or value; the bar has to follow.
+    this.addEventListener(TAB_CHANGE_EVENT, (event) => {
+      event.stopPropagation();
+      this.requestUpdate();
+    });
   }
 
   connectedCallback() {
@@ -42,24 +60,43 @@ class SldsTabset extends LitElement {
     addGlobalStylesToShadowRoot(this.shadowRoot);
   }
 
-  /** The value of the tab that is shown: the requested one, else the first. */
-  get _shownValue() {
+  willUpdate(changedProperties) {
+    if (
+      !changedProperties.has('_tabs') &&
+      !changedProperties.has('activeTabValue')
+    ) {
+      return;
+    }
     const requested = this._tabs.find(
       (tab) => tab.value === this.activeTabValue
     );
-    return (requested ?? this._tabs[0])?.value;
+    let next;
+    if (changedProperties.has('activeTabValue')) {
+      // Asked for a tab: that one, or the first if the value is unknown.
+      next = requested ?? this._tabs[0];
+    } else if (this._tabs.includes(this._shownTab)) {
+      // Only the tabs changed and the shown one is still there: keep it.
+      next = this._shownTab;
+    } else {
+      next = requested ?? this._tabs[0];
+    }
+    if (next !== this._shownTab) {
+      this._shownTab = next;
+      this._activationPending = !!next;
+    }
   }
 
   render() {
-    const shownValue = this._shownValue;
+    const variantClass =
+      VARIANT_CLASSES[this.variant] ?? VARIANT_CLASSES[DEFAULT_VARIANT];
     return html`
-      <div class="slds-tabs_default">
+      <div class="${variantClass}">
         ${
           this._tabs.length === 0
             ? ''
             : html`<ul class="slds-tabs_default__nav" role="tablist">
                 ${this._tabs.map((tab) =>
-                this._renderTabItem(tab, tab.value === shownValue)
+                this._renderTabItem(tab, tab === this._shownTab)
               )}
               </ul>`
         }
@@ -75,9 +112,18 @@ class SldsTabset extends LitElement {
         title=${tab.label}
         role="presentation"
       >
-        <a class="slds-tabs_default__link" role="tab">${tab.label}</a>
+        <a
+          class="slds-tabs_default__link"
+          role="tab"
+          @click=${() => this._selectTab(tab)}
+          >${tab.label}</a
+        >
       </li>
     `;
+  }
+
+  _selectTab(tab) {
+    this.activeTabValue = tab.value;
   }
 
   _handleSlotChange(event) {
@@ -96,15 +142,19 @@ class SldsTabset extends LitElement {
   // The panels are the light-DOM tabs. They are styled in the consumer's scope,
   // so the tabset only sets what makes a tab a panel.
   updated() {
-    const shownValue = this._shownValue;
     this._tabs.forEach((tab) => {
-      const isShown = tab.value === shownValue;
+      const isShown = tab === this._shownTab;
       tab.setAttribute('role', 'tabpanel');
       tab.setAttribute('aria-label', tab.label ?? '');
       tab.classList.add(PANEL_CLASS);
       tab.classList.toggle('slds-show', isShown);
       tab.classList.toggle('slds-hide', !isShown);
     });
+    if (this._activationPending) {
+      this._activationPending = false;
+      // Like `lightning-tab`: no detail, does not bubble — listen on the tab.
+      this._shownTab.dispatchEvent(new CustomEvent('active'));
+    }
   }
 }
 
