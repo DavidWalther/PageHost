@@ -429,3 +429,86 @@ test.describe('slds-tabset selection and the active event', () => {
     expect(classes).toEqual(['slds-tabs_default']);
   });
 });
+
+function readTabLinks(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('slds-tabset').shadowRoot;
+    return {
+      links: [...root.querySelectorAll('a[role="tab"]')].map((link) => ({
+        text: link.textContent.trim(),
+        ariaSelected: link.getAttribute('aria-selected'),
+        tabindex: link.getAttribute('tabindex'),
+      })),
+      focused: root.activeElement?.textContent.trim() ?? null,
+    };
+  });
+}
+
+async function pressOnTab(page, label, key) {
+  await page
+    .locator('slds-tabset')
+    .first()
+    .locator('a[role="tab"]', { hasText: label })
+    .focus();
+  await page.keyboard.press(key);
+  await settle(page);
+}
+
+test.describe('slds-tabset keyboard and ARIA', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('marks the shown tab as selected and as the only tab stop', async ({
+    page,
+  }) => {
+    await mountWithLog(page, THREE_TABS);
+    await clickTab(page, 'Two');
+
+    expect((await readTabLinks(page)).links).toEqual([
+      { text: 'One', ariaSelected: 'false', tabindex: '-1' },
+      { text: 'Two', ariaSelected: 'true', tabindex: '0' },
+      { text: 'Three', ariaSelected: 'false', tabindex: '-1' },
+    ]);
+  });
+
+  test('arrow right shows and focuses the next tab and fires active', async ({
+    page,
+  }) => {
+    await mountWithLog(page, THREE_TABS);
+    await pressOnTab(page, 'One', 'ArrowRight');
+
+    expect((await shownValues(page)).shownTabs).toEqual(['two']);
+    expect((await readTabLinks(page)).focused).toBe('Two');
+    expect(await activeLog(page)).toEqual(['one', 'two']);
+  });
+
+  test('arrow left on the first tab wraps to the last', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+    await pressOnTab(page, 'One', 'ArrowLeft');
+
+    expect((await shownValues(page)).shownTabs).toEqual(['three']);
+    expect((await readTabLinks(page)).focused).toBe('Three');
+  });
+
+  test('arrow right on the last tab wraps to the first', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+    await clickTab(page, 'Three');
+    await pressOnTab(page, 'Three', 'ArrowRight');
+
+    expect((await shownValues(page)).shownTabs).toEqual(['one']);
+    expect((await readTabLinks(page)).focused).toBe('One');
+  });
+
+  test('other keys change nothing — like lightning-tabset, no Home and End', async ({
+    page,
+  }) => {
+    await mountWithLog(page, THREE_TABS);
+    for (const key of ['End', 'Home', 'ArrowDown', 'ArrowUp']) {
+      await pressOnTab(page, 'One', key);
+    }
+
+    expect((await shownValues(page)).shownTabs).toEqual(['one']);
+    expect(await activeLog(page)).toEqual(['one']);
+  });
+});
