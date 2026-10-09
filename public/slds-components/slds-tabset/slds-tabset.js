@@ -14,6 +14,8 @@ const PANEL_CLASS = 'slds-tabs_default__content';
 const VARIANT_CLASSES = { standard: 'slds-tabs_default' };
 const DEFAULT_VARIANT = 'standard';
 
+const ARROW_STEPS = { ArrowLeft: -1, ArrowRight: 1 };
+
 // Values for tabs that come without one, like `lightning-tabset` does. Unique
 // per page, so two tabsets never hand out the same value.
 let generatedValueCount = 0;
@@ -96,8 +98,8 @@ class SldsTabset extends LitElement {
             ? ''
             : html`<ul class="slds-tabs_default__nav" role="tablist">
                 ${this._tabs.map((tab) =>
-                this._renderTabItem(tab, tab === this._shownTab)
-              )}
+                  this._renderTabItem(tab, tab === this._shownTab)
+                )}
               </ul>`
         }
         <slot @slotchange=${this._handleSlotChange}></slot>
@@ -115,7 +117,10 @@ class SldsTabset extends LitElement {
         <a
           class="slds-tabs_default__link"
           role="tab"
+          aria-selected=${isActive ? 'true' : 'false'}
+          tabindex=${isActive ? '0' : '-1'}
           @click=${() => this._selectTab(tab)}
+          @keydown=${this._handleKeyDown}
           >${tab.label}</a
         >
       </li>
@@ -124,6 +129,22 @@ class SldsTabset extends LitElement {
 
   _selectTab(tab) {
     this.activeTabValue = tab.value;
+  }
+
+  // Like `lightning-tabset`: left and right only, wrapping at both ends, and
+  // the tab is shown at once (automatic activation) — no Home and End.
+  async _handleKeyDown(event) {
+    const step = ARROW_STEPS[event.key];
+    if (!step || this._tabs.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    const count = this._tabs.length;
+    const current = Math.max(this._tabs.indexOf(this._shownTab), 0);
+    const nextIndex = (current + step + count) % count;
+    this._selectTab(this._tabs[nextIndex]);
+    await this.updateComplete;
+    this.shadowRoot.querySelectorAll('a[role="tab"]')[nextIndex]?.focus();
   }
 
   _handleSlotChange(event) {
