@@ -512,3 +512,74 @@ test.describe('slds-tabset keyboard and ARIA', () => {
     expect(await activeLog(page)).toEqual(['one']);
   });
 });
+
+const LONG_TABS = `
+  <div style="padding: 16px">
+    <slds-tabset>
+      ${[
+        'A rather long first tab label',
+        'Second tab with a long name',
+        'Third',
+        'Fourth tab label',
+        'Fifth tab, also long',
+      ]
+        .map(
+          (label, index) =>
+            `<slds-tab label="${label}" value="v${index}"><p>Content ${index}</p></slds-tab>`
+        )
+        .join('')}
+    </slds-tabset>
+  </div>
+`;
+
+function measureTabBar(page) {
+  return page.evaluate(() => {
+    const nav = document
+      .querySelector('slds-tabset')
+      .shadowRoot.querySelector('[role="tablist"]');
+    const navRect = nav.getBoundingClientRect();
+    const items = [...nav.querySelectorAll('li')];
+    return {
+      overflowX: getComputedStyle(nav).overflowX,
+      navScrolls: nav.scrollWidth > nav.clientWidth,
+      pageScrolls:
+        document.documentElement.scrollWidth >
+        document.documentElement.clientWidth,
+      rows: new Set(
+        items.map((item) => Math.round(item.getBoundingClientRect().top))
+      ).size,
+      lastItemInView: (() => {
+        const rect = items[items.length - 1].getBoundingClientRect();
+        return rect.left >= navRect.left - 1 && rect.right <= navRect.right + 1;
+      })(),
+    };
+  });
+}
+
+test.describe('slds-tabset on a narrow screen', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 600 });
+    await gotoComponentPage(page);
+  });
+
+  test('scrolls the tab bar instead of the page, in one row', async ({
+    page,
+  }) => {
+    await mountTabset(page, LONG_TABS);
+    const result = await measureTabBar(page);
+
+    expect(result.overflowX).toBe('auto');
+    expect(result.navScrolls).toBe(true);
+    expect(result.pageScrolls).toBe(false);
+    expect(result.rows).toBe(1);
+  });
+
+  test('scrolls a tab chosen by keyboard into view', async ({ page }) => {
+    await mountTabset(page, LONG_TABS);
+    expect((await measureTabBar(page)).lastItemInView).toBe(false);
+
+    await pressOnTab(page, 'A rather long first tab label', 'ArrowLeft');
+
+    expect((await measureTabBar(page)).lastItemInView).toBe(true);
+  });
+});

@@ -41,6 +41,18 @@ class SldsTabset extends LitElement {
     :host {
       display: block;
     }
+
+    /* Narrow screens: the tab bar scrolls sideways instead of widening the
+       page. SLDS only offers an overflow menu for this (hidden tabs behind a
+       "More" button); scrolling keeps every tab reachable without one. */
+    .slds-tabs_default__nav {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    .slds-tabs_default__item {
+      flex-shrink: 0;
+    }
   `;
 
   constructor() {
