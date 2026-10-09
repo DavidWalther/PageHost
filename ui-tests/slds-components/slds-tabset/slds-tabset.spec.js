@@ -190,3 +190,242 @@ test.describe('slds-tabset structure', () => {
     expect(result.items.map((item) => item.text)).toEqual(['Only']);
   });
 });
+
+/**
+ * Like `lightning-tab`, every tab fires `active` whenever it becomes the shown
+ * tab — on start, on click and when `active-tab-value` changes. The event does
+ * not bubble; the log records it per tab. Listeners are attached right after the
+ * markup is set, before the first slotchange can activate a tab.
+ */
+async function mountWithLog(page, markup) {
+  await page.evaluate(() => {
+    window.activeLog = [];
+    window.bubbledActive = 0;
+  });
+  await page.evaluate(async (markup) => {
+    await import('/slds-components/slds-tabset/slds-tabset.js');
+    document.body.innerHTML = markup;
+    document
+      .querySelectorAll('slds-tab')
+      .forEach((tab) =>
+        tab.addEventListener('active', () =>
+          window.activeLog.push(tab.getAttribute('value'))
+        )
+      );
+    document.addEventListener('active', () => (window.bubbledActive += 1));
+  }, markup);
+  await settle(page);
+}
+
+async function settle(page) {
+  await page.evaluate(async () => {
+    for (let round = 0; round < 3; round += 1) {
+      await Promise.all(
+        [...document.querySelectorAll('slds-tabset, slds-tab')].map(
+          (element) => element.updateComplete
+        )
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  });
+}
+
+function shownValues(page) {
+  return page.evaluate(() => {
+    const tabset = document.querySelector('slds-tabset');
+    const items = [
+      ...tabset.shadowRoot.querySelectorAll('li.slds-tabs_default__item'),
+    ];
+    const tabs = [...tabset.querySelectorAll('slds-tab')];
+    return {
+      activeItems: items
+        .filter((item) => item.classList.contains('slds-is-active'))
+        .map((item) => item.textContent.trim()),
+      shownTabs: tabs
+        .filter((tab) => tab.classList.contains('slds-show'))
+        .map((tab) => tab.getAttribute('value')),
+      activeTabValue: tabset.activeTabValue,
+    };
+  });
+}
+
+function activeLog(page) {
+  return page.evaluate(() => window.activeLog);
+}
+
+async function clickTab(page, label) {
+  await page
+    .locator('slds-tabset')
+    .first()
+    .locator('a[role="tab"]', { hasText: label })
+    .click();
+  await settle(page);
+}
+
+async function setActiveTabValue(page, value) {
+  await page.evaluate(
+    (value) =>
+      document
+        .querySelector('slds-tabset')
+        .setAttribute('active-tab-value', value),
+    value
+  );
+  await settle(page);
+}
+
+test.describe('slds-tabset selection and the active event', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('the first tab fires active once on start', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+
+    expect(await activeLog(page)).toEqual(['one']);
+  });
+
+  test('a click shows the tab and fires active on it', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+    await clickTab(page, 'Two');
+
+    expect(await shownValues(page)).toEqual({
+      activeItems: ['Two'],
+      shownTabs: ['two'],
+      activeTabValue: 'two',
+    });
+    expect(await activeLog(page)).toEqual(['one', 'two']);
+  });
+
+  test('a click on the shown tab fires nothing', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+    await clickTab(page, 'One');
+
+    expect(await activeLog(page)).toEqual(['one']);
+  });
+
+  test('active does not bubble', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+    await clickTab(page, 'Three');
+
+    expect(await page.evaluate(() => window.bubbledActive)).toBe(0);
+  });
+
+  test('active-tab-value in the markup shows that tab from the start', async ({
+    page,
+  }) => {
+    await mountWithLog(
+      page,
+      THREE_TABS.replace(
+        '<slds-tabset>',
+        '<slds-tabset active-tab-value="two">'
+      )
+    );
+
+    expect((await shownValues(page)).shownTabs).toEqual(['two']);
+    expect(await activeLog(page)).toEqual(['two']);
+  });
+
+  test('setting active-tab-value from outside shows the tab and fires active', async ({
+    page,
+  }) => {
+    await mountWithLog(page, THREE_TABS);
+    await setActiveTabValue(page, 'three');
+
+    expect((await shownValues(page)).shownTabs).toEqual(['three']);
+    expect(await activeLog(page)).toEqual(['one', 'three']);
+  });
+
+  test('an unknown active-tab-value falls back to the first tab', async ({
+    page,
+  }) => {
+    await mountWithLog(
+      page,
+      THREE_TABS.replace(
+        '<slds-tabset>',
+        '<slds-tabset active-tab-value="nope">'
+      )
+    );
+    expect((await shownValues(page)).shownTabs).toEqual(['one']);
+
+    await clickTab(page, 'Three');
+    await setActiveTabValue(page, 'still-nope');
+
+    expect((await shownValues(page)).shownTabs).toEqual(['one']);
+    expect(await activeLog(page)).toEqual(['one', 'three', 'one']);
+  });
+
+  test('tabs added later: the first becomes active, the next does not', async ({
+    page,
+  }) => {
+    await mountWithLog(page, '<slds-tabset></slds-tabset>');
+    const addTab = (value) =>
+      page.evaluate((value) => {
+        const tab = document.createElement('slds-tab');
+        tab.setAttribute('label', value);
+        tab.setAttribute('value', value);
+        tab.addEventListener('active', () => window.activeLog.push(value));
+        document.querySelector('slds-tabset').appendChild(tab);
+      }, value);
+
+    await addTab('late-1');
+    await settle(page);
+    await addTab('late-2');
+    await settle(page);
+
+    expect(await shownValues(page)).toEqual({
+      activeItems: ['late-1'],
+      shownTabs: ['late-1'],
+      activeTabValue: undefined,
+    });
+    expect(await activeLog(page)).toEqual(['late-1']);
+  });
+
+  test('removing the shown tab shows the first remaining one', async ({
+    page,
+  }) => {
+    await mountWithLog(page, THREE_TABS);
+    await clickTab(page, 'Two');
+    await page.evaluate(() =>
+      document.querySelector('slds-tab[value="two"]').remove()
+    );
+    await settle(page);
+
+    expect((await shownValues(page)).shownTabs).toEqual(['one']);
+    expect(await activeLog(page)).toEqual(['one', 'two', 'one']);
+  });
+
+  test('a changed label updates the tab bar', async ({ page }) => {
+    await mountWithLog(page, THREE_TABS);
+    await page.evaluate(() =>
+      document.querySelector('slds-tab').setAttribute('label', 'Renamed')
+    );
+    await settle(page);
+
+    const items = await page.evaluate(() =>
+      [
+        ...document
+          .querySelector('slds-tabset')
+          .shadowRoot.querySelectorAll('a[role="tab"]'),
+      ].map((link) => link.textContent.trim())
+    );
+    expect(items).toEqual(['Renamed', 'Two', 'Three']);
+    expect(
+      await page.evaluate(() =>
+        document.querySelector('slds-tab').getAttribute('aria-label')
+      )
+    ).toBe('Renamed');
+  });
+
+  test('an unknown variant falls back to standard', async ({ page }) => {
+    await mountWithLog(
+      page,
+      THREE_TABS.replace('<slds-tabset>', '<slds-tabset variant="bogus">')
+    );
+
+    const classes = await page.evaluate(() => [
+      ...document.querySelector('slds-tabset').shadowRoot.querySelector('div')
+        .classList,
+    ]);
+    expect(classes).toEqual(['slds-tabs_default']);
+  });
+});
