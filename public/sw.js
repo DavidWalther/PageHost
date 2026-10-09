@@ -49,6 +49,8 @@ const STATIC_FILES = [
   '/slds-components/slds-layout/slds-layout-item.js',
   '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
   '/slds-components/slds-progress-bar/slds-progress-bar.js',
+  '/slds-components/slds-tabset/slds-tabset.js',
+  '/slds-components/slds-tabset/slds-tab.js',
 
   // External assets (referenced in IndexHtmlEndpointLogic.js)
   '/assets/styles/salesforce-lightning-design-system.min.css',

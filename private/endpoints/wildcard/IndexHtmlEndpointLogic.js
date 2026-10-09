@@ -113,6 +113,12 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       headerEntries.push(
         '<script type="module" src="slds-components/slds-progress-bar/slds-progress-bar.js"></script>'
       );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-tabset/slds-tabset.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-tabset/slds-tab.js"></script>'
+      );
 
       headerEntries.push(
         '<script type="module" src="applications/bookstore/bookstore.js"></script>'
