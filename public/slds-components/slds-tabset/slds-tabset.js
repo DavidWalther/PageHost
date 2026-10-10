@@ -44,10 +44,19 @@ class SldsTabset extends LitElement {
 
     /* Narrow screens: the tab bar scrolls sideways instead of widening the
        page. SLDS only offers an overflow menu for this (hidden tabs behind a
-       "More" button); scrolling keeps every tab reachable without one. */
-    .slds-tabs_default__nav {
+       "More" button); scrolling keeps every tab reachable without one.
+
+       A wrapper scrolls, not the list: SLDS lets a tab item reach 1px below
+       the list so that the underline of the shown tab lies on the list's
+       border. Overflow on the list itself would cut that pixel. */
+    .tab-scroller {
       overflow-x: auto;
       overflow-y: hidden;
+    }
+
+    .slds-tabs_default__nav {
+      width: max-content;
+      min-width: 100%;
     }
 
     .slds-tabs_default__item {
@@ -108,11 +117,13 @@ class SldsTabset extends LitElement {
         ${
           this._tabs.length === 0
             ? ''
-            : html`<ul class="slds-tabs_default__nav" role="tablist">
-                ${this._tabs.map((tab) =>
-                  this._renderTabItem(tab, tab === this._shownTab)
-                )}
-              </ul>`
+            : html`<div class="tab-scroller">
+                <ul class="slds-tabs_default__nav" role="tablist">
+                  ${this._tabs.map((tab) =>
+                    this._renderTabItem(tab, tab === this._shownTab)
+                  )}
+                </ul>
+              </div>`
         }
         <slot @slotchange=${this._handleSlotChange}></slot>
       </div>
