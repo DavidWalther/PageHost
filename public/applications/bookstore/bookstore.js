@@ -289,9 +289,8 @@ class Bookstore extends LitElement {
    *
    * The tree (`/api/1.0/contents/*`) carries the record id, never the
    * `legacy_id`; the navigation modal compares against it. A record therefore
-   * contributes its `id`. A plain string is taken as given — it may still be
-   * a retired id (the default entry is one); `handleNavigationNodeLoaded`
-   * swaps it for the record id once that node has loaded.
+   * contributes its `id`. A plain string is taken as given: it comes from the
+   * navigation modal or from a child selection, and both carry record ids.
    */
   _setCurrentLocation(record) {
     if (!record) {
@@ -635,13 +634,6 @@ class Bookstore extends LitElement {
     const nodeData = event.detail?.nodeData;
     if (!nodeData?.id) {
       return;
-    }
-
-    // The location may have been set from a retired id (the default entry
-    // without a deep link). Once the node is known, keep it in the id the
-    // content tree uses, or the modal would never find it.
-    if (nodeData.legacy_id && this._currentLocation === nodeData.legacy_id) {
-      this._setCurrentLocation(nodeData);
     }
 
     if (this._pendingChildSelection) {
