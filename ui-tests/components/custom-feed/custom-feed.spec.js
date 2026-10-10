@@ -135,6 +135,10 @@ function readFeed(page) {
         noChildNavigation: element.hasAttribute('no-child-navigation'),
         canCreateContent: element.hasAttribute('can-create-content'),
         canDelete: element.hasAttribute('can-delete'),
+        noTitle: element.hasAttribute('no-title'),
+        shownName:
+          element.shadowRoot?.querySelector('#node-name')?.textContent.trim() ??
+          null,
       })),
       hint: root.querySelector('#no-feeds')?.textContent.trim() ?? null,
       activeFeed: feed.activeFeed,
@@ -350,6 +354,19 @@ test.describe('custom-feed', () => {
         expect(entry.canDelete).toBe(false);
       });
     });
+
+    test('names a feed in its tab only, not again above its contents', async ({
+      page,
+    }) => {
+      await mountFeed(page, { 'root-id': 'feed-root' });
+      await expect
+        .poll(async () => nodeOf(await readFeed(page), 'feed-news')?.contentIds)
+        .toEqual(['news-1', 'news-2']);
+
+      const state = await readFeed(page);
+      state.nodes.forEach((entry) => expect(entry.noTitle).toBe(true));
+      expect(nodeOf(state, 'feed-news').shownName).toBeNull();
+    });
   });
 
   test.describe('with a single feed', () => {
@@ -364,6 +381,9 @@ test.describe('custom-feed', () => {
       const state = await readFeed(page);
       expect(state.hasTabset).toBe(false);
       expect(state.nodes).toHaveLength(1);
+      // Without a tab the title is the only place that names the feed.
+      expect(state.nodes[0].noTitle).toBe(false);
+      expect(state.nodes[0].shownName).toBe('News');
     });
   });
 
