@@ -71,7 +71,16 @@ class Bookstore extends LitElement {
       <slds-card no-footer no-header>
         <slds-layout wrap>
           <slds-layout-item align-middle size="3-of-12">
-            <slds-layout wrap>
+            <slds-layout wrap gutters-xxx-small>
+              <slds-layout-item>
+                <slds-button-icon
+                  id="button-home"
+                  icon="utility:home"
+                  size="small"
+                  variant="container-transparent"
+                  @click="${this.handleHome}"
+                ></slds-button-icon>
+              </slds-layout-item>
               <slds-layout-item>
                 <slds-button-icon
                   id="button-navigation_open"
@@ -576,6 +585,16 @@ class Bookstore extends LitElement {
   /** A node was opened: the feeds make way for it. */
   hideFeed() {
     this._feedVisible = false;
+  }
+
+  /**
+   * Home: back to the start page — the feeds, the first one open, and the
+   * bare address. The feeds were kept while a node was shown, so nothing is
+   * loaded again; a visitor who entered on a node loads them here.
+   */
+  handleHome() {
+    this.showFeed();
+    window.history.replaceState({}, '', '/');
   }
 
   /** The visitor opened another feed: the address names it, to be shared. */
