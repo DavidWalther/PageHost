@@ -14,10 +14,13 @@
  * `authenticatedFetch` und ruft den Identity Provider nie auf.
  */
 
+// `feedRootNodeId` names the feed root (see "Feeds" below); it is the start
+// page of the application.
 const MOCK_METADATA = {
   pageHeaderHeadline: 'Mock Bookstore',
   metaTitle: 'Mock Bookstore',
   meta: {},
+  feedRootNodeId: '000n00000000000090',
 };
 
 // Content tree as `/api/1.0/contents/all` delivers it:
@@ -145,6 +148,13 @@ const MOCK_NODES = {
   },
 };
 
+/**
+ * Path of a deep link to the mock root node. The application starts on the
+ * feeds; a spec about nodes enters here instead (UC-B-03: the root fills the
+ * selection, its cover node is loaded below).
+ */
+const MOCK_ROOT_PATH = '/000n00000000000011';
+
 const MOCK_CONTENT = {
   id: '00cn00000000000001',
   legacy_id: '000p00000000000001',
@@ -169,6 +179,84 @@ const MOCK_CONTENT = {
   ],
 };
 
+// ─── Feeds ──────────────────────────────────────────────────────────────────
+//
+// The start page shows the feeds below the node the metadata names
+// (`feedRootNodeId`). The feed root is an ordinary root node, but it is not
+// part of the content tree above — the contents endpoint leaves it out.
+
+const FEED_ROOT_ID = '000n00000000000090';
+
+const feedHead = (id, name, sortnumber, reversed = null) => ({
+  id,
+  legacy_id: null,
+  name,
+  description: null,
+  sortnumber,
+  reversed,
+  parent_node_id: FEED_ROOT_ID,
+  cover_node_id: null,
+  published_date: '2022-01-01 00:00:00',
+});
+
+const feedContentHead = (id, name, sortnumber) => ({
+  id,
+  legacy_id: null,
+  name,
+  sortnumber,
+  published_date: '2022-01-01 00:00:00',
+});
+
+const MOCK_FEEDS = {
+  news: {
+    ...feedHead('000n00000000000091', 'Mock News', 1),
+    nodes: [],
+    contents: [
+      feedContentHead('00cn00000000000091', 'Mock News entry 1', 1),
+      feedContentHead('00cn00000000000092', 'Mock News entry 2', 2),
+    ],
+  },
+  versions: {
+    ...feedHead('000n00000000000092', 'Mock Versions', 2, true),
+    nodes: [],
+    contents: [feedContentHead('00cn00000000000093', 'Mock Version 1', 1)],
+  },
+};
+
+const MOCK_FEED_ROOT = {
+  id: FEED_ROOT_ID,
+  legacy_id: null,
+  name: 'Mock Feeds',
+  description: null,
+  sortnumber: 9,
+  reversed: null,
+  parent_node_id: null,
+  cover_node_id: null,
+  published_date: '2022-01-01 00:00:00',
+  nodes: [
+    feedHead('000n00000000000091', 'Mock News', 1),
+    feedHead('000n00000000000092', 'Mock Versions', 2, true),
+  ],
+  contents: [],
+};
+
+/** One content of a feed, in the shape `/data/query/content` delivers. */
+const feedContent = (head, nodeId) => ({
+  ...head,
+  node_id: nodeId,
+  active_content_item: `${head.id}-text`,
+  active_type: 'text',
+  items: [
+    { id: `${head.id}-text`, type: 'text', content: `Text of ${head.name}` },
+  ],
+});
+
+const MOCK_FEED_CONTENTS = Object.fromEntries(
+  Object.values(MOCK_FEEDS).flatMap((feed) =>
+    feed.contents.map((head) => [head.id, feedContent(head, feed.id)])
+  )
+);
+
 /**
  * Auflösung wie im Backend: eine Id trifft `id` **oder** `legacy_id`.
  * Unbekannt → leeres Objekt, genau wie der echte Endpunkt.
@@ -182,8 +270,10 @@ function recordFor(records, url) {
   );
 }
 
-const nodeFor = (url) => recordFor(MOCK_NODES, url);
-const contentFor = (url) => recordFor({ single: MOCK_CONTENT }, url);
+const nodeFor = (url) =>
+  recordFor({ ...MOCK_NODES, feedRoot: MOCK_FEED_ROOT, ...MOCK_FEEDS }, url);
+const contentFor = (url) =>
+  recordFor({ single: MOCK_CONTENT, ...MOCK_FEED_CONTENTS }, url);
 
 /**
  * Registriert alle Callout-Mocks für einen Playwright-`page`.
@@ -210,4 +300,8 @@ module.exports = {
   MOCK_CONTENTS,
   MOCK_NODES,
   MOCK_CONTENT,
+  MOCK_FEED_ROOT,
+  MOCK_FEEDS,
+  MOCK_FEED_CONTENTS,
+  MOCK_ROOT_PATH,
 };
