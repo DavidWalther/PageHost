@@ -213,3 +213,92 @@ test.describe('Feeds as the start page', () => {
     expect(queries.join('\n')).not.toContain(MOCK_FEED_ROOT.id);
   });
 });
+
+test.describe('Home', () => {
+  const home = (page) => page.locator('#button-home');
+
+  test('stands to the left of the navigation button', async ({ page }) => {
+    await open(page, '/');
+
+    const homeBox = await home(page).boundingBox();
+    const navigationBox = await page
+      .locator('#button-navigation_open')
+      .boundingBox();
+    expect(homeBox.x + homeBox.width).toBeLessThanOrEqual(navigationBox.x);
+    expect(Math.abs(homeBox.y - navigationBox.y)).toBeLessThan(2);
+  });
+
+  test('leads from a node back to the feeds and the bare address', async ({
+    page,
+  }) => {
+    const queries = recordQueries(page);
+    await open(page, MOCK_ROOT_PATH);
+    await expect
+      .poll(async () => (await readPage(page)).contentId)
+      .toBe('000n00000000000001');
+    expect(queries.join('\n')).not.toContain(MOCK_FEED_ROOT.id);
+
+    await home(page).click();
+
+    await expect.poll(() => tabs(page)).toEqual(NEWS_OPEN);
+    const state = await readPage(page);
+    expect(state.feedsShown).toBe(true);
+    expect(state.nodesShown).toBe(false);
+    expect(state.path).toBe('/');
+    // The feeds were not loaded before — the visitor entered on a node.
+    expect(queries.join('\n')).toContain(MOCK_FEED_ROOT.id);
+  });
+
+  test('leads from another feed back to the first one', async ({ page }) => {
+    await open(page, `/${VERSIONS.id}`);
+    await expect.poll(() => tabs(page)).toEqual(VERSIONS_OPEN);
+
+    await home(page).click();
+
+    await expect.poll(() => tabs(page)).toEqual(NEWS_OPEN);
+    expect((await readPage(page)).path).toBe('/');
+  });
+
+  test('leads back to the first feed after the visitor changed the tab', async ({
+    page,
+  }) => {
+    await open(page, '/');
+    await expect.poll(() => tabs(page)).toEqual(NEWS_OPEN);
+    await page
+      .locator('custom-feed a[role="tab"]', { hasText: 'Mock Versions' })
+      .click();
+    await expect.poll(() => tabs(page)).toEqual(VERSIONS_OPEN);
+
+    await home(page).click();
+
+    await expect.poll(() => tabs(page)).toEqual(NEWS_OPEN);
+    expect((await readPage(page)).path).toBe('/');
+  });
+
+  test('keeps the feeds loaded while a node is shown', async ({ page }) => {
+    const queries = recordQueries(page);
+    await open(page, '/');
+    await expect
+      .poll(async () => (await feedNode(page, NEWS))?.contentIds.length)
+      .toBe(NEWS.contents.length);
+
+    await page.locator('#button-navigation_open').click();
+    await page
+      .locator('custom-navigation-modal button', { hasText: 'Mock Story 1' })
+      .click();
+    // Choosing a child closes the modal; opening a level leaves it open.
+    await page
+      .locator('custom-navigation-modal button', {
+        hasText: 'Mock Chapter 2 for Story 1',
+      })
+      .click();
+    await expect.poll(async () => (await readPage(page)).nodesShown).toBe(true);
+    const before = queries.filter((url) => url.includes(NEWS.id)).length;
+
+    await home(page).click();
+
+    await expect.poll(async () => (await readPage(page)).feedsShown).toBe(true);
+    await page.waitForTimeout(300);
+    expect(queries.filter((url) => url.includes(NEWS.id))).toHaveLength(before);
+  });
+});
