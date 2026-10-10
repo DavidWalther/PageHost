@@ -70,6 +70,23 @@ und gibt standardmäßig den veröffentlichten Baum heraus. Der Endpunkt fordert
 sichtbar, wenn `published_date` gesetzt und nicht später als jetzt ist; ein versteckter Node
 nimmt seinen ganzen Teilbaum mit.
 
+## Feed root
+
+The start page shows **feeds**: the children of one root node, named by the
+configuration key **`feedRootNodeId`**. That node is an ordinary root — no type
+and no flag — but it is **not part of the navigation**: this endpoint leaves it
+out together with everything below it.
+
+- Applies to **every scope**, `edit` included. The feeds are reached through the
+  feed component, not through the navigation.
+- Happens **at delivery**, in this endpoint (`SubtreeExclusion`), not in the
+  query and not in the `DataFacade`: the cached tree stays complete, and the
+  sitemap, which reads the same tree, keeps the feeds.
+- No `feedRootNodeId`, or an id that matches no node: the tree is delivered
+  unchanged.
+- The node itself stays reachable: `GET /data/query/node?id=<feedRootNodeId>`
+  delivers it with its feeds as children.
+
 ## Caching
 
 - Dedizierter Cache-Key **`contentsTree`** (`ContentsTreeCacheKeyGenerator`).
@@ -93,6 +110,7 @@ unter `nodes`. Konstant zwei DB-Round-Trips, unabhängig von der Tiefe.
 
 - `ContentsEndpoint.js` — Mapping (`mapToNodes`), `depth`-Parsing, Scope-/Filter-Steuerung
 - `private/modules/ContentVisibilityFilter.js` — Publish-Filter, angewendet von der `DataFacade`
+- `private/modules/SubtreeExclusion.js` — takes the feed root out of the delivered tree
 - `private/database2/DataFacade.js` — `getContentsTree` / `buildContentsTree`
 - `private/database2/repositories/NodeContentRepository.js` — `getContentsTree`
 - `private/modules/NodeVisibility.js` — Auflösung der App-Zugehörigkeit

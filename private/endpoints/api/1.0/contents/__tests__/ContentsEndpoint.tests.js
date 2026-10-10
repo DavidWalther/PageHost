@@ -56,11 +56,15 @@ describe('ContentsEndpoint', () => {
   let mockGetData;
   let mockSetSkipCache;
   let mockSetIncludeUnpublished;
+  let mockConfiguration;
 
   beforeEach(() => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = { json: jest.fn() };
-    mockGetData = jest.fn().mockResolvedValue(buildRawTree());
+    mockConfiguration = {};
+    mockGetData = jest.fn(async ({ request }) =>
+      request.table === 'configuration' ? mockConfiguration : buildRawTree()
+    );
     mockSetSkipCache = jest.fn();
     mockSetIncludeUnpublished = jest.fn();
 
@@ -126,6 +130,43 @@ describe('ContentsEndpoint', () => {
   it('does not skip the cache for anonymous requests', async () => {
     await endpoint.execute();
     expect(mockSetSkipCache).not.toHaveBeenCalled();
+  });
+
+  describe('feed root', () => {
+    it('leaves the configured feed root and its children out', async () => {
+      mockConfiguration = { feedRootNodeId: 'story-2' };
+
+      await endpoint.execute();
+
+      const { result } = mockResponseObject.json.mock.calls[0][0];
+      expect(result.map((node) => node.id)).toEqual(['story-1']);
+      expect(JSON.stringify(result)).not.toContain('c-b1');
+    });
+
+    it('leaves the feed root out with the edit scope too', async () => {
+      mockConfiguration = { feedRootNodeId: 'story-2' };
+      endpoint.setScopes(new Set(['edit']));
+
+      await endpoint.execute();
+
+      const { result } = mockResponseObject.json.mock.calls[0][0];
+      expect(result.map((node) => node.id)).toEqual(['story-1']);
+    });
+
+    it('delivers the whole tree when no feed root is configured', async () => {
+      await endpoint.execute();
+
+      const { result } = mockResponseObject.json.mock.calls[0][0];
+      expect(result.map((node) => node.id)).toEqual(['story-2', 'story-1']);
+    });
+
+    it('reads the feed root from the configuration', async () => {
+      await endpoint.execute();
+
+      expect(mockGetData).toHaveBeenCalledWith(
+        expect.objectContaining({ request: { table: 'configuration' } })
+      );
+    });
   });
 
   it('depth=1 returns stories only (empty childnodes)', async () => {

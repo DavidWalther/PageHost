@@ -688,23 +688,17 @@ describe('Lesepfad', () => {
       expect(metadata.feedRootNodeId).toBe('n-feeds');
     });
 
-    it.failing(
-      'leaves the feed root and its feeds out of the contents tree',
-      async () => {
-        const { result } = await getContents();
+    it('leaves the feed root and its feeds out of the contents tree', async () => {
+      const { result } = await getContents();
 
-        expect(allIds(result)).toEqual(['n-story', 'n-kapitel']);
-      }
-    );
+      expect(allIds(result)).toEqual(['n-story', 'n-kapitel']);
+    });
 
-    it.failing(
-      'leaves the feed root out of the contents tree with the edit scope too',
-      async () => {
-        const { result } = await getContents({ scopes: ['edit'] });
+    it('leaves the feed root out of the contents tree with the edit scope too', async () => {
+      const { result } = await getContents({ scopes: ['edit'] });
 
-        expect(allIds(result)).toEqual(['n-story', 'n-kapitel']);
-      }
-    );
+      expect(allIds(result)).toEqual(['n-story', 'n-kapitel']);
+    });
 
     it('keeps the tree complete when no feed root is configured', async () => {
       rows.configuration = [];
