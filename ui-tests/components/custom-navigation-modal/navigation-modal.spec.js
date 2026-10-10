@@ -1,5 +1,8 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const {
+  mockBookstoreCallouts,
+  MOCK_ROOT_PATH,
+} = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
@@ -106,12 +109,22 @@ test.describe('Navigation modal', () => {
   });
 
   test('opens on the top level and marks the entry node', async ({ page }) => {
+    // Entered on a node, not on the feeds.
+    await page.goto(MOCK_ROOT_PATH);
     await openModal(page);
 
     await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
     await expect(tileByText(page, 'Mock Story 2')).not.toHaveClass(
       /tile_current/
     );
+  });
+
+  test('marks no node while the feeds are shown', async ({ page }) => {
+    // The feeds are not part of the content tree the modal shows.
+    await openModal(page);
+
+    await expect(tileByText(page, 'Mock Story 1')).toBeVisible();
+    await expect(page.locator('.tile_current')).toHaveCount(0);
   });
 
   test('reopens on the level of a chosen child and marks the path', async ({

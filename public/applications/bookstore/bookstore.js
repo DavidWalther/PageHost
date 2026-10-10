@@ -2,26 +2,25 @@ import {
   LitElement,
   html,
   css,
+  nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
 
 console.log('Bookstore.js file loaded');
 
-/**
- * Einstieg ohne Deep-Link.
- *
- * Trägt noch eine alte Id: der Inhaltsbaum liefert sie so, und das Backend
- * löst sie über `legacy_id` auf. Sobald es hier eine Konfiguration gibt
- * (Startknoten je App), fällt die Konstante weg.
- */
-const DEFAULT_ENTRY_NODE_ID = '000s00000000000011';
-
 class Bookstore extends LitElement {
   static properties = {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
     _currentLocation: { type: String, state: true },
+    // The start page: the feeds below the feed root the configuration names
+    // (`feedRootNodeId`). Shown instead of the two nodes, never next to them.
+    _feedRootId: { type: String, state: true },
+    _feedVisible: { type: Boolean, state: true },
+    _feedRequested: { type: Boolean, state: true },
+    _activeFeedId: { type: String, state: true },
+    _feedContentNumber: { type: Number, state: true },
   };
 
   constructor() {
@@ -33,6 +32,11 @@ class Bookstore extends LitElement {
     this._initPara = null;
     this._pendingChildSelection = null;
     this._currentLocation = null;
+    this._feedRootId = null;
+    this._feedVisible = false;
+    this._feedRequested = false;
+    this._activeFeedId = null;
+    this._feedContentNumber = null;
   }
 
   // =========== Lifecycle methods ============
@@ -173,6 +177,26 @@ class Bookstore extends LitElement {
       ></custom-navigation-modal>
 
       <!--
+        The start page. It stays in the DOM while a node is shown, so that
+        coming back to it loads nothing again; it is only hidden.
+      -->
+      <div
+        id="feeds"
+        class="slds-m-horizontal--small slds-m-top--small ${
+          this._feedVisible ? '' : 'slds-hide'
+        }"
+      >
+        <custom-feed
+          root-id=${
+            this._feedRequested && this._feedRootId ? this._feedRootId : nothing
+          }
+          active-feed=${this._activeFeedId ?? nothing}
+          contentnumber=${this._feedContentNumber ?? nothing}
+          @feed-select=${this.handleFeedSelect}
+        ></custom-feed>
+      </div>
+
+      <!--
         Zwei Knoten, nicht zwei Typen: oben der Knoten, dessen Kinder zur
         Auswahl stehen, unten der ausgewählte Knoten mit seinen Inhalten.
         Welche Rolle ein Knoten spielt, entscheidet allein seine Position hier
@@ -186,7 +210,9 @@ class Bookstore extends LitElement {
       -->
       <div
         id="bookshelf"
-        class="slds-grid slds-grid_vertical slds-m-top--small"
+        class="slds-grid slds-grid_vertical slds-m-top--small ${
+          this._feedVisible ? 'slds-hide' : ''
+        }"
       >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
           <custom-node
@@ -283,6 +309,7 @@ class Bookstore extends LitElement {
   /** A node chosen in the modal: its parent above, the node below. */
   handleNavigationNodeSelect(event) {
     const { id, parentId } = event.detail;
+    this.hideFeed();
 
     if (!parentId) {
       // A root without children: it has no parent to fill the selection, so
@@ -373,12 +400,16 @@ class Bookstore extends LitElement {
       return;
     }
 
-    this.fireQueryEvent_Metadata(this.queryEventCallback_Metadata.bind(this));
-
     // Die Knoten müssen im Shadow-DOM stehen, bevor sie Attribute bekommen.
     await this.updateComplete;
 
-    const entry = await this.resolveEntryPoint(this._initPara.initId);
+    // Both are needed to decide the entry, and neither depends on the other:
+    // the metadata names the feed root, the id of the address names a record.
+    const [metadata, entry] = await Promise.all([
+      this.loadMetadata(),
+      this.resolveEntryPoint(this._initPara.initId),
+    ]);
+    this._feedRootId = metadata.feedRootNodeId ?? null;
     this.applyEntryPoint(entry);
 
     this.isHydrated = true;
@@ -454,46 +485,54 @@ class Bookstore extends LitElement {
    * Die Listener hängen deshalb **vor** der Übergabe — `adoptNode` meldet
    * `loaded` sofort, nicht erst nach einer Antwort aus dem Netz.
    */
-  applyEntryPoint(entry) {
+  applyEntryPoint(
+    entry,
+    contentnumber = this._initPara?.paragraphnumber ?? null
+  ) {
     if (entry.kind === 'node') {
-      const parentId = entry.node.parent_node_id;
-      if (parentId) {
+      const node = entry.node;
+      const parentId = node.parent_node_id;
+      if (this._feedRootId && node.id === this._feedRootId) {
+        // The feed root itself: the same start page as without an id.
+        this.enterFeed();
+      } else if (this._feedRootId && parentId === this._feedRootId) {
+        // A feed. Its parent is the feed root, which is not a selection —
+        // the feed is shown where feeds are shown, with its tab open.
+        this.enterFeed({ feedId: node.id, contentnumber });
+      } else if (parentId) {
         // Ein Knoten mit Eltern: er füllt den Inhalt, sein Elternknoten die
         // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
-        this.showChildOf(parentId, entry.node);
+        this.showChildOf(parentId, node, contentnumber);
       } else {
         this._attachNavigationNodeListeners();
-        this._setCurrentLocation(entry.node);
-        this.navigationNode.adoptNode(entry.node);
+        this._setCurrentLocation(node);
+        this.navigationNode.adoptNode(node);
       }
       return;
     }
 
     if (entry.kind === 'content') {
       // Deep-Link auf einen Inhalt: gezeigt wird der Knoten, an dem er hängt,
-      // und darin wird zu ihm gesprungen.
-      this.contentNode.setAttribute(
-        'contentnumber',
-        this._initPara?.paragraphnumber ?? entry.content.sortnumber
-      );
+      // und darin wird zu ihm gesprungen. Wohin der Sprung geht, entscheidet
+      // erst der Knoten — ein Feed zeigt seine Inhalte an anderer Stelle.
+      const target =
+        this._initPara?.paragraphnumber ?? entry.content.sortnumber;
       this.resolveEntryPoint(entry.content.node_id).then((nodeEntry) =>
-        this.applyEntryPoint(nodeEntry)
+        this.applyEntryPoint(nodeEntry, target)
       );
       return;
     }
 
-    this.initWithoutParameter();
+    // No id in the address, or one that matches nothing: the start page.
+    this.enterFeed();
   }
 
   /** Auswahl oben, Inhalt unten — der Regelfall nach einem Deep-Link. */
-  showChildOf(parentId, childNode) {
+  showChildOf(parentId, childNode, contentnumber = null) {
     const childId = childNode.id;
-    if (this._initPara?.paragraphnumber) {
+    if (contentnumber) {
       // Muss vor der Übergabe stehen: der Knoten wertet es beim Übernehmen aus.
-      this.contentNode.setAttribute(
-        'contentnumber',
-        this._initPara.paragraphnumber
-      );
+      this.contentNode.setAttribute('contentnumber', contentnumber);
     }
     this.contentNode.adoptNode(childNode);
 
@@ -507,10 +546,43 @@ class Bookstore extends LitElement {
     this.navigationNode.setAttribute('id', parentId);
   }
 
-  initWithoutParameter() {
+  // =========== Feed ============
+
+  /**
+   * The entry leads to the feeds. The selection node gets its listeners here
+   * as on every other entry path: the visitor may still open a node through
+   * the navigation, and that node reports to them.
+   */
+  enterFeed(target) {
     this._attachNavigationNodeListeners();
-    this.navigationNode.setAttribute('id', DEFAULT_ENTRY_NODE_ID);
-    this._setCurrentLocation(DEFAULT_ENTRY_NODE_ID);
+    this.showFeed(target);
+  }
+
+  /**
+   * Shows the feeds instead of the two nodes.
+   *
+   * The feed component only gets its root from the first time it is shown: a
+   * visitor who enters on a node and never comes here loads no feed.
+   */
+  showFeed({ feedId = null, contentnumber = null } = {}) {
+    this._feedRequested = true;
+    this._feedVisible = true;
+    this._activeFeedId = feedId;
+    this._feedContentNumber = contentnumber;
+    // The feeds are not part of the content tree the navigation shows.
+    this._setCurrentLocation(null);
+  }
+
+  /** A node was opened: the feeds make way for it. */
+  hideFeed() {
+    this._feedVisible = false;
+  }
+
+  /** The visitor opened another feed: the address names it, to be shared. */
+  handleFeedSelect(event) {
+    this._activeFeedId = event.detail.id;
+    this._feedContentNumber = null;
+    window.history.replaceState({}, '', `/${event.detail.id}`);
   }
 
   /** Einen Datensatz über den Callout-Layer holen, als Promise. */
@@ -677,6 +749,7 @@ class Bookstore extends LitElement {
     const fromPanel = event.target === this;
 
     if (fromPanel && type === 'story') {
+      this.hideFeed();
       this.navigationNode.setAttribute('id', value);
       this.contentNode.removeAttribute('id');
       this.navigationNode.removeAttribute('selected-child');
@@ -684,6 +757,7 @@ class Bookstore extends LitElement {
       return;
     }
     if (fromNavigationNode && type === 'node') {
+      this.hideFeed();
       this.contentNode.setAttribute('id', value);
       this.navigationNode.setAttribute('selected-child', value);
       this._setCurrentLocation(event.detail.node ?? value);
@@ -800,34 +874,19 @@ class Bookstore extends LitElement {
   }
 
   // ------------------------------------------
-  // Query Event methods
+  // Metadata
   // ------------------------------------------
 
-  // --------- Fire Query Event methods ---------
-
-  fireQueryEvent_Metadata(callback) {
-    let payload = {
-      object: 'metadata',
-    };
-
-    this.dispatchEvent(
-      new CustomEvent('query', {
-        detail: { payload, callback },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  // --------- Query Event Callback methods ---------
-
-  queryEventCallback_Metadata(error, data) {
-    if (data) {
-      this.evaluateMetadata(data);
+  /**
+   * The configuration of the application. The entry waits for it: it names
+   * the feed root, and without that the start page cannot be decided.
+   */
+  async loadMetadata() {
+    const metadata = await this.queryRecord({ object: 'metadata' });
+    if (metadata) {
+      this.evaluateMetadata(metadata);
     }
-    if (error) {
-      console.error(error);
-    }
+    return metadata ?? {};
   }
 }
 

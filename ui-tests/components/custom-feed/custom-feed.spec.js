@@ -92,6 +92,8 @@ async function mountFeed(page, attributes = {}) {
     await import('/components/custom-feed/custom-feed.js');
     window.feedSelections = [];
     const feed = document.createElement('custom-feed');
+    // The application has a feed of its own; this one is the one under test.
+    feed.id = 'feed-under-test';
     for (const [name, value] of Object.entries(attributes)) {
       feed.setAttribute(name, value);
     }
@@ -106,7 +108,7 @@ function readFeed(page) {
   return page.evaluate(() => {
     const feed = document
       .querySelector('app-bookstore')
-      .shadowRoot.querySelector('custom-feed');
+      .shadowRoot.querySelector('#feed-under-test');
     const root = feed.shadowRoot;
     const tabset = root.querySelector('slds-tabset');
     const nodes = [...root.querySelectorAll('custom-node')];
@@ -146,7 +148,7 @@ const nodeOf = (state, feedId) =>
 
 async function clickTab(page, label) {
   await page
-    .locator('custom-feed slds-tabset a[role="tab"]', { hasText: label })
+    .locator('#feed-under-test slds-tabset a[role="tab"]', { hasText: label })
     .click();
 }
 
@@ -260,7 +262,9 @@ test.describe('custom-feed', () => {
         .toBe('feed-news');
 
       await page
-        .locator('custom-feed slds-tabset a[role="tab"]', { hasText: 'News' })
+        .locator('#feed-under-test slds-tabset a[role="tab"]', {
+          hasText: 'News',
+        })
         .focus();
       await page.keyboard.press('ArrowRight');
 
@@ -303,7 +307,7 @@ test.describe('custom-feed', () => {
       await page.evaluate(() =>
         document
           .querySelector('app-bookstore')
-          .shadowRoot.querySelector('custom-feed')
+          .shadowRoot.querySelector('#feed-under-test')
           .setAttribute('active-feed', 'feed-versions')
       );
 
