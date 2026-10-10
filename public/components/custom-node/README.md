@@ -49,6 +49,7 @@ schreibender Weg ist aus und wird ausdrücklich gewährt.
 | :-------------------- | :------------- | :-------------------------------------------------------------------- |
 | `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert             |
 | `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen       |
+| `no-title`            | aus (= zeigen) | Der Name des Knotens entfällt; die Aktionen im Kopf bleiben           |
 | `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')` |
 | `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`      |
 | `can-delete`          | aus            | Button „Knoten löschen" — **zusätzlich** zu `hasScope('delete')`      |
@@ -68,6 +69,11 @@ Mit `no-contents` wird auch die Inhalts-Mechanik stillgelegt (Nachladen per
 `IntersectionObserver`, Sprung zu einem Inhalt). Sonst würde `contentnumber`
 den Knoten in den Wartezustand versetzen, aus dem ihn nichts mehr holt: Es lädt
 kein Inhalt, der das Zählwerk weiterdreht.
+
+`no-title` ist für Consumer gedacht, die den Knoten schon an anderer Stelle
+benennen — `custom-feed` etwa im Tab. Es nimmt nur den Namen weg, nicht den
+Kopf der Karte: Dort stehen auch die Aktionen, und die müssen erreichbar
+bleiben.
 
 Der Hinweis „Keine Inhalte vorhanden" richtet sich danach, was **diese
 Instanz** rendert, nicht nach den rohen Daten — mit `no-child-navigation`
