@@ -52,16 +52,6 @@ class Bookstore extends LitElement {
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
 
-    // get button to show login modal
-    let buttonId = 'button-login';
-    let button = document.querySelector(`#${buttonId}`);
-    if (button) {
-      button.addEventListener(
-        'click',
-        this.handleClickShowLoginModal.bind(this)
-      );
-    }
-
     this.hydrate();
     this.label = {
       'setting-login_title': 'Login',
@@ -249,35 +239,6 @@ class Bookstore extends LitElement {
         </div>
       </div>
     `;
-  }
-
-  handleLogout() {
-    console.log('handleLogout - creating modal');
-    let rootElement = this.shadowRoot.querySelector('slds-card');
-
-    if (!rootElement) {
-      console.log('handleLogout - no modal found');
-      return;
-    }
-
-    console.log('handleLogout - modal found');
-    let modalCmp = this.shadowRoot.querySelector('slds-modal');
-    modalCmp.hide();
-  }
-
-  handleClickShowLoginModal() {
-    console.log('handleClickShowLoginModal - creating modal');
-    let rootElement = this.shadowRoot.querySelector('slds-card');
-
-    if (!rootElement) {
-      console.log('handleClickShowLoginModal - no modal found');
-      return;
-    }
-
-    console.log('handleClickShowLoginModal - modal found');
-    let modalCmp = this.shadowRoot.querySelector('slds-modal');
-    modalCmp.setAttribute('title', 'testmodal');
-    modalCmp.show();
   }
 
   handleOpenSettings() {
