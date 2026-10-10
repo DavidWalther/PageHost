@@ -24,11 +24,18 @@ test.describe('Bookstore smoke', () => {
     // SSR-Shell hat die Haupt-App-Komponente erzeugt.
     await expect(page.locator('app-bookstore')).toBeAttached();
 
-    // Grundlayout ist sichtbar (Playwright durchdringt offene Shadow Roots).
-    await expect(page.locator('#bookshelf')).toBeVisible();
+    // The start page is visible (Playwright pierces open shadow roots): the
+    // feeds, not the two nodes.
+    await expect(page.locator('#feeds')).toBeVisible();
+    await expect(page.locator('#bookshelf')).toBeHidden();
 
-    // Gemockter Knoten-Callout ist bis in die UI durchgeflossen: der obere
-    // custom-node rendert seinen Namen in der Titelzeile.
-    await expect(page.locator('#node-name').first()).toHaveText('Mock Story 1');
+    // The mocked callouts flow through to the UI: the feed root delivers the
+    // feeds as tabs, and the open feed shows its first content.
+    await expect(page.locator('custom-feed a[role="tab"]').first()).toHaveText(
+      'Mock News'
+    );
+    await expect(
+      page.locator('custom-feed custom-paragraph').first()
+    ).toContainText('Text of Mock News entry 1');
   });
 });

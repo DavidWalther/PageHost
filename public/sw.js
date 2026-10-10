@@ -13,6 +13,7 @@ const STATIC_FILES = [
   '/modules/global-styles.mjs',
   '/modules/oIdcComponent.js',
   '/modules/authTokenManager.js',
+  '/modules/content-tree.mjs',
 
   // Styles
   '/styles/darkmode.css',
@@ -25,6 +26,7 @@ const STATIC_FILES = [
   '/components/custom-paragraph/delete-paragraph.api.js',
   '/components/custom-node/custom-node.js',
   '/components/custom-node/delete-node.api.js',
+  '/components/custom-feed/custom-feed.js',
   '/components/custom-publishing/custom-publishing.js',
   '/components/custom-chapter-edit/custom-chapter-edit.js',
   '/components/custom-content-edit/custom-content-edit.js',
@@ -48,6 +50,8 @@ const STATIC_FILES = [
   '/slds-components/slds-layout/slds-layout-item.js',
   '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
   '/slds-components/slds-progress-bar/slds-progress-bar.js',
+  '/slds-components/slds-tabset/slds-tabset.js',
+  '/slds-components/slds-tabset/slds-tab.js',
 
   // External assets (referenced in IndexHtmlEndpointLogic.js)
   '/assets/styles/salesforce-lightning-design-system.min.css',

@@ -2,9 +2,10 @@
  * Removes unpublished nodes from a node tree at delivery time.
  *
  * The cache holds the full tree (published and unpublished nodes alike); this
- * filter trims the unpublished ones just before delivery. It is intentionally a
- * standalone, reusable module (between cache and endpoint) because the same
- * visibility logic is needed later for sitemap.xml generation.
+ * filter trims the unpublished ones on the way out. The `DataFacade` runs it
+ * after the cache for every reader of the content tree, so consumers (contents
+ * endpoint, sitemap) never filter themselves. It stays a standalone module so
+ * the rule can be tested and reused on its own.
  *
  * A node is visible when it has a publish date that is set and not after the
  * given cutoff date. A hidden node is dropped together with its whole subtree.
@@ -85,7 +86,11 @@ class ContentVisibilityFilter {
       return false;
     }
     const rawPublishDate = node[this.dateField];
-    if (rawPublishDate === undefined || rawPublishDate === null || rawPublishDate === '') {
+    if (
+      rawPublishDate === undefined ||
+      rawPublishDate === null ||
+      rawPublishDate === ''
+    ) {
       return false;
     }
     const publishTime = new Date(rawPublishDate).getTime();

@@ -1,7 +1,7 @@
 # Contents Endpoint — `GET /api/1.0/contents/*`
 
-Liefert die Navigation als Baum aus **Nodes** — Wurzelknoten mit ihren Kindern
-(perspektivisch mehr als zwei Ebenen). Er ist seit dem Wegfall des alten
+Liefert die Navigation als Baum aus **Nodes** — Wurzelknoten mit ihren Kindern,
+in beliebiger Tiefe. Er ist seit dem Wegfall des alten
 Datenmodells die einzige Quelle der Navigation.
 
 ## Request
@@ -12,10 +12,10 @@ Authorization: Bearer <jwt>   (optional)
 ```
 
 - **`depth`** (optional, Query-Parameter): Anzahl der Ebenen.
-  - `1` → nur Stories (`childnodes: []`)
-  - `2` → Stories + Chapters
-  - weggelassen / ungültig (nicht-numerisch, `< 1`, nicht ganzzahlig) → **volle Tiefe** (aktuell 2)
-  - Werte `> 2` werden auf die verfügbare Tiefe begrenzt.
+  - `1` → nur die Wurzelknoten (`childnodes: []`)
+  - `n` → die obersten `n` Ebenen, darunter `childnodes: []`
+  - weggelassen / ungültig (nicht-numerisch, `< 1`, nicht ganzzahlig) → **volle Tiefe**
+  - Es gibt keine Obergrenze; `depth` kürzt nur.
 - **`/*`**: Das Pfad-Wildcard ist aktuell **reserviert**, wird aber noch nicht ausgewertet —
   der Endpunkt liefert immer den kompletten Baum ab Root.
 
@@ -25,12 +25,12 @@ Authorization: Bearer <jwt>   (optional)
 {
   "result": [
     {
-      "id": "000s00000000000011",
+      "id": "000n00000000000011",
       "label": "Mock Story 1",
       "name": "Mock Story 1",
       "childnodes": [
         {
-          "id": "000c00000000000001",
+          "id": "000n00000000000001",
           "label": "Mock Chapter 1 for Story 1",
           "name": "Mock Chapter 1 for Story 1",
           "childnodes": []
@@ -45,7 +45,7 @@ Authorization: Bearer <jwt>   (optional)
 
 | Feld         | Bedeutung                                             |
 | ------------ | ----------------------------------------------------- |
-| `id`         | Datensatz-ID (Story- bzw. Chapter-ID)                 |
+| `id`         | Id des Knotens — die neue Id, **nicht** `legacy_id`   |
 | `name`       | Anzeigename                                           |
 | `label`      | Kopie von `name` (Frontend entscheidet die Anzeige)   |
 | `childnodes` | Kind-Nodes (nächste Ebene), `[]` an der Tiefen-Grenze |
@@ -63,18 +63,41 @@ Ebene nach `sortnumber` sortiert.
 
 Ein ungültiger Bearer-Token führt zu `401 Unauthorized`.
 
-Das Entfernen unveröffentlichter Nodes passiert **zur Laufzeit bei Auslieferung** über das
-geteilte Modul [`ContentVisibilityFilter`](../../../../modules/ContentVisibilityFilter.js)
-(`setTree(t).setDate(d).getResult()`). Dieselbe Komponente wird später für `sitemap.xml`
-wiederverwendet. Ein Node gilt als sichtbar, wenn sein `publishdate` gesetzt und `<=` heute ist.
+Unveröffentlichte Nodes entfernt die `DataFacade`: Sie wendet das geteilte Modul
+[`ContentVisibilityFilter`](../../../../modules/ContentVisibilityFilter.js) nach dem Cache an
+und gibt standardmäßig den veröffentlichten Baum heraus. Der Endpunkt fordert nur mit
+`edit`-Scope mehr an (`setIncludeUnpublished(true)`) und filtert selbst nicht. Ein Node ist
+sichtbar, wenn `published_date` gesetzt und nicht später als jetzt ist; ein versteckter Node
+nimmt seinen ganzen Teilbaum mit.
+
+## Feed root
+
+The start page shows **feeds**: the children of one root node, named by the
+configuration key **`feedRootNodeId`**. That node is an ordinary root — no type
+and no flag — but it is **not part of the navigation**: this endpoint leaves it
+out together with everything below it.
+
+- Applies to **every scope**, `edit` included. The feeds are reached through the
+  feed component, not through the navigation.
+- Happens **at delivery**, in this endpoint (`SubtreeExclusion`), not in the
+  query and not in the `DataFacade`: the cached tree stays complete, and the
+  sitemap, which reads the same tree, keeps the feeds.
+- No `feedRootNodeId`, or an id that matches no node: the tree is delivered
+  unchanged.
+- The node itself stays reachable: `GET /data/query/node?id=<feedRootNodeId>`
+  delivers it with its feeds as children.
 
 ## Caching
 
 - Dedizierter Cache-Key **`contentsTree`** (`ContentsTreeCacheKeyGenerator`).
 - Gecacht wird der **volle** Baum (inkl. unveröffentlichter Nodes); gefiltert wird erst bei
   Auslieferung. Kleinere `depth`-Werte werden im Code aus dem vollen Baum zugeschnitten.
-- TTL = `CACHE_CONTAINER_EXPIRATION_SECONDS` (Standard 1 Tag). Kurz genug, dass eine **aktive
-  Invalidierung entfällt** — Create/Update/Delete/Publish berühren den Baum-Key nicht.
+- TTL = `CACHE_CONTAINER_EXPIRATION_SECONDS` (Standard 1 Tag).
+- **Aktive Invalidierung:** Jedes Anlegen, Ändern (auch Verschieben), Veröffentlichen,
+  Zurückziehen und Löschen eines **Knotens** leert `contentsTree`, auch bei `skipCache`.
+  Ohne das sähen Besucher bis zum Ablauf der TTL den alten Baum; mit `edit`-Scope fiel es
+  nicht auf, weil der Cache dort übergangen wird. Inhalte stehen nicht im Baum und leeren
+  ihn nicht.
 
 ## Datenherkunft
 
@@ -86,7 +109,8 @@ unter `nodes`. Konstant zwei DB-Round-Trips, unabhängig von der Tiefe.
 ## Beteiligte Dateien
 
 - `ContentsEndpoint.js` — Mapping (`mapToNodes`), `depth`-Parsing, Scope-/Filter-Steuerung
-- `private/modules/ContentVisibilityFilter.js` — Laufzeit-Publish-Filter (geteilt mit sitemap.xml)
+- `private/modules/ContentVisibilityFilter.js` — Publish-Filter, angewendet von der `DataFacade`
+- `private/modules/SubtreeExclusion.js` — takes the feed root out of the delivered tree
 - `private/database2/DataFacade.js` — `getContentsTree` / `buildContentsTree`
 - `private/database2/repositories/NodeContentRepository.js` — `getContentsTree`
 - `private/modules/NodeVisibility.js` — Auflösung der App-Zugehörigkeit

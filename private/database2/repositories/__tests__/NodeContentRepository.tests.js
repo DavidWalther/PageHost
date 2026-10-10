@@ -246,6 +246,7 @@ describe('getContentsTree', () => {
             parent_node_id: '000n1',
             cover_node_id: null,
             published_date: '2026-01-01T00:00:00.000Z',
+            nodes: [],
           },
         ],
       },
@@ -301,7 +302,7 @@ describe('getContentsTree', () => {
     expect(tree[0].nodes.map((child) => child.id)).toEqual(['000n2', '000n3']);
   });
 
-  it('lässt Enkel weg — geliefert werden zwei Ebenen', async () => {
+  it('delivers every level, not just two', async () => {
     setSources({
       nodes: [
         STORY_NODE,
@@ -309,15 +310,84 @@ describe('getContentsTree', () => {
         {
           ...CHAPTER_NODE,
           id: '000n3',
-          legacy_id: '000c3',
+          legacy_id: null,
           parent_node_id: '000n2',
+        },
+        {
+          ...CHAPTER_NODE,
+          id: '000n4',
+          legacy_id: null,
+          parent_node_id: '000n3',
         },
       ],
     });
 
     const tree = await newRepository().getContentsTree();
 
+    const level2 = tree[0].nodes[0];
+    expect(level2.id).toBe('000n2');
+    expect(level2.nodes.map((child) => child.id)).toEqual(['000n3']);
+    expect(level2.nodes[0].nodes.map((child) => child.id)).toEqual(['000n4']);
+    expect(level2.nodes[0].nodes[0].nodes).toEqual([]);
+  });
+
+  it('sorts the deeper levels by sortnumber as well', async () => {
+    setSources({
+      nodes: [
+        STORY_NODE,
+        CHAPTER_NODE,
+        {
+          ...CHAPTER_NODE,
+          id: '000n4',
+          legacy_id: null,
+          parent_node_id: '000n2',
+          sortnumber: 2,
+        },
+        {
+          ...CHAPTER_NODE,
+          id: '000n3',
+          legacy_id: null,
+          parent_node_id: '000n2',
+          sortnumber: 1,
+        },
+      ],
+    });
+
+    const tree = await newRepository().getContentsTree();
+
+    expect(tree[0].nodes[0].nodes.map((child) => child.id)).toEqual([
+      '000n3',
+      '000n4',
+    ]);
+  });
+
+  it('drops a parent loop out of the tree instead of breaking the build', async () => {
+    // 000n3 and 000n4 point at each other — what moving a node below its own
+    // descendant leaves behind. Neither hangs off a root, so neither is built.
+    setSources({
+      nodes: [
+        STORY_NODE,
+        CHAPTER_NODE,
+        {
+          ...CHAPTER_NODE,
+          id: '000n3',
+          legacy_id: null,
+          parent_node_id: '000n4',
+        },
+        {
+          ...CHAPTER_NODE,
+          id: '000n4',
+          legacy_id: null,
+          parent_node_id: '000n3',
+        },
+      ],
+    });
+
+    const tree = await newRepository().getContentsTree();
+
+    expect(tree.map((root) => root.id)).toEqual(['000n1']);
     expect(tree[0].nodes.map((child) => child.id)).toEqual(['000n2']);
+    expect(tree[0].nodes[0].nodes).toEqual([]);
   });
 
   it('liefert einen leeren Baum, wenn nichts sichtbar ist', async () => {

@@ -34,6 +34,16 @@
 | PGDATABASE              |
 | ENDPOINT_ID             |
 
+## Configuration
+
+Besides the environment, an application is configured by rows of the table
+`configuration` (`key`, `value`, per application). They are delivered to the
+frontend with `GET /metadata`.
+
+| Key              | Description                                                                                                                                                                                                                                                                                                                             |
+| :--------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `feedRootNodeId` | Id of the node whose children are the **feeds** of the start page. The node and everything below it is left out of the navigation. It has to be visible in every application that is to show feeds. Without the key, or with an id that matches no node, the start page shows "Keine Inhalte vorhanden" and the navigation is complete. |
+
 ## Cache
 
 To avoid additional costs it was decided to use the same database for development, test and live data. However live data is still separated by database-branches.

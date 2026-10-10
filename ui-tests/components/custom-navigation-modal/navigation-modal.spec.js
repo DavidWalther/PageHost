@@ -1,17 +1,20 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const {
+  mockBookstoreCallouts,
+  MOCK_ROOT_PATH,
+} = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
- * UI-Tests für das Navigations-Modal (`custom-navigation-modal`).
+ * UI tests for the navigation modal (`custom-navigation-modal`).
  *
- * Das Modal lädt beim App-Start den Inhaltsbaum (`contents`-Callout, gemockt)
- * und zeigt beim Öffnen alle Stories als Kacheln. Ein Klick auf eine Story
- * blendet deren Kapitel ein; „< zurück" führt zur Story-Ebene zurück. Ein
- * Kapitel-Klick feuert das `chapter-select`-Event mit story- und chapter-id.
+ * The modal loads the content tree on app start (`contents` callout, mocked)
+ * and lists the roots as tiles. A tile with children opens its level and
+ * reports `navigation-level-open`; one without children reports
+ * `navigation-node-select` and the modal closes. „< zurück" goes up one level.
  *
- * Läuft anonym (kein Auth nötig) — alle Datencallouts sind per `page.route()`
- * gemockt, es ist kein echtes Postgres/Redis im Spiel.
+ * Runs anonymously — every data callout is mocked via `page.route()`, no
+ * Postgres or Redis involved.
  */
 test.describe('Navigation modal', () => {
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
@@ -59,32 +62,251 @@ test.describe('Navigation modal', () => {
     await expect(tileByText(page, 'Mock Story 2')).toBeVisible();
   });
 
-  test('Kapitel-Klick feuert chapter-select mit story- und chapter-id', async ({
+  /** Records the detail of the next `name` event on document. */
+  function recordNext(page, name) {
+    return page.evaluate((eventName) => {
+      window.__recorded = null;
+      // composed + bubbles: the event leaves the shadow DOM up to document.
+      document.addEventListener(
+        eventName,
+        (event) => {
+          window.__recorded = event.detail;
+        },
+        { once: true }
+      );
+    }, name);
+  }
+  const recorded = (page) => page.evaluate(() => window.__recorded);
+
+  test('a tile with children reports navigation-level-open with its id', async ({
+    page,
+  }) => {
+    await openModal(page);
+    await recordNext(page, 'navigation-level-open');
+
+    await tileByText(page, 'Mock Story 1').click();
+
+    await expect
+      .poll(() => recorded(page))
+      .toEqual({ id: '000n00000000000011' });
+  });
+
+  test('a tile without children reports navigation-node-select with id and parent', async ({
     page,
   }) => {
     await openModal(page);
     await tileByText(page, 'Mock Story 1').click();
-
-    // Listener registrieren, bevor geklickt wird; das Event ist composed und
-    // bubbelt aus dem Shadow-DOM bis zum document.
-    await page.evaluate(() => {
-      window.__chapterSelect = null;
-      document.addEventListener(
-        'chapter-select',
-        (event) => {
-          window.__chapterSelect = event.detail;
-        },
-        { once: true }
-      );
-    });
+    await recordNext(page, 'navigation-node-select');
 
     await tileByText(page, 'Mock Chapter 2 for Story 1').click();
 
     await expect
-      .poll(() => page.evaluate(() => window.__chapterSelect))
+      .poll(() => recorded(page))
       .toEqual({
-        storyId: '000s00000000000011',
-        chapterId: '000c00000000000002',
+        id: '000n00000000000002',
+        parentId: '000n00000000000011',
       });
+  });
+
+  test('opens on the top level and marks the entry node', async ({ page }) => {
+    // Entered on a node, not on the feeds.
+    await page.goto(MOCK_ROOT_PATH);
+    await openModal(page);
+
+    await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
+    await expect(tileByText(page, 'Mock Story 2')).not.toHaveClass(
+      /tile_current/
+    );
+  });
+
+  test('marks no node while the feeds are shown', async ({ page }) => {
+    // The feeds are not part of the content tree the modal shows.
+    await openModal(page);
+
+    await expect(tileByText(page, 'Mock Story 1')).toBeVisible();
+    await expect(page.locator('.tile_current')).toHaveCount(0);
+  });
+
+  test('reopens on the level of a chosen child and marks the path', async ({
+    page,
+  }) => {
+    await openModal(page);
+    await tileByText(page, 'Mock Story 1').click();
+    await tileByText(page, 'Mock Chapter 2 for Story 1').click();
+    await expect(tiles(page).first()).toBeHidden();
+
+    await openModal(page);
+
+    // Opens straight on the child level, the chosen child is marked …
+    await expect(tileByText(page, 'Mock Chapter 2 for Story 1')).toHaveClass(
+      /tile_current/
+    );
+    await expect(
+      tileByText(page, 'Mock Chapter 1 for Story 1')
+    ).not.toHaveClass(/tile_current/);
+
+    // … and one level up its parent is marked as well.
+    await page.locator('custom-navigation-modal .back-button').click();
+    await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
+  });
+
+  test('closing with Escape changes nothing behind the modal', async ({
+    page,
+  }) => {
+    const readNodes = () =>
+      page.evaluate(() => {
+        const app = document.querySelector('app-bookstore');
+        return ['navigation', 'content'].map((role) => {
+          const node = app.shadowRoot.querySelector(
+            `custom-node[data-role="${role}"]`
+          );
+          return [node.getAttribute('id'), node.getAttribute('selected-child')];
+        });
+      });
+    await openModal(page);
+    await expect(tiles(page).first()).toBeVisible();
+    const before = await readNodes();
+
+    await page.keyboard.press('Escape');
+
+    await expect(tiles(page).first()).toBeHidden();
+    expect(await readNodes()).toEqual(before);
+  });
+});
+
+test.describe('Navigation modal in any depth', () => {
+  // Spec-local tree with four levels; the shared MOCK_CONTENTS stays as it is
+  // because other specs rely on it.
+  const DEEP_TREE = {
+    result: [
+      {
+        id: 'd-root',
+        label: 'Deep Root',
+        name: 'Deep Root',
+        childnodes: [
+          {
+            id: 'd-2',
+            label: 'Deep Level 2',
+            name: 'Deep Level 2',
+            childnodes: [
+              {
+                id: 'd-3',
+                label: 'Deep Level 3',
+                name: 'Deep Level 3',
+                childnodes: [
+                  {
+                    id: 'd-4',
+                    label: 'Deep Level 4',
+                    name: 'Deep Level 4',
+                    childnodes: [],
+                  },
+                  {
+                    id: 'd-4-b',
+                    label: 'Deep Level 4 B',
+                    name: 'Deep Level 4 B',
+                    childnodes: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'd-other',
+        label: 'Other Root',
+        name: 'Other Root',
+        childnodes: [],
+      },
+    ],
+  };
+
+  const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  const tile = (page, text) =>
+    page.locator('custom-navigation-modal button.tile', {
+      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    });
+  const modal = (page) => page.locator('custom-navigation-modal slds-modal');
+  const back = (page) => page.locator('custom-navigation-modal .back-button');
+  const openModal = (page) => page.locator('#button-navigation_open').click();
+
+  // A missing tile fails the click quickly instead of running into the
+  // test timeout, so a broken level reports where it broke.
+  test.use({ actionTimeout: 5000 });
+
+  test.beforeEach(async ({ page }) => {
+    await mockBookstoreCallouts(page);
+    await page.route('**/api/1.0/contents/**', (route) =>
+      route.fulfill({ json: DEEP_TREE })
+    );
+    await cacheLitBundle(page);
+    await page.goto('/');
+    await expect(page.locator('app-bookstore')).toBeAttached();
+  });
+
+  test('drills down to the fourth level', async ({ page }) => {
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+
+    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+  });
+
+  test('goes up exactly one level with back', async ({ page }) => {
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+
+    await back(page).click();
+
+    await expect(tiles(page)).toHaveText(['Deep Level 3']);
+  });
+
+  test('a tile without children selects the node and closes', async ({
+    page,
+  }) => {
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+
+    await tile(page, 'Deep Level 4 B').click();
+
+    await expect(modal(page)).not.toHaveAttribute('open');
+  });
+
+  test('reopens on the level of a deep location and marks the whole path', async ({
+    page,
+  }) => {
+    await openModal(page);
+    await tile(page, 'Deep Root').click();
+    await tile(page, 'Deep Level 2').click();
+    await tile(page, 'Deep Level 3').click();
+    await tile(page, 'Deep Level 4 B').click();
+    await expect(modal(page)).not.toHaveAttribute('open');
+
+    await openModal(page);
+
+    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tile(page, 'Deep Level 4 B')).toHaveClass(/tile_current/);
+    await back(page).click();
+    await expect(tile(page, 'Deep Level 3')).toHaveClass(/tile_current/);
+    await back(page).click();
+    await expect(tile(page, 'Deep Level 2')).toHaveClass(/tile_current/);
+    await back(page).click();
+    await expect(tile(page, 'Deep Root')).toHaveClass(/tile_current/);
+    await expect(tile(page, 'Other Root')).not.toHaveClass(/tile_current/);
+  });
+
+  test('a root without children selects the node and closes', async ({
+    page,
+  }) => {
+    await openModal(page);
+
+    await tile(page, 'Other Root').click();
+
+    await expect(modal(page)).not.toHaveAttribute('open');
   });
 });

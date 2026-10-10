@@ -28,12 +28,13 @@ public/                       Frontend (statisch ausgeliefert)
   components/                 App-Komponenten,   HTML-Tag-Präfix custom-*
                               custom-node stellt einen Knoten dar (Auswahl + Inhalte)
   slds-components/            Wiederverwendbare SLDS-Bausteine, Präfix slds-*
-  modules/                    Frontend-Util (global-styles, authTokenManager …)
+  modules/                    Frontend-Util (global-styles, content-tree, authTokenManager …)
   applications/               Einstiegsseiten (z. B. bookstore)
 ui-tests/                     Playwright-UI-Tests — spiegelt public/
   components/                 Specs zu public/components/
   slds-components/            Specs zu public/slds-components/
   applications/               Specs zu public/applications/
+  modules/                    Specs zu public/modules/
   support/                    Test-Helfer (Callout-Mocks, Seiten-Setup)
 doc/                          Dokumentation (diese Datei, authentication.md …)
 ```
@@ -61,6 +62,13 @@ Dazu `configuration` (App-Metadaten) und `identity` (Nutzer). Beide waren nie
 Teil des Inhaltsmodells, tragen weiterhin `applicationincluded` und laufen
 direkt über `DataStorage`. Tabellen-Definitionen: `private/database2/tables/`.
 
+**Feeds** are not a type of node. The start page shows the children of one root
+node, and which node that is says the configuration key **`feedRootNodeId`**
+(table `configuration`, delivered with `GET /metadata`). The feed root and the
+feeds are ordinary nodes with the ordinary visibility rules; only their role
+comes from the configuration. Consequence: the feed root has to be visible in
+every app that is to show feeds — the feeds are read as its children.
+
 **Sichtbarkeit** ist eine Regel über die Knotenkette, kein Filter in der
 Abfrage: sie wird in JavaScript aufgelöst (`private/modules/NodeVisibility.js`),
 unmittelbar nach der Abfrage und noch vor dem Cache. `published_date` wirkt quer
@@ -85,6 +93,9 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
      `FallbackEndpoint`). Antwortformen: `private/endpoints/data/query/README.md`
    - `GET /metadata` → `MetadataEndpointLogicFactory`
    - `GET /api/1.0/contents/*` → Inhaltsbaum (siehe ContentVisibilityFilter)
+     — without the feed root and everything below it (`SubtreeExclusion`,
+     applied at delivery; the cached tree and `sitemap.xml` keep the feeds).
+     → `private/endpoints/api/1.0/contents/README.md`
    - `POST /api/1.0/data/change/*`, `GET /api/1.0/data/delete` → Schreibpfade
    - `GET|POST /api/1.0/oAuth2/*`, `/api/1.0/auth/*` → Auth (siehe unten)
    - `GET /*` → Wildcard/SSR-Fallback (`WildcardLogicFactory`)
@@ -105,14 +116,17 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
    → Vollständige Beschreibung der Zusammenarbeit von Facade/Cache/Storage:
    **`private/database2/README.md`**.
 
-### Cache & Publish-Filter
+### Cache & publish filter
 
-- Der **Inhaltsbaum** (`contents`) wird **vollständig** (veröffentlicht _und_
-  unveröffentlicht) im Cache gehalten; der Publish-Filter läuft erst bei der
-  Auslieferung als eigenes Modul (`private/modules/ContentVisibilityFilter.js`),
-  damit dieselbe Baum-Quelle z. B. auch für `sitemap.xml` nutzbar ist.
-- Cache-Konzept, Key-Präfixe und Env-Vars: **`README.md`** (Abschnitt „Cache")
-  und **`private/database2/DataCache/README.md`**.
+- The **content tree** (`contents`) is cached **in full** — every level,
+  published _and_ unpublished — so one cached source serves the navigation,
+  `sitemap.xml` and later features of the site.
+- The publish filter (`private/modules/ContentVisibilityFilter.js`) runs in
+  the **`DataFacade`**, after the cache: every reader gets the published tree
+  unless it asks for more with `setIncludeUnpublished(true)` (only the `edit`
+  scope does). Consumers do not filter themselves.
+- Cache concept, key prefixes and env vars: **`README.md`** (section „Cache“)
+  and **`private/database2/DataCache/README.md`**.
 
 ## Auth (OAuth2 / OIDC)
 
@@ -139,6 +153,23 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
     Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
     beauftragt. → `public/components/custom-node/README.md`
+  - **`custom-feed`** is the **start page**: it reads the feed root and shows
+    each feed as a tab (`slds-tabset`), a single feed without a tab bar. A tab
+    holds a `custom-node` without child navigation, so everything a node does
+    for its contents works in a feed, and a feed loads when its tab is first
+    shown. The `bookstore` shows **either** the feeds **or** its two nodes:
+    without an id in the address, with an unknown one, and for the feed root,
+    a feed or a content of a feed it shows the feeds; opening a node through
+    the navigation hides them, the home button in the header brings them
+    back. There is no hard-coded entry node any more.
+    → `public/components/custom-feed/README.md`
+  - **`custom-navigation-modal`** zeigt den Inhaltsbaum als Kacheln, **Ebene
+    für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
+    (die Seite dahinter folgt, ein Titel-Knoten lädt), eine ohne Kinder wählt
+    aus. Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
+    der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
+    einem Knoten lädt der `bookstore` den Baum neu.
+    → `public/components/custom-navigation-modal/README.md`
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und

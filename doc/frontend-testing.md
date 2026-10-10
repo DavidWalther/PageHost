@@ -18,6 +18,8 @@ ui-tests/
     custom-navigation-modal/navigation-modal.spec.js
     custom-node/custom-node.smoke.spec.js
     custom-node/node-child-combobox.spec.js
+  modules/
+    content-tree/content-tree.spec.js
   slds-components/
     slds-layout/slds-layout.spec.js
     slds-layout/layout-classlist-contract.spec.js

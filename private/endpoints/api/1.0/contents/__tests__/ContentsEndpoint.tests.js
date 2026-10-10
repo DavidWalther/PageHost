@@ -55,15 +55,22 @@ describe('ContentsEndpoint', () => {
   let mockEnvironment;
   let mockGetData;
   let mockSetSkipCache;
+  let mockSetIncludeUnpublished;
+  let mockConfiguration;
 
   beforeEach(() => {
     mockEnvironment = { APPLICATION_APPLICATION_KEY: 'test-key' };
     mockResponseObject = { json: jest.fn() };
-    mockGetData = jest.fn().mockResolvedValue(buildRawTree());
+    mockConfiguration = {};
+    mockGetData = jest.fn(async ({ request }) =>
+      request.table === 'configuration' ? mockConfiguration : buildRawTree()
+    );
     mockSetSkipCache = jest.fn();
+    mockSetIncludeUnpublished = jest.fn();
 
     DataFacade.mockImplementation(() => ({
       setSkipCache: mockSetSkipCache,
+      setIncludeUnpublished: mockSetIncludeUnpublished,
       getData: mockGetData,
     }));
 
@@ -100,29 +107,66 @@ describe('ContentsEndpoint', () => {
     expect(node.childnodes[0].label).toBe(node.childnodes[0].name);
   });
 
-  it('removes unpublished chapters for anonymous requests', async () => {
-    await endpoint.execute();
-    const { result } = mockResponseObject.json.mock.calls[0][0];
-
-    const storyA = result.find((n) => n.id === 'story-1');
-    // draft chapter (future publishdate) is filtered out
-    expect(storyA.childnodes.map((c) => c.id)).toEqual(['c-a1']);
-  });
-
-  it('keeps unpublished chapters for edit scope and skips the cache', async () => {
-    endpoint.setScopes(new Set(['edit']));
-
+  it('leaves filtering to the facade for anonymous requests', async () => {
+    // The facade hands out the published tree; the endpoint neither asks for
+    // more nor filters a second time. What the facade returns is mapped as is.
     await endpoint.execute();
 
-    expect(mockSetSkipCache).toHaveBeenCalledWith(true);
+    expect(mockSetIncludeUnpublished).not.toHaveBeenCalled();
     const { result } = mockResponseObject.json.mock.calls[0][0];
     const storyA = result.find((n) => n.id === 'story-1');
     expect(storyA.childnodes.map((c) => c.id)).toEqual(['c-a1', 'c-a2']);
   });
 
+  it('asks for unpublished nodes and skips the cache with the edit scope', async () => {
+    endpoint.setScopes(new Set(['edit']));
+
+    await endpoint.execute();
+
+    expect(mockSetSkipCache).toHaveBeenCalledWith(true);
+    expect(mockSetIncludeUnpublished).toHaveBeenCalledWith(true);
+  });
+
   it('does not skip the cache for anonymous requests', async () => {
     await endpoint.execute();
     expect(mockSetSkipCache).not.toHaveBeenCalled();
+  });
+
+  describe('feed root', () => {
+    it('leaves the configured feed root and its children out', async () => {
+      mockConfiguration = { feedRootNodeId: 'story-2' };
+
+      await endpoint.execute();
+
+      const { result } = mockResponseObject.json.mock.calls[0][0];
+      expect(result.map((node) => node.id)).toEqual(['story-1']);
+      expect(JSON.stringify(result)).not.toContain('c-b1');
+    });
+
+    it('leaves the feed root out with the edit scope too', async () => {
+      mockConfiguration = { feedRootNodeId: 'story-2' };
+      endpoint.setScopes(new Set(['edit']));
+
+      await endpoint.execute();
+
+      const { result } = mockResponseObject.json.mock.calls[0][0];
+      expect(result.map((node) => node.id)).toEqual(['story-1']);
+    });
+
+    it('delivers the whole tree when no feed root is configured', async () => {
+      await endpoint.execute();
+
+      const { result } = mockResponseObject.json.mock.calls[0][0];
+      expect(result.map((node) => node.id)).toEqual(['story-2', 'story-1']);
+    });
+
+    it('reads the feed root from the configuration', async () => {
+      await endpoint.execute();
+
+      expect(mockGetData).toHaveBeenCalledWith(
+        expect.objectContaining({ request: { table: 'configuration' } })
+      );
+    });
   });
 
   it('depth=1 returns stories only (empty childnodes)', async () => {
@@ -136,18 +180,18 @@ describe('ContentsEndpoint', () => {
 
   describe('parseDepth', () => {
     it('defaults to full depth when missing or invalid', () => {
-      expect(ContentsEndpoint.parseDepth(undefined)).toBe(2);
-      expect(ContentsEndpoint.parseDepth('')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('abc')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('0')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('-3')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('1.5')).toBe(2);
+      expect(ContentsEndpoint.parseDepth(undefined)).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('abc')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('0')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('-3')).toBe(Infinity);
+      expect(ContentsEndpoint.parseDepth('1.5')).toBe(Infinity);
     });
 
-    it('clamps to MAX_DEPTH and accepts valid values', () => {
+    it('accepts any positive whole number without an upper bound', () => {
       expect(ContentsEndpoint.parseDepth('1')).toBe(1);
       expect(ContentsEndpoint.parseDepth('2')).toBe(2);
-      expect(ContentsEndpoint.parseDepth('9')).toBe(2);
+      expect(ContentsEndpoint.parseDepth('9')).toBe(9);
     });
   });
 });

@@ -53,6 +53,9 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
         '<script type="module" src="components/custom-node/custom-node.js"></script>'
       );
       headerEntries.push(
+        '<script type="module" src="components/custom-feed/custom-feed.js"></script>'
+      );
+      headerEntries.push(
         '<script type="module" src="components/custom-publishing/custom-publishing.js"></script>'
       );
       headerEntries.push(
@@ -112,6 +115,12 @@ class IndexHtmlEndpointLogic extends EndpointLogic {
       );
       headerEntries.push(
         '<script type="module" src="slds-components/slds-progress-bar/slds-progress-bar.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-tabset/slds-tabset.js"></script>'
+      );
+      headerEntries.push(
+        '<script type="module" src="slds-components/slds-tabset/slds-tab.js"></script>'
       );
 
       headerEntries.push(

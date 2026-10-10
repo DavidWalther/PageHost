@@ -5,6 +5,8 @@ const {
   NodeContentRepository,
 } = require('./repositories/NodeContentRepository.js');
 const { ContentRepository } = require('./repositories/ContentRepository.js');
+const ContentVisibilityFilter = require('../modules/ContentVisibilityFilter.js');
+const { NodeWriteMapping } = require('../modules/NodeWriteMapping.js');
 
 class DataFacadePromise {
   constructor(environmentObject) {
@@ -24,10 +26,16 @@ class DataFacadePromise {
     return this;
   }
 
+  setIncludeUnpublished(includeUnpublished) {
+    this.includeUnpublished = includeUnpublished;
+    return this;
+  }
+
   getData(parameterObject) {
     return new Promise((resolve) => {
       let syncResult = new DataFacadeSync(this.environment)
         .setSkipCache(this.skipCache)
+        .setIncludeUnpublished(this.includeUnpublished)
         .setScopes(this.scopes)
         .getData(parameterObject);
       resolve(syncResult);
@@ -75,6 +83,19 @@ class DataFacadeSync {
   }
   getSkipCache() {
     return this._skipCache === true ? true : false; // this enforces a boolean value
+  }
+
+  /**
+   * Hand out the content tree **with** unpublished nodes. Off by default:
+   * every reader gets the published tree unless it asks for more — only the
+   * edit scope does. See `getVisibleContentsTree`.
+   */
+  setIncludeUnpublished(includeUnpublished) {
+    this._includeUnpublished = includeUnpublished;
+    return this;
+  }
+  getIncludeUnpublished() {
+    return this._includeUnpublished === true;
   }
 
   /**
@@ -147,10 +168,7 @@ class DataFacadeSync {
       return this.getIdentityByKeyWithoutCache(parameterObject);
     }
     if (parameterObject.request.table == 'contents') {
-      if (!this.getSkipCache()) {
-        return this.getContentsTree();
-      }
-      return this.getContentsTreeWithoutCache();
+      return this.getVisibleContentsTree();
     }
   }
 
@@ -190,6 +208,7 @@ class DataFacadeSync {
           message: `Skipping cache update for object: ${object}`,
         });
       }
+      await this.invalidateContentsTreeAfterWrite(object);
       return updatedData;
     } catch (error) {
       Logging.debugMessage({
@@ -226,6 +245,7 @@ class DataFacadeSync {
         location: LOCATION,
         message: `Data created successfully for object: ${object}`,
       });
+      await this.invalidateContentsTreeAfterWrite(object);
       return createdRecord;
     } catch (error) {
       Logging.debugMessage({
@@ -285,6 +305,41 @@ class DataFacadeSync {
    * Datensatz wird unter beiden Ids gelöscht — ein Eintrag kann unter der alten
    * angelegt worden sein, wenn ein Deep-Link von früher ihn geholt hat.
    */
+  /**
+   * Drops the cached content tree after a node was written.
+   *
+   * The tree carries name, order, parent and publish date of every node, so
+   * creating, renaming, re-sorting, moving, publishing or unpublishing a node
+   * all change it. It is cleared **regardless of `skipCache`**: `skipCache`
+   * says how this write treats the record's own cache entry, not whether the
+   * shared tree may stay stale — publish and unpublish write with
+   * `skipCache` set. Contents are not part of the tree and clear nothing.
+   *
+   * Like `clearCacheFor`, an unreachable cache does not fail the write: the
+   * row is already saved, a stale tree is no reason to drop the answer.
+   */
+  async invalidateContentsTreeAfterWrite(object) {
+    const LOCATION = 'DataFacadeSync.invalidateContentsTreeAfterWrite';
+    if (!NodeWriteMapping.isNodeObject(object)) {
+      return;
+    }
+    try {
+      await this.createCache().del('contentsTree');
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: 'Cleared the cached contents tree after a node write',
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear the cached contents tree',
+        error,
+      });
+    }
+  }
+
   /** Der Cache-Zugang — als Methode, damit ein Test ihn ersetzen kann. */
   createCache() {
     return new DataCache2(this.environment);
@@ -419,6 +474,30 @@ class DataFacadeSync {
       });
     }
     return product;
+  }
+
+  /**
+   * The content tree as a reader may see it.
+   *
+   * The cache holds the **full** tree, published and unpublished nodes
+   * alike. The publish filter runs here, after the cache and before anything
+   * leaves the facade — in one place, so no consumer (contents endpoint,
+   * sitemap, a later title search) can forget it. The full tree only comes
+   * out through `setIncludeUnpublished(true)`.
+   */
+  async getVisibleContentsTree() {
+    const tree = this.getSkipCache()
+      ? await this.getContentsTreeWithoutCache()
+      : await this.getContentsTree();
+    if (this.getIncludeUnpublished()) {
+      return tree;
+    }
+    return new ContentVisibilityFilter()
+      .setTree(tree)
+      .setChildrenKey('nodes')
+      .setDateField('published_date')
+      .setDate(new Date())
+      .getResult();
   }
 
   async getContentsTreeWithoutCache() {
@@ -571,15 +650,24 @@ class DataFacade {
     this._skipCache = skipCache;
     return this;
   }
+
+  /** See `DataFacadeSync.setIncludeUnpublished`. */
+  setIncludeUnpublished(includeUnpublished) {
+    this._includeUnpublished = includeUnpublished;
+    return this;
+  }
+
   getData(parameterObject) {
     if (parameterObject.returnPromise) {
       return new DataFacadePromise(this.environment)
         .setSkipCache(this._skipCache)
+        .setIncludeUnpublished(this._includeUnpublished)
         .setScopes(this.scopes)
         .getData(parameterObject);
     } else {
       return new DataFacadeSync(this.environment)
         .setSkipCache(this._skipCache)
+        .setIncludeUnpublished(this._includeUnpublished)
         .setScopes(this.scopes)
         .getData(parameterObject);
     }

@@ -150,31 +150,37 @@ class NodeContentRepository extends ContentRepository {
   }
 
   /**
-   * Inhaltsbaum: Wurzelknoten mit ihren Kindern unter `nodes`.
+   * Content tree: the root nodes, each with its children under `nodes`, in
+   * full depth. Every level is sorted by `sortnumber`.
    *
-   * **Kein Publish-Filter.** Der Baum enthält veröffentlichte wie
-   * unveröffentlichte Knoten; gefiltert wird erst bei der Auslieferung durch den
-   * `ContentVisibilityFilter`. Nur so bleibt dieselbe Quelle auch für andere
-   * Zwecke — etwa `sitemap.xml` — brauchbar. Die App-Zugehörigkeit ist dagegen
-   * bereits aufgelöst.
+   * **No publish filter.** The tree holds published and unpublished nodes
+   * alike; the `ContentVisibilityFilter` removes the unpublished ones on the
+   * way out. That keeps one cached source usable for every consumer — the
+   * navigation, `sitemap.xml`, later a title search. App membership, on the
+   * other hand, is already resolved here.
    *
-   * **Zwei Ebenen.** Der Baum kann tiefer sein; hier werden Enkel weggelassen,
-   * passend zu `MAX_DEPTH = 2` im `ContentsEndpoint`.
+   * **Loops.** `parent_node_id` can be written to point at a node's own
+   * descendant. Every node has exactly one parent, so such a loop never hangs
+   * off a root: the build starts at the roots and simply never reaches it. The
+   * nodes in the loop drop out of the tree instead of breaking it.
    */
   async getContentsTree() {
     const visibility = await this.loadVisibility();
     const visible = visibility.visibleNodes(this.applicationKey);
     const visibleIds = new Set(visible.map((node) => node.id));
 
+    const build = (node) => {
+      const children = visibility
+        .childrenOf(node.id)
+        .filter((child) => visibleIds.has(child.id));
+      return {
+        ...nodeFields(node),
+        nodes: sortSiblings(children).map(build),
+      };
+    };
+
     return sortSiblings(visible.filter((node) => !node.parent_node_id)).map(
-      (root) => ({
-        ...nodeFields(root),
-        nodes: sortSiblings(
-          visibility
-            .childrenOf(root.id)
-            .filter((child) => visibleIds.has(child.id))
-        ).map(nodeFields),
-      })
+      build
     );
   }
 
