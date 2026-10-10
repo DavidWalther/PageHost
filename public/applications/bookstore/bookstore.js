@@ -244,12 +244,7 @@ class Bookstore extends LitElement {
           <slds-tab label="Two" value="two" @active=${this._dummyLogActive}>
             <p>Content of tab two.</p>
           </slds-tab>
-          <slds-tab
-            label="Three"
-            value="three"
-            title="Tooltip of tab three"
-            @active=${this._dummyLogActive}
-          >
+          <slds-tab label="Three" value="three" @active=${this._dummyLogActive}>
             <p>Content of tab three.</p>
           </slds-tab>
         </slds-tabset>
