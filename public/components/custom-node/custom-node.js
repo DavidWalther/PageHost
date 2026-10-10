@@ -59,6 +59,7 @@ class CustomNode extends LitElement {
     // Consumer schaltet ab. Gleiche Richtung wie `no-load` / `no-display`.
     noChildNavigation: { type: Boolean, attribute: 'no-child-navigation' },
     noContents: { type: Boolean, attribute: 'no-contents' },
+    noTitle: { type: Boolean, attribute: 'no-title' },
     // Aktionen: Voreinstellung **aus** — ein schreibender Weg wird
     // ausdruecklich gewaehrt, nicht stillschweigend mitgeliefert.
     canCreateChild: { type: Boolean, attribute: 'can-create-child' },
@@ -98,6 +99,7 @@ class CustomNode extends LitElement {
     this.loadingChunkSize = 10;
     this.noChildNavigation = false;
     this.noContents = false;
+    this.noTitle = false;
     this.canCreateChild = false;
     this.canCreateContent = false;
     this.canDelete = false;
@@ -194,7 +196,15 @@ class CustomNode extends LitElement {
           : ''
       }
       <slds-card no-footer ?hidden=${this._scrollPending}>
-        <span id="node-name" slot="header">${this._nodeData.name || ''}</span>
+        <!-- Only the name goes with no-title: the actions share the header
+             and stay. -->
+        ${
+          this.noTitle
+            ? ''
+            : html`<span id="node-name" slot="header"
+                >${this._nodeData.name || ''}</span
+              >`
+        }
         <slds-layout slot="actions" wrap gutters-xxx-small>
           <!-- Ein Element je Aktion, aber nur, wenn die Aktion sichtbar ist —
                sonst bliebe ein leerer Rahmen als Lücke stehen. Für die beiden
