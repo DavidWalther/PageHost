@@ -70,7 +70,7 @@ class Bookstore extends LitElement {
                 <slds-button-icon
                   id="button-home"
                   icon="utility:home"
-                  size="small"
+                  size="medium"
                   variant="container-transparent"
                   @click="${this.handleHome}"
                 ></slds-button-icon>
@@ -79,7 +79,7 @@ class Bookstore extends LitElement {
                 <slds-button-icon
                   id="button-navigation_open"
                   icon="utility:rows"
-                  size="small"
+                  size="medium"
                   variant="container-transparent"
                   @click="${this.handleOpenNavigation}"
                 ></slds-button-icon>
@@ -97,7 +97,7 @@ class Bookstore extends LitElement {
                 <slds-button-icon
                   id="button-settings_open"
                   icon="utility:settings"
-                  size="small"
+                  size="medium"
                   variant="container-transparent"
                   @click="${this.handleOpenSettings}"
                 ></slds-button-icon>
