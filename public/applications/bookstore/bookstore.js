@@ -37,6 +37,7 @@ class Bookstore extends LitElement {
     this._feedRequested = false;
     this._activeFeedId = null;
     this._feedContentNumber = null;
+    this._hostListeners = this.createHostListeners();
   }
 
   // =========== Lifecycle methods ============
@@ -44,6 +45,9 @@ class Bookstore extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
+    this._hostListeners.forEach(([name, listener]) =>
+      this.addEventListener(name, listener)
+    );
 
     // read url and identify init-flow
     this._initPara = this.createInitializationParameterObject();
@@ -376,10 +380,37 @@ class Bookstore extends LitElement {
   }
 
   disconnectedCallback() {
-    // Remove event listener when the component is disconnected
-    this.removeEventListener('navigation', this.handleNavigationEvent);
-    this.removeEventListener('chapter-updated', this._handleChildUpdated);
-    this.removeEventListener('node-deleted', this._handleNodeDeleted);
+    super.disconnectedCallback();
+    this._hostListeners.forEach(([name, listener]) =>
+      this.removeEventListener(name, listener)
+    );
+  }
+
+  /**
+   * What the application listens for on itself, as pairs of event name and
+   * listener.
+   *
+   * Built once, so that `disconnectedCallback` removes the very functions
+   * `connectedCallback` added — a function bound anew on every call would
+   * never match.
+   */
+  createHostListeners() {
+    // Every change to a node changes the content tree of the navigation modal.
+    const reloadTree = (event) => this._reloadNavigationTree(event);
+    return [
+      ['navigation', (event) => this.handleNavigationEvent(event)],
+      // `custom-chapter-edit` still reports `chapter-updated` — the edit
+      // component keeps its old name.
+      ['chapter-updated', (event) => this._handleChildUpdated(event)],
+      ['node-deleted', (event) => this._handleNodeDeleted(event)],
+      ...[
+        'chapter-created',
+        'chapter-updated',
+        'node-deleted',
+        'published',
+        'unpublished',
+      ].map((name) => [name, reloadTree]),
+    ];
   }
 
   _handleChildUpdated(event) {
@@ -421,24 +452,6 @@ class Bookstore extends LitElement {
     this.applyEntryPoint(entry);
 
     this.isHydrated = true;
-    this.addEventListener('navigation', this.handleNavigationEvent.bind(this));
-    // `custom-chapter-edit` meldet weiterhin `chapter-updated` — die
-    // Editierkomponente trägt ihren alten Namen noch.
-    this.addEventListener(
-      'chapter-updated',
-      this._handleChildUpdated.bind(this)
-    );
-    this.addEventListener('node-deleted', this._handleNodeDeleted.bind(this));
-
-    // Every change to a node changes the content tree of the navigation modal.
-    const reloadTree = this._reloadNavigationTree.bind(this);
-    [
-      'chapter-created',
-      'chapter-updated',
-      'node-deleted',
-      'published',
-      'unpublished',
-    ].forEach((name) => this.addEventListener(name, reloadTree));
   }
 
   /**
