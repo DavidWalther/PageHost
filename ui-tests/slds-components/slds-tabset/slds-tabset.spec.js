@@ -534,14 +534,34 @@ const LONG_TABS = `
 
 function measureTabBar(page) {
   return page.evaluate(() => {
-    const nav = document
+    const tablist = document
       .querySelector('slds-tabset')
       .shadowRoot.querySelector('[role="tablist"]');
+    // The element that scrolls: the tab list itself or a wrapper around it.
+    let nav = tablist;
+    while (
+      nav.parentElement &&
+      !['auto', 'scroll'].includes(getComputedStyle(nav).overflowX)
+    ) {
+      nav = nav.parentElement;
+    }
     const navRect = nav.getBoundingClientRect();
-    const items = [...nav.querySelectorAll('li')];
+    const items = [...tablist.querySelectorAll('li')];
+    const activeItem = items.find((item) =>
+      item.classList.contains('slds-is-active')
+    );
     return {
       overflowX: getComputedStyle(nav).overflowX,
       navScrolls: nav.scrollWidth > nav.clientWidth,
+      // SLDS lets a tab item reach 1px below the list, so that the underline
+      // of the shown tab lies on the list's border. A scroll container that
+      // ends above that pixel cuts the underline.
+      underlineCutPx: Math.max(
+        0,
+        activeItem.getBoundingClientRect().bottom -
+          (navRect.top + nav.clientTop + nav.clientHeight)
+      ),
+      underlineHeight: getComputedStyle(activeItem, '::after').height,
       pageScrolls:
         document.documentElement.scrollWidth >
         document.documentElement.clientWidth,
@@ -572,6 +592,14 @@ test.describe('slds-tabset on a narrow screen', () => {
     expect(result.navScrolls).toBe(true);
     expect(result.pageScrolls).toBe(false);
     expect(result.rows).toBe(1);
+  });
+
+  test('does not cut the underline of the shown tab', async ({ page }) => {
+    await mountTabset(page, LONG_TABS);
+    const result = await measureTabBar(page);
+
+    expect(result.underlineHeight).toBe('3px');
+    expect(result.underlineCutPx).toBe(0);
   });
 
   test('scrolls a tab chosen by keyboard into view', async ({ page }) => {
