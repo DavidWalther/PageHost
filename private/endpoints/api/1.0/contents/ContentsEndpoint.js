@@ -1,6 +1,7 @@
 const { Logging } = require('../../../../modules/logging');
 const { EndpointLogic } = require('../../../EndpointLogic');
 const { DataFacade } = require('../../../../database2/DataFacade');
+const { SubtreeExclusion } = require('../../../../modules/SubtreeExclusion');
 
 // No depth given: the whole tree, however deep it is.
 const FULL_DEPTH = Infinity;
@@ -13,6 +14,10 @@ const FULL_DEPTH = Infinity;
  * - The DataFacade hands out the published tree; it owns the publish filter.
  * - edit scope: fresh tree (cache skipped) including unpublished nodes, asked
  *   for explicitly through setIncludeUnpublished(true).
+ * - The feed root named by the configuration (`feedRootNodeId`) is left out
+ *   together with its feeds — for every scope. It is shown by the feed
+ *   component, not by the navigation. The exclusion happens here and not in the
+ *   facade: the sitemap reads the same tree and keeps the feeds.
  * - ?depth=N trims the tree to N levels (default: full depth).
  */
 class ContentsEndpoint extends EndpointLogic {
@@ -38,21 +43,28 @@ class ContentsEndpoint extends EndpointLogic {
       dataFacade.setIncludeUnpublished(true);
     }
 
-    let parameterObject = {
+    const tree = await dataFacade.getData({
       returnPromise: true,
       request: { table: 'contents', id: null },
-    };
-
-    return dataFacade.getData(parameterObject).then((tree) => {
-      Logging.debugMessage({
-        severity: 'FINER',
-        message: `Contents tree returned (edit: ${!!isEdit}, depth: ${depth})`,
-        location: LOCATION,
-      });
-
-      const nodes = ContentsEndpoint.mapToNodes(tree, depth);
-      this.responseObject.json({ result: nodes });
     });
+    const configuration = await dataFacade.getData({
+      returnPromise: true,
+      request: { table: 'configuration' },
+    });
+
+    Logging.debugMessage({
+      severity: 'FINER',
+      message: `Contents tree returned (edit: ${!!isEdit}, depth: ${depth})`,
+      location: LOCATION,
+    });
+
+    const navigationTree = new SubtreeExclusion()
+      .setTree(tree)
+      .setExcludedId(configuration?.feedRootNodeId)
+      .getResult();
+
+    const nodes = ContentsEndpoint.mapToNodes(navigationTree, depth);
+    this.responseObject.json({ result: nodes });
   }
 
   /**
