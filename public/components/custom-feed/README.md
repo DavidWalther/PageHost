@@ -17,6 +17,10 @@ Each tab holds a `custom-node` without child navigation — a feed is a leaf, an
 a node can do for its contents works in a feed: loading in chunks, `reversed`
 (set per feed, on the node), the jump to one content.
 
+A tab already names its feed, so the node in it carries `no-title` and does not
+repeat the name above the contents. A single feed is shown without a tab bar
+and keeps its title — it is the only place the name stands.
+
 ## API
 
 | Attribute / property         | Type   | Description                                                                                            |
