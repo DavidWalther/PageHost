@@ -13,6 +13,9 @@ const { cacheLitBundle } = require('../../support/component-page');
  * Geprüft wird deshalb beides nebeneinander: alte Ids müssen weiter
  * funktionieren (das Backend löst sie über `legacy_id` auf), neue müssen
  * genauso funktionieren, ohne dass irgendwo ein Präfix gelesen wird.
+ *
+ * The entry without an id, with an unknown id and on a feed is a matter of the
+ * start page: `feed-start-page.spec.js`.
  */
 
 /** Zustand beider Knoten nach dem Einstieg. */
@@ -56,21 +59,6 @@ function recordQueries(page) {
 }
 
 test.describe('Deep-Link ohne Präfix-Typisierung', () => {
-  test('ohne Parameter startet der voreingestellte Knoten', async ({
-    page,
-  }) => {
-    await open(page, '/');
-
-    await expect
-      .poll(async () => (await readEntry(page)).navigation.name)
-      .toBe('Mock Story 1');
-
-    const { navigation, content } = await readEntry(page);
-    expect(navigation.recordId).toBe('000s00000000000011');
-    // Der Titel-Knoten (cover_node_id) füllt den Inhalt.
-    expect(content.recordId).toBe('000n00000000000001');
-  });
-
   test('alte Kapitel-Id öffnet den Knoten samt seiner Auswahl', async ({
     page,
   }) => {
@@ -146,14 +134,6 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
 
     const current = page.locator('custom-navigation-modal button.tile_current');
     await expect(current).toHaveText('Mock Chapter 2 for Story 1');
-  });
-
-  test('eine unbekannte Id fällt auf den Einstieg zurück', async ({ page }) => {
-    await open(page, '/000x99999999999999');
-
-    await expect
-      .poll(async () => (await readEntry(page)).navigation.name)
-      .toBe('Mock Story 1');
   });
 
   test('holt keinen Knoten zweimal', async ({ page }) => {
