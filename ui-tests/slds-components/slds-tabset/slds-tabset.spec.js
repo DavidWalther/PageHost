@@ -583,3 +583,72 @@ test.describe('slds-tabset on a narrow screen', () => {
     expect((await measureTabBar(page)).lastItemInView).toBe(true);
   });
 });
+
+/**
+ * The app starts in dark mode (`<html class="dark-mode">`). The colours come
+ * from `/styles/darkmode.css` as SLDS styling hooks on `html`; custom properties
+ * inherit into the tabset's shadow root.
+ */
+async function mountInDarkMode(page, markup) {
+  await page.evaluate(async () => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/styles/darkmode.css';
+    await new Promise((resolve) => {
+      link.onload = resolve;
+      document.head.appendChild(link);
+    });
+    document.documentElement.classList.add('dark-mode');
+  });
+  await mountTabset(page, markup);
+}
+
+function readTabColors(page) {
+  return page.evaluate(() => {
+    const brightness = (color) =>
+      color
+        .match(/\d+/g)
+        .slice(0, 3)
+        .reduce((sum, part) => sum + Number(part), 0) / 3;
+    const root = document.querySelector('slds-tabset').shadowRoot;
+    const [active, inactive] = [...root.querySelectorAll('a[role="tab"]')].map(
+      (link) => getComputedStyle(link).color
+    );
+    return {
+      active,
+      inactive,
+      activeBrightness: brightness(active),
+      inactiveBrightness: brightness(inactive),
+      backgroundBrightness: brightness(
+        getComputedStyle(document.documentElement).backgroundColor
+      ),
+    };
+  });
+}
+
+test.describe('slds-tabset in dark mode', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('the shown tab is readable on the dark background', async ({ page }) => {
+    await mountInDarkMode(page, THREE_TABS);
+    const colors = await readTabColors(page);
+
+    // --dark-mode-color-base_100, the text colour of the other dark components.
+    expect(colors.active).toBe('rgb(140, 140, 140)');
+    expect(
+      colors.activeBrightness - colors.backgroundBrightness
+    ).toBeGreaterThan(100);
+  });
+
+  test('the shown tab stands out against the other tabs', async ({ page }) => {
+    await mountInDarkMode(page, THREE_TABS);
+    const colors = await readTabColors(page);
+
+    expect(colors.activeBrightness).toBeGreaterThan(colors.inactiveBrightness);
+    expect(
+      colors.inactiveBrightness - colors.backgroundBrightness
+    ).toBeGreaterThan(80);
+  });
+});

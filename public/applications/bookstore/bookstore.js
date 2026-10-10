@@ -231,6 +231,7 @@ class Bookstore extends LitElement {
       <section
         id="tabset-click-dummy"
         class="slds-m-around_small slds-p-around_small slds-box"
+        style="color: var(--slds-c-card-text-color, inherit)"
       >
         <h2 class="slds-text-heading_medium slds-m-bottom_small">
           Tabset click dummy (temporary, #214)
