@@ -65,8 +65,8 @@ class Bookstore extends LitElement {
       <slds-card no-footer no-header>
         <slds-layout wrap>
           <slds-layout-item align-middle size="3-of-12">
-            <slds-layout wrap gutters-xxx-small>
-              <slds-layout-item>
+            <slds-layout wrap gutters-xx-small>
+              <slds-layout-item grow-none>
                 <slds-button-icon
                   id="button-home"
                   icon="utility:home"
@@ -75,7 +75,7 @@ class Bookstore extends LitElement {
                   @click="${this.handleHome}"
                 ></slds-button-icon>
               </slds-layout-item>
-              <slds-layout-item>
+              <slds-layout-item grow-none>
                 <slds-button-icon
                   id="button-navigation_open"
                   icon="utility:rows"
@@ -93,7 +93,7 @@ class Bookstore extends LitElement {
           </slds-layout-item>
           <slds-layout-item align-middle size="3-of-12">
             <slds-layout align-end>
-              <slds-layout-item>
+              <slds-layout-item grow-none>
                 <slds-button-icon
                   id="button-settings_open"
                   icon="utility:settings"
