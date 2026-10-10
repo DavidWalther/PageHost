@@ -10,6 +10,7 @@ Every goal the application serves, on one level, with the actors that hold them.
 usecase-beta
 systemBoundary "Pagehost"
   openTheApp
+  readTheFeeds
   browseTheTree
   readAContent
   shareOrOpenALink
@@ -29,6 +30,7 @@ actor Browser
 actor IdentityProvider
 
 Visitor --> openTheApp
+Visitor --> readTheFeeds
 Visitor --> browseTheTree
 Visitor --> readAContent
 Visitor --> shareOrOpenALink
@@ -46,19 +48,20 @@ signIn --> IdentityProvider
 
 ## What each goal covers
 
-| Goal                     | Cases in [`../useCases.md`](../useCases.md)                      |
-| :----------------------- | :--------------------------------------------------------------- |
-| `openTheApp`             | UC-A-01 – UC-A-03, UC-A-08 – UC-A-09, UC-A-16 – UC-A-21, UC-B-01 |
-| `browseTheTree`          | UC-C-01 – UC-C-09, UC-C-13 – UC-C-19, UC-C-21 – UC-C-24          |
-| `readAContent`           | UC-C-10 – UC-C-12                                                |
-| `shareOrOpenALink`       | UC-B-02 – UC-B-10, UC-C-20                                       |
-| `adjustTheApp`           | UC-D-01 – UC-D-07                                                |
-| `signIn`                 | UC-E-01 – UC-E-18                                                |
-| `manageTheNodeTree`      | UC-F-01 – UC-F-12, UC-F-20, UC-C-25                              |
-| `manageContents`         | UC-G-01 – UC-G-20                                                |
-| `publishOrWithdraw`      | UC-F-13 – UC-F-19, UC-G-21 – UC-G-23, UC-C-26                    |
-| `discoverPublishedPages` | UC-A-04 – UC-A-05, UC-H-14                                       |
-| `installAndWorkOffline`  | UC-A-06 – UC-A-07, UC-A-10 – UC-A-15                             |
+| Goal                     | Cases in [`../useCases.md`](../useCases.md)                                         |
+| :----------------------- | :---------------------------------------------------------------------------------- |
+| `openTheApp`             | UC-A-01 – UC-A-03, UC-A-08 – UC-A-09, UC-A-16 – UC-A-21, UC-B-01                    |
+| `readTheFeeds`           | UC-I-01 – UC-I-10, UC-I-13                                                          |
+| `browseTheTree`          | UC-C-01 – UC-C-09, UC-C-13 – UC-C-19, UC-C-21 – UC-C-24, UC-I-11 – UC-I-12, UC-I-17 |
+| `readAContent`           | UC-C-10 – UC-C-12                                                                   |
+| `shareOrOpenALink`       | UC-B-02 – UC-B-14, UC-C-20                                                          |
+| `adjustTheApp`           | UC-D-01 – UC-D-07                                                                   |
+| `signIn`                 | UC-E-01 – UC-E-18                                                                   |
+| `manageTheNodeTree`      | UC-F-01 – UC-F-12, UC-F-20, UC-C-25                                                 |
+| `manageContents`         | UC-G-01 – UC-G-20, UC-I-14 – UC-I-15                                                |
+| `publishOrWithdraw`      | UC-F-13 – UC-F-19, UC-G-21 – UC-G-23, UC-C-26                                       |
+| `discoverPublishedPages` | UC-A-04 – UC-A-05, UC-H-14, UC-I-16                                                 |
+| `installAndWorkOffline`  | UC-A-06 – UC-A-07, UC-A-10 – UC-A-15                                                |
 
 ## What the picture cannot say
 
@@ -67,6 +70,11 @@ rule over every reading goal: app membership, the inherited visibility of a node
 parents, and `published_date`. Drawing it as a box would make it look like
 something an actor asks for; leaving it out means the diagram must be read
 together with section H, never instead of it.
+
+**The feed root is not a goal either.** Which node holds the feeds is a
+configuration value, and `readTheFeeds` is what a visitor wants from it. That
+the navigation leaves the feeds out (UC-I-11, UC-I-12, UC-I-17) is a property of
+`browseTheTree`, carried by the tables.
 
 **Neither are the two permission layers.** Every goal on the `Operator` side needs
 a session with the right scope (`edit`, `create`, `delete`, or `publish` **and**

@@ -79,6 +79,34 @@ Entscheidung erzwungen):
   Datensatz aufgelöst wird. Form: **Spalte `legacy_id`** je Zieltabelle
   (entschieden, Abschnitt 8).
 
+### Feeds: a role from the configuration, not a type (decided)
+
+The start page shows **feeds**. They were the first case that looked like a
+type after all — nodes that are shown elsewhere and are missing from the
+navigation — and the decision above was checked against it. It stands: a feed
+is an ordinary `node`, and so is the node the feeds hang on.
+
+- The **feed root** is named by the configuration key `feedRootNodeId`
+  (table `configuration`). Its **children are the feeds**. No column, no enum
+  and no flag on `node`.
+- What makes a node a feed is therefore its **position** — below the feed
+  root — which is exactly "Tiefe und Kontext".
+- The navigation leaves the feed root out with everything below it. That
+  happens at delivery of the content tree, not in the data: the cached tree
+  and `sitemap.xml` keep the feeds.
+- **Visibility follows section 4 unchanged.** A feed is released per app
+  through `app_node`, or inherits from the feed root with
+  `is_parent_controls_visibility`. The feeds are read as children of the feed
+  root, so **the feed root has to be visible in every app that is to show
+  feeds** — a wildcard `include` is the simplest way. A feed that inherits is
+  then visible everywhere; a feed with its own `app_node` rows only where they
+  say so.
+
+Rejected: a `type` enum on `node` (`node` / `feed`). It would have put the role
+into the data, but it needs a schema change, a rule for what a feed below a
+non-feed means, and a second place — next to the tree — that decides where a
+node is shown.
+
 ### Löschverhalten (`ON DELETE`) — entschieden: durchgängig `RESTRICT`
 
 **Keine** Fremdschlüsselbeziehung kaskadiert. Gelöscht wird strikt **bottom-up**;
