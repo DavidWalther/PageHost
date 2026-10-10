@@ -14,6 +14,14 @@ const PANEL_CLASS = 'slds-tabs_default__content';
 const VARIANT_CLASSES = { standard: 'slds-tabs_default' };
 const DEFAULT_VARIANT = 'standard';
 
+// Size of the tab labels — an extension of our own, `lightning-tabset` has
+// none. Without a size, or with an unknown one, the SLDS default applies.
+const SIZE_CLASSES = { medium: 'slds-tabs_medium', large: 'slds-tabs_large' };
+
+// Own keys only: `size="constructor"` must not find Object.prototype.
+const classFor = (classes, key) =>
+  Object.hasOwn(classes, key ?? '') ? classes[key] : undefined;
+
 const ARROW_STEPS = { ArrowLeft: -1, ArrowRight: 1 };
 
 // Values for tabs that come without one, like `lightning-tabset` does. Unique
@@ -34,6 +42,7 @@ class SldsTabset extends LitElement {
   static properties = {
     activeTabValue: { type: String, attribute: 'active-tab-value' },
     variant: { type: String },
+    size: { type: String },
     _tabs: { state: true },
   };
 
@@ -68,6 +77,7 @@ class SldsTabset extends LitElement {
     super();
     this.activeTabValue = undefined;
     this.variant = DEFAULT_VARIANT;
+    this.size = undefined;
     this._tabs = [];
     this._shownTab = undefined;
     this._activationPending = false;
@@ -110,10 +120,15 @@ class SldsTabset extends LitElement {
   }
 
   render() {
-    const variantClass =
-      VARIANT_CLASSES[this.variant] ?? VARIANT_CLASSES[DEFAULT_VARIANT];
+    const classes = [
+      classFor(VARIANT_CLASSES, this.variant) ??
+        VARIANT_CLASSES[DEFAULT_VARIANT],
+      classFor(SIZE_CLASSES, this.size),
+    ]
+      .filter(Boolean)
+      .join(' ');
     return html`
-      <div class="${variantClass}">
+      <div class="${classes}">
         ${
           this._tabs.length === 0
             ? ''
