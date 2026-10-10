@@ -281,6 +281,17 @@ class Bookstore extends LitElement {
             Rename the first tab
           </button>
         </div>
+        <div class="slds-m-top_x-small">
+          ${['default', 'medium', 'large', 'huge (unknown)'].map(
+            (size) =>
+              html`<button
+                class="slds-button slds-button_neutral"
+                @click=${() => this._dummySetSize(size.split(' ')[0])}
+              >
+                size = ${size}
+              </button>`
+          )}
+        </div>
 
         <h3 class="slds-text-heading_small slds-m-top_medium">A single tab</h3>
         <slds-tabset id="dummy-tabset-single">
@@ -370,6 +381,17 @@ class Bookstore extends LitElement {
     if (tab) {
       tab.setAttribute('label', `${tab.getAttribute('label')} (renamed)`);
     }
+  }
+
+  // Every tabset of the dummy, so that the long labels show the size as well.
+  _dummySetSize(size) {
+    this.shadowRoot
+      .querySelectorAll('#tabset-click-dummy slds-tabset')
+      .forEach((tabset) =>
+        size === 'default'
+          ? tabset.removeAttribute('size')
+          : tabset.setAttribute('size', size)
+      );
   }
 
   // =========== Tabset click dummy - end ============

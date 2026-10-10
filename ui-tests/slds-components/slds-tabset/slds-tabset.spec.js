@@ -680,3 +680,83 @@ test.describe('slds-tabset in dark mode', () => {
     ).toBeGreaterThan(80);
   });
 });
+
+/**
+ * `size` is an extension of our own (`lightning-tabset` has none): it maps to
+ * the SLDS size classes for the tab labels. The content is not affected.
+ */
+function readTabSize(page) {
+  return page.evaluate(() => {
+    const tabset = document.querySelector('slds-tabset');
+    const root = tabset.shadowRoot;
+    return {
+      containerClasses: [...root.querySelector('div').classList],
+      labelFontSize: getComputedStyle(root.querySelector('a[role="tab"]'))
+        .fontSize,
+      contentFontSize: getComputedStyle(tabset.querySelector('slds-tab p'))
+        .fontSize,
+    };
+  });
+}
+
+const withSize = (size) =>
+  THREE_TABS.replace('<slds-tabset>', `<slds-tabset size="${size}">`);
+
+test.describe('slds-tabset size', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('uses the SLDS default size without the attribute', async ({ page }) => {
+    await mountTabset(page, THREE_TABS);
+    const result = await readTabSize(page);
+
+    expect(result.containerClasses).toEqual(['slds-tabs_default']);
+    expect(result.labelFontSize).toBe('13px');
+  });
+
+  test('medium enlarges the tab labels to 1rem', async ({ page }) => {
+    await mountTabset(page, withSize('medium'));
+    const result = await readTabSize(page);
+
+    expect(result.containerClasses).toEqual([
+      'slds-tabs_default',
+      'slds-tabs_medium',
+    ]);
+    expect(result.labelFontSize).toBe('16px');
+  });
+
+  test('large enlarges the tab labels to 1.25rem', async ({ page }) => {
+    await mountTabset(page, withSize('large'));
+    const result = await readTabSize(page);
+
+    expect(result.containerClasses).toEqual([
+      'slds-tabs_default',
+      'slds-tabs_large',
+    ]);
+    expect(result.labelFontSize).toBe('20px');
+  });
+
+  test('an unknown size sets no size class', async ({ page }) => {
+    for (const size of ['huge', 'constructor']) {
+      await mountTabset(page, withSize(size));
+      expect((await readTabSize(page)).containerClasses).toEqual([
+        'slds-tabs_default',
+      ]);
+    }
+    await mountTabset(page, withSize('huge'));
+    const result = await readTabSize(page);
+
+    expect(result.containerClasses).toEqual(['slds-tabs_default']);
+    expect(result.labelFontSize).toBe('13px');
+  });
+
+  test('the size leaves the tab content alone', async ({ page }) => {
+    await mountTabset(page, THREE_TABS);
+    const standard = await readTabSize(page);
+    await mountTabset(page, withSize('large'));
+    const large = await readTabSize(page);
+
+    expect(large.contentFontSize).toBe(standard.contentFontSize);
+  });
+});

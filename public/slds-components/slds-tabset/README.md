@@ -25,10 +25,11 @@ import '/slds-components/slds-tabset/slds-tabset.js'; // also defines slds-tab
 
 ### `<slds-tabset>`
 
-| Attribute / property                  | Type   | Default    | Description                                                                                                               |
-| :------------------------------------ | :----- | :--------- | :------------------------------------------------------------------------------------------------------------------------ |
-| `active-tab-value` / `activeTabValue` | String | —          | Value of the tab to show. A click or arrow key sets it, so the property names the shown tab once the user has chosen one. |
-| `variant`                             | String | `standard` | Only `standard` is built. Any other value falls back to `standard`.                                                       |
+| Attribute / property                  | Type   | Default    | Description                                                                                                                                                                                                          |
+| :------------------------------------ | :----- | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `active-tab-value` / `activeTabValue` | String | —          | Value of the tab to show. A click or arrow key sets it, so the property names the shown tab once the user has chosen one.                                                                                            |
+| `variant`                             | String | `standard` | Only `standard` is built. Any other value falls back to `standard`.                                                                                                                                                  |
+| `size`                                | String | —          | Size of the tab labels: `medium` (1rem) or `large` (1.25rem). Without it the SLDS default (0.8125rem) applies; any other value sets no size. Not part of `lightning-tabset`. The content of the tabs keeps its size. |
 
 ### `<slds-tab>`
 
@@ -105,6 +106,7 @@ menu ("More") for this, which is not built.
 | Panel labelling            | `aria-labelledby` → tab, `aria-controls` → panel     | `aria-label` on the panel, no `aria-controls`. Id references do not cross the native shadow boundary between bar and panels; LWC's synthetic shadow allows it. |
 | Lazy content               | a tab renders its slot after the first activation    | the consumer loads on `active`. Children of a light-DOM tab exist and connect at once.                                                                         |
 | Unknown `active-tab-value` | ignored; set before the tabs arrive, no tab is shown | the first tab is shown                                                                                                                                         |
+| Label size                 | —                                                    | `size="medium"` / `size="large"`, mapped to `slds-tabs_medium` / `slds-tabs_large`                                                                             |
 | Many tabs                  | "More" overflow menu                                 | the tab bar scrolls sideways                                                                                                                                   |
 | Registration               | each tab registers by event                          | the tabset reads its slot (`slotchange`); same result, DOM order                                                                                               |
 
@@ -122,6 +124,6 @@ the bar carries its `label` as tooltip. Do not set `title` on an `slds-tab`.
 ## Tests
 
 `ui-tests/slds-components/slds-tabset/slds-tabset.spec.js` — structure, selection
-and the `active` event, keyboard and ARIA, narrow screens. The spec loads the
+and the `active` event, keyboard and ARIA, narrow screens, dark mode and size. The spec loads the
 SLDS stylesheet into the document and measures the computed display, because
 the visibility of a tab depends on it.
