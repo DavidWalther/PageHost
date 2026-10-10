@@ -112,6 +112,13 @@ Not built (yet): the variants `scoped` and `vertical`, tab icons
 (`icon-name`, `end-icon-name`), `show-error-indicator`, `title` on the tabset and
 on the tab, and `focus()`.
 
+### No `title` on a tab
+
+`lightning-tab` has a `title` for the tooltip of its tab. `slds-tab` does not, on
+purpose: `title` is a global HTML attribute, and because the tab element **is**
+the panel, the browser would show the tooltip over the whole content. The tab in
+the bar carries its `label` as tooltip. Do not set `title` on an `slds-tab`.
+
 ## Tests
 
 `ui-tests/slds-components/slds-tabset/slds-tabset.spec.js` — structure, selection
