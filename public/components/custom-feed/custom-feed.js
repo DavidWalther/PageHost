@@ -128,7 +128,10 @@ class CustomFeed extends LitElement {
     }
     if (this._feeds.length === 1) {
       // Nothing to choose from: no tab bar, and nothing to wait for either.
-      return this.renderFeed(this._feeds[0], true);
+      return this.renderFeed(this._feeds[0], {
+        isLoaded: true,
+        isNamedByTab: false,
+      });
     }
     return html`
       <slds-tabset
@@ -143,7 +146,10 @@ class CustomFeed extends LitElement {
               value=${feed.id}
               @active=${() => this.handleFeedActive(feed)}
             >
-              ${this.renderFeed(feed, this._loadedFeedIds.has(feed.id))}
+              ${this.renderFeed(feed, {
+                isLoaded: this._loadedFeedIds.has(feed.id),
+                isNamedByTab: true,
+              })}
             </slds-tab>
           `
         )}
@@ -155,12 +161,16 @@ class CustomFeed extends LitElement {
    * The contents of one feed. Without `isLoaded` the node has no id yet and
    * therefore loads nothing.
    *
+   * A tab already names its feed, so the node below it does not repeat the
+   * name (`isNamedByTab`). A single feed has no tab; there the title of the
+   * node is the only place the name stands.
+   *
    * No child navigation: a feed is a leaf. New contents may be created here —
    * the feed is not reachable through the navigation, so this is the only
    * place for it. Deleting the node is not offered: it would delete the feed
    * itself, and feeds cannot be created in the application.
    */
-  renderFeed(feed, isLoaded) {
+  renderFeed(feed, { isLoaded, isNamedByTab }) {
     const isJumpTarget =
       this.contentnumber &&
       (this._jumpFeedId ?? this._feeds[0]?.id) === feed.id;
@@ -169,6 +179,7 @@ class CustomFeed extends LitElement {
         data-feed-id=${feed.id}
         id=${isLoaded ? feed.id : nothing}
         contentnumber=${isJumpTarget ? this.contentnumber : nothing}
+        ?no-title=${isNamedByTab}
         no-child-navigation
         can-create-content
       ></custom-node>
