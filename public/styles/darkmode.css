@@ -89,4 +89,12 @@ html.dark-mode {
 
   --slds-c-modal-footer-color-background: var(--dark-mode-color-base_40);
   --slds-c-modal-footer-text-color: var(--dark-mode-color-base_100);
+
+  /**
+   * Tabs styles
+   *
+   * Only the shown tab needs a hook: the other tabs take their text colour
+   * from --slds-g-color-neutral-base-30, which is already set above.
+   */
+  --slds-c-tabs-item-text-color-active: var(--dark-mode-color-base_100);
 }

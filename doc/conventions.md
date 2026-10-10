@@ -110,6 +110,9 @@ einzuführen.
 | `slds-progress-bar` | unbekannte `size`               | keine Größenklasse               | `slds-progress-bar.spec.js` |
 | `slds-progress-bar` | nicht-numerisches `percent`     | `0` statt `NaN`                  | `slds-progress-bar.spec.js` |
 | `slds-modal`        | unbekannte `size`               | keine Größenklasse               | `slds-modal.spec.js`        |
+| `slds-tabset`       | unbekannter `active-tab-value`  | zeigt den ersten Tab             | `slds-tabset.spec.js`       |
+| `slds-tabset`       | unbekannte `variant`            | fällt auf `standard` zurück      | `slds-tabset.spec.js`       |
+| `slds-tabset`       | unbekannte `size`               | keine Größenklasse               | `slds-tabset.spec.js`       |
 
 ## Historie: abgelöste Muster
 
