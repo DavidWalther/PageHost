@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const {
   mockBookstoreCallouts,
+  MOCK_ROOT_PATH,
   MOCK_NODES,
 } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
@@ -97,7 +98,8 @@ test.describe('Knoten: Aufbau der Kind-Navigation', () => {
             );
       return route.fulfill({ json: match || {} });
     });
-    await page.goto('/');
+    // The application starts on the feeds; these tests are about a node.
+    await page.goto(MOCK_ROOT_PATH);
     await expect(
       navigationNode(page).locator('#child-navigation slds-combobox')
     ).toHaveCount(1);

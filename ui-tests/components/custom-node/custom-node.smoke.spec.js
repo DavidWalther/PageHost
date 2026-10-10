@@ -1,5 +1,8 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const {
+  mockBookstoreCallouts,
+  MOCK_ROOT_PATH,
+} = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
@@ -47,7 +50,8 @@ test.describe('custom-node', () => {
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
     await cacheLitBundle(page);
-    await page.goto('/');
+    // The application starts on the feeds; these tests are about a node.
+    await page.goto(MOCK_ROOT_PATH);
     await expect(page.locator('app-bookstore')).toBeAttached();
   });
 
