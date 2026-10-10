@@ -24,6 +24,7 @@ const {
 } = require('../endpoints/data/query/TypeFreeQueryEndpoint');
 const ContentsEndpoint = require('../endpoints/api/1.0/contents/ContentsEndpoint');
 const SitemapEndpointLogic = require('../endpoints/wildcard/SitemapEndpointLogic.js');
+const MetaDataEndpointLogic = require('../endpoints/metadata/MetaDataEndpointLogic');
 const { DataFacade } = require('../database2/DataFacade');
 
 const APPLICATION_KEY = 'nodeApp';
@@ -101,6 +102,7 @@ beforeEach(() => {
       { node_id: 'n-story', relation: 'include', app_name: APPLICATION_KEY },
     ],
     contentNodes: [ABSATZ],
+    configuration: [],
     content: [
       {
         ...ABSATZ,
@@ -122,6 +124,7 @@ beforeEach(() => {
     executeParameterizedSql: jest.fn(async (statement) => {
       executedStatements.push(statement);
       if (statement.includes('FROM app_node')) return rows.appNodes;
+      if (statement.includes('FROM configuration')) return rows.configuration;
       if (statement.includes('FROM content_node cn')) return rows.content;
       if (statement.includes('FROM content_node')) return rows.contentNodes;
       return rows.nodes;
@@ -607,6 +610,149 @@ describe('Lesepfad', () => {
         expect(xml).toContain('https://example.org/n-ebene-4<');
         expect(xml).not.toContain('n-szene-versteckt');
       });
+    });
+  });
+
+  // ─── Feed root ───────────────────────────────────────────────────────────
+
+  /**
+   * The start page shows feeds: the children of one root node that the
+   * configuration names (`feedRootNodeId`). That node is an ordinary root —
+   * no type, no flag — so everything that reads nodes keeps working on it.
+   * Only the navigation tree leaves it out, and it does so at delivery: the
+   * sitemap reads the same tree and must keep the feeds.
+   */
+  describe('Feed root', () => {
+    const FEED_ROOT = {
+      ...STORY_NODE,
+      id: 'n-feeds',
+      name: 'Feeds',
+      sortnumber: 2,
+      cover_node_id: null,
+      legacy_id: null,
+    };
+    const FEED_NEWS = {
+      ...KAPITEL_NODE,
+      id: 'n-feed-news',
+      name: 'News',
+      parent_node_id: 'n-feeds',
+      legacy_id: null,
+    };
+
+    const allIds = (nodes) =>
+      nodes.flatMap((node) => [node.id, ...allIds(node.childnodes)]);
+
+    function getMetadata() {
+      const responseObject = { json: jest.fn() };
+      return new MetaDataEndpointLogic()
+        .setEnvironment(ENVIRONMENT)
+        .setRequestObject({ query: {} })
+        .setResponseObject(responseObject)
+        .execute()
+        .then(() => responseObject.json.mock.calls[0][0]);
+    }
+
+    function getSitemapLocations() {
+      const responseObject = { set: jest.fn(), send: jest.fn() };
+      responseObject.set.mockReturnValue(responseObject);
+      return new SitemapEndpointLogic()
+        .setEnvironment(ENVIRONMENT)
+        .setRequestObject({
+          protocol: 'https',
+          headers: { host: 'example.org' },
+        })
+        .setResponseObject(responseObject)
+        .execute()
+        .then(() =>
+          [
+            ...responseObject.send.mock.calls[0][0].matchAll(
+              /<loc>([^<]+)<\/loc>/g
+            ),
+          ].map((match) => match[1])
+        );
+    }
+
+    beforeEach(() => {
+      rows.nodes = [STORY_NODE, KAPITEL_NODE, FEED_ROOT, FEED_NEWS];
+      rows.appNodes = [
+        { node_id: 'n-story', relation: 'include', app_name: APPLICATION_KEY },
+        // Wildcard: the feed root is visible in every app.
+        { node_id: 'n-feeds', relation: 'include', app_name: null },
+      ];
+      rows.configuration = [{ key: 'feedRootNodeId', value: 'n-feeds' }];
+    });
+
+    it('delivers feedRootNodeId with the metadata', async () => {
+      const metadata = await getMetadata();
+
+      expect(metadata.feedRootNodeId).toBe('n-feeds');
+    });
+
+    it.failing(
+      'leaves the feed root and its feeds out of the contents tree',
+      async () => {
+        const { result } = await getContents();
+
+        expect(allIds(result)).toEqual(['n-story', 'n-kapitel']);
+      }
+    );
+
+    it.failing(
+      'leaves the feed root out of the contents tree with the edit scope too',
+      async () => {
+        const { result } = await getContents({ scopes: ['edit'] });
+
+        expect(allIds(result)).toEqual(['n-story', 'n-kapitel']);
+      }
+    );
+
+    it('keeps the tree complete when no feed root is configured', async () => {
+      rows.configuration = [];
+
+      const { result } = await getContents();
+
+      expect(allIds(result)).toEqual([
+        'n-story',
+        'n-kapitel',
+        'n-feeds',
+        'n-feed-news',
+      ]);
+    });
+
+    it('keeps the tree complete when the configured id matches no node', async () => {
+      rows.configuration = [{ key: 'feedRootNodeId', value: 'n-unknown' }];
+
+      const { result } = await getContents();
+
+      expect(allIds(result)).toEqual([
+        'n-story',
+        'n-kapitel',
+        'n-feeds',
+        'n-feed-news',
+      ]);
+    });
+
+    it('keeps the feed root and its feeds in the sitemap', async () => {
+      expect(await getSitemapLocations()).toEqual([
+        'https://example.org/n-story',
+        'https://example.org/n-kapitel',
+        'https://example.org/n-feeds',
+        'https://example.org/n-feed-news',
+      ]);
+    });
+
+    it('still delivers the feed root as a node, with its feeds as children', async () => {
+      const node = await getNode({ query: { id: 'n-feeds' } });
+
+      expect(node.id).toBe('n-feeds');
+      expect(node.nodes.map((child) => child.id)).toEqual(['n-feed-news']);
+    });
+
+    it('still delivers a single feed as a node', async () => {
+      const node = await getNode({ query: { id: 'n-feed-news' } });
+
+      expect(node.id).toBe('n-feed-news');
+      expect(node.parent_node_id).toBe('n-feeds');
     });
   });
 });
