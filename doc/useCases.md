@@ -293,7 +293,7 @@ live on as a local draft.
 
 Visibility is not one filter but three rules that stack: which app a node belongs
 to, whether the chain of parents lets it through, and whether it is published.
-**Every reading case in B and C is to be checked against these as well** — that
+**Every reading case in B, C and I is to be checked against these as well** — that
 is why they are gathered here instead of being repeated per case.
 
 An invisible record is an **empty answer, never an error**: a visitor cannot tell
