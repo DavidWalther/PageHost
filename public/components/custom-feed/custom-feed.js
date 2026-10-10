@@ -135,6 +135,7 @@ class CustomFeed extends LitElement {
     }
     return html`
       <slds-tabset
+        size="large"
         active-tab-value=${this.activeFeed ?? nothing}
         @click=${this.userChoiceListener}
         @keydown=${this.userChoiceListener}
