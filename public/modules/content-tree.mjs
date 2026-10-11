@@ -3,7 +3,8 @@
  * nodes `{ id, name, label, childnodes }`, nested in any depth.
  *
  * Pure functions, no DOM. Shared by the navigation modal (which level to open
- * on, which tiles to mark) and the breadcrumbs (the path to show).
+ * on, which tiles to mark), the breadcrumbs (the path to show) and the delete
+ * action (what goes along with a node).
  */
 
 /**
@@ -36,4 +37,18 @@ export function findPath(tree, id) {
 export function findNode(tree, id) {
   const path = findPath(tree, id);
   return path.length > 0 ? path[path.length - 1] : null;
+}
+
+/**
+ * The ids of every node below the one with the given id, in any depth; the
+ * node itself is not among them. What a delete takes along with the node.
+ *
+ * @param {Array<object>} tree root nodes
+ * @param {string} id
+ * @returns {Array<string>} `[]` for a leaf and for an id not in the tree
+ */
+export function descendantIds(tree, id) {
+  const collect = (nodes) =>
+    (nodes || []).flatMap((node) => [node.id, ...collect(node.childnodes)]);
+  return collect(findNode(tree, id)?.childnodes);
 }

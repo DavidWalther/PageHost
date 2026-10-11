@@ -106,9 +106,6 @@ test.describe('content-tree module', () => {
   });
 
   test.describe('descendantIds', () => {
-    // The function does not exist yet.
-    test.fail();
-
     test('returns every descendant in any depth', async ({ page }) => {
       const found = await inPage(page, (m, tree) =>
         m.descendantIds(tree, 'root-1')
