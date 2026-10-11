@@ -16,8 +16,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * cannot see the query. Here the mock trims like the backend does.
  */
 
-const FAIL = 'the tree is requested with depth=2';
-
 const TREE = [
   {
     id: 'level-1',
@@ -74,7 +72,6 @@ test.describe('Content tree request', () => {
   });
 
   test('asks for the whole tree, without a depth', async () => {
-    test.fail(true, FAIL);
     await expect.poll(() => requestedUrls.length).toBeGreaterThan(0);
 
     for (const url of requestedUrls) {
@@ -84,7 +81,6 @@ test.describe('Content tree request', () => {
   });
 
   test('the navigation modal reaches the third level', async ({ page }) => {
-    test.fail(true, FAIL);
     const tile = (text) =>
       page.locator('custom-navigation-modal button.tile').filter({
         has: page.locator('.tile__name', { hasText: text }),
