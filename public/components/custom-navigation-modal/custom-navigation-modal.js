@@ -243,7 +243,8 @@ class NavigationModal extends LitElement {
                   class="tile ${onPath.has(node.id) ? 'tile_current' : ''} ${
                     (node.childnodes || []).length > 0 ? 'tile_stack' : ''
                   }"
-                  @click="${() => this._handleTileClick(node)}"
+                  @click="${(event) => this._handleTileClick(node, event)}"
+                  @keydown="${(event) => this._handleTileKeydown(node, event)}"
                 >
                   <span class="tile__name">${node.name}</span>
                 </button>
@@ -297,27 +298,58 @@ class NavigationModal extends LitElement {
   /**
    * A node with children opens its level; the page behind follows (it shows
    * that node, a cover node loads). A node without children is the choice:
-   * the modal reports it and the host closes the modal.
+   * the modal reports it and the host closes the modal — unless the click is
+   * modified (see `_isOpenLevelGesture`), which opens it as a level instead.
    */
-  _handleTileClick(node) {
-    if ((node.childnodes || []).length > 0) {
-      this._openPath = [...this._openPath, node.id];
-      this.dispatchEvent(
-        new CustomEvent('navigation-level-open', {
-          detail: { id: node.id },
-          bubbles: true,
-          composed: true,
-        })
-      );
+  _handleTileClick(node, event) {
+    if ((node.childnodes || []).length > 0 || this._isOpenLevelGesture(event)) {
+      this._openLevel(node);
       return;
     }
-    const parentId =
-      this._openPath.length > 0
-        ? this._openPath[this._openPath.length - 1]
-        : null;
     this.dispatchEvent(
       new CustomEvent('navigation-node-select', {
-        detail: { id: node.id, parentId },
+        detail: { id: node.id, parentId: this._currentElementId() },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  /**
+   * Ctrl/Cmd + Enter on a focused tile. Handled on keydown, not via the click
+   * the key would trigger: Ctrl + Enter clicks with `ctrlKey` set, but
+   * Cmd + Enter on macOS does not click a button at all.
+   */
+  _handleTileKeydown(node, event) {
+    if (event.key !== 'Enter' || !this._isOpenLevelGesture(event)) {
+      return;
+    }
+    event.preventDefault();
+    this._openLevel(node);
+  }
+
+  /**
+   * The gesture that opens any tile as a level and never selects: Ctrl + click
+   * (Windows, Linux) or Cmd + click (macOS). It exists to create a first child
+   * of a leaf, so it only counts with the create scope.
+   */
+  _isOpenLevelGesture(event) {
+    return !!(event?.ctrlKey || event?.metaKey) && this._canCreate();
+  }
+
+  /**
+   * Makes the node the current element: its children are listed. The page
+   * behind follows only into a node with children — a leaf is opened to
+   * create its first child, not to be shown.
+   */
+  _openLevel(node) {
+    this._openPath = [...this._openPath, node.id];
+    if ((node.childnodes || []).length === 0) {
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent('navigation-level-open', {
+        detail: { id: node.id },
         bubbles: true,
         composed: true,
       })

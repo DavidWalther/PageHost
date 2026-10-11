@@ -173,7 +173,6 @@ test.describe('Navigation modal: open a level with a modified click', () => {
   test('Ctrl/Cmd + click on a leaf opens its empty level and selects nothing', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await tile(page, 'Single').click({ modifiers: ['ControlOrMeta'] });
@@ -185,7 +184,6 @@ test.describe('Navigation modal: open a level with a modified click', () => {
   test('"+" on the leaf level creates the first child of the leaf', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
     await tile(page, 'Single').click({ modifiers: ['ControlOrMeta'] });
 
@@ -201,7 +199,6 @@ test.describe('Navigation modal: open a level with a modified click', () => {
   test('back leads from the leaf level to the level it was opened from', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
     await tile(page, 'Single').click({ modifiers: ['ControlOrMeta'] });
     await expectLeafLevel(page);
@@ -251,7 +248,6 @@ test.describe('Navigation modal: open a level with a modified click', () => {
   test('Ctrl/Cmd + Enter on a focused leaf opens its level', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await tile(page, 'Single').focus();
