@@ -16,8 +16,6 @@ const contentNode = (page) =>
 
 test.describe('Failed queries', () => {
   test.use({ actionTimeout: 5000 });
-  // A failed contents or metadata request never reaches the callback so far.
-  test.fail();
 
   test('without the tree the delete action says so and sends nothing', async ({
     page,
