@@ -85,6 +85,27 @@ one CSS rule of the component. A tile carries only its name.
 
 An empty level reads „Keine Inhalte vorhanden.“
 
+### Opening a tile as a level
+
+A plain click on a leaf selects it, so a leaf's level could never be opened — and
+its first child never be created. With the `create` scope a **modified click** opens
+any tile as a level and never selects:
+
+| Platform        | Gesture                                      |
+| --------------- | -------------------------------------------- |
+| Windows, Linux  | Ctrl + click, Ctrl + Enter on a focused tile |
+| macOS           | Cmd + click, Cmd + Enter on a focused tile   |
+| touch (and any) | hold the tile for 500 ms                     |
+
+A leaf then shows its empty level with the „+“ tile, which creates its first child;
+the page behind does **not** follow (no event). On a tile with children the gesture
+does what a plain click does. Without the scope a modified click is a plain click.
+
+- The keyboard gesture is handled on `keydown`: Cmd + Enter does not click a button
+  on macOS.
+- A hold is cancelled by moving more than 10 px or leaving the tile; the click that
+  ends a hold is dropped, and no system menu, callout or text selection appears.
+
 ### Creating nodes
 
 The modal always lists the children of the **current element** — the top level, or
