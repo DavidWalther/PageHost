@@ -45,19 +45,25 @@ Zwei Familien mit **gegenläufiger Voreinstellung**. Rendering ist an und wird
 abgeschaltet (wie `no-load`/`no-display`/`no-footer` im Projekt); ein
 schreibender Weg ist aus und wird ausdrücklich gewährt.
 
-| Attribut              | Voreinstellung | Wirkung                                                               |
-| :-------------------- | :------------- | :-------------------------------------------------------------------- |
-| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert             |
-| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen       |
-| `no-title`            | aus (= zeigen) | Der Name des Knotens entfällt; die Aktionen im Kopf bleiben           |
-| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')` |
-| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`      |
-| `can-delete`          | aus            | Button „Knoten löschen" — **zusätzlich** zu `hasScope('delete')`      |
+| Attribut              | Voreinstellung | Wirkung                                                                          |
+| :-------------------- | :------------- | :------------------------------------------------------------------------------- |
+| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert                        |
+| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen                  |
+| `no-title`            | aus (= zeigen) | Der Name des Knotens entfällt; die Aktionen im Kopf bleiben                      |
+| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')`            |
+| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`                 |
+| `can-delete`          | aus            | „Knoten löschen" (`custom-node-delete`) — **zusätzlich** zu `hasScope('delete')` |
 
 Die `can-…`-Attribute für schreibende Aktionen ersetzen die Scope-Prüfung
 **nicht**, sie kommen davor: Ohne passenden Scope erscheint die Aktion auch mit
 gesetztem Attribut nicht — und zwar ganz: Die Leiste bekommt dann auch kein
 leeres Element, das als Lücke stehen bliebe.
+
+**Löschen ist eine eigene Komponente.** Mit `can-delete` bettet der Knoten
+`custom-node-delete` ein (in der Leiste als `node-delete`). Rückfragen, Anfrage,
+Toast und `node-deleted` gehören ihr — dieselbe Aktion steht auch hinter der
+Lösch-Kachel des Navigations-Modals. Der Knoten leert sich nur selbst, sobald
+seine Aktion `node-deleted` meldet. → `public/components/custom-node-delete/README.md`
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
 sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.
@@ -82,14 +88,14 @@ tatsächlich nichts weiter.
 
 ## Ereignisse
 
-| Ereignis       | `detail`                              | Anlass                              |
-| :------------- | :------------------------------------ | :---------------------------------- |
-| `navigation`   | `{ type: 'node', value: <id>, node }` | Ein Kind wurde ausgewählt           |
-| `loaded`       | `{ nodeData }`                        | Der Knoten ist geladen              |
-| `node-deleted` | `{ nodeId }`                          | Der Knoten wurde gelöscht           |
-| `toast`        | `{ message, variant }`                | Rückmeldung an den Nutzer           |
-| `query`        | `{ payload: { object: 'node' } }`     | Datenabruf (beantwortet `index.js`) |
-| `create`       | `{ object: 'content', payload }`      | Neuer Inhalt an diesem Knoten       |
+| Ereignis       | `detail`                              | Anlass                                                                                  |
+| :------------- | :------------------------------------ | :-------------------------------------------------------------------------------------- |
+| `navigation`   | `{ type: 'node', value: <id>, node }` | Ein Kind wurde ausgewählt                                                               |
+| `loaded`       | `{ nodeData }`                        | Der Knoten ist geladen                                                                  |
+| `node-deleted` | `{ nodeId, nodeIds }`                 | Der Knoten wurde gelöscht (von `custom-node-delete`, `nodeIds` = er und alles darunter) |
+| `toast`        | `{ message, variant }`                | Rückmeldung an den Nutzer                                                               |
+| `query`        | `{ payload: { object: 'node' } }`     | Datenabruf (beantwortet `index.js`)                                                     |
+| `create`       | `{ object: 'content', payload }`      | Neuer Inhalt an diesem Knoten                                                           |
 
 `navigation` meldet `type: 'node'` — nicht `story`/`chapter`. Wer den Ausschnitt
 umschaltet, entscheidet der Consumer, nicht der Knoten. Der **ganze Datensatz**

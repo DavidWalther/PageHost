@@ -38,7 +38,7 @@ const ACTION_IDS = [
   'node-edit',
   'button-share',
   'button-create-content',
-  'button-delete',
+  'node-delete',
 ];
 
 // Gutter der Leiste: slds-gutters_xxx-small, 2px je Seite.
@@ -145,7 +145,7 @@ const ONLY_VISIBLE = [
         'node-edit',
         'button-share',
         'button-create-content',
-        'button-delete',
+        'node-delete',
       ],
     },
   },

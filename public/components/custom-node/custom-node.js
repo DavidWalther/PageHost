@@ -5,7 +5,7 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
-import { deleteNode } from '/components/custom-node/delete-node.api.js';
+import '/components/custom-node-delete/custom-node-delete.js';
 import '/slds-components/slds-progress-bar/slds-progress-bar.js';
 
 /**
@@ -40,10 +40,6 @@ class CustomNode extends LitElement {
     labelLinkCopied: 'Link kopiert',
     labelContentCreated: 'Inhalt erstellt',
     labelContentCreateError: 'Fehler beim Erstellen des Inhalts',
-    labelDeleteNode: 'Knoten löschen',
-    labelNodeDeleted: 'Knoten gelöscht',
-    labelNodeDeleteError: 'Fehler beim Löschen des Knotens',
-    labelNodeDeleteConfirm: 'Diesen Knoten wirklich löschen?',
   };
 
   static properties = {
@@ -273,13 +269,13 @@ class CustomNode extends LitElement {
             this.canDelete && this.hasScope('delete')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
-                    <slds-button-icon
-                      id="button-delete"
-                      icon="utility:delete"
-                      variant="container-filled"
-                      title="${this.labels.labelDeleteNode}"
-                      @click=${this._handleDeleteClick}
-                    ></slds-button-icon>
+                    <!-- The action is its own component; this is one of
+                         its triggers (the navigation modal is another). -->
+                    <custom-node-delete
+                      id="node-delete"
+                      node-id="${this.id}"
+                      @node-deleted=${this._handleOwnDeleted}
+                    ></custom-node-delete>
                   </div>
                 </slds-layout-item>`
               : ''
@@ -813,26 +809,10 @@ class CustomNode extends LitElement {
     this.fireCreateEvent_Content(this._nodeData.id);
   };
 
-  async _handleDeleteClick() {
-    if (!confirm(this.labels.labelNodeDeleteConfirm)) return;
-    try {
-      await deleteNode({ id: this.id });
-      this.fireToast(this.labels.labelNodeDeleted, 'success');
-      this.dispatchEvent(
-        new CustomEvent('node-deleted', {
-          detail: { nodeId: this.id },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      this.clearContent();
-    } catch (error) {
-      this.fireToast(
-        error.message || this.labels.labelNodeDeleteError,
-        'error'
-      );
-    }
-  }
+  /** This node is gone: show nothing of it any more. */
+  _handleOwnDeleted = () => {
+    this.clearContent();
+  };
 
   _handleNodeUpdated(event) {
     const updated = event.detail?.chapterData;
