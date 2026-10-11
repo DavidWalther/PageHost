@@ -381,14 +381,34 @@ class Bookstore extends LitElement {
     }
   }
 
+  /**
+   * Lets go of every deleted node the page shows. `nodeIds` is the node and
+   * everything that went with it; a sender without it names the node alone.
+   * When the node above went, nothing of the two nodes is left to show: back
+   * to the start page, as with the home button.
+   */
   _handleNodeDeleted(event) {
-    const nodeId = event.detail?.nodeId;
+    const { nodeId, nodeIds } = event.detail ?? {};
     if (!nodeId) return;
-    if (this.navigationNode) {
-      this.navigationNode.removeChildNode(nodeId);
+    const gone = new Set(nodeIds ?? [nodeId]);
+
+    const aboveId = this.navigationNode?.getAttribute('id');
+    if (aboveId && gone.has(aboveId)) {
+      this.navigationNode.removeAttribute('id');
+      this.navigationNode.removeAttribute('selected-child');
+      this.contentNode?.removeAttribute('id');
+      this.handleHome();
+      return;
     }
-    if (this.contentNode?.getAttribute('id') === nodeId) {
+
+    if (this.navigationNode) {
+      gone.forEach((id) => this.navigationNode.removeChildNode(id));
+    }
+    const belowId = this.contentNode?.getAttribute('id');
+    if (belowId && gone.has(belowId)) {
       this.contentNode.removeAttribute('id');
+      this.navigationNode?.removeAttribute('selected-child');
+      this._setCurrentLocation(aboveId ?? null);
     }
   }
 
