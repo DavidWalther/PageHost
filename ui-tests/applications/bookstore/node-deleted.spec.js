@@ -97,9 +97,6 @@ test.describe('Page after deleting a node', () => {
   test('the node below goes when it is only among nodeIds', async ({
     page,
   }) => {
-    // The page reads only nodeId so far.
-    test.fail();
-
     // Gone as part of a subtree: the deleted node itself is not shown.
     await reportDeleted(page, {
       nodeId: 'not-on-the-page',
@@ -113,9 +110,6 @@ test.describe('Page after deleting a node', () => {
   test('a deleted node above leads back to the start page', async ({
     page,
   }) => {
-    // The page keeps showing the deleted node above so far.
-    test.fail();
-
     await reportDeleted(page, {
       nodeId: ROOT,
       nodeIds: [ROOT, CHILD_1, CHILD_2],
