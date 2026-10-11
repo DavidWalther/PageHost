@@ -181,7 +181,8 @@ function fetchDatabase(eventpayload) {
           .then((contentsResponse) => contentsResponse.json())
           .then((contents) => {
             resolve(contents.result);
-          });
+          })
+          .catch(reject);
         break;
       }
       case 'metadata': {
@@ -189,7 +190,8 @@ function fetchDatabase(eventpayload) {
           .then((metadataResponse) => metadataResponse.json())
           .then((metadata) => {
             resolve(metadata);
-          });
+          })
+          .catch(reject);
         break;
       }
       default: {
