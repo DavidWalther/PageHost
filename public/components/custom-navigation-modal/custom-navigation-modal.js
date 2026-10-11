@@ -21,6 +21,15 @@ class NavigationModal extends LitElement {
 
   _isOpen = false;
 
+  // Holding a tile (see `_handleTilePointerDown`): the running timer, where
+  // the press started, and until when the click that ends a hold is dropped.
+  static HOLD_MS = 500;
+  static HOLD_SLOP_PX = 10;
+  _holdTimer = null;
+  _holdStart = null;
+  _holdFired = false;
+  _dropClickUntil = 0;
+
   static styles = css`
     .tile {
       width: 100%;
@@ -36,6 +45,9 @@ class NavigationModal extends LitElement {
       color: inherit;
       font: inherit;
       cursor: pointer;
+      /* Holding a tile opens its level: no callout or text selection on touch. */
+      -webkit-touch-callout: none;
+      user-select: none;
     }
 
     /*
@@ -199,6 +211,24 @@ class NavigationModal extends LitElement {
   firstUpdated() {
     // The editor exists only after the first render; ask again for the "+".
     this.requestUpdate();
+    // A hold ends wherever the pointer is let go — after the level changed,
+    // the tile it started on is gone. So the end is watched on the whole root.
+    const endHold = () => this._endHold();
+    this.shadowRoot.addEventListener('pointerup', endHold, true);
+    this.shadowRoot.addEventListener('pointercancel', endHold, true);
+    this.shadowRoot.addEventListener(
+      'click',
+      (event) => {
+        if (Date.now() < this._dropClickUntil) {
+          // The click that ends a hold would select, or hit the "+" tile
+          // that now stands under the pointer.
+          this._dropClickUntil = 0;
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },
+      true
+    );
   }
 
   /** The node whose children are listed, or null on the top level. */
@@ -243,7 +273,13 @@ class NavigationModal extends LitElement {
                   class="tile ${onPath.has(node.id) ? 'tile_current' : ''} ${
                     (node.childnodes || []).length > 0 ? 'tile_stack' : ''
                   }"
-                  @click="${() => this._handleTileClick(node)}"
+                  @click="${(event) => this._handleTileClick(node, event)}"
+                  @keydown="${(event) => this._handleTileKeydown(node, event)}"
+                  @pointerdown="${(event) =>
+                    this._handleTilePointerDown(node, event)}"
+                  @pointermove="${this._handleTilePointerMove}"
+                  @pointerleave="${this._cancelHold}"
+                  @contextmenu="${this._handleTileContextMenu}"
                 >
                   <span class="tile__name">${node.name}</span>
                 </button>
@@ -297,27 +333,114 @@ class NavigationModal extends LitElement {
   /**
    * A node with children opens its level; the page behind follows (it shows
    * that node, a cover node loads). A node without children is the choice:
-   * the modal reports it and the host closes the modal.
+   * the modal reports it and the host closes the modal — unless the click is
+   * modified (see `_isOpenLevelGesture`), which opens it as a level instead.
    */
-  _handleTileClick(node) {
-    if ((node.childnodes || []).length > 0) {
-      this._openPath = [...this._openPath, node.id];
-      this.dispatchEvent(
-        new CustomEvent('navigation-level-open', {
-          detail: { id: node.id },
-          bubbles: true,
-          composed: true,
-        })
-      );
+  _handleTileClick(node, event) {
+    if ((node.childnodes || []).length > 0 || this._isOpenLevelGesture(event)) {
+      this._openLevel(node);
       return;
     }
-    const parentId =
-      this._openPath.length > 0
-        ? this._openPath[this._openPath.length - 1]
-        : null;
     this.dispatchEvent(
       new CustomEvent('navigation-node-select', {
-        detail: { id: node.id, parentId },
+        detail: { id: node.id, parentId: this._currentElementId() },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  /**
+   * Ctrl/Cmd + Enter on a focused tile. Handled on keydown, not via the click
+   * the key would trigger: Ctrl + Enter clicks with `ctrlKey` set, but
+   * Cmd + Enter on macOS does not click a button at all.
+   */
+  _handleTileKeydown(node, event) {
+    if (event.key !== 'Enter' || !this._isOpenLevelGesture(event)) {
+      return;
+    }
+    event.preventDefault();
+    this._openLevel(node);
+  }
+
+  /**
+   * Holding a tile for half a second — mobile, and any other pointer — is the
+   * same gesture as Ctrl/Cmd + click. Only with the create scope, and only the
+   * main button; moving the pointer away or by more than a few pixels (a
+   * scroll) cancels it.
+   */
+  _handleTilePointerDown(node, event) {
+    this._cancelHold();
+    if (event.button !== 0 || !this._canCreate()) {
+      return;
+    }
+    this._holdStart = { x: event.clientX, y: event.clientY };
+    this._holdTimer = setTimeout(() => {
+      this._holdTimer = null;
+      this._holdFired = true;
+      this._openLevel(node);
+    }, NavigationModal.HOLD_MS);
+  }
+
+  _handleTilePointerMove(event) {
+    if (!this._holdStart) {
+      return;
+    }
+    const dx = event.clientX - this._holdStart.x;
+    const dy = event.clientY - this._holdStart.y;
+    if (Math.hypot(dx, dy) > NavigationModal.HOLD_SLOP_PX) {
+      this._cancelHold();
+    }
+  }
+
+  /** A press that did not last long enough: nothing happened, nothing to undo. */
+  _cancelHold() {
+    clearTimeout(this._holdTimer);
+    this._holdTimer = null;
+    this._holdStart = null;
+  }
+
+  /** The pointer was let go. After a hold, the click that follows is dropped. */
+  _endHold() {
+    if (this._holdFired) {
+      this._holdFired = false;
+      this._dropClickUntil = Date.now() + NavigationModal.HOLD_MS;
+    }
+    this._cancelHold();
+  }
+
+  /**
+   * A long touch opens the system menu (Android) at about the time the hold
+   * fires. While a hold runs, the menu stays closed.
+   */
+  _handleTileContextMenu(event) {
+    if (this._holdTimer || this._holdFired) {
+      event.preventDefault();
+    }
+  }
+
+  /**
+   * The gesture that opens any tile as a level and never selects: Ctrl + click
+   * (Windows, Linux) or Cmd + click (macOS). It exists to create a first child
+   * of a leaf, so it only counts with the create scope.
+   */
+  _isOpenLevelGesture(event) {
+    return !!(event?.ctrlKey || event?.metaKey) && this._canCreate();
+  }
+
+  /**
+   * Makes the node the current element: its children are listed. The page
+   * behind follows only into a node with children — a leaf is opened to
+   * create its first child, not to be shown.
+   */
+  _openLevel(node) {
+    this._openPath = [...this._openPath, node.id];
+    if ((node.childnodes || []).length === 0) {
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent('navigation-level-open', {
+        detail: { id: node.id },
         bubbles: true,
         composed: true,
       })
