@@ -18,7 +18,8 @@ modal's events into page changes.
 ```
 
 The component depends on `slds-modal`, `slds-layout` and `slds-layout-item` being
-registered, and imports `/modules/content-tree.mjs` for path lookups. On connect it
+registered, imports `/modules/content-tree.mjs` for path lookups and embeds
+`custom-chapter-edit` as its create dialog. On connect it
 loads the content tree by dispatching a `query` event (`{ object: 'contents' }`)
 which the host wires to the backend.
 
@@ -79,7 +80,25 @@ The open level is internal state: while the modal is open, clicks move it;
 | a tile **without** children | reports `navigation-node-select`; the host closes the modal                       |
 | `< zurück`                  | goes up exactly one level (shown on every level below the top)                    |
 
+A tile **with** children looks like a stack of cards (`.tile_stack`); the look is
+one CSS rule of the component. A tile carries only its name.
+
 An empty level reads „Keine Inhalte vorhanden.“
+
+### Creating nodes
+
+The modal always lists the children of the **current element** — the top level, or
+the node whose level is open. With the `create` scope (checked by the embedded
+`custom-chapter-edit`, not copied here) every level ends in a **„+“ tile**
+(`.tile_add`): it creates one more child of the current element, on the top level a
+new root. An empty level shows the hint and the „+“ tile.
+
+The tile opens the create dialog of `custom-chapter-edit` (`no-trigger`,
+`openCreate()`) over the open modal, proposing the highest `sortnumber` of the
+siblings plus one. After creating, the host reloads the tree and the modal stays on
+its level, where the new tile appears. Escape in the dialog closes only the dialog.
+
+The tile is only the trigger; the action is the dialog's.
 
 ---
 
