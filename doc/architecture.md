@@ -171,9 +171,20 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     einem Knoten lädt der `bookstore` den Baum neu.
     Mit Scope `create` endet jede Ebene in einer „+“-Kachel (ein weiteres Kind
     des aktuellen Elements, oben eine Wurzel; Dialog: `custom-chapter-edit`),
-    und ein modifizierter Klick (Strg/Cmd + Klick, 0,5 s halten) öffnet auch ein
-    Blatt als Ebene — so entsteht dessen erstes Kind.
+    mit Scope `delete` jede geöffnete Ebene in einer Lösch-Kachel (sie löscht
+    das aktuelle Element), und ein modifizierter Klick (Strg/Cmd + Klick,
+    0,5 s halten) öffnet mit einem der beiden Scopes auch ein Blatt als Ebene —
+    so entsteht dessen erstes Kind, oder es wird gelöscht.
     → `public/components/custom-navigation-modal/README.md`
+  - **`custom-node-delete`** ist **die** Lösch-Aktion für Knoten; der Button
+    am unteren `custom-node` und die Lösch-Kachel des Modals sind nur
+    Auslöser. Das Backend löscht einen Knoten samt allem darunter, ohne Waisen
+    (jeder Verweis auf `node` ist `ON DELETE RESTRICT`, der Schreibpfad räumt
+    die Verweise der Reihe nach ab). Deshalb fragt die Aktion: einmal für den
+    Knoten und seine Inhalte, ein zweites Mal mit der Zahl **aller** Knoten
+    darunter (aus dem Inhaltsbaum). Wer ablehnt, schickt nichts.
+    `node-deleted` nennt alle entfernten Ids; die Seite lässt sie los.
+    → `public/components/custom-node-delete/README.md`
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und
