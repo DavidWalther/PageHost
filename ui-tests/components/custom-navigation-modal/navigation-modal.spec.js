@@ -274,6 +274,26 @@ test.describe('Navigation modal in any depth', () => {
     await expect(tileNames(page)).toHaveText(['Deep Level 3']);
   });
 
+  // Only the class is pinned, not the look: how the stack is drawn is one CSS
+  // rule of the modal and may change without touching this spec.
+  test('a tile with children is marked as a stack, a leaf is not', async ({
+    page,
+  }) => {
+    test.fail(true, 'no stack marker yet (#187)');
+    await openModal(page);
+
+    await expect(tile(page, 'Deep Root')).toHaveClass(/tile_stack/);
+    await expect(tile(page, 'Other Root')).not.toHaveClass(/tile_stack/);
+  });
+
+  test('a tile carries only its name, no number of children', async ({
+    page,
+  }) => {
+    await openModal(page);
+
+    await expect(tile(page, 'Deep Root')).toHaveText(/^\s*Deep Root\s*$/);
+  });
+
   test('a tile without children selects the node and closes', async ({
     page,
   }) => {
