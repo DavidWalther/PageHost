@@ -5,6 +5,7 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import { findNode, findPath } from '/modules/content-tree.mjs';
+import '/components/custom-chapter-edit/custom-chapter-edit.js';
 
 class NavigationModal extends LitElement {
   //===========================
@@ -15,6 +16,7 @@ class NavigationModal extends LitElement {
     modalTitle: 'Navigation',
     empty: 'Keine Inhalte vorhanden.',
     back: '< zurück',
+    createChild: 'Neuen Eintrag anlegen',
   };
 
   _isOpen = false;
@@ -57,6 +59,12 @@ class NavigationModal extends LitElement {
       background-color: #0176d3;
       border-color: #0176d3;
       color: #ffffff;
+    }
+
+    .tile_add svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      fill: currentColor;
     }
 
     .back-button {
@@ -174,7 +182,30 @@ class NavigationModal extends LitElement {
         ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
       </slds-modal>
+      <!-- The create dialog: opened by the "+" tile, it opens over the modal. -->
+      <custom-chapter-edit no-trigger></custom-chapter-edit>
     `;
+  }
+
+  /** The create dialog decides about the create scope; one place for the rule. */
+  get _editor() {
+    return this.shadowRoot?.querySelector('custom-chapter-edit') ?? null;
+  }
+
+  _canCreate() {
+    return this._editor?.checkCreatePermission() ?? false;
+  }
+
+  firstUpdated() {
+    // The editor exists only after the first render; ask again for the "+".
+    this.requestUpdate();
+  }
+
+  /** The node whose children are listed, or null on the top level. */
+  _currentElementId() {
+    return this._openPath.length > 0
+      ? this._openPath[this._openPath.length - 1]
+      : null;
   }
 
   _renderBack() {
@@ -188,16 +219,17 @@ class NavigationModal extends LitElement {
   }
 
   _renderLevel(nodes) {
-    if (nodes.length === 0) {
-      return html`
-        <div class="slds-align_absolute-center slds-p-around_medium">
-          <span>${this.labels.empty}</span>
-        </div>
-      `;
-    }
+    const canCreate = this._canCreate();
     // Every node on the way to the location is marked, not only the location.
     const onPath = new Set(this._locationPath().map((node) => node.id));
     return html`
+      ${
+        nodes.length === 0
+          ? html`<div class="slds-align_absolute-center slds-p-around_medium">
+              <span>${this.labels.empty}</span>
+            </div>`
+          : ''
+      }
       <slds-layout wrap gutters-small>
         ${nodes.map(
           (node) => html`
@@ -219,8 +251,47 @@ class NavigationModal extends LitElement {
             </slds-layout-item>
           `
         )}
+        ${canCreate ? this._renderCreateTile(nodes) : ''}
       </slds-layout>
     `;
+  }
+
+  /** The last tile of a level: one more child of the current element. */
+  _renderCreateTile(siblings) {
+    return html`
+      <slds-layout-item size="1-of-2" medium-size="1-of-3" large-size="1-of-4">
+        <div class="slds-p-vertical_x-small">
+          <button
+            class="tile tile_add"
+            title="${this.labels.createChild}"
+            aria-label="${this.labels.createChild}"
+            @click="${() => this._openCreate(this._currentElementId(), siblings)}"
+          >
+            <svg aria-hidden="true">
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#add"
+              ></use>
+            </svg>
+          </button>
+        </div>
+      </slds-layout-item>
+    `;
+  }
+
+  /**
+   * Opens the create dialog for a child of parentId (none: a root). The
+   * action is the dialog's; this tile is only one way to start it.
+   */
+  _openCreate(parentId, siblings) {
+    const editor = this._editor;
+    if (parentId) {
+      editor.setAttribute('story-id', parentId);
+    } else {
+      editor.removeAttribute('story-id');
+    }
+    editor.chapters = siblings;
+    // story-id is read on open; let the editor take it over first.
+    editor.updateComplete.then(() => editor.openCreate());
   }
 
   /**

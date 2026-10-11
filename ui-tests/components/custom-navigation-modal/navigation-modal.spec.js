@@ -233,7 +233,9 @@ test.describe('Navigation modal in any depth', () => {
         hasText: new RegExp(`^\\s*${text}\\s*$`),
       }),
     });
-  const modal = (page) => page.locator('custom-navigation-modal slds-modal');
+  // By its heading: the modal also holds the create dialog, a second slds-modal.
+  const modal = (page) =>
+    page.locator('custom-navigation-modal slds-modal[heading="Navigation"]');
   const back = (page) => page.locator('custom-navigation-modal .back-button');
   const openModal = (page) => page.locator('#button-navigation_open').click();
 
