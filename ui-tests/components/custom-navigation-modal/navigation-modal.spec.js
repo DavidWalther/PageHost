@@ -279,7 +279,6 @@ test.describe('Navigation modal in any depth', () => {
   test('a tile with children is marked as a stack, a leaf is not', async ({
     page,
   }) => {
-    test.fail(true, 'no stack marker yet (#187)');
     await openModal(page);
 
     await expect(tile(page, 'Deep Root')).toHaveClass(/tile_stack/);
