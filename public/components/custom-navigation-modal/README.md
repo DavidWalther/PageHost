@@ -19,7 +19,8 @@ modal's events into page changes.
 
 The component depends on `slds-modal`, `slds-layout` and `slds-layout-item` being
 registered, imports `/modules/content-tree.mjs` for path lookups and embeds
-`custom-chapter-edit` as its create dialog. On connect it
+`custom-chapter-edit` as its create dialog and `custom-node-delete` as its delete
+action. On connect it
 loads the content tree by dispatching a `query` event (`{ object: 'contents' }`)
 which the host wires to the backend.
 
@@ -88,7 +89,8 @@ An empty level reads „Keine Inhalte vorhanden.“
 ### Opening a tile as a level
 
 A plain click on a leaf selects it, so a leaf's level could never be opened — and
-its first child never be created. With the `create` scope a **modified click** opens
+its first child never be created, nor the leaf be deleted. With the `create` or the
+`delete` scope a **modified click** opens
 any tile as a level and never selects:
 
 | Platform        | Gesture                                      |
@@ -97,9 +99,10 @@ any tile as a level and never selects:
 | macOS           | Cmd + click, Cmd + Enter on a focused tile   |
 | touch (and any) | hold the tile for 500 ms                     |
 
-A leaf then shows its empty level with the „+“ tile, which creates its first child;
+A leaf then shows its empty level with the „+“ tile, which creates its first child,
+and the delete tile, which deletes the leaf (each only with its scope);
 the page behind does **not** follow (no event). On a tile with children the gesture
-does what a plain click does. Without the scope a modified click is a plain click.
+does what a plain click does. Without either scope a modified click is a plain click.
 
 - The keyboard gesture is handled on `keydown`: Cmd + Enter does not click a button
   on macOS.
@@ -120,6 +123,21 @@ siblings plus one. After creating, the host reloads the tree and the modal stays
 its level, where the new tile appears. Escape in the dialog closes only the dialog.
 
 The tile is only the trigger; the action is the dialog's.
+
+### Deleting nodes
+
+With the `delete` scope (checked by the embedded `custom-node-delete`, not copied
+here) every **opened** level ends in a **delete tile** (`.tile_delete`). It deletes
+the **current element** — the node whose children are listed, not one of them. The
+top level has no current element and no delete tile. A leaf is reached with the
+modified click above.
+
+The tile runs the delete action (`no-trigger`, `requestDelete()`): a prompt for the
+node and its contents, a second one naming every node below it, and nothing is sent
+when either is declined. After deleting, the host reloads the tree and the modal
+stays open on what is left of its path — one level higher.
+
+The tile is only the trigger; the action is `custom-node-delete`'s.
 
 ---
 
