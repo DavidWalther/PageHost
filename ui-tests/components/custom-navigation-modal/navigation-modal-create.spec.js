@@ -15,8 +15,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * creating, the tree reloads and the modal stays on its level.
  */
 
-const FAIL = 'no create tiles yet (#187)';
-
 /** Dummy JWT with a far expiry — the client does not verify it. */
 function fakeJwt() {
   const encode = (value) =>
@@ -123,7 +121,6 @@ test.describe('Navigation modal: create', () => {
   test('every level ends in a "+" tile, also the top level', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await expect(tiles(page).last()).toHaveClass(/tile_add/);
@@ -133,7 +130,6 @@ test.describe('Navigation modal: create', () => {
   });
 
   test('the "+" tile on the top level creates a root', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await plusTile(page).click();
@@ -150,7 +146,6 @@ test.describe('Navigation modal: create', () => {
   test('the "+" tile on a level creates a child of that level', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
     await tile(page, 'Mock Story 1').click();
 
@@ -166,7 +161,6 @@ test.describe('Navigation modal: create', () => {
   test('after creating the modal stays on its level and shows the new tile', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await plusTile(page).click();
@@ -178,7 +172,6 @@ test.describe('Navigation modal: create', () => {
   });
 
   test('Escape in the dialog closes only the dialog', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
     await plusTile(page).click();
     await expect(dialog(page)).toHaveAttribute('open');
@@ -202,7 +195,6 @@ test.describe('Navigation modal: create on an empty level', () => {
   test('with the scope an empty level shows the hint and the "+" tile', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page, { tree: EMPTY });
 
     await expect(hint(page)).toBeVisible();
