@@ -232,6 +232,9 @@ class SLDSModal extends LitElement {
 
   _handleKeyDown(event) {
     if (!this.open) return;
+    // Stacked modals (a dialog over another): keys belong to the one opened
+    // last — otherwise Escape would close every open modal at once.
+    if ([...openModals].pop() !== this) return;
 
     if (event.key === 'Escape') {
       this.hide();

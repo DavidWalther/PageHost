@@ -4,6 +4,7 @@ const {
   MOCK_NODES,
 } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
+const { withSession } = require('../../support/session');
 
 /**
  * Die Rolle einer `custom-node`-Instanz hat eine Wirkung.
@@ -30,34 +31,6 @@ const { cacheLitBundle } = require('../../support/component-page');
 
 const SESSION_SCOPES = ['read', 'edit', 'create', 'delete'];
 
-/** Attrappen-JWT mit ferner Ablaufzeit — clientseitig wird er nicht geprüft. */
-function fakeJwt() {
-  const encode = (value) =>
-    Buffer.from(JSON.stringify(value))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
-  return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
-}
-
-async function withSession(page, scopes = SESSION_SCOPES) {
-  await page.addInitScript(
-    ([token, sessionScopes]) => {
-      sessionStorage.setItem(
-        'code_exchange_response',
-        JSON.stringify({
-          authenticationResult: {
-            access: { access_token: token, scopes: sessionScopes },
-          },
-        })
-      );
-    },
-    [fakeJwt(), scopes]
-  );
-}
-
 const navigationNode = (page) =>
   page.locator('custom-node[data-role="navigation"]');
 const contentNode = (page) => page.locator('custom-node[data-role="content"]');
@@ -80,7 +53,7 @@ test.describe('Knoten-Rollen: Aktionen', () => {
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
     await cacheLitBundle(page);
-    await withSession(page);
+    await withSession(page, SESSION_SCOPES);
     await page.goto(ENTRY);
     await awaitBothNodes(page);
   });

@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { mockBookstoreCallouts } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
+const { withSession } = require('../../support/session');
 
 /**
  * Bearbeiten am Knoten: Anlegen eines Inhalts und Löschen des Knotens.
@@ -16,36 +17,10 @@ const { cacheLitBundle } = require('../../support/component-page');
  * Refresh versucht; geprüft wird er clientseitig ohnehin nicht.
  */
 
-function fakeJwt() {
-  const encode = (value) =>
-    Buffer.from(JSON.stringify(value))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
-  return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
-}
-
 async function openAsEditor(page) {
   await mockBookstoreCallouts(page);
   await cacheLitBundle(page);
-  await page.addInitScript(
-    ([token]) => {
-      sessionStorage.setItem(
-        'code_exchange_response',
-        JSON.stringify({
-          authenticationResult: {
-            access: {
-              access_token: token,
-              scopes: ['read', 'edit', 'create', 'delete'],
-            },
-          },
-        })
-      );
-    },
-    [fakeJwt()]
-  );
+  await withSession(page, ['read', 'edit', 'create', 'delete']);
   await page.goto('/000c00000000000001');
   await expect(page.locator('app-bookstore')).toBeAttached();
 }

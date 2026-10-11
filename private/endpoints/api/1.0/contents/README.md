@@ -28,11 +28,13 @@ Authorization: Bearer <jwt>   (optional)
       "id": "000n00000000000011",
       "label": "Mock Story 1",
       "name": "Mock Story 1",
+      "sortnumber": 1,
       "childnodes": [
         {
           "id": "000n00000000000001",
           "label": "Mock Chapter 1 for Story 1",
           "name": "Mock Chapter 1 for Story 1",
+          "sortnumber": 1,
           "childnodes": []
         }
       ]
@@ -43,15 +45,16 @@ Authorization: Bearer <jwt>   (optional)
 
 **Node**
 
-| Feld         | Bedeutung                                             |
-| ------------ | ----------------------------------------------------- |
-| `id`         | Id des Knotens — die neue Id, **nicht** `legacy_id`   |
-| `name`       | Anzeigename                                           |
-| `label`      | Kopie von `name` (Frontend entscheidet die Anzeige)   |
-| `childnodes` | Kind-Nodes (nächste Ebene), `[]` an der Tiefen-Grenze |
+| Feld         | Bedeutung                                                           |
+| ------------ | ------------------------------------------------------------------- |
+| `id`         | Id des Knotens — die neue Id, **nicht** `legacy_id`                 |
+| `name`       | Anzeigename                                                         |
+| `label`      | Kopie von `name` (Frontend entscheidet die Anzeige)                 |
+| `sortnumber` | Reihenfolge unter den Geschwistern (für „höchste + 1“ beim Anlegen) |
+| `childnodes` | Kind-Nodes (nächste Ebene), `[]` an der Tiefen-Grenze               |
 
-Das Mapping ist allowlist-basiert — nur `id`/`name` werden übernommen, daher tauchen interne
-Felder (`publishdate`, `application*`, `sortnumber`, …) nie in der Response auf. Nodes sind je
+Das Mapping ist allowlist-basiert — nur `id`/`name`/`sortnumber` werden übernommen, daher tauchen
+interne Felder (`published_date`, `application*`, …) nie in der Response auf. Nodes sind je
 Ebene nach `sortnumber` sortiert.
 
 ## Auth & Sichtbarkeit
