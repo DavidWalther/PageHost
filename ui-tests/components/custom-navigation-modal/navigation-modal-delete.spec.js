@@ -114,9 +114,6 @@ test.describe('Navigation modal: delete', () => {
   test('a leaf opened with Ctrl/Cmd + click can be deleted', async ({
     page,
   }) => {
-    // The modified click needs the create scope so far.
-    test.fail();
-
     await open(page, { after: WITHOUT_CHAPTER_1 });
     const messages = answerPrompts(page, [true]);
     await tile(page, STORY_1.name).click();

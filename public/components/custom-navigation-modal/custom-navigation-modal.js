@@ -422,13 +422,13 @@ class NavigationModal extends LitElement {
 
   /**
    * Holding a tile for half a second — mobile, and any other pointer — is the
-   * same gesture as Ctrl/Cmd + click. Only with the create scope, and only the
-   * main button; moving the pointer away or by more than a few pixels (a
-   * scroll) cancels it.
+   * same gesture as Ctrl/Cmd + click. Only with a scope that needs it (see
+   * `_canOpenAnyLevel`), and only the main button; moving the pointer away or
+   * by more than a few pixels (a scroll) cancels it.
    */
   _handleTilePointerDown(node, event) {
     this._cancelHold();
-    if (event.button !== 0 || !this._canCreate()) {
+    if (event.button !== 0 || !this._canOpenAnyLevel()) {
       return;
     }
     this._holdStart = { x: event.clientX, y: event.clientY };
@@ -478,17 +478,25 @@ class NavigationModal extends LitElement {
 
   /**
    * The gesture that opens any tile as a level and never selects: Ctrl + click
-   * (Windows, Linux) or Cmd + click (macOS). It exists to create a first child
-   * of a leaf, so it only counts with the create scope.
+   * (Windows, Linux) or Cmd + click (macOS).
    */
   _isOpenLevelGesture(event) {
-    return !!(event?.ctrlKey || event?.metaKey) && this._canCreate();
+    return !!(event?.ctrlKey || event?.metaKey) && this._canOpenAnyLevel();
+  }
+
+  /**
+   * A leaf is opened as a level for what its level offers: "+" creates its
+   * first child, the delete tile deletes it. Without either scope there is
+   * nothing to do there, and the gesture stays a plain click.
+   */
+  _canOpenAnyLevel() {
+    return this._canCreate() || this._canDelete();
   }
 
   /**
    * Makes the node the current element: its children are listed. The page
    * behind follows only into a node with children — a leaf is opened to
-   * create its first child, not to be shown.
+   * create its first child or to be deleted, not to be shown.
    */
   _openLevel(node) {
     this._openPath = [...this._openPath, node.id];
