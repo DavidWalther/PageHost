@@ -104,4 +104,37 @@ test.describe('content-tree module', () => {
       expect(node).toBeNull();
     });
   });
+
+  test.describe('descendantIds', () => {
+    // The function does not exist yet.
+    test.fail();
+
+    test('returns every descendant in any depth', async ({ page }) => {
+      const found = await inPage(page, (m, tree) =>
+        m.descendantIds(tree, 'root-1')
+      );
+
+      expect([...found].sort()).toEqual(
+        ['level-2', 'level-2-b', 'level-3', 'level-4'].sort()
+      );
+    });
+
+    test('does not count the node itself', async ({ page }) => {
+      const found = await inPage(page, (m, tree) =>
+        m.descendantIds(tree, 'level-3')
+      );
+
+      expect(found).toEqual(['level-4']);
+    });
+
+    test('returns no ids for a leaf or an unknown id', async ({ page }) => {
+      const found = await inPage(page, (m, tree) => [
+        m.descendantIds(tree, 'level-4'),
+        m.descendantIds(tree, 'nope'),
+        m.descendantIds(undefined, 'root-1'),
+      ]);
+
+      expect(found).toEqual([[], [], []]);
+    });
+  });
 });
