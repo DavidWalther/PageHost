@@ -169,6 +169,10 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     aus. Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
     der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
     einem Knoten lädt der `bookstore` den Baum neu.
+    Mit Scope `create` endet jede Ebene in einer „+“-Kachel (ein weiteres Kind
+    des aktuellen Elements, oben eine Wurzel; Dialog: `custom-chapter-edit`),
+    und ein modifizierter Klick (Strg/Cmd + Klick, 0,5 s halten) öffnet auch ein
+    Blatt als Ebene — so entsteht dessen erstes Kind.
     → `public/components/custom-navigation-modal/README.md`
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
