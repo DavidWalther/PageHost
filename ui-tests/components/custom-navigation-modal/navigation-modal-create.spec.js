@@ -4,6 +4,7 @@ const {
   MOCK_CONTENTS,
 } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
+const { withSession } = require('../../support/session');
 
 /**
  * Creating nodes from the navigation modal.
@@ -14,34 +15,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * the create dialog of `custom-chapter-edit` over the open modal; after
  * creating, the tree reloads and the modal stays on its level.
  */
-
-/** Dummy JWT with a far expiry — the client does not verify it. */
-function fakeJwt() {
-  const encode = (value) =>
-    Buffer.from(JSON.stringify(value))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
-  return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
-}
-
-async function withSession(page, scopes) {
-  await page.addInitScript(
-    ([token, sessionScopes]) => {
-      sessionStorage.setItem(
-        'code_exchange_response',
-        JSON.stringify({
-          authenticationResult: {
-            access: { access_token: token, scopes: sessionScopes },
-          },
-        })
-      );
-    },
-    [fakeJwt(), scopes]
-  );
-}
 
 const TREE_AFTER_CREATE = {
   result: [

@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { mockBookstoreCallouts } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
+const { withSession } = require('../../support/session');
 
 /**
  * Opening a tile as a level with a modified click.
@@ -14,34 +15,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * page behind does not follow. On a tile with children the gesture does what a
  * plain click does.
  */
-
-/** Dummy JWT with a far expiry — the client does not verify it. */
-function fakeJwt() {
-  const encode = (value) =>
-    Buffer.from(JSON.stringify(value))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
-  return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
-}
-
-async function withSession(page, scopes) {
-  await page.addInitScript(
-    ([token, sessionScopes]) => {
-      sessionStorage.setItem(
-        'code_exchange_response',
-        JSON.stringify({
-          authenticationResult: {
-            access: { access_token: token, scopes: sessionScopes },
-          },
-        })
-      );
-    },
-    [fakeJwt(), scopes]
-  );
-}
 
 const TREE = {
   result: [
