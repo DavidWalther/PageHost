@@ -5,7 +5,7 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import { descendantIds } from '/modules/content-tree.mjs';
-import { deleteNode } from '/components/custom-node/delete-node.api.js';
+import { deleteNode } from '/components/custom-node-delete/delete-node.api.js';
 
 /**
  * The one action that deletes a node.
