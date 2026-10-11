@@ -8,12 +8,11 @@ const { cacheLitBundle } = require('../../support/component-page');
 /**
  * Creating nodes from the navigation modal.
  *
- * With the `create` scope every level ends in a "+" tile (a new sibling on that
- * level; on the top level a new root), and every tile **without** children
- * carries a small "+" of its own (its first child — its level can never be
- * opened, a tile without children selects). Both open the create dialog of
- * `custom-chapter-edit` over the open modal; after creating, the tree reloads
- * and the modal stays on its level.
+ * The modal always lists the children of the current element — the top level
+ * or an opened node. With the `create` scope every level ends in a "+" tile: a
+ * further child of the current element, on the top level a new root. It opens
+ * the create dialog of `custom-chapter-edit` over the open modal; after
+ * creating, the tree reloads and the modal stays on its level.
  */
 
 const FAIL = 'no create tiles yet (#187)';
@@ -63,7 +62,10 @@ const TREE_AFTER_CREATE = {
 let created;
 let contentsCalls;
 
-async function open(page, { scopes = ['create', 'edit'] } = {}) {
+async function open(
+  page,
+  { scopes = ['create', 'edit'], tree = MOCK_CONTENTS } = {}
+) {
   created = null;
   contentsCalls = 0;
   if (scopes) {
@@ -73,7 +75,7 @@ async function open(page, { scopes = ['create', 'edit'] } = {}) {
   await page.route('**/api/1.0/contents/**', (route) => {
     contentsCalls += 1;
     route.fulfill({
-      json: contentsCalls === 1 ? MOCK_CONTENTS : TREE_AFTER_CREATE,
+      json: contentsCalls === 1 ? tree : TREE_AFTER_CREATE,
     });
   });
   await page.route('**/api/1.0/data/change/**', (route) => {
@@ -101,11 +103,6 @@ const tile = (page, text) =>
   });
 const plusTile = (page) =>
   page.locator('custom-navigation-modal button.tile_add');
-const firstChildButton = (page, text) =>
-  page
-    .locator('custom-navigation-modal .tile-wrap')
-    .filter({ has: tile(page, text) })
-    .locator('button.tile__add');
 const dialog = (page) =>
   page.locator('custom-navigation-modal custom-chapter-edit slds-modal');
 const confirm = (page) =>
@@ -121,9 +118,6 @@ test.describe('Navigation modal: create', () => {
     await expect(tile(page, 'Mock Story 1')).toBeVisible();
 
     await expect(plusTile(page)).toHaveCount(0);
-    await expect(
-      page.locator('custom-navigation-modal button.tile__add')
-    ).toHaveCount(0);
   });
 
   test('every level ends in a "+" tile, also the top level', async ({
@@ -136,18 +130,6 @@ test.describe('Navigation modal: create', () => {
     await tile(page, 'Mock Story 1').click();
     await expect(tile(page, 'Mock Chapter 1 for Story 1')).toBeVisible();
     await expect(tiles(page).last()).toHaveClass(/tile_add/);
-  });
-
-  test('only tiles without children carry a small "+"', async ({ page }) => {
-    test.fail(true, FAIL);
-    await open(page);
-    await tile(page, 'Mock Story 1').click();
-
-    await expect(
-      firstChildButton(page, 'Mock Chapter 2 for Story 1')
-    ).toHaveCount(1);
-    await page.locator('custom-navigation-modal .back-button').click();
-    await expect(firstChildButton(page, 'Mock Story 1')).toHaveCount(0);
   });
 
   test('the "+" tile on the top level creates a root', async ({ page }) => {
@@ -181,19 +163,6 @@ test.describe('Navigation modal: create', () => {
     expect(created.payload.sortnumber).toBe(3);
   });
 
-  test('the small "+" creates a first child of that tile', async ({ page }) => {
-    test.fail(true, FAIL);
-    await open(page);
-    await tile(page, 'Mock Story 1').click();
-
-    await firstChildButton(page, 'Mock Chapter 2 for Story 1').click();
-    await confirm(page).click();
-
-    await expect.poll(() => created).not.toBeNull();
-    expect(created.payload.parent_node_id).toBe('000n00000000000002');
-    expect(created.payload.sortnumber).toBe(1);
-  });
-
   test('after creating the modal stays on its level and shows the new tile', async ({
     page,
   }) => {
@@ -218,5 +187,34 @@ test.describe('Navigation modal: create', () => {
 
     await expect(dialog(page)).not.toHaveAttribute('open');
     await expect(tile(page, 'Mock Story 1')).toBeVisible();
+  });
+});
+
+test.describe('Navigation modal: create on an empty level', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const EMPTY = { result: [] };
+  const hint = (page) =>
+    page
+      .locator('custom-navigation-modal')
+      .getByText('Keine Inhalte vorhanden.');
+
+  test('with the scope an empty level shows the hint and the "+" tile', async ({
+    page,
+  }) => {
+    test.fail(true, FAIL);
+    await open(page, { tree: EMPTY });
+
+    await expect(hint(page)).toBeVisible();
+    await expect(plusTile(page)).toBeVisible();
+  });
+
+  test('without the scope an empty level shows only the hint', async ({
+    page,
+  }) => {
+    await open(page, { scopes: null, tree: EMPTY });
+
+    await expect(hint(page)).toBeVisible();
+    await expect(plusTile(page)).toHaveCount(0);
   });
 });
