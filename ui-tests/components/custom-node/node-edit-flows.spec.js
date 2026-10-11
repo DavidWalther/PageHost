@@ -1,5 +1,8 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('../../support/mock-callouts');
+const {
+  mockBookstoreCallouts,
+  MOCK_CONTENTS,
+} = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 const { withSession } = require('../../support/session');
 
@@ -117,5 +120,63 @@ test.describe('custom-node: Bearbeiten', () => {
         })
       )
       .toEqual(['000n00000000000002']);
+  });
+
+  test('Löschen eines Knotens mit Kindern fragt ein zweites Mal', async ({
+    page,
+  }) => {
+    // custom-node deletes on one prompt so far.
+    test.fail();
+    test.setTimeout(15000);
+
+    // The lower node gets a child and a grandchild in the tree; its own node
+    // record knows neither — the count has to come from the tree.
+    const tree = structuredClone(MOCK_CONTENTS.result);
+    tree[0].childnodes[0].childnodes = [
+      {
+        id: '000n00000000000021',
+        label: 'Child',
+        name: 'Child',
+        sortnumber: 1,
+        childnodes: [
+          {
+            id: '000n00000000000022',
+            label: 'Grandchild',
+            name: 'Grandchild',
+            sortnumber: 1,
+            childnodes: [],
+          },
+        ],
+      },
+    ];
+    await mockBookstoreCallouts(page);
+    await page.route('**/api/1.0/contents/**', (route) =>
+      route.fulfill({ json: { result: tree } })
+    );
+    await cacheLitBundle(page);
+    await withSession(page, ['read', 'edit', 'create', 'delete']);
+    await page.goto('/000c00000000000001');
+    await expect(contentNode(page).locator('#button-delete')).toBeVisible();
+
+    const messages = [];
+    page.on('dialog', (dialog) => {
+      messages.push(dialog.message());
+      // Yes to the node, no to the nodes below it.
+      return messages.length === 1 ? dialog.accept() : dialog.dismiss();
+    });
+    let deleteUrl = null;
+    await page.route('**/api/1.0/data/delete**', (route) => {
+      deleteUrl = route.request().url();
+      return route.fulfill({ json: { success: true } });
+    });
+
+    await contentNode(page).locator('#button-delete').click();
+
+    await expect.poll(() => messages.length).toBe(2);
+    // The kept node's own content is named in the first prompt.
+    expect(messages[0]).toContain('1');
+    expect(messages[1]).toContain('2');
+    await page.waitForTimeout(300);
+    expect(deleteUrl).toBeNull();
   });
 });
