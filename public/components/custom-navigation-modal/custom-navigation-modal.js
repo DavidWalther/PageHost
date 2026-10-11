@@ -36,6 +36,19 @@ class NavigationModal extends LitElement {
       cursor: pointer;
     }
 
+    /*
+     * A tile with children looks like a stack of cards: two offset layers
+     * behind it, each drawn as a panel-coloured card with a border. The look
+     * lives in this one rule only.
+     */
+    .tile_stack {
+      box-shadow:
+        3px 3px 0 -1px var(--panel-background-color),
+        3px 3px 0 0 #c9c9c9,
+        6px 6px 0 -1px var(--panel-background-color),
+        6px 6px 0 0 #c9c9c9;
+    }
+
     .tile:hover {
       border-color: #0176d3;
     }
@@ -195,7 +208,9 @@ class NavigationModal extends LitElement {
             >
               <div class="slds-p-vertical_x-small">
                 <button
-                  class="tile ${onPath.has(node.id) ? 'tile_current' : ''}"
+                  class="tile ${onPath.has(node.id) ? 'tile_current' : ''} ${
+                    (node.childnodes || []).length > 0 ? 'tile_stack' : ''
+                  }"
                   @click="${() => this._handleTileClick(node)}"
                 >
                   <span class="tile__name">${node.name}</span>
