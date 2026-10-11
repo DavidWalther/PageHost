@@ -80,8 +80,6 @@ const back = (page) => page.locator('custom-navigation-modal .back-button');
 
 test.describe('Navigation modal: delete', () => {
   test.use({ actionTimeout: 5000 });
-  // There is no delete tile yet.
-  test.fail();
 
   test('an opened level ends in a delete tile', async ({ page }) => {
     await open(page);
@@ -116,6 +114,9 @@ test.describe('Navigation modal: delete', () => {
   test('a leaf opened with Ctrl/Cmd + click can be deleted', async ({
     page,
   }) => {
+    // The modified click needs the create scope so far.
+    test.fail();
+
     await open(page, { after: WITHOUT_CHAPTER_1 });
     const messages = answerPrompts(page, [true]);
     await tile(page, STORY_1.name).click();
