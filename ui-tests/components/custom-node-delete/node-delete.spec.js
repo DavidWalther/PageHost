@@ -146,8 +146,6 @@ async function settle(page) {
 
 test.describe('custom-node-delete', () => {
   test.use({ actionTimeout: 5000 });
-  // The component does not exist yet.
-  test.fail();
 
   test.describe('trigger', () => {
     test('shows its button with the delete scope', async ({ page }) => {
