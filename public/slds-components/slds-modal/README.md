@@ -103,6 +103,8 @@ Three paths close the dialog, and each one fires `close`:
 - the **close button** in the top-right corner,
 - a click on the **backdrop**,
 - the **Escape** key (a `keydown` listener on `document`, active only while open).
+  With modals stacked over each other, only the one opened **last** reacts to
+  Escape and keeps the Tab focus; a second Escape then closes the one below.
 
 ## Accessibility
 
