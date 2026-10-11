@@ -125,8 +125,6 @@ test.describe('custom-node: Bearbeiten', () => {
   test('Löschen eines Knotens mit Kindern fragt ein zweites Mal', async ({
     page,
   }) => {
-    // custom-node deletes on one prompt so far.
-    test.fail();
     test.setTimeout(15000);
 
     // The lower node gets a child and a grandchild in the tree; its own node
