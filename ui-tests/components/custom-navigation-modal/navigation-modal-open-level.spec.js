@@ -15,8 +15,6 @@ const { cacheLitBundle } = require('../../support/component-page');
  * plain click does.
  */
 
-const FAIL = 'no open-level gesture yet (#187)';
-
 /** Dummy JWT with a far expiry — the client does not verify it. */
 function fakeJwt() {
   const encode = (value) =>
@@ -225,7 +223,6 @@ test.describe('Navigation modal: open a level with a modified click', () => {
   test('holding a leaf for half a second opens its level, letting go selects nothing', async ({
     page,
   }) => {
-    test.fail(true, FAIL);
     await open(page);
 
     await hold(page, tile(page, 'Single'), 700);
@@ -290,7 +287,6 @@ test.describe('Navigation modal: hold on a touch screen', () => {
   test.use({ actionTimeout: 5000, hasTouch: true });
 
   test('holding a leaf by touch opens its level', async ({ page }) => {
-    test.fail(true, FAIL);
     await open(page);
     const box = await tile(page, 'Single').boundingBox();
     const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
