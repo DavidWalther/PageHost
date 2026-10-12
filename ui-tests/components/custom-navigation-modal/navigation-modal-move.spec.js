@@ -180,3 +180,41 @@ test.describe('Navigation modal: paste tile', () => {
     expect(sent[0].payload.parent_node_id).toBeNull();
   });
 });
+
+/**
+ * A leaf becomes a new parent through its own level, which only the modified
+ * click opens (Ctrl/Cmd + click, holding). With a mark and the edit scope,
+ * that is reason enough to open it.
+ */
+test.describe('Navigation modal: a leaf as the new parent', () => {
+  test.use({ actionTimeout: 5000 });
+
+  test('Ctrl/Cmd + click opens a leaf to paste into it', async ({ page }) => {
+    await open(page);
+    await tile(page, STORY_2.name).click();
+    const leaf = STORY_2.childnodes[0];
+
+    await tile(page, leaf.name).click({ modifiers: ['ControlOrMeta'] });
+
+    await expect(tiles(page)).toHaveCount(1);
+    await expect(pasteTile(page)).toBeVisible();
+    await pasteTile(page).click();
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0].payload.parent_node_id).toBe(leaf.id);
+  });
+
+  test('without a mark the edit scope alone does not open a leaf', async ({
+    page,
+  }) => {
+    await open(page, { marked: null });
+    await tile(page, STORY_2.name).click();
+    const leaf = STORY_2.childnodes[0];
+
+    await tile(page, leaf.name).click({ modifiers: ['ControlOrMeta'] });
+
+    // A plain selection: the host closes the modal.
+    await expect(
+      page.locator('custom-navigation-modal slds-modal[heading="Navigation"]')
+    ).not.toHaveAttribute('open');
+  });
+});

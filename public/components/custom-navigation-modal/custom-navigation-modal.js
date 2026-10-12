@@ -608,11 +608,14 @@ class NavigationModal extends LitElement {
 
   /**
    * A leaf is opened as a level for what its level offers: "+" creates its
-   * first child, the delete tile deletes it. Without either scope there is
-   * nothing to do there, and the gesture stays a plain click.
+   * first child, the delete tile deletes it, the paste tile moves the marked
+   * node below it. Without any of these there is nothing to do there, and the
+   * gesture stays a plain click.
    */
   _canOpenAnyLevel() {
-    return this._canCreate() || this._canDelete();
+    const canPaste =
+      !!this.marked?.id && (this._moveAction?.canMove() ?? false);
+    return this._canCreate() || this._canDelete() || canPaste;
   }
 
   /**
