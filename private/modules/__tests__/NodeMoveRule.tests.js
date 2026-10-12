@@ -45,7 +45,7 @@ describe('NodeMoveRule', () => {
 
     it('allows any move when no feed root is configured', () => {
       expect(() => check('f1', 'a', null)).not.toThrow();
-      expect(() => check('a1', 'f1', undefined)).not.toThrow();
+      expect(() => check('a1', 'f1', null)).not.toThrow();
     });
   });
 
