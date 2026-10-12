@@ -26,7 +26,7 @@ function readLowerNode(page) {
     return {
       id: node.getAttribute('id'),
       canMove: node.hasAttribute('can-move'),
-      marked: node.marked,
+      marked: action?.marked ?? null,
       buttonIcon:
         action?.shadowRoot?.querySelector('#button-move')?.icon ?? null,
     };

@@ -134,7 +134,7 @@ const ONLY_VISIBLE = [
     scopes: ['edit'],
     expected: {
       navigation: ['node-edit', 'button-share'],
-      content: ['node-edit', 'button-share'],
+      content: ['node-edit', 'button-share', 'node-move'],
     },
   },
   {
@@ -146,6 +146,7 @@ const ONLY_VISIBLE = [
         'node-edit',
         'button-share',
         'button-create-content',
+        'node-move',
         'node-delete',
       ],
     },
