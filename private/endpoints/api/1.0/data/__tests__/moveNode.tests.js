@@ -53,8 +53,11 @@ let executed;
 /** Keys removed from the cache, by `del` and `delMany`. */
 let clearedKeys;
 
+// No id finds nothing: a root has no parent, and many nodes no legacy id.
 const findNode = (id) =>
-  nodes.find((node) => node.id === id || node.legacy_id === id);
+  id
+    ? nodes.find((node) => node.id === id || node.legacy_id === id)
+    : undefined;
 
 /** Answers a statement from the in-memory table. */
 function answer(sql, parameters) {
@@ -172,24 +175,21 @@ describe('Moving a node', () => {
   // Most nodes inherit their visibility. As a root a node has nothing to
   // inherit from, so without a row of its own it would vanish from the app,
   // together with everything below it. Creating a root adds the same row.
-  it.failing(
-    'moves a node to the top level and includes it in the app',
-    async () => {
-      const { status } = await update({
-        id: 'child-a1',
-        parent_node_id: null,
-        sortnumber: null,
-      });
+  it('moves a node to the top level and includes it in the app', async () => {
+    const { status } = await update({
+      id: 'child-a1',
+      parent_node_id: null,
+      sortnumber: null,
+    });
 
-      expect(status).toBe(200);
-      expect(findNode('child-a1').parent_node_id).toBeNull();
-      const includes = executed.filter((entry) =>
-        entry.sql.includes('INSERT INTO app_node')
-      );
-      expect(includes).toHaveLength(1);
-      expect(includes[0].parameters).toEqual(['child-a1', APPLICATION_KEY]);
-    }
-  );
+    expect(status).toBe(200);
+    expect(findNode('child-a1').parent_node_id).toBeNull();
+    const includes = executed.filter((entry) =>
+      entry.sql.includes('INSERT INTO app_node')
+    );
+    expect(includes).toHaveLength(1);
+    expect(includes[0].parameters).toEqual(['child-a1', APPLICATION_KEY]);
+  });
 
   // A node below one of its own descendants hangs off no root any more: the
   // tree is built from the roots down and never reaches it, so the whole
