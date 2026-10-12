@@ -190,7 +190,7 @@ class DataFacadeSync {
       // the id vanishes on saving to postgres, so we need to save it again
       let copyOfPayload = JSON.parse(JSON.stringify(payload));
       let updatedData = ContentRepository.owns(object)
-        ? await this.createContentRepository().updateRecord(object, payload)
+        ? await this.updateContentRecord(object, payload)
         : await this.createDirectStorage().updateData(object, payload);
 
       if (!this.getSkipCache()) {
@@ -218,6 +218,65 @@ class DataFacadeSync {
         error,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Updates a node or a content through the repository.
+   *
+   * An update that sends `parent_node_id` may move the node. The repository
+   * checks a move against the feed root, which only the configuration knows
+   * (`feedRootNodeId`) — read only then, so a plain rename costs nothing.
+   */
+  async updateContentRecord(object, payload) {
+    const repository = this.createContentRepository();
+    const sendsParent = Object.keys(payload).some(
+      (field) => field.toLowerCase() === 'parent_node_id'
+    );
+    if (NodeWriteMapping.isNodeObject(object) && sendsParent) {
+      const configuration = await this.getConfigurations();
+      repository.setFeedRootId(configuration?.feedRootNodeId ?? null);
+    }
+    const record = await repository.updateRecord(object, payload);
+    await this.clearNodeEntries(repository.getTouchedNodes());
+    return record;
+  }
+
+  /**
+   * Drops the cache entries of nodes a write changed beyond its own record —
+   * after a move the node and both parents, whose cached entries carry the
+   * old children. Each under both ids, like `clearCacheFor`.
+   *
+   * **Regardless of `skipCache`**, and an unreachable cache does not fail the
+   * write: the row is saved, a stale entry is no reason to drop the answer.
+   */
+  async clearNodeEntries(nodes) {
+    const LOCATION = 'DataFacadeSync.clearNodeEntries';
+    const keys = new Set();
+    nodes.forEach((node) => {
+      [node.id, node.legacy_id].forEach((value) => {
+        if (value) {
+          keys.add(this.cacheKeyFor('node', value));
+        }
+      });
+    });
+    if (keys.size === 0) {
+      return;
+    }
+    try {
+      await this.createCache().delMany([...keys]);
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Cleared ${keys.size} node cache keys after a move`,
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear node cache keys after a move',
+        error,
+      });
     }
   }
 
