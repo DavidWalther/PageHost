@@ -290,4 +290,26 @@ describe('Moving a node', () => {
       expect(findNode('feed-1').name).toBe('Neuigkeiten');
     });
   });
+
+  // A cached node carries its children. After a move both parents list the
+  // wrong children, and the node names the wrong parent — each under both ids,
+  // since an old deep link may have put the entry there.
+  it.failing('clears the node and both parents from the cache', async () => {
+    await update({
+      id: 'child-a1',
+      parent_node_id: 'root-b',
+      sortnumber: null,
+    });
+
+    expect(clearedKeys).toEqual(
+      expect.arrayContaining([
+        'node:child-a1',
+        'node:L-a1',
+        'node:root-a',
+        'node:L-a',
+        'node:root-b',
+        'contentsTree',
+      ])
+    );
+  });
 });
