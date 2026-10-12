@@ -38,6 +38,7 @@ const ACTION_IDS = [
   'node-edit',
   'button-share',
   'button-create-content',
+  'node-move',
   'node-delete',
 ];
 
