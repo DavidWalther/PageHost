@@ -168,4 +168,26 @@ describe('Moving a node', () => {
     expect(findNode('child-a1').sortnumber).toBeNull();
     expect(nodeUpdates()).toHaveLength(1);
   });
+
+  // Most nodes inherit their visibility. As a root a node has nothing to
+  // inherit from, so without a row of its own it would vanish from the app,
+  // together with everything below it. Creating a root adds the same row.
+  it.failing(
+    'moves a node to the top level and includes it in the app',
+    async () => {
+      const { status } = await update({
+        id: 'child-a1',
+        parent_node_id: null,
+        sortnumber: null,
+      });
+
+      expect(status).toBe(200);
+      expect(findNode('child-a1').parent_node_id).toBeNull();
+      const includes = executed.filter((entry) =>
+        entry.sql.includes('INSERT INTO app_node')
+      );
+      expect(includes).toHaveLength(1);
+      expect(includes[0].parameters).toEqual(['child-a1', APPLICATION_KEY]);
+    }
+  );
 });
