@@ -190,4 +190,43 @@ describe('Moving a node', () => {
       expect(includes[0].parameters).toEqual(['child-a1', APPLICATION_KEY]);
     }
   );
+
+  // A node below one of its own descendants hangs off no root any more: the
+  // tree is built from the roots down and never reaches it, so the whole
+  // subtree would silently drop out.
+  describe('below itself', () => {
+    it.failing('rejects the node itself as the new parent', async () => {
+      const { status, body } = await update({
+        id: 'child-a1',
+        parent_node_id: 'child-a1',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(body.success).toBe(false);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+
+    it.failing('rejects a descendant as the new parent', async () => {
+      const { status } = await update({
+        id: 'child-a1',
+        parent_node_id: 'grandchild-a11',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+
+    it.failing('rejects a descendant named by its legacy id', async () => {
+      const { status } = await update({
+        id: 'L-a',
+        parent_node_id: 'L-a1',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+  });
 });
