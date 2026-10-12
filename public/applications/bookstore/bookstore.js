@@ -179,6 +179,8 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
+        .marked="${this._marked}"
+        .hiddenIds="${this._marked ? [this._marked.id] : []}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
@@ -371,10 +373,13 @@ class Bookstore extends LitElement {
       ['chapter-updated', (event) => this._handleChildUpdated(event)],
       ['node-deleted', (event) => this._handleNodeDeleted(event)],
       ['node-mark-change', (event) => this._handleMarkChange(event)],
+      ['node-mark-clear', () => (this._marked = null)],
+      ['node-moved', (event) => this._handleNodeMoved(event)],
       ...[
         'chapter-created',
         'chapter-updated',
         'node-deleted',
+        'node-moved',
         'published',
         'unpublished',
       ].map((name) => [name, reloadTree]),
@@ -406,6 +411,45 @@ class Bookstore extends LitElement {
     } else if (this._marked?.id === node.id) {
       this._marked = null;
     }
+  }
+
+  /**
+   * After a move the page shows the moved node as if it had been chosen in
+   * the navigation modal: below the node itself, above its new parent with
+   * the node selected. Both are fetched again — the node names its old parent
+   * otherwise, which its edit dialog would write back. A node moved to the
+   * top level has no parent to show; the old one above lets go of it. The
+   * mark is used up, the modal closes; the tree reloads with the other
+   * changes to a node.
+   */
+  _handleNodeMoved(event) {
+    const { nodeId, toParentId } = event.detail ?? {};
+    if (!nodeId) return;
+    this._marked = null;
+    this.hideFeed();
+
+    if (toParentId) {
+      if (this.navigationNode.getAttribute('id') === toParentId) {
+        this.navigationNode.reload();
+      } else {
+        // Keep the moved node selected when the new parent arrives, instead
+        // of its cover node (see handleNavigationNodeLoaded).
+        this._pendingChildSelection = nodeId;
+        this.navigationNode.setAttribute('id', toParentId);
+      }
+      this.navigationNode.setAttribute('selected-child', nodeId);
+    } else {
+      this.navigationNode.removeChildNode(nodeId);
+      this.navigationNode.removeAttribute('selected-child');
+    }
+
+    if (this.contentNode.getAttribute('id') === nodeId) {
+      this.contentNode.reload();
+    } else {
+      this.contentNode.setAttribute('id', nodeId);
+    }
+    this._setCurrentLocation(nodeId);
+    this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
 
   _handleNodeDeleted(event) {

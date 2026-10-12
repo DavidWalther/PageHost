@@ -147,14 +147,16 @@ const tile = (page, text) =>
   });
 const pasteTile = (page) =>
   page.locator('custom-navigation-modal button.tile_paste');
-const back = (page) => page.locator('custom-navigation-modal .back-button');
 
-/** Marks the lower node and opens the modal, which opens next to it. */
+/**
+ * Marks the lower node and opens the modal. The page entered at the root, so
+ * the modal opens on the top level.
+ */
 async function markAndOpenModal(page) {
   await moveButton(page).click();
   await expect.poll(async () => (await readPage(page)).lowerMarked).toBe(true);
   await page.locator('#button-navigation_open').click();
-  await expect(back(page)).toBeVisible();
+  await expect(tile(page, STORY_2.name)).toBeVisible();
 }
 
 test.describe('Page: moving a node', () => {
@@ -193,7 +195,6 @@ test.describe('Page: moving a node', () => {
   }) => {
     await open(page);
     await markAndOpenModal(page);
-    await back(page).click();
     await tile(page, STORY_2.name).click();
 
     await pasteTile(page).click();
@@ -220,7 +221,6 @@ test.describe('Page: moving a node', () => {
   }) => {
     await open(page);
     await markAndOpenModal(page);
-    await back(page).click();
 
     await pasteTile(page).click();
 
