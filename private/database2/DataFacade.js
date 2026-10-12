@@ -237,7 +237,47 @@ class DataFacadeSync {
       const configuration = await this.getConfigurations();
       repository.setFeedRootId(configuration?.feedRootNodeId ?? null);
     }
-    return repository.updateRecord(object, payload);
+    const record = await repository.updateRecord(object, payload);
+    await this.clearNodeEntries(repository.getTouchedNodes());
+    return record;
+  }
+
+  /**
+   * Drops the cache entries of nodes a write changed beyond its own record —
+   * after a move the node and both parents, whose cached entries carry the
+   * old children. Each under both ids, like `clearCacheFor`.
+   *
+   * **Regardless of `skipCache`**, and an unreachable cache does not fail the
+   * write: the row is saved, a stale entry is no reason to drop the answer.
+   */
+  async clearNodeEntries(nodes) {
+    const LOCATION = 'DataFacadeSync.clearNodeEntries';
+    const keys = new Set();
+    nodes.forEach((node) => {
+      [node.id, node.legacy_id].forEach((value) => {
+        if (value) {
+          keys.add(this.cacheKeyFor('node', value));
+        }
+      });
+    });
+    if (keys.size === 0) {
+      return;
+    }
+    try {
+      await this.createCache().delMany([...keys]);
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Cleared ${keys.size} node cache keys after a move`,
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear node cache keys after a move',
+        error,
+      });
+    }
   }
 
   async createData(data) {

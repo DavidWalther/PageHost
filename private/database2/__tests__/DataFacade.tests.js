@@ -590,6 +590,7 @@ describe('clearing the cached contents tree after a write', () => {
     });
     jest.spyOn(facade, 'createContentRepository').mockReturnValue({
       updateRecord: jest.fn().mockResolvedValue({ id: 'n-1' }),
+      getTouchedNodes: jest.fn().mockReturnValue([]),
       createRecord: jest.fn().mockResolvedValue({ id: 'n-2' }),
     });
   });
