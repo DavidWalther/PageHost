@@ -124,6 +124,13 @@ ein gesetztes `contentnumber` ausgewertet. **Ein Listener auf `loaded` muss
 vorher hängen** — das Ereignis kommt sofort, nicht erst nach einer Antwort aus
 dem Netz. Ebenso muss `contentnumber` vor dem Aufruf gesetzt sein.
 
+## Einen Knoten neu laden
+
+`reload()` holt den Knoten unter **derselben** Id noch einmal. Die Id erneut zu
+setzen bewirkt nichts — der Knoten hat den Datensatz ja schon. Nach einem
+Verschieben ist er aber veraltet: anderer Elternknoten, andere Kinder; der
+Bearbeiten-Dialog schriebe den alten Elternknoten zurück. Ohne Id passiert nichts.
+
 ## Bekannte Altlasten
 
 - Zum Bearbeiten wird weiterhin `custom-chapter-edit` eingebunden, samt seiner

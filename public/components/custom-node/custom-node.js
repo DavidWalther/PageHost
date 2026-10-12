@@ -757,6 +757,22 @@ class CustomNode extends LitElement {
   }
 
   /**
+   * Fetches the node again under the same id. Setting the id again does
+   * nothing — the node holds that record already. After a move the record is
+   * stale (another parent, other children), and the edit dialog would write
+   * the old parent back.
+   */
+  reload() {
+    if (!this.id || this.id === 'null') {
+      return;
+    }
+    this._loading = true;
+    this._nodeData = null;
+    this._resetJumpState();
+    this.fetchNode(this.id);
+  }
+
+  /**
    * Der Zaehlstand des Sprungs gehoert zum **aktuellen** Knoten.
    *
    * Bleibt ein Rest darin stehen — etwa weil ein Inhalt vor dem Sprungziel nie
