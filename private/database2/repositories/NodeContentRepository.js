@@ -344,6 +344,8 @@ class NodeContentRepository extends ContentRepository {
       await this.addAppInclude(run, node.id);
     }
 
+    // The parent's cached entry lists its children.
+    await this.touch(run, [withDefaults.parent_node_id]);
     return this.outwardRecord(object, node);
   }
 
@@ -364,6 +366,8 @@ class NodeContentRepository extends ContentRepository {
     );
 
     await this.writeContentItems(run, contentNode.id, payload);
+    // The node's cached entry lists its contents.
+    await this.touch(run, [columns.node_id]);
     return this.outwardRecord(object, contentNode);
   }
 
@@ -476,23 +480,35 @@ class NodeContentRepository extends ContentRepository {
       // A move changes the cached node and the children of both parents;
       // the facade clears their entries. Read here, inside the transaction,
       // so both ids are known.
-      this.touchedNodes = move
-        ? await run(`SELECT id, legacy_id FROM node WHERE id = ANY(\$1)`, [
-            [recordId, move.fromParentId, move.toParentId].filter(Boolean),
-          ])
-        : [];
+      await this.touch(
+        run,
+        move ? [recordId, move.fromParentId, move.toParentId] : []
+      );
 
       return this.outwardRecord(object, record);
     });
   }
 
   /**
-   * The nodes whose cache entries the last update changed: after a move the
-   * node and its old and new parent, each as `{ id, legacy_id }`; empty
-   * otherwise.
+   * The nodes whose cache entries the last write changed beyond its own
+   * record, each as `{ id, legacy_id }`. A cached node carries its children
+   * and contents, so: after a move the node and its old and new parent;
+   * after creating or deleting a child its parent; after creating or deleting
+   * a content its node. Empty otherwise.
    */
   getTouchedNodes() {
     return this.touchedNodes ?? [];
+  }
+
+  /** Notes the nodes with these ids (empty ones skipped) as touched. */
+  async touch(run, ids) {
+    const nodeIds = ids.filter(Boolean);
+    this.touchedNodes =
+      nodeIds.length > 0
+        ? await run(`SELECT id, legacy_id FROM node WHERE id = ANY($1)`, [
+            nodeIds,
+          ])
+        : [];
   }
 
   /**
@@ -581,12 +597,21 @@ class NodeContentRepository extends ContentRepository {
 
       if (!NodeWriteMapping.isNodeObject(object)) {
         const [content] = await run(
-          `SELECT id, legacy_id FROM content_node WHERE id = $1`,
+          `SELECT id, legacy_id, node_id FROM content_node WHERE id = $1`,
           [recordId]
         );
         await this.deleteContentNodes(run, [recordId]);
+        // The node's cached entry lists its contents.
+        await this.touch(run, [content?.node_id]);
         return { nodes: [], contents: content ? [content] : [] };
       }
+
+      // The parent's cached entry lists its children; read it while the row
+      // is still there.
+      const [stored] = await run(
+        `SELECT parent_node_id FROM node WHERE id = $1`,
+        [recordId]
+      );
 
       // Teilbaum, tiefste Ebene zuerst — Kinder vor Eltern.
       const subtree = await run(
@@ -622,6 +647,7 @@ class NodeContentRepository extends ContentRepository {
       for (const nodeId of nodeIds) {
         await run(`DELETE FROM node WHERE id = $1`, [nodeId]);
       }
+      await this.touch(run, [stored?.parent_node_id]);
 
       return { nodes: subtree, contents: contentNodes };
     });
