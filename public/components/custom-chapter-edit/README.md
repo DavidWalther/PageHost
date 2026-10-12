@@ -100,6 +100,11 @@ Two tabs, but only in edit mode:
 The footer carries "Abbrechen" and the confirm button; the confirm button only
 appears on the edit tab, since the publish toggle acts on its own.
 
+**Saving never touches the publication.** The payload carries name, sort number
+and the switch — no `published_date`: the form has no field for it, and the
+publish toggle writes through its own endpoint. The form once sent its empty
+value along and withdrew a published node on every save.
+
 ## Validation
 
 Checked before anything is dispatched, as a toast:

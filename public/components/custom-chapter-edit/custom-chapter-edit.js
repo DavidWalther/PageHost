@@ -431,14 +431,6 @@ class CustomChapterEdit extends LitElement {
     };
   }
 
-  _handlePublishDateChange(event) {
-    const input = event.detail;
-    this.chapterData = {
-      ...this.chapterData,
-      publishDate: input.value || null,
-    };
-  }
-
   /**
    * `slds-toggle` reports `toggle` and carries the state in the detail — its
    * host element has no `checked` property to read. The binding used to listen
@@ -501,17 +493,20 @@ class CustomChapterEdit extends LitElement {
   /**
    * Die zu setzenden Spalten eines Knotens.
    *
-   * Die Namen sind die des Datenmodells (`sortnumber`, `published_date`) —
-   * frueher standen hier `sortNumber`/`publishDate`, die die Datenschicht
-   * uebersetzen musste. Uebrig bleibt eine Uebersetzung: die Formularfelder
-   * heissen intern weiter wie bisher.
+   * Die Namen sind die des Datenmodells (`sortnumber`) — frueher standen hier
+   * `sortNumber`/`publishDate`, die die Datenschicht uebersetzen musste.
+   * Uebrig bleibt eine Uebersetzung: die Formularfelder heissen intern weiter
+   * wie bisher.
+   *
+   * **No `published_date`.** The form has no field for it; publishing is the
+   * publish tab's, through its own endpoint. Sending the form's empty value
+   * withdrew a published node on every save.
    */
   _nodeColumns() {
     return {
       name: this.chapterData.name,
       sortnumber: this.chapterData.sortNumber,
       reversed: this.chapterData.reversed || false,
-      published_date: this.chapterData.publishDate || null,
     };
   }
 

@@ -447,3 +447,36 @@ test.describe('custom-chapter-edit: opened from outside', () => {
     ).not.toHaveAttribute('open');
   });
 });
+
+/**
+ * Saving the edit dialog must not touch the publication. Publishing has its
+ * own tab and endpoint; the edit form only carries what it shows.
+ */
+test.describe('custom-chapter-edit: saving keeps the publication', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('a published node stays published when renamed', async ({ page }) => {
+    const editor = await mount(page);
+    await page.evaluate(async () => {
+      const el = document.querySelector('custom-chapter-edit');
+      el.setAttribute('publish-date', '2026-01-01T00:00:00.000Z');
+      await el.updateComplete;
+    });
+    await captureWrites(page);
+    await openThroughTrigger(page);
+
+    await editor.locator('#input-text').fill('Chapter two');
+    await editor.locator('#input-text').blur();
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    // Either the date as it was, or no date at all — never `null`, which
+    // withdraws the node.
+    const { payload } = await written(page);
+    expect(payload.published_date).not.toBeNull();
+    if ('published_date' in payload) {
+      expect(payload.published_date).toBe('2026-01-01T00:00:00.000Z');
+    }
+  });
+});
