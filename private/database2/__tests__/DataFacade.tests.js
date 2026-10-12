@@ -628,3 +628,104 @@ describe('clearing the cached contents tree after a write', () => {
     ).resolves.toEqual({ id: 'n-1' });
   });
 });
+
+describe('moving a node', () => {
+  let facade;
+  let cacheDelMany;
+  let repository;
+
+  beforeEach(() => {
+    cacheDelMany = jest.fn();
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'createCache').mockReturnValue({
+      del: jest.fn(),
+      delMany: cacheDelMany,
+      set: jest.fn(),
+    });
+    jest
+      .spyOn(facade, 'getConfigurations')
+      .mockResolvedValue({ feedRootNodeId: 'n-feed' });
+    repository = {
+      setFeedRootId: jest.fn(() => repository),
+      updateRecord: jest.fn().mockResolvedValue({ id: 'n-1' }),
+      getTouchedNodes: jest.fn().mockReturnValue([
+        { id: 'n-1', legacy_id: '000c1' },
+        { id: 'n-old', legacy_id: null },
+        { id: 'n-new', legacy_id: '000s2' },
+      ]),
+    };
+    jest.spyOn(facade, 'createContentRepository').mockReturnValue(repository);
+  });
+
+  const move = () =>
+    facade.updateData({
+      object: 'node',
+      payload: { id: 'n-1', parent_node_id: 'n-new', sortnumber: null },
+    });
+
+  it('names the configured feed root to the repository', async () => {
+    await move();
+
+    expect(repository.setFeedRootId).toHaveBeenCalledWith('n-feed');
+    expect(repository.setFeedRootId.mock.invocationCallOrder[0]).toBeLessThan(
+      repository.updateRecord.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('reads no configuration when the update sends no parent', async () => {
+    repository.getTouchedNodes.mockReturnValue([]);
+
+    await facade.updateData({
+      object: 'node',
+      payload: { id: 'n-1', name: 'Neu' },
+    });
+
+    expect(facade.getConfigurations).not.toHaveBeenCalled();
+    expect(repository.setFeedRootId).not.toHaveBeenCalled();
+  });
+
+  it('clears the touched nodes from the cache, by both ids', async () => {
+    await move();
+
+    expect(cacheDelMany).toHaveBeenCalledTimes(1);
+    expect(cacheDelMany.mock.calls[0][0].sort()).toEqual(
+      [
+        'node:000c1',
+        'node:000s2',
+        'node:n-1',
+        'node:n-new',
+        'node:n-old',
+      ].sort()
+    );
+  });
+
+  it('clears them even when the write skips the cache', async () => {
+    facade.setSkipCache(true);
+
+    await move();
+
+    expect(cacheDelMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears no node entries when nothing moved', async () => {
+    repository.getTouchedNodes.mockReturnValue([]);
+
+    await move();
+
+    expect(cacheDelMany).not.toHaveBeenCalled();
+  });
+
+  it('still answers the move when the cache cannot be reached', async () => {
+    cacheDelMany.mockRejectedValue(new Error('redis down'));
+
+    await expect(move()).resolves.toEqual({ id: 'n-1' });
+  });
+
+  it('lets a rejected move through to the caller', async () => {
+    const rejection = new Error('A node cannot be moved below itself');
+    repository.updateRecord.mockRejectedValue(rejection);
+
+    await expect(move()).rejects.toBe(rejection);
+    expect(cacheDelMany).not.toHaveBeenCalled();
+  });
+});
