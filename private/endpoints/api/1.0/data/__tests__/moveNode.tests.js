@@ -195,7 +195,7 @@ describe('Moving a node', () => {
   // tree is built from the roots down and never reaches it, so the whole
   // subtree would silently drop out.
   describe('below itself', () => {
-    it.failing('rejects the node itself as the new parent', async () => {
+    it('rejects the node itself as the new parent', async () => {
       const { status, body } = await update({
         id: 'child-a1',
         parent_node_id: 'child-a1',
@@ -207,7 +207,7 @@ describe('Moving a node', () => {
       expect(nodeUpdates()).toHaveLength(0);
     });
 
-    it.failing('rejects a descendant as the new parent', async () => {
+    it('rejects a descendant as the new parent', async () => {
       const { status } = await update({
         id: 'child-a1',
         parent_node_id: 'grandchild-a11',
@@ -218,7 +218,7 @@ describe('Moving a node', () => {
       expect(nodeUpdates()).toHaveLength(0);
     });
 
-    it.failing('rejects a descendant named by its legacy id', async () => {
+    it('rejects a descendant named by its legacy id', async () => {
       const { status } = await update({
         id: 'L-a',
         parent_node_id: 'L-a1',
@@ -233,7 +233,7 @@ describe('Moving a node', () => {
   // The feeds are the start page, read as the children of the feed root
   // (`feedRootNodeId`). Nothing moves out of them or into them.
   describe('feeds', () => {
-    it.failing('rejects moving the feed root', async () => {
+    it('rejects moving the feed root', async () => {
       const { status } = await update({
         id: 'feed-root',
         parent_node_id: 'root-a',
@@ -244,7 +244,7 @@ describe('Moving a node', () => {
       expect(nodeUpdates()).toHaveLength(0);
     });
 
-    it.failing('rejects moving a node below the feed root', async () => {
+    it('rejects moving a node below the feed root', async () => {
       const { status } = await update({
         id: 'feed-1-x',
         parent_node_id: 'root-a',
@@ -255,7 +255,7 @@ describe('Moving a node', () => {
       expect(nodeUpdates()).toHaveLength(0);
     });
 
-    it.failing('rejects the feed root as the new parent', async () => {
+    it('rejects the feed root as the new parent', async () => {
       const { status } = await update({
         id: 'child-a1',
         parent_node_id: 'feed-root',
@@ -266,7 +266,7 @@ describe('Moving a node', () => {
       expect(nodeUpdates()).toHaveLength(0);
     });
 
-    it.failing('rejects a feed as the new parent', async () => {
+    it('rejects a feed as the new parent', async () => {
       const { status } = await update({
         id: 'child-a1',
         parent_node_id: 'feed-1',
@@ -294,7 +294,7 @@ describe('Moving a node', () => {
   // A cached node carries its children. After a move both parents list the
   // wrong children, and the node names the wrong parent — each under both ids,
   // since an old deep link may have put the entry there.
-  it.failing('clears the node and both parents from the cache', async () => {
+  it('clears the node and both parents from the cache', async () => {
     await update({
       id: 'child-a1',
       parent_node_id: 'root-b',
