@@ -56,7 +56,7 @@ the next sort number can be proposed:
 | `chapter-id`   | `chapterId`   | String  | Id of the node to edit. **Absent means create.**                              |
 | `story-id`     | `storyId`     | String  | Id of the parent node, written as `parent_node_id`.                           |
 | `name`         | `name`        | String  | Name to start the form with.                                                  |
-| `sort-number`  | `sortNumber`  | Number  | Sort number to start with.                                                    |
+| `sort-number`  | `sortNumber`  | Number  | Sort number to start with; `null` (property) for a node without one.          |
 | `reversed`     | `reversed`    | Boolean | Whether the node's contents are shown against `sortnumber`.                   |
 | `publish-date` | `publishDate` | String  | Current publication date, handed to the publish tab. Empty means unpublished. |
 | `mode`         | `mode`        | String  | Legacy; `chapter-id` decides (see above).                                     |
@@ -117,6 +117,12 @@ emptied name field is refused out loud.
 is `1` deserves an answer rather than a complaint. Its rule in `_validate`
 therefore never fires from this form and stays as a net for a consumer that sets
 `chapterData` directly. Both behaviours are pinned in `chapter-edit.spec.js`.
+
+**A node without a sort number keeps none.** A moved node has no `sortnumber`
+and stands at the end of its siblings. Handed `null` as `sortNumber`, the
+dialog shows an empty field and saves `null` as long as the field is not
+touched — renaming does not move the node to the front. Typing a number saves
+it; emptying the field again falls back to `1` as above.
 
 ## Events
 

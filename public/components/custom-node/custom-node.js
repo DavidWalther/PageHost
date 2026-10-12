@@ -232,7 +232,7 @@ class CustomNode extends LitElement {
                       chapter-id="${this.id}"
                       story-id="${this._nodeData.parent_node_id || ''}"
                       name="${this._nodeData.name || ''}"
-                      sort-number="${this._nodeData.sortnumber || 1}"
+                      .sortNumber="${this._nodeData.sortnumber ?? null}"
                       ?reversed="${this._nodeData.reversed || false}"
                       publish-date="${this._nodeData.published_date || ''}"
                       @chapter-updated=${this._handleNodeUpdated}

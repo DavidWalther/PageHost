@@ -49,7 +49,6 @@ test.describe('Node: sort number for the edit dialog', () => {
   test.use({ actionTimeout: 5000 });
 
   test('a node without a sortnumber hands over none', async ({ page }) => {
-    test.fail(); // custom-node fills in 1
     await openLowerNode(page, null);
 
     expect(await dialogSortNumber(page)).toBeNull();

@@ -271,7 +271,6 @@ test.describe('custom-chapter-edit: a node without a sort number', () => {
   });
 
   test('the field starts empty', async ({ page }) => {
-    test.fail(); // the field shows the default 1
     const editor = await mount(page, { sortNumber: null });
     await openThroughTrigger(page);
 
@@ -279,7 +278,6 @@ test.describe('custom-chapter-edit: a node without a sort number', () => {
   });
 
   test('renaming keeps the sort number empty', async ({ page }) => {
-    test.fail(); // the default 1 is saved
     const editor = await mount(page, { sortNumber: null });
     await captureWrites(page);
     await captureToasts(page);

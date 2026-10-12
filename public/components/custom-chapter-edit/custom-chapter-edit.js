@@ -263,7 +263,7 @@ class CustomChapterEdit extends LitElement {
             type="number"
             label="${this.labels.sortNumber}"
             placeholder="${this.labels.sortNumberPlaceholder}"
-            value="${this.chapterData?.sortNumber || 1}"
+            value="${this.chapterData?.sortNumber ?? ''}"
             @change="${this._handleSortNumberChange}"
             min="1"
             required
@@ -419,6 +419,9 @@ class CustomChapterEdit extends LitElement {
    *
    * The check in `_validate` therefore never fires from this form. It stays as a
    * net for a consumer that sets `chapterData` directly.
+   *
+   * A node **without** a sort number (`null`, a moved node) shows an empty
+   * field and keeps `null` as long as the field is not touched.
    */
   _handleSortNumberChange(event) {
     const input = event.detail;
@@ -518,8 +521,10 @@ class CustomChapterEdit extends LitElement {
       return { valid: false, message: this.labels.nameRequired };
     }
 
-    const sortNumber = this.chapterData?.sortNumber;
-    if (!sortNumber || sortNumber < 1) {
+    // No sort number at all is allowed: a moved node has none and stands at
+    // the end of its siblings. Saving it untouched keeps it there.
+    const sortNumber = this.chapterData?.sortNumber ?? null;
+    if (sortNumber !== null && !(sortNumber >= 1)) {
       return { valid: false, message: this.labels.sortNumberRequired };
     }
 
