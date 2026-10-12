@@ -100,3 +100,83 @@ test.describe('Navigation modal: what is marked', () => {
     ]);
   });
 });
+
+test.describe('Navigation modal: paste tile', () => {
+  test.use({ actionTimeout: 5000 });
+
+  test('ends the top level in a paste tile', async ({ page }) => {
+    await open(page);
+
+    await expect(pasteTile(page)).toBeVisible();
+    await expect(tiles(page).last()).toHaveClass(/tile_paste/);
+  });
+
+  test('ends an opened level in a paste tile', async ({ page }) => {
+    await open(page);
+
+    await tile(page, STORY_2.name).click();
+
+    await expect(pasteTile(page)).toBeVisible();
+  });
+
+  test('offers none on the level the node already hangs on', async ({
+    page,
+  }) => {
+    await open(page);
+
+    await tile(page, STORY_1.name).click();
+
+    await expect(tile(page, CHAPTER_2.name)).toBeVisible();
+    await expect(pasteTile(page)).toHaveCount(0);
+  });
+
+  test('offers none on the top level for a root', async ({ page }) => {
+    await open(page, {
+      marked: { id: STORY_2.id, name: STORY_2.name, parentId: null },
+    });
+
+    await expect(tile(page, STORY_1.name)).toBeVisible();
+    await expect(pasteTile(page)).toHaveCount(0);
+  });
+
+  test('offers none without a mark', async ({ page }) => {
+    await open(page, { marked: null });
+
+    await expect(pasteTile(page)).toHaveCount(0);
+  });
+
+  test('offers none without the edit scope', async ({ page }) => {
+    await open(page, { scopes: ['create'] });
+
+    await expect(pasteTile(page)).toHaveCount(0);
+  });
+
+  test('moves the marked node below the current element', async ({ page }) => {
+    await open(page);
+    await tile(page, STORY_2.name).click();
+
+    await pasteTile(page).click();
+
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0]).toEqual({
+      object: 'node',
+      payload: { id: MARK.id, parent_node_id: STORY_2.id, sortnumber: null },
+    });
+    await expect
+      .poll(() => page.evaluate(() => window.__moved))
+      .toEqual([
+        { nodeId: MARK.id, fromParentId: STORY_1.id, toParentId: STORY_2.id },
+      ]);
+  });
+
+  test('moves the marked node to the top level from there', async ({
+    page,
+  }) => {
+    await open(page);
+
+    await pasteTile(page).click();
+
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0].payload.parent_node_id).toBeNull();
+  });
+});
