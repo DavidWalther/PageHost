@@ -8,8 +8,9 @@ const { MOCK_NODES } = require('../../support/mock-callouts');
  *
  * Like every writing action it is granted by the consumer (`can-move`) and
  * needs the scope (`edit`) as well. The node hands the action what the mark
- * carries — its id, name and parent — and passes `marked` through, which the
- * consumer sets on the node.
+ * carries — its id, name and parent. The consumer owns the mark and hands
+ * every node the id of the marked one (`markedId`); the node tells its action
+ * whether that is itself.
  */
 
 const NODE = MOCK_NODES.kind1;
@@ -85,16 +86,34 @@ test.describe('Node: the mark-to-move button', () => {
     });
   });
 
-  test('passes marked through to the action', async ({ page }) => {
+  /** Hands the node a marked id and reads what its action makes of it. */
+  async function actionMarkedFor(node, markedId) {
+    await node.evaluate(async (el, id) => {
+      el.markedId = id;
+      await el.updateComplete;
+    }, markedId);
+    return node.locator('#node-move').evaluate((el) => el.marked);
+  }
+
+  test('tells the action it is marked when the mark is this node', async ({
+    page,
+  }) => {
     const node = await mount(page);
 
-    await node.evaluate(async (el) => {
-      el.marked = true;
-      await el.updateComplete;
-    });
+    expect(await actionMarkedFor(node, NODE.id)).toBe(true);
+  });
 
-    expect(await node.locator('#node-move').evaluate((el) => el.marked)).toBe(
-      true
-    );
+  test('tells the action it is not marked when another node is', async ({
+    page,
+  }) => {
+    const node = await mount(page);
+
+    expect(await actionMarkedFor(node, 'n-other')).toBe(false);
+  });
+
+  test('tells the action it is not marked without a mark', async ({ page }) => {
+    const node = await mount(page);
+
+    expect(await actionMarkedFor(node, null)).toBe(false);
   });
 });

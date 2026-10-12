@@ -69,9 +69,10 @@ seine Aktion `node-deleted` meldet. → `public/components/custom-node-delete/RE
 **Verschieben ist ebenfalls eine eigene Komponente.** Mit `can-move` bettet der
 Knoten `custom-node-move` ein (in der Leiste als `node-move`) und reicht ihr Id,
 Name und Elternknoten. Der Knoten selbst markiert nichts: Die Aktion meldet
-`node-mark-change`, der Consumer hält die Markierung und gibt sie über die
-Property `marked` zurück, die der Knoten an die Aktion durchreicht. Verschoben
-wird im Navigations-Modal. → `public/components/custom-node-move/README.md`
+`node-mark-change`, der Consumer hält die Markierung und gibt jedem Knoten die
+Id des markierten über die Property `markedId`; ob das er selbst ist, sagt der
+Knoten seiner Aktion. Verschoben wird im Navigations-Modal.
+→ `public/components/custom-node-move/README.md`
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
 sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.

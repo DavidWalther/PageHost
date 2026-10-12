@@ -63,8 +63,9 @@ class CustomNode extends LitElement {
     canCreateContent: { type: Boolean, attribute: 'can-create-content' },
     canDelete: { type: Boolean, attribute: 'can-delete' },
     canMove: { type: Boolean, attribute: 'can-move' },
-    // Is this node the one marked to be moved? The consumer owns the mark.
-    marked: { type: Boolean },
+    // Id of the node marked to be moved, wherever it is. The consumer owns the
+    // mark; the node compares, so a consumer that swaps the id need not care.
+    markedId: { type: String },
     _nodeData: { state: true },
     _loading: { state: true },
     _scrollPending: { state: true },
@@ -104,7 +105,7 @@ class CustomNode extends LitElement {
     this.canCreateContent = false;
     this.canDelete = false;
     this.canMove = false;
-    this.marked = false;
+    this.markedId = null;
     this._nodeData = null;
     this._loading = false;
     this.pendingNewContentId = null;
@@ -282,7 +283,7 @@ class CustomNode extends LitElement {
                       node-id="${this.id}"
                       node-name="${this._nodeData.name || ''}"
                       parent-id="${this._nodeData.parent_node_id || ''}"
-                      .marked="${this.marked}"
+                      .marked="${!!this.id && this.markedId === this.id}"
                     ></custom-node-move>
                   </div>
                 </slds-layout-item>`
