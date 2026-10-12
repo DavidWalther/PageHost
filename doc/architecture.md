@@ -191,7 +191,8 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     → `public/components/custom-node-delete/README.md`
   - **`custom-node-move`** ist **die** Verschiebe-Aktion, in zwei Schritten
     an zwei Orten: Der Button am unteren `custom-node` (`can-move`, Scope
-    `edit`) markiert den Knoten, die Einfügen-Kachel des Modals hängt ihn um.
+    `edit`) markiert den Knoten — am oberen nur eine Wurzel (`can-move-root`),
+    denn eine Wurzel steht immer oben —, die Einfügen-Kachel des Modals hängt ihn um.
     Die Markierung hält der `bookstore` — genau eine, nur solange die Seite
     lebt. Verschoben wird mit einem gewöhnlichen Update (`parent_node_id`,
     keine `sortnumber`: ans Ende der neuen Geschwister); das Backend lehnt
