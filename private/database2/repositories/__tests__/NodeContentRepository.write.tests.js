@@ -708,3 +708,90 @@ describe('updateRecord: moving a node', () => {
     expect(repository.getTouchedNodes()).toEqual([]);
   });
 });
+
+/**
+ * A cached node carries its children and its contents. Creating or deleting
+ * one changes the entry of the node it hangs on, so the repository names that
+ * node for the facade to clear — as after a move.
+ */
+describe('touched nodes after creating and deleting', () => {
+  const LEGACY_IDS = { 'n-parent': '000s1', 'n-holder': '000c1' };
+
+  beforeEach(() => {
+    respondWith('SELECT id, legacy_id FROM node WHERE id = ANY($1)', ([ids]) =>
+      ids.map((id) => ({ id, legacy_id: LEGACY_IDS[id] ?? null }))
+    );
+  });
+
+  it('names the parent of a created child', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-parent' }]);
+    respondWith('INSERT INTO node', [{ id: 'n-new' }]);
+    const repository = createRepository();
+
+    await repository.createRecord('node', {
+      name: 'Neu',
+      parent_node_id: 'n-parent',
+    });
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-parent', legacy_id: '000s1' },
+    ]);
+  });
+
+  it('names nothing for a created root', async () => {
+    respondWith('INSERT INTO node', [{ id: 'n-new' }]);
+    const repository = createRepository();
+
+    await repository.createRecord('node', { name: 'Neu' });
+
+    expect(repository.getTouchedNodes()).toEqual([]);
+  });
+
+  it('names the node a created content hangs on', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-holder' }]);
+    respondWith('INSERT INTO content_node', [{ id: 'cn-new' }]);
+    const repository = createRepository();
+
+    await repository.createRecord('content', {
+      name: 'Absatz',
+      node_id: 'n-holder',
+      content: 'Text',
+    });
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-holder', legacy_id: '000c1' },
+    ]);
+  });
+
+  it('names the parent of a deleted node, read before the delete', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-gone' }]);
+    respondWith('SELECT parent_node_id FROM node WHERE id = $1', [
+      { parent_node_id: 'n-parent' },
+    ]);
+    respondWith('WITH RECURSIVE', [{ id: 'n-gone' }]);
+    const repository = createRepository();
+
+    await repository.deleteRecord('node', 'n-gone');
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-parent', legacy_id: '000s1' },
+    ]);
+    expect(positionOf('SELECT parent_node_id')).toBeLessThan(
+      positionOf('DELETE FROM node')
+    );
+  });
+
+  it('names the node of a deleted content', async () => {
+    respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-gone' }]);
+    respondWith('SELECT id, legacy_id, node_id FROM content_node', [
+      { id: 'cn-gone', legacy_id: null, node_id: 'n-holder' },
+    ]);
+    const repository = createRepository();
+
+    await repository.deleteRecord('content', 'cn-gone');
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-holder', legacy_id: '000c1' },
+    ]);
+  });
+});

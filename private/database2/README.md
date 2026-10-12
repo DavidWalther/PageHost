@@ -24,6 +24,12 @@ unpublish, delete — drops the cached tree, whether or not the write skips the
 cache (`invalidateContentsTreeAfterWrite`, `clearCacheFor`). Content writes
 leave it alone; contents are not part of the tree.
 
+A cached **node** carries its children and its contents. A write that changes
+them clears that node's entry as well, under both ids and regardless of
+`skipCache` (`clearNodeEntries`, fed by the repository's `getTouchedNodes`):
+creating or deleting a child clears its parent, creating or deleting a content
+its node.
+
 #### Moving a node
 
 An update of a node that sends a `parent_node_id` **different** from the stored
