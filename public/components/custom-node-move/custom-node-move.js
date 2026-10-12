@@ -4,6 +4,7 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import { moveNode } from '/components/custom-node-move/move-node.api.js';
 
 /**
  * The one action that moves a node.
@@ -18,6 +19,8 @@ class CustomNodeMove extends LitElement {
   labels = {
     mark: 'Zum Verschieben markieren',
     unmark: 'Markierung aufheben',
+    nodeMoved: 'Knoten verschoben',
+    moveError: 'Fehler beim Verschieben des Knotens',
   };
 
   static properties = {
@@ -78,6 +81,51 @@ class CustomNodeMove extends LitElement {
     } catch (error) {
       return false;
     }
+  }
+
+  /**
+   * Moves `node` (`{ id, name, parentId }`, the mark) below `targetId`, or to
+   * the top level when it is `null`. Resolves to true when the node moved.
+   *
+   * The node goes to the end of its new siblings: it is written without a sort
+   * number. The backend refuses a move below the node itself and in or out of
+   * the feeds; its reason is shown as it comes.
+   */
+  async requestMove(node, targetId) {
+    if (!node?.id || !this.canMove()) {
+      return false;
+    }
+
+    try {
+      await moveNode({ id: node.id, parentId: targetId ?? null });
+    } catch (error) {
+      this._toast(error.message || this.labels.moveError, 'error');
+      return false;
+    }
+
+    this._toast(this.labels.nodeMoved, 'success');
+    this.dispatchEvent(
+      new CustomEvent('node-moved', {
+        detail: {
+          nodeId: node.id,
+          fromParentId: node.parentId ?? null,
+          toParentId: targetId ?? null,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    return true;
+  }
+
+  _toast(message, variant) {
+    this.dispatchEvent(
+      new CustomEvent('toast', {
+        detail: { message, variant },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   /** Reports the wish to mark or unmark; the consumer decides and hands back. */
