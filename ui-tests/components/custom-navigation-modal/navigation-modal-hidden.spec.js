@@ -1,9 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const {
-  mockBookstoreCallouts,
-  MOCK_CONTENTS,
-} = require('../../support/mock-callouts');
-const { cacheLitBundle } = require('../../support/component-page');
+const { MOCK_CONTENTS } = require('../../support/mock-callouts');
+const { gotoComponentPage } = require('../../support/component-page');
 
 /**
  * Leaving nodes out of the navigation modal: `hidden-ids`.
@@ -17,39 +14,46 @@ const { cacheLitBundle } = require('../../support/component-page');
 const [STORY_1, STORY_2] = MOCK_CONTENTS.result;
 const [CHAPTER_1, CHAPTER_2] = STORY_1.childnodes;
 
+/**
+ * Mounts the modal on its own: in the application the host owns
+ * `hidden-ids` and would set it back on its next render. The `query` for
+ * the tree is answered here, as the application would.
+ */
 async function open(page, { location = null } = {}) {
-  await mockBookstoreCallouts(page);
-  await cacheLitBundle(page);
-  await page.goto('/');
-  await expect(page.locator('app-bookstore')).toBeAttached();
-  await page.evaluate(async (location) => {
-    const modal = document
-      .querySelector('app-bookstore')
-      .shadowRoot.querySelector('custom-navigation-modal');
-    if (location) {
-      modal.setAttribute('current-location', location);
-    }
-    await modal.updateComplete;
-  }, location);
+  await gotoComponentPage(page);
+  await page.evaluate(
+    async ({ location, tree }) => {
+      document.body.addEventListener('query', (event) => {
+        if (event.detail.payload.object === 'contents') {
+          event.detail.callback(null, tree);
+        }
+      });
+      await import('/slds-components/slds-modal/slds-modal.js');
+      await import('/slds-components/slds-layout/slds-layout.js');
+      await import('/slds-components/slds-layout/slds-layout-item.js');
+      await import('/slds-components/slds-button-icon/slds-button-icon.js');
+      await import('/components/custom-navigation-modal/custom-navigation-modal.js');
+      const modal = document.createElement('custom-navigation-modal');
+      if (location) {
+        modal.setAttribute('current-location', location);
+      }
+      document.body.appendChild(modal);
+      await modal.updateComplete;
+    },
+    { location, tree: MOCK_CONTENTS.result }
+  );
 }
 
 /** Sets hidden-ids on the modal, as an attribute holding a JSON list. */
 const hide = (page, ids) =>
   page.evaluate(async (ids) => {
-    const modal = document
-      .querySelector('app-bookstore')
-      .shadowRoot.querySelector('custom-navigation-modal');
+    const modal = document.querySelector('custom-navigation-modal');
     modal.setAttribute('hidden-ids', JSON.stringify(ids));
     await modal.updateComplete;
   }, ids);
 
 const showModal = (page) =>
-  page.evaluate(() =>
-    document
-      .querySelector('app-bookstore')
-      .shadowRoot.querySelector('custom-navigation-modal')
-      .show()
-  );
+  page.evaluate(() => document.querySelector('custom-navigation-modal').show());
 
 const tiles = (page) => page.locator('custom-navigation-modal button.tile');
 const tile = (page, text) =>

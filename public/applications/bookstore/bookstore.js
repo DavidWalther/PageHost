@@ -41,10 +41,19 @@ class Bookstore extends LitElement {
     this._activeFeedId = null;
     this._feedContentNumber = null;
     this._marked = null;
+    // What the modal leaves out: the marked node. One list per mark, so the
+    // modal sees a change only when the mark changes.
+    this._hiddenIds = [];
     this._hostListeners = this.createHostListeners();
   }
 
   // =========== Lifecycle methods ============
+
+  willUpdate(changed) {
+    if (changed.has('_marked')) {
+      this._hiddenIds = this._marked ? [this._marked.id] : [];
+    }
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -180,7 +189,7 @@ class Bookstore extends LitElement {
       <custom-navigation-modal
         current-location="${this._currentLocation}"
         .marked="${this._marked}"
-        .hiddenIds="${this._marked ? [this._marked.id] : []}"
+        .hiddenIds="${this._hiddenIds}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
