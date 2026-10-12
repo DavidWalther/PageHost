@@ -48,7 +48,6 @@ test.describe('Node: order of the children after a change', () => {
     }, childData);
 
   test('a child without a sortnumber stands at the end', async ({ page }) => {
-    test.fail(); // null sorts as 0 and goes to the front
     await applyChildUpdate(page, { id: FIRST.id, sortnumber: null });
 
     expect(await childIds(page)).toEqual([SECOND.id, FIRST.id]);
