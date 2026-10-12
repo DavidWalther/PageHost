@@ -24,6 +24,32 @@ unpublish, delete — drops the cached tree, whether or not the write skips the
 cache (`invalidateContentsTreeAfterWrite`, `clearCacheFor`). Content writes
 leave it alone; contents are not part of the tree.
 
+#### Moving a node
+
+An update of a node that sends a `parent_node_id` **different** from the stored
+one is a move. `NodeContentRepository.updateRecord` checks it inside the write
+transaction, before anything is written:
+
+- It reads the chain of the node and of the new parent (a recursive CTE with
+  `UNION`, which ends on a loop already in the data) and hands both to
+  `private/modules/NodeMoveRule.js`. The rule rejects a new parent that is the
+  node itself or one of its descendants, and any move out of or into the feeds
+  (the feed root and everything below it). The rejection, `NodeMoveRejected`,
+  becomes a 400 in the `UpsertEndpoint`.
+- The feed root comes from the configuration (`feedRootNodeId`): the facade
+  reads it only for updates that send a parent and hands it over with
+  `setFeedRootId`.
+- A node moved to the top level gets an `include` row for its own application,
+  as `createNode` adds for a new root — without it a node that inherits its
+  visibility would vanish together with everything below it.
+- An unchanged parent — the edit dialog sends the current one on every save —
+  is no move and is not checked.
+
+A cached node carries its children. After a move the repository names the
+node, its old and its new parent (`getTouchedNodes`), and the facade clears
+their entries under both ids (`clearNodeEntries`), regardless of `skipCache`;
+the tree is dropped as for every node write.
+
 ### DataCache
 
 - Manages caching of data to improve performance and reduce database load.

@@ -172,9 +172,13 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     Mit Scope `create` endet jede Ebene in einer „+“-Kachel (ein weiteres Kind
     des aktuellen Elements, oben eine Wurzel; Dialog: `custom-chapter-edit`),
     mit Scope `delete` jede geöffnete Ebene in einer Lösch-Kachel (sie löscht
-    das aktuelle Element), und ein modifizierter Klick (Strg/Cmd + Klick,
-    0,5 s halten) öffnet mit einem der beiden Scopes auch ein Blatt als Ebene —
-    so entsteht dessen erstes Kind, oder es wird gelöscht.
+    das aktuelle Element), und ist ein Knoten zum Verschieben markiert, endet
+    mit Scope `edit` jede Ebene in einer Einfügen-Kachel (sie hängt ihn unter
+    das aktuelle Element, oben auf die Wurzel). Ein modifizierter Klick
+    (Strg/Cmd + Klick, 0,5 s halten) öffnet mit einer dieser Möglichkeiten auch
+    ein Blatt als Ebene — so entsteht dessen erstes Kind, es wird gelöscht
+    oder wird neuer Elternknoten. `hidden-ids` blendet Knoten samt Teilbaum
+    aus; der `bookstore` blendet so den markierten Knoten aus.
     → `public/components/custom-navigation-modal/README.md`
   - **`custom-node-delete`** ist **die** Lösch-Aktion für Knoten; der Button
     am unteren `custom-node` und die Lösch-Kachel des Modals sind nur
@@ -185,6 +189,17 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     darunter (aus dem Inhaltsbaum). Wer ablehnt, schickt nichts.
     `node-deleted` nennt alle entfernten Ids; die Seite lässt sie los.
     → `public/components/custom-node-delete/README.md`
+  - **`custom-node-move`** ist **die** Verschiebe-Aktion, in zwei Schritten
+    an zwei Orten: Der Button am unteren `custom-node` (`can-move`, Scope
+    `edit`) markiert den Knoten, die Einfügen-Kachel des Modals hängt ihn um.
+    Die Markierung hält der `bookstore` — genau eine, nur solange die Seite
+    lebt. Verschoben wird mit einem gewöhnlichen Update (`parent_node_id`,
+    keine `sortnumber`: ans Ende der neuen Geschwister); das Backend lehnt
+    einen Zyklus und jedes Verschieben aus den oder in die Feeds ab
+    (`private/modules/NodeMoveRule.js`) und gibt einer neuen Wurzel ihre
+    `app_node`-Zeile. Danach zeigt die Seite den Knoten an seinem neuen Ort.
+    → `public/components/custom-node-move/README.md`,
+    `private/database2/README.md` („Moving a node“)
   - **`custom-paragraph`** stellt **einen Inhalt** dar und **zeigt** ihn nur.
     Bearbeiten und Veröffentlichen sind eigene Komponenten mit eigenem Modal:
     **`custom-content-edit`** (Name, Sortierung, Fassung, Inhalt) und
