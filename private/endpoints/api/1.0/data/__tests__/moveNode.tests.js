@@ -229,4 +229,65 @@ describe('Moving a node', () => {
       expect(nodeUpdates()).toHaveLength(0);
     });
   });
+
+  // The feeds are the start page, read as the children of the feed root
+  // (`feedRootNodeId`). Nothing moves out of them or into them.
+  describe('feeds', () => {
+    it.failing('rejects moving the feed root', async () => {
+      const { status } = await update({
+        id: 'feed-root',
+        parent_node_id: 'root-a',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+
+    it.failing('rejects moving a node below the feed root', async () => {
+      const { status } = await update({
+        id: 'feed-1-x',
+        parent_node_id: 'root-a',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+
+    it.failing('rejects the feed root as the new parent', async () => {
+      const { status } = await update({
+        id: 'child-a1',
+        parent_node_id: 'feed-root',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+
+    it.failing('rejects a feed as the new parent', async () => {
+      const { status } = await update({
+        id: 'child-a1',
+        parent_node_id: 'feed-1',
+        sortnumber: null,
+      });
+
+      expect(status).toBe(400);
+      expect(nodeUpdates()).toHaveLength(0);
+    });
+
+    // The edit dialog sends the current parent along on every save. Editing
+    // a feed is not moving it.
+    it('saves a feed whose parent stays the same', async () => {
+      const { status } = await update({
+        id: 'feed-1',
+        name: 'Neuigkeiten',
+        parent_node_id: 'feed-root',
+      });
+
+      expect(status).toBe(200);
+      expect(findNode('feed-1').name).toBe('Neuigkeiten');
+    });
+  });
 });
