@@ -27,8 +27,9 @@ leave it alone; contents are not part of the tree.
 A cached **node** carries its children and its contents. A write that changes
 them clears that node's entry as well, under both ids and regardless of
 `skipCache` (`clearNodeEntries`, fed by the repository's `getTouchedNodes`):
-creating or deleting a child clears its parent, creating or deleting a content
-its node.
+changing a node clears the node and its parent, creating or deleting a child
+its parent, writing a content its node — and an updated content its own entry
+(`clearContentEntry`). No write puts anything into the cache; only reads do.
 
 #### Moving a node
 

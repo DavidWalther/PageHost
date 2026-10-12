@@ -701,11 +701,22 @@ describe('updateRecord: moving a node', () => {
     ).toEqual(['n-a', 'n-a1']);
   });
 
-  it('names no touched nodes when nothing moved', async () => {
+  // Not moved, still changed: the node's own entry, and its parent's, which
+  // lists it among its children.
+  it('names the node and its parent when nothing moved', async () => {
+    responses.unshift({
+      pattern: 'UPDATE node SET',
+      rows: [{ id: 'n-a1', parent_node_id: 'n-a' }],
+    });
     const repository = createRepository();
     await move('n-a1', 'n-a', repository);
 
-    expect(repository.getTouchedNodes()).toEqual([]);
+    expect(
+      repository
+        .getTouchedNodes()
+        .map((node) => node.id)
+        .sort()
+    ).toEqual(['n-a', 'n-a1']);
   });
 });
 
@@ -792,6 +803,57 @@ describe('touched nodes after creating and deleting', () => {
 
     expect(repository.getTouchedNodes()).toEqual([
       { id: 'n-holder', legacy_id: '000c1' },
+    ]);
+  });
+});
+
+describe('touched nodes after an update', () => {
+  beforeEach(() => {
+    respondWith('SELECT id, legacy_id FROM node WHERE id = ANY($1)', ([ids]) =>
+      ids.map((id) => ({ id, legacy_id: null }))
+    );
+  });
+
+  it('names a renamed node and its parent', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-child' }]);
+    respondWith('UPDATE node SET', [
+      { id: 'n-child', parent_node_id: 'n-parent' },
+    ]);
+    const repository = createRepository();
+
+    await repository.updateRecord('node', { id: 'n-child', name: 'Neu' });
+
+    expect(
+      repository
+        .getTouchedNodes()
+        .map((node) => node.id)
+        .sort()
+    ).toEqual(['n-child', 'n-parent']);
+  });
+
+  it('names only a renamed root', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-root' }]);
+    respondWith('UPDATE node SET', [{ id: 'n-root', parent_node_id: null }]);
+    const repository = createRepository();
+
+    await repository.updateRecord('node', { id: 'n-root', name: 'Neu' });
+
+    expect(repository.getTouchedNodes().map((node) => node.id)).toEqual([
+      'n-root',
+    ]);
+  });
+
+  it('names the node of an updated content', async () => {
+    respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
+    respondWith('UPDATE content_node SET', [
+      { id: 'cn-1', node_id: 'n-holder' },
+    ]);
+    const repository = createRepository();
+
+    await repository.updateRecord('content', { id: 'cn-1', name: 'Neu' });
+
+    expect(repository.getTouchedNodes().map((node) => node.id)).toEqual([
+      'n-holder',
     ]);
   });
 });
