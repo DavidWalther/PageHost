@@ -4,7 +4,7 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
-import { findNode, findPath } from '/modules/content-tree.mjs';
+import { findNode, findPath, withoutNodes } from '/modules/content-tree.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
 import '/components/custom-node-delete/custom-node-delete.js';
 
@@ -98,6 +98,9 @@ class NavigationModal extends LitElement {
 
   static properties = {
     currentLocation: { type: String, attribute: 'current-location' },
+    // Nodes left out, each with everything below it: no tile, no level. The
+    // node marked to be moved is one — it cannot become its own new parent.
+    hiddenIds: { type: Array, attribute: 'hidden-ids' },
     _tree: { state: true },
     _openPath: { state: true },
   };
@@ -105,6 +108,7 @@ class NavigationModal extends LitElement {
   constructor() {
     super();
     this.currentLocation = null;
+    this.hiddenIds = [];
     this._tree = [];
     // Ids of the nodes whose children are listed, top down. Empty: the roots.
     this._openPath = [];
@@ -149,11 +153,23 @@ class NavigationModal extends LitElement {
     );
   }
 
-  /** The leading part of `path` whose nodes are all still in the tree. */
+  /** The tree as the modal lists it: without the nodes in `hidden-ids`. */
+  get _shownTree() {
+    return withoutNodes(this._tree, this.hiddenIds || []);
+  }
+
+  /** Nodes left out while the modal is open: a level through them closes. */
+  willUpdate(changed) {
+    if (changed.has('hiddenIds')) {
+      this._openPath = this._existingPrefix(this._openPath);
+    }
+  }
+
+  /** The leading part of `path` whose nodes are all still listed. */
   _existingPrefix(path) {
     const kept = [];
     for (const id of path) {
-      if (!findNode(this._tree, id)) {
+      if (!findNode(this._shownTree, id)) {
         break;
       }
       kept.push(id);
@@ -171,21 +187,24 @@ class NavigationModal extends LitElement {
   /**
    * The levels to open for the current location: every ancestor of it, so the
    * modal lists the location among its siblings. A root (or no location)
-   * keeps the modal on the top level.
+   * keeps the modal on the top level, and so does a left-out node on the way:
+   * the path ends before it.
    */
   _resolveInitialPath() {
-    return this._locationPath()
-      .slice(0, -1)
-      .map((node) => node.id);
+    return this._existingPrefix(
+      this._locationPath()
+        .slice(0, -1)
+        .map((node) => node.id)
+    );
   }
 
   /** The nodes listed on the open level. */
   _currentLevel() {
     if (this._openPath.length === 0) {
-      return this._tree;
+      return this._shownTree;
     }
     const parent = findNode(
-      this._tree,
+      this._shownTree,
       this._openPath[this._openPath.length - 1]
     );
     return parent?.childnodes || [];
