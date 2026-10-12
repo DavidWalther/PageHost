@@ -19,6 +19,8 @@ class NavigationModal extends LitElement {
     back: '< zurück',
     createChild: 'Neuen Eintrag anlegen',
     deleteCurrent: 'Diesen Eintrag löschen',
+    marked: (name) => `„${name}“ markiert`,
+    clearMark: 'Markierung aufheben',
   };
 
   _isOpen = false;
@@ -101,6 +103,9 @@ class NavigationModal extends LitElement {
     // Nodes left out, each with everything below it: no tile, no level. The
     // node marked to be moved is one — it cannot become its own new parent.
     hiddenIds: { type: Array, attribute: 'hidden-ids' },
+    // The node marked to be moved, `{ id, name, parentId }`, or null. The host
+    // owns the mark; the modal names it and moves it.
+    marked: { type: Object },
     _tree: { state: true },
     _openPath: { state: true },
   };
@@ -109,6 +114,7 @@ class NavigationModal extends LitElement {
     super();
     this.currentLocation = null;
     this.hiddenIds = [];
+    this.marked = null;
     this._tree = [];
     // Ids of the nodes whose children are listed, top down. Empty: the roots.
     this._openPath = [];
@@ -213,6 +219,7 @@ class NavigationModal extends LitElement {
   render() {
     return html`
       <slds-modal heading="${this.labels.modalTitle}" footless>
+        ${this.marked?.id ? this._renderMarkedHint() : ''}
         ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
       </slds-modal>
@@ -270,6 +277,46 @@ class NavigationModal extends LitElement {
     return this._openPath.length > 0
       ? this._openPath[this._openPath.length - 1]
       : null;
+  }
+
+  /**
+   * What is marked to be moved, on every level: the marked node itself is
+   * left out of the tiles, so this is where it can still be seen — and where
+   * the mark can be dropped.
+   */
+  _renderMarkedHint() {
+    return html`
+      <div id="marked-hint" class="slds-m-bottom_small">
+        <span class="slds-pill">
+          <span class="slds-pill__label">
+            ${this.labels.marked(this.marked.name)}
+          </span>
+          <button
+            class="slds-button slds-button_icon slds-pill__remove"
+            title="${this.labels.clearMark}"
+            aria-label="${this.labels.clearMark}"
+            @click="${this._clearMark}"
+          >
+            <svg class="slds-button__icon" aria-hidden="true">
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+              ></use>
+            </svg>
+          </button>
+        </span>
+      </div>
+    `;
+  }
+
+  /** Asks the host to drop the mark; the host owns it. */
+  _clearMark() {
+    this.dispatchEvent(
+      new CustomEvent('node-mark-clear', {
+        detail: { nodeId: this.marked?.id ?? null },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _renderBack() {
