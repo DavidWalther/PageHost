@@ -7,6 +7,7 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import { findNode, findPath, withoutNodes } from '/modules/content-tree.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
 import '/components/custom-node-delete/custom-node-delete.js';
+import '/components/custom-node-move/custom-node-move.js';
 
 class NavigationModal extends LitElement {
   //===========================
@@ -21,6 +22,7 @@ class NavigationModal extends LitElement {
     deleteCurrent: 'Diesen Eintrag löschen',
     marked: (name) => `„${name}“ markiert`,
     clearMark: 'Markierung aufheben',
+    pasteHere: 'Hier einfügen',
   };
 
   _isOpen = false;
@@ -78,7 +80,8 @@ class NavigationModal extends LitElement {
     }
 
     .tile_add svg,
-    .tile_delete svg {
+    .tile_delete svg,
+    .tile_paste svg {
       width: 1.25rem;
       height: 1.25rem;
       fill: currentColor;
@@ -227,6 +230,8 @@ class NavigationModal extends LitElement {
       <custom-chapter-edit no-trigger></custom-chapter-edit>
       <!-- The delete action: run by the delete tile, its prompts and all. -->
       <custom-node-delete no-trigger></custom-node-delete>
+      <!-- The move action: run by the paste tile with the mark of the host. -->
+      <custom-node-move no-trigger></custom-node-move>
     `;
   }
 
@@ -248,9 +253,26 @@ class NavigationModal extends LitElement {
     return this._deleteAction?.canDelete() ?? false;
   }
 
+  /** The move action decides about the edit scope, as the others do. */
+  get _moveAction() {
+    return this.shadowRoot?.querySelector('custom-node-move') ?? null;
+  }
+
+  /**
+   * Is there a mark to paste here? Not on the level the marked node already
+   * hangs on — that move would change nothing. The top level stands for the
+   * roots: a root is not pasted there.
+   */
+  _canPasteHere() {
+    if (!this.marked?.id || !(this._moveAction?.canMove() ?? false)) {
+      return false;
+    }
+    return this._currentElementId() !== (this.marked.parentId ?? null);
+  }
+
   firstUpdated() {
-    // Editor and delete action exist only after the first render; ask again
-    // for their tiles.
+    // Editor and the delete and move actions exist only after the first
+    // render; ask again for their tiles.
     this.requestUpdate();
     // A hold ends wherever the pointer is let go — after the level changed,
     // the tile it started on is gone. So the end is watched on the whole root.
@@ -374,6 +396,7 @@ class NavigationModal extends LitElement {
             ? this._renderDeleteTile()
             : ''
         }
+        ${this._canPasteHere() ? this._renderPasteTile() : ''}
       </slds-layout>
     `;
   }
@@ -413,6 +436,39 @@ class NavigationModal extends LitElement {
     const action = this._deleteAction;
     action.nodeId = this._currentElementId();
     return action.requestDelete();
+  }
+
+  /**
+   * The last tile of a level while a node is marked: moves it below the
+   * current element — on the top level, to the top level.
+   */
+  _renderPasteTile() {
+    return html`
+      <slds-layout-item size="1-of-2" medium-size="1-of-3" large-size="1-of-4">
+        <div class="slds-p-vertical_x-small">
+          <button
+            class="tile tile_paste"
+            title="${this.labels.pasteHere}"
+            aria-label="${this.labels.pasteHere}"
+            @click="${() => this._pasteHere()}"
+          >
+            <svg aria-hidden="true">
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#paste"
+              ></use>
+            </svg>
+          </button>
+        </div>
+      </slds-layout-item>
+    `;
+  }
+
+  /**
+   * Runs the move action for the mark. The action writes and reports
+   * `node-moved`; the host drops the mark and reloads the tree.
+   */
+  _pasteHere() {
+    return this._moveAction.requestMove(this.marked, this._currentElementId());
   }
 
   /** The last tile of a level: one more child of the current element. */
