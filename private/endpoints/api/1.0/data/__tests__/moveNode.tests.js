@@ -191,6 +191,24 @@ describe('Moving a node', () => {
     expect(includes[0].parameters).toEqual(['child-a1', APPLICATION_KEY]);
   });
 
+  // The way back is not symmetric: a root moved below another node keeps its
+  // include row. The repository cannot tell the row a move added from one
+  // that was set on purpose, so it removes none.
+  it('keeps the include row of a root moved below another node', async () => {
+    const { status } = await update({
+      id: 'root-b',
+      parent_node_id: 'root-a',
+      sortnumber: null,
+    });
+
+    expect(status).toBe(200);
+    expect(findNode('root-b').parent_node_id).toBe('root-a');
+    const appNodeWrites = executed.filter((entry) =>
+      /(DELETE FROM|INSERT INTO|UPDATE) app_node/.test(entry.sql)
+    );
+    expect(appNodeWrites).toHaveLength(0);
+  });
+
   // A node below one of its own descendants hangs off no root any more: the
   // tree is built from the roots down and never reaches it, so the whole
   // subtree would silently drop out.
