@@ -477,12 +477,20 @@ class NodeContentRepository extends ContentRepository {
         await this.addAppInclude(run, recordId);
       }
 
-      // A move changes the cached node and the children of both parents;
-      // the facade clears their entries. Read here, inside the transaction,
-      // so both ids are known.
+      // A cached node carries its children and contents: a changed node
+      // stales its own entry and its parent's, a changed content its node's,
+      // a move the old parent's as well. The facade clears them. Read here,
+      // inside the transaction, so both ids are known.
       await this.touch(
         run,
-        move ? [recordId, move.fromParentId, move.toParentId] : []
+        isNode
+          ? [
+              recordId,
+              record?.parent_node_id,
+              move?.fromParentId,
+              move?.toParentId,
+            ]
+          : [record?.node_id]
       );
 
       return this.outwardRecord(object, record);
@@ -492,9 +500,9 @@ class NodeContentRepository extends ContentRepository {
   /**
    * The nodes whose cache entries the last write changed beyond its own
    * record, each as `{ id, legacy_id }`. A cached node carries its children
-   * and contents, so: after a move the node and its old and new parent;
-   * after creating or deleting a child its parent; after creating or deleting
-   * a content its node. Empty otherwise.
+   * and contents, so: after changing a node the node and its parent, after a
+   * move also the old parent; after creating or deleting a child its parent;
+   * after writing a content its node.
    */
   getTouchedNodes() {
     return this.touchedNodes ?? [];
@@ -502,7 +510,7 @@ class NodeContentRepository extends ContentRepository {
 
   /** Notes the nodes with these ids (empty ones skipped) as touched. */
   async touch(run, ids) {
-    const nodeIds = ids.filter(Boolean);
+    const nodeIds = [...new Set(ids.filter(Boolean))];
     this.touchedNodes =
       nodeIds.length > 0
         ? await run(`SELECT id, legacy_id FROM node WHERE id = ANY($1)`, [
