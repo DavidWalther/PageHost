@@ -6,6 +6,7 @@ import {
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import { findNode, findPath } from '/modules/content-tree.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
+import '/components/custom-node-delete/custom-node-delete.js';
 
 class NavigationModal extends LitElement {
   //===========================
@@ -17,6 +18,7 @@ class NavigationModal extends LitElement {
     empty: 'Keine Inhalte vorhanden.',
     back: '< zurück',
     createChild: 'Neuen Eintrag anlegen',
+    deleteCurrent: 'Diesen Eintrag löschen',
   };
 
   _isOpen = false;
@@ -73,7 +75,8 @@ class NavigationModal extends LitElement {
       color: #ffffff;
     }
 
-    .tile_add svg {
+    .tile_add svg,
+    .tile_delete svg {
       width: 1.25rem;
       height: 1.25rem;
       fill: currentColor;
@@ -196,6 +199,8 @@ class NavigationModal extends LitElement {
       </slds-modal>
       <!-- The create dialog: opened by the "+" tile, it opens over the modal. -->
       <custom-chapter-edit no-trigger></custom-chapter-edit>
+      <!-- The delete action: run by the delete tile, its prompts and all. -->
+      <custom-node-delete no-trigger></custom-node-delete>
     `;
   }
 
@@ -208,8 +213,18 @@ class NavigationModal extends LitElement {
     return this._editor?.checkCreatePermission() ?? false;
   }
 
+  /** The delete action decides about the delete scope, as the editor does. */
+  get _deleteAction() {
+    return this.shadowRoot?.querySelector('custom-node-delete') ?? null;
+  }
+
+  _canDelete() {
+    return this._deleteAction?.canDelete() ?? false;
+  }
+
   firstUpdated() {
-    // The editor exists only after the first render; ask again for the "+".
+    // Editor and delete action exist only after the first render; ask again
+    // for their tiles.
     this.requestUpdate();
     // A hold ends wherever the pointer is let go — after the level changed,
     // the tile it started on is gone. So the end is watched on the whole root.
@@ -288,8 +303,50 @@ class NavigationModal extends LitElement {
           `
         )}
         ${canCreate ? this._renderCreateTile(nodes) : ''}
+        ${
+          this._currentElementId() && this._canDelete()
+            ? this._renderDeleteTile()
+            : ''
+        }
       </slds-layout>
     `;
+  }
+
+  /**
+   * The last tile of an opened level: deletes the current element — the node
+   * whose children are listed, not one of them. The top level has no current
+   * element and so no such tile.
+   */
+  _renderDeleteTile() {
+    return html`
+      <slds-layout-item size="1-of-2" medium-size="1-of-3" large-size="1-of-4">
+        <div class="slds-p-vertical_x-small">
+          <button
+            class="tile tile_delete"
+            title="${this.labels.deleteCurrent}"
+            aria-label="${this.labels.deleteCurrent}"
+            @click="${() => this._deleteCurrent()}"
+          >
+            <svg aria-hidden="true">
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#delete"
+              ></use>
+            </svg>
+          </button>
+        </div>
+      </slds-layout-item>
+    `;
+  }
+
+  /**
+   * Runs the delete action for the current element. The action asks and
+   * reports `node-deleted`; the host then reloads the tree, and the modal
+   * stays on what is left of its path — one level higher.
+   */
+  _deleteCurrent() {
+    const action = this._deleteAction;
+    action.nodeId = this._currentElementId();
+    return action.requestDelete();
   }
 
   /** The last tile of a level: one more child of the current element. */
@@ -365,13 +422,13 @@ class NavigationModal extends LitElement {
 
   /**
    * Holding a tile for half a second — mobile, and any other pointer — is the
-   * same gesture as Ctrl/Cmd + click. Only with the create scope, and only the
-   * main button; moving the pointer away or by more than a few pixels (a
-   * scroll) cancels it.
+   * same gesture as Ctrl/Cmd + click. Only with a scope that needs it (see
+   * `_canOpenAnyLevel`), and only the main button; moving the pointer away or
+   * by more than a few pixels (a scroll) cancels it.
    */
   _handleTilePointerDown(node, event) {
     this._cancelHold();
-    if (event.button !== 0 || !this._canCreate()) {
+    if (event.button !== 0 || !this._canOpenAnyLevel()) {
       return;
     }
     this._holdStart = { x: event.clientX, y: event.clientY };
@@ -421,17 +478,25 @@ class NavigationModal extends LitElement {
 
   /**
    * The gesture that opens any tile as a level and never selects: Ctrl + click
-   * (Windows, Linux) or Cmd + click (macOS). It exists to create a first child
-   * of a leaf, so it only counts with the create scope.
+   * (Windows, Linux) or Cmd + click (macOS).
    */
   _isOpenLevelGesture(event) {
-    return !!(event?.ctrlKey || event?.metaKey) && this._canCreate();
+    return !!(event?.ctrlKey || event?.metaKey) && this._canOpenAnyLevel();
+  }
+
+  /**
+   * A leaf is opened as a level for what its level offers: "+" creates its
+   * first child, the delete tile deletes it. Without either scope there is
+   * nothing to do there, and the gesture stays a plain click.
+   */
+  _canOpenAnyLevel() {
+    return this._canCreate() || this._canDelete();
   }
 
   /**
    * Makes the node the current element: its children are listed. The page
    * behind follows only into a node with children — a leaf is opened to
-   * create its first child, not to be shown.
+   * create its first child or to be deleted, not to be shown.
    */
   _openLevel(node) {
     this._openPath = [...this._openPath, node.id];

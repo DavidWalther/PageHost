@@ -8,12 +8,13 @@ const { withSession } = require('../../support/session');
  *
  * A plain click on a tile without children selects it and the modal closes, so
  * the level of a leaf could never be opened — and its first child never be
- * created. With the `create` scope a **modified click** opens any tile as a
- * level and never selects: Ctrl + click (Windows, Linux), Cmd + click (macOS),
- * or holding the tile for half a second (any pointer, touch included). A leaf
- * then shows its empty level, where the "+" tile creates its first child; the
- * page behind does not follow. On a tile with children the gesture does what a
- * plain click does.
+ * created or the leaf be deleted. With the `create` or the `delete` scope a
+ * **modified click** opens any tile as a level and never selects: Ctrl + click
+ * (Windows, Linux), Cmd + click (macOS), or holding the tile for half a second
+ * (any pointer, touch included). A leaf then shows its empty level, where the
+ * "+" tile creates its first child and the delete tile deletes it (each with
+ * its scope); the page behind does not follow. On a tile with children the
+ * gesture does what a plain click does.
  */
 
 const TREE = {
@@ -276,6 +277,39 @@ test.describe('Navigation modal: hold on a touch screen', () => {
     });
 
     await expectLeafLevel(page);
+    expect(await reported(page)).toEqual([]);
+  });
+});
+
+test.describe('Navigation modal: modified click with the delete scope only', () => {
+  test.use({ actionTimeout: 5000 });
+
+  /** The leaf's own level, offering only to delete it. */
+  async function expectDeleteOnlyLevel(page) {
+    await expect(modal(page)).toHaveAttribute('open');
+    await expect(back(page)).toBeVisible();
+    await expect(hint(page)).toBeVisible();
+    await expect(tiles(page)).toHaveCount(1);
+    await expect(tiles(page).first()).toHaveClass(/tile_delete/);
+  }
+
+  test('Ctrl/Cmd + click on a leaf opens its level to delete it', async ({
+    page,
+  }) => {
+    await open(page, { scopes: ['delete'] });
+
+    await tile(page, 'Single').click({ modifiers: ['ControlOrMeta'] });
+
+    await expectDeleteOnlyLevel(page);
+    expect(await reported(page)).toEqual([]);
+  });
+
+  test('holding a leaf opens its level to delete it', async ({ page }) => {
+    await open(page, { scopes: ['delete'] });
+
+    await hold(page, tile(page, 'Single'), 700);
+
+    await expectDeleteOnlyLevel(page);
     expect(await reported(page)).toEqual([]);
   });
 });
