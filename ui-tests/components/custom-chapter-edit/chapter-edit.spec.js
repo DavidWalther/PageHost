@@ -458,7 +458,6 @@ test.describe('custom-chapter-edit: saving keeps the publication', () => {
   });
 
   test('a published node stays published when renamed', async ({ page }) => {
-    test.fail(); // the form sends published_date: null
     const editor = await mount(page);
     await page.evaluate(async () => {
       const el = document.querySelector('custom-chapter-edit');
