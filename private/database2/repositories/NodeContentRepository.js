@@ -439,9 +439,10 @@ class NodeContentRepository extends ContentRepository {
       );
 
       // Before the write: a rejected move must leave the row as it was.
-      if (isNode && 'parent_node_id' in columns) {
-        await this.checkMove(run, recordId, columns.parent_node_id ?? null);
-      }
+      const move =
+        isNode && 'parent_node_id' in columns
+          ? await this.checkMove(run, recordId, columns.parent_node_id ?? null)
+          : null;
 
       let record;
       if (Object.keys(columns).length > 0) {
@@ -463,6 +464,13 @@ class NodeContentRepository extends ContentRepository {
 
       if (!isNode) {
         await this.writeContentItems(run, recordId, payload);
+      }
+
+      // A root has no parent to inherit from: without a row of its own it
+      // would be visible in no app, together with everything below it. The
+      // same row `createNode` adds for a new root.
+      if (move && !move.toParentId) {
+        await this.addAppInclude(run, recordId);
       }
 
       return this.outwardRecord(object, record);
