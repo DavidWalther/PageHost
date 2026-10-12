@@ -187,27 +187,12 @@ class DataFacadeSync {
     });
 
     try {
-      // the id vanishes on saving to postgres, so we need to save it again
-      let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      let updatedData = ContentRepository.owns(object)
+      // No update writes the cache. It used to put the payload under the bare
+      // id, a key nothing reads; what an update leaves stale is cleared
+      // instead (`updateContentRecord`).
+      const updatedData = ContentRepository.owns(object)
         ? await this.updateContentRecord(object, payload)
         : await this.createDirectStorage().updateData(object, payload);
-
-      if (!this.getSkipCache()) {
-        const cache = new DataCache2(this.environment);
-        await cache.set(copyOfPayload.id, copyOfPayload);
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Data updated successfully for object: ${object}`,
-        });
-      } else {
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Skipping cache update for object: ${object}`,
-        });
-      }
       await this.invalidateContentsTreeAfterWrite(object);
       return updatedData;
     } catch (error) {
@@ -239,7 +224,34 @@ class DataFacadeSync {
     }
     const record = await repository.updateRecord(object, payload);
     await this.clearNodeEntries(repository.getTouchedNodes());
+    if (!NodeWriteMapping.isNodeObject(object)) {
+      await this.clearContentEntry(record, payload.id);
+    }
     return record;
+  }
+
+  /**
+   * Drops the cached entry of an updated content, under every id it may be
+   * cached by: its own two and the one it was asked for. A changed node needs
+   * no such step — it is among the touched nodes.
+   */
+  async clearContentEntry(record, requestedId) {
+    const LOCATION = 'DataFacadeSync.clearContentEntry';
+    const keys = new Set(
+      [record?.id, record?.legacy_id, requestedId]
+        .filter(Boolean)
+        .map((id) => this.cacheKeyFor('content', id))
+    );
+    try {
+      await this.createCache().delMany([...keys]);
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear the cached content after an update',
+        error,
+      });
+    }
   }
 
   /**
