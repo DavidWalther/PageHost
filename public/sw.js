@@ -27,6 +27,8 @@ const STATIC_FILES = [
   '/components/custom-node/custom-node.js',
   '/components/custom-node-delete/custom-node-delete.js',
   '/components/custom-node-delete/delete-node.api.js',
+  '/components/custom-node-move/custom-node-move.js',
+  '/components/custom-node-move/move-node.api.js',
   '/components/custom-feed/custom-feed.js',
   '/components/custom-publishing/custom-publishing.js',
   '/components/custom-chapter-edit/custom-chapter-edit.js',
