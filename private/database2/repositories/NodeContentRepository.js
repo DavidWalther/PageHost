@@ -2,6 +2,7 @@ const { ContentRepository } = require('./ContentRepository.js');
 const { PostgresActions } = require('../DataStorage/pgConnector.js');
 const { NodeVisibility } = require('../../modules/NodeVisibility.js');
 const { NodeWriteMapping } = require('../../modules/NodeWriteMapping.js');
+const { NodeMoveRule } = require('../../modules/NodeMoveRule.js');
 const { Logging } = require('../../modules/logging.js');
 
 /**
@@ -437,6 +438,12 @@ class NodeContentRepository extends ContentRepository {
         NodeWriteMapping.columnsFor(object, payload)
       );
 
+      // Before the write: a rejected move must leave the row as it was.
+      const move =
+        isNode && 'parent_node_id' in columns
+          ? await this.checkMove(run, recordId, columns.parent_node_id ?? null)
+          : null;
+
       let record;
       if (Object.keys(columns).length > 0) {
         const update = updateClause(columns);
@@ -459,8 +466,87 @@ class NodeContentRepository extends ContentRepository {
         await this.writeContentItems(run, recordId, payload);
       }
 
+      // A root has no parent to inherit from: without a row of its own it
+      // would be visible in no app, together with everything below it. The
+      // same row `createNode` adds for a new root.
+      if (move && !move.toParentId) {
+        await this.addAppInclude(run, recordId);
+      }
+
+      // A move changes the cached node and the children of both parents;
+      // the facade clears their entries. Read here, inside the transaction,
+      // so both ids are known.
+      this.touchedNodes = move
+        ? await run(`SELECT id, legacy_id FROM node WHERE id = ANY(\$1)`, [
+            [recordId, move.fromParentId, move.toParentId].filter(Boolean),
+          ])
+        : [];
+
       return this.outwardRecord(object, record);
     });
+  }
+
+  /**
+   * The nodes whose cache entries the last update changed: after a move the
+   * node and its old and new parent, each as `{ id, legacy_id }`; empty
+   * otherwise.
+   */
+  getTouchedNodes() {
+    return this.touchedNodes ?? [];
+  }
+
+  /**
+   * The feed root named by the configuration (`feedRootNodeId`). Moving
+   * checks against it; without it, the feeds are not protected from moves.
+   */
+  setFeedRootId(feedRootId) {
+    this.feedRootId = feedRootId;
+    return this;
+  }
+
+  /**
+   * Checks a move: the update sets `parent_node_id`, and it differs from the
+   * stored one. The edit dialog sends the current parent on every save, so an
+   * unchanged parent is no move — and is not checked.
+   *
+   * Throws `NodeMoveRejected` (see `NodeMoveRule`). Returns the move as
+   * `{ fromParentId, toParentId }`, or `null` when the parent stays.
+   */
+  async checkMove(run, recordId, toParentId) {
+    const [stored] = await run(
+      `SELECT parent_node_id FROM node WHERE id = $1`,
+      [recordId]
+    );
+    const fromParentId = stored?.parent_node_id ?? null;
+    if (fromParentId === toParentId) {
+      return null;
+    }
+
+    NodeMoveRule.check({
+      nodeId: recordId,
+      sourceChain: await this.chainOf(run, recordId),
+      targetChain: toParentId ? await this.chainOf(run, toParentId) : [],
+      feedRootId: this.feedRootId,
+    });
+    return { fromParentId, toParentId };
+  }
+
+  /**
+   * The node and its ancestors, as ids. `UNION` instead of `UNION ALL` ends the
+   * walk on a loop already in the data, instead of running forever.
+   */
+  async chainOf(run, nodeId) {
+    const rows = await run(
+      `WITH RECURSIVE ancestors AS (
+           SELECT id, parent_node_id FROM node WHERE id = $1
+           UNION
+           SELECT n.id, n.parent_node_id
+           FROM node n JOIN ancestors a ON n.id = a.parent_node_id
+         )
+         SELECT id FROM ancestors`,
+      [nodeId]
+    );
+    return rows.map((row) => row.id);
   }
 
   /**
