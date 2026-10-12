@@ -678,21 +678,27 @@ describe('updateRecord: moving a node', () => {
     const repository = createRepository();
     await move('n-a1', 'n-b', repository);
 
-    expect(repository.getTouchedNodes()).toEqual([
-      { id: 'n-a1', legacy_id: '000c1' },
-      { id: 'n-a', legacy_id: '000s1' },
-      { id: 'n-b', legacy_id: null },
-    ]);
+    // A set, not a sequence: Postgres returns `ANY` matches in its own order.
+    expect(repository.getTouchedNodes()).toHaveLength(3);
+    expect(repository.getTouchedNodes()).toEqual(
+      expect.arrayContaining([
+        { id: 'n-a1', legacy_id: '000c1' },
+        { id: 'n-a', legacy_id: '000s1' },
+        { id: 'n-b', legacy_id: null },
+      ])
+    );
   });
 
   it('names only the node and its old parent when it becomes a root', async () => {
     const repository = createRepository();
     await move('n-a1', null, repository);
 
-    expect(repository.getTouchedNodes().map((node) => node.id)).toEqual([
-      'n-a1',
-      'n-a',
-    ]);
+    expect(
+      repository
+        .getTouchedNodes()
+        .map((node) => node.id)
+        .sort()
+    ).toEqual(['n-a', 'n-a1']);
   });
 
   it('names no touched nodes when nothing moved', async () => {

@@ -473,8 +473,26 @@ class NodeContentRepository extends ContentRepository {
         await this.addAppInclude(run, recordId);
       }
 
+      // A move changes the cached node and the children of both parents;
+      // the facade clears their entries. Read here, inside the transaction,
+      // so both ids are known.
+      this.touchedNodes = move
+        ? await run(`SELECT id, legacy_id FROM node WHERE id = ANY(\$1)`, [
+            [recordId, move.fromParentId, move.toParentId].filter(Boolean),
+          ])
+        : [];
+
       return this.outwardRecord(object, record);
     });
+  }
+
+  /**
+   * The nodes whose cache entries the last update changed: after a move the
+   * node and its old and new parent, each as `{ id, legacy_id }`; empty
+   * otherwise.
+   */
+  getTouchedNodes() {
+    return this.touchedNodes ?? [];
   }
 
   /**
