@@ -49,9 +49,11 @@ nav.hide(); // close the modal
 
 ## Attributes
 
-| Attribute          | Property          | Type     | Description                                  |
-| ------------------ | ----------------- | -------- | -------------------------------------------- |
-| `current-location` | `currentLocation` | `String` | Id of the node the page currently stands on. |
+| Attribute          | Property          | Type     | Description                                                       |
+| ------------------ | ----------------- | -------- | ----------------------------------------------------------------- |
+| `current-location` | `currentLocation` | `String` | Id of the node the page currently stands on.                      |
+| `hidden-ids`       | `hiddenIds`       | `Array`  | Ids of nodes left out, each with everything below it.             |
+| —                  | `marked`          | `Object` | The node marked to be moved, `{ id, name, parentId }`, or `null`. |
 
 ### `current-location`
 
@@ -71,6 +73,17 @@ It drives two behaviors:
 The open level is internal state: while the modal is open, clicks move it;
 `current-location` only sets the level on open.
 
+### `hidden-ids`
+
+A JSON list of record ids (as an attribute) or an array (as a property). Every node
+named there is left out **together with everything below it**: no tile, and no level
+that could be opened. A path that runs through a left-out node — on open, on a
+reload, or when the list changes — ends just before it. Marking still follows the
+full tree, so the modal opens next to a left-out location.
+
+The host leaves out the node marked to be moved: neither it nor anything below it
+can become its new parent.
+
 ---
 
 ## Behavior
@@ -89,9 +102,9 @@ An empty level reads „Keine Inhalte vorhanden.“
 ### Opening a tile as a level
 
 A plain click on a leaf selects it, so a leaf's level could never be opened — and
-its first child never be created, nor the leaf be deleted. With the `create` or the
-`delete` scope a **modified click** opens
-any tile as a level and never selects:
+its first child never be created, nor the leaf be deleted or become a new parent.
+With the `create` or the `delete` scope, or with a marked node and the `edit` scope,
+a **modified click** opens any tile as a level and never selects:
 
 | Platform        | Gesture                                      |
 | --------------- | -------------------------------------------- |
@@ -100,9 +113,10 @@ any tile as a level and never selects:
 | touch (and any) | hold the tile for 500 ms                     |
 
 A leaf then shows its empty level with the „+“ tile, which creates its first child,
-and the delete tile, which deletes the leaf (each only with its scope);
+the delete tile, which deletes the leaf, and — while a node is marked — the paste
+tile, which moves the marked node below it (each only with its scope);
 the page behind does **not** follow (no event). On a tile with children the gesture
-does what a plain click does. Without either scope a modified click is a plain click.
+does what a plain click does. Without any of these a modified click is a plain click.
 
 - The keyboard gesture is handled on `keydown`: Cmd + Enter does not click a button
   on macOS.
@@ -139,6 +153,28 @@ stays open on what is left of its path — one level higher.
 
 The tile is only the trigger; the action is `custom-node-delete`'s.
 
+### Moving nodes
+
+A node is marked at the page (`custom-node-move` in the lower node); the host hands
+the mark over as `marked` and leaves the node out with `hidden-ids`. The modal then
+
+- names the mark above the tiles on every level (`#marked-hint`, „‚Name‘ markiert“),
+  with a ✕ that reports `node-mark-clear` — the host drops the mark;
+- ends every level in a **paste tile** (`.tile_paste`, „Hier einfügen“) that moves the
+  marked node below the **current element**, on the top level to the top level.
+
+There is no paste tile on the level the marked node already hangs on (a root is not
+pasted on the top level), and none without the `edit` scope (checked by the
+embedded `custom-node-move`). A leaf becomes a new parent through its own level,
+opened with the modified click above.
+
+The tile runs the move action (`no-trigger`, `requestMove(marked, currentId)`); the
+node goes to the end of its new siblings, and a move the backend refuses shows its
+reason. The action reports `node-moved`; the host drops the mark and reloads the
+tree.
+
+The tile is only the trigger; the action is `custom-node-move`'s.
+
 ---
 
 ## Events
@@ -147,6 +183,7 @@ The tile is only the trigger; the action is `custom-node-delete`'s.
 | ------------------------ | ----------------------- | -------------------------------------------------------------------------- |
 | `navigation-level-open`  | `{ id }`                | A tile with children was opened. The page behind may follow (cover node).  |
 | `navigation-node-select` | `{ id, parentId }`      | A tile without children was chosen. `parentId` is `null` on the top level. |
+| `node-mark-clear`        | `{ nodeId }`            | The ✕ of the hint: the host should drop the mark.                          |
 | `query`                  | `{ payload, callback }` | Internal: requests the content tree (`{ object: 'contents' }`).            |
 
 All events bubble and are composed.
