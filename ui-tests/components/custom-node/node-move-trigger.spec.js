@@ -117,3 +117,67 @@ test.describe('Node: the mark-to-move button', () => {
     expect(await actionMarkedFor(node, null)).toBe(false);
   });
 });
+
+/**
+ * A root always stands in the upper node, where nothing else is marked. With
+ * `can-move-root` a node offers the mark only while it has no parent; a node
+ * with a parent is marked where it is shown as the chosen one.
+ */
+test.describe('Node: the mark-to-move button for a root', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const ROOT = MOCK_NODES.wurzel;
+
+  /** Mounts a custom-node for `node` with can-move-root. */
+  async function mountWithRootGrant(page, node, { scopes = ['edit'] } = {}) {
+    if (scopes) {
+      await withSession(page, scopes);
+    }
+    await gotoComponentPage(page);
+    await page.evaluate(async (node) => {
+      document.body.addEventListener('query', (event) => {
+        const { payload, callback } = event.detail;
+        callback(null, payload.id === node.id ? node : {});
+      });
+      await import('/slds-components/slds-button-icon/slds-button-icon.js');
+      await import('/slds-components/slds-card/slds-card.js');
+      await import('/slds-components/slds-layout/slds-layout.js');
+      await import('/slds-components/slds-layout/slds-layout-item.js');
+      await import('/components/custom-node/custom-node.js');
+      const el = document.createElement('custom-node');
+      el.setAttribute('no-contents', '');
+      el.setAttribute('can-move-root', '');
+      el.setAttribute('id', node.id);
+      document.body.appendChild(el);
+      await el.updateComplete;
+    }, node);
+    const host = page.locator('custom-node');
+    await expect(host.locator('#node-name')).toHaveText(node.name);
+    return host;
+  }
+
+  test('a root offers the mark', async ({ page }) => {
+    const node = await mountWithRootGrant(page, ROOT);
+
+    await expect(node.locator('#node-move #button-move')).toBeVisible();
+    const action = await node.locator('#node-move').evaluate((el) => ({
+      nodeId: el.nodeId,
+      parentId: el.parentId,
+    }));
+    expect(action).toEqual({ nodeId: ROOT.id, parentId: '' });
+  });
+
+  test('a node with a parent does not', async ({ page }) => {
+    const node = await mountWithRootGrant(page, NODE);
+
+    await expect(node.locator('#node-move')).toHaveCount(0);
+  });
+
+  test('a root does not without the edit scope', async ({ page }) => {
+    const node = await mountWithRootGrant(page, ROOT, {
+      scopes: ['read', 'create'],
+    });
+
+    await expect(node.locator('#node-move')).toHaveCount(0);
+  });
+});

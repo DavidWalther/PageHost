@@ -237,6 +237,8 @@ class Bookstore extends LitElement {
             data-role="navigation"
             child-buttons_number-max="2"
             can-create-child
+            can-move-root
+            .markedId="${this._marked?.id ?? null}"
             no-contents
           ></custom-node>
         </div>

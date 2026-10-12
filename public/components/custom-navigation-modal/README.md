@@ -155,7 +155,8 @@ The tile is only the trigger; the action is `custom-node-delete`'s.
 
 ### Moving nodes
 
-A node is marked at the page (`custom-node-move` in the lower node); the host hands
+A node is marked at the page (`custom-node-move` in the lower node, or in the upper
+one for a root); the host hands
 the mark over as `marked` and leaves the node out with `hidden-ids`. The modal then
 
 - names the mark above the tiles on every level (`#marked-hint`, „‚Name‘ markiert“),

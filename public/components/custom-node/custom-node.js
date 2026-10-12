@@ -63,6 +63,9 @@ class CustomNode extends LitElement {
     canCreateContent: { type: Boolean, attribute: 'can-create-content' },
     canDelete: { type: Boolean, attribute: 'can-delete' },
     canMove: { type: Boolean, attribute: 'can-move' },
+    // Mark only while this node is a root: a root always stands in the upper
+    // node, a node with a parent is marked where it is the chosen one.
+    canMoveRoot: { type: Boolean, attribute: 'can-move-root' },
     // Id of the node marked to be moved, wherever it is. The consumer owns the
     // mark; the node compares, so a consumer that swaps the id need not care.
     markedId: { type: String },
@@ -105,6 +108,7 @@ class CustomNode extends LitElement {
     this.canCreateContent = false;
     this.canDelete = false;
     this.canMove = false;
+    this.canMoveRoot = false;
     this.markedId = null;
     this._nodeData = null;
     this._loading = false;
@@ -273,7 +277,7 @@ class CustomNode extends LitElement {
               : ''
           }
           ${
-            this.canMove && this.hasScope('edit')
+            this._offersMark() && this.hasScope('edit')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
                     <!-- Marks this node; the navigation modal moves the
@@ -754,6 +758,13 @@ class CustomNode extends LitElement {
     this._nodeData = null;
     this._resetJumpState();
     this.fetchNode(newId);
+  }
+
+  /** Is marking granted for this node — always, or as a root only? */
+  _offersMark() {
+    return (
+      this.canMove || (this.canMoveRoot && !this._nodeData?.parent_node_id)
+    );
   }
 
   /**
