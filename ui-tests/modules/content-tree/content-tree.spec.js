@@ -134,4 +134,56 @@ test.describe('content-tree module', () => {
       expect(found).toEqual([[], [], []]);
     });
   });
+
+  test.describe('withoutNodes', () => {
+    const allIds = (nodes) =>
+      nodes.flatMap((node) => [node.id, ...allIds(node.childnodes || [])]);
+
+    test('leaves out a node together with everything below it', async ({
+      page,
+    }) => {
+      const tree = await inPage(page, (m, tree) =>
+        m.withoutNodes(tree, ['level-2'])
+      );
+
+      expect(allIds(tree)).toEqual(['root-1', 'level-2-b', 'root-2']);
+    });
+
+    test('leaves out a root', async ({ page }) => {
+      const tree = await inPage(page, (m, tree) =>
+        m.withoutNodes(tree, ['root-1'])
+      );
+
+      expect(allIds(tree)).toEqual(['root-2']);
+    });
+
+    test('leaves out several nodes on different levels', async ({ page }) => {
+      const tree = await inPage(page, (m, tree) =>
+        m.withoutNodes(tree, ['level-3', 'root-2'])
+      );
+
+      expect(allIds(tree)).toEqual(['root-1', 'level-2', 'level-2-b']);
+    });
+
+    test('returns the tree as it is without ids', async ({ page }) => {
+      const result = await inPage(page, (m, tree) => ({
+        none: m.withoutNodes(tree, []),
+        missing: m.withoutNodes(tree),
+        unknown: m.withoutNodes(tree, ['nope']),
+      }));
+
+      expect(allIds(result.none)).toEqual(allIds(result.missing));
+      expect(allIds(result.unknown)).toEqual(allIds(result.none));
+      expect(allIds(result.none)).toHaveLength(6);
+    });
+
+    test('does not change the tree it is given', async ({ page }) => {
+      const untouched = await inPage(page, (m, tree) => {
+        m.withoutNodes(tree, ['level-3']);
+        return tree[0].childnodes[0].childnodes.length;
+      });
+
+      expect(untouched).toBe(1);
+    });
+  });
 });
