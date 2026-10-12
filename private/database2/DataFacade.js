@@ -244,8 +244,9 @@ class DataFacadeSync {
 
   /**
    * Drops the cache entries of nodes a write changed beyond its own record —
-   * after a move the node and both parents, whose cached entries carry the
-   * old children. Each under both ids, like `clearCacheFor`.
+   * the node a child or content hangs on, after a move also the node and its
+   * old parent: their cached entries carry the old children and contents.
+   * Each under both ids, like `clearCacheFor`.
    *
    * **Regardless of `skipCache`**, and an unreachable cache does not fail the
    * write: the row is saved, a stale entry is no reason to drop the answer.
@@ -268,16 +269,27 @@ class DataFacadeSync {
       Logging.debugMessage({
         severity: 'FINEST',
         location: LOCATION,
-        message: `Cleared ${keys.size} node cache keys after a move`,
+        message: `Cleared ${keys.size} node cache keys after a write`,
       });
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',
         location: LOCATION,
-        message: 'Could not clear node cache keys after a move',
+        message: 'Could not clear node cache keys after a write',
         error,
       });
     }
+  }
+
+  /**
+   * Creates a node or a content through the repository, and clears the node
+   * it hangs on: a cached node lists its children and contents.
+   */
+  async createContentRecord(object, payload) {
+    const repository = this.createContentRepository();
+    const record = await repository.createRecord(object, payload);
+    await this.clearNodeEntries(repository.getTouchedNodes());
+    return record;
   }
 
   async createData(data) {
@@ -294,7 +306,7 @@ class DataFacadeSync {
     try {
       // Always skip cache for creation
       const createdRecord = ContentRepository.owns(object)
-        ? await this.createContentRepository().createRecord(object, payload)
+        ? await this.createContentRecord(object, payload)
         : await this.createDirectStorage().createRecord(
             this.createDirectTable(object),
             payload
@@ -334,11 +346,11 @@ class DataFacadeSync {
         return;
       }
 
-      const removed = await this.createContentRepository().deleteRecord(
-        object,
-        id
-      );
+      const repository = this.createContentRepository();
+      const removed = await repository.deleteRecord(object, id);
       await this.clearCacheFor(removed, id);
+      // The node it hung on lists it in its cached entry.
+      await this.clearNodeEntries(repository.getTouchedNodes());
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',
