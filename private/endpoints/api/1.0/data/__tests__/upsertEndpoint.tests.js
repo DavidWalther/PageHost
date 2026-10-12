@@ -5,6 +5,8 @@ const { Logging } = require('../../../../../modules/logging');
 jest.mock('../../../../../database2/DataFacade');
 jest.mock('../../../../../modules/logging');
 
+const { NodeMoveRejected } = require('../../../../../modules/NodeMoveRule.js');
+
 describe('UpsertEndpoint', () => {
   let req, res, endpoint, environment;
 
@@ -174,5 +176,48 @@ describe('UpsertEndpoint', () => {
     );
     expect(response.result).toHaveProperty('createdAt');
     expect(response.result).toHaveProperty('updatedAt');
+  });
+
+  describe('a failed update', () => {
+    const updateFailingWith = async (error) => {
+      req.body = {
+        object: 'node',
+        payload: { id: 'n-1', parent_node_id: 'n-2' },
+      };
+      DataFacade.mockImplementation(() => ({
+        setSkipCache: () => ({
+          updateData: jest.fn().mockRejectedValue(error),
+        }),
+      }));
+      await new UpsertEndpoint()
+        .setEnvironment(environment)
+        .setRequestObject(req)
+        .setResponseObject(res)
+        .execute();
+    };
+
+    // A rejected move is a request the client may not make, not a fault of
+    // the server: 400, with the reason for the operator to read.
+    it('answers 400 with the reason when a move is rejected', async () => {
+      await updateFailingWith(
+        new NodeMoveRejected('A node cannot be moved below itself')
+      );
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'A node cannot be moved below itself',
+      });
+    });
+
+    it('answers 500 for any other error', async () => {
+      await updateFailingWith(new Error('connection lost'));
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'connection lost',
+      });
+    });
   });
 });
