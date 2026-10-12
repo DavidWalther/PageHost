@@ -33,7 +33,8 @@ The backend refuses a move below the node itself or one of its descendants,
 and any move out of or into the feeds (the feed root and everything below
 it) — with 400 and the reason, which the toast shows as it comes. A node moved
 to the top level gets an `include` row for its own application, like a new
-root; otherwise it would vanish together with everything below it.
+root; otherwise it would vanish together with everything below it. The way
+back is not symmetric: a root moved below another node keeps that row.
 
 ## Usage
 

@@ -49,6 +49,11 @@ transaction, before anything is written:
 - A node moved to the top level gets an `include` row for its own application,
   as `createNode` adds for a new root — without it a node that inherits its
   visibility would vanish together with everything below it.
+- The way back is not symmetric: a root moved below another node **keeps** its
+  `include` row. The repository cannot tell a row a move added from one set on
+  purpose, so it removes none. The node then belongs to the application by its
+  own row as well, not only through its parent. Moving it to the top level
+  again adds nothing (the insert ends in `ON CONFLICT DO NOTHING`).
 - An unchanged parent — the edit dialog sends the current one on every save —
   is no move and is not checked.
 
