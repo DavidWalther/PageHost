@@ -6,6 +6,7 @@ import {
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
 import '/components/custom-node-delete/custom-node-delete.js';
+import '/components/custom-node-move/custom-node-move.js';
 import '/slds-components/slds-progress-bar/slds-progress-bar.js';
 
 /**
@@ -61,6 +62,10 @@ class CustomNode extends LitElement {
     canCreateChild: { type: Boolean, attribute: 'can-create-child' },
     canCreateContent: { type: Boolean, attribute: 'can-create-content' },
     canDelete: { type: Boolean, attribute: 'can-delete' },
+    canMove: { type: Boolean, attribute: 'can-move' },
+    // Id of the node marked to be moved, wherever it is. The consumer owns the
+    // mark; the node compares, so a consumer that swaps the id need not care.
+    markedId: { type: String },
     _nodeData: { state: true },
     _loading: { state: true },
     _scrollPending: { state: true },
@@ -99,6 +104,8 @@ class CustomNode extends LitElement {
     this.canCreateChild = false;
     this.canCreateContent = false;
     this.canDelete = false;
+    this.canMove = false;
+    this.markedId = null;
     this._nodeData = null;
     this._loading = false;
     this.pendingNewContentId = null;
@@ -261,6 +268,23 @@ class CustomNode extends LitElement {
                       variant="container-filled"
                       @click=${this.handleCreateContentClick}
                     ></slds-button-icon>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+          ${
+            this.canMove && this.hasScope('edit')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <!-- Marks this node; the navigation modal moves the
+                         mark. The action is its own component. -->
+                    <custom-node-move
+                      id="node-move"
+                      node-id="${this.id}"
+                      node-name="${this._nodeData.name || ''}"
+                      parent-id="${this._nodeData.parent_node_id || ''}"
+                      .marked="${!!this.id && this.markedId === this.id}"
+                    ></custom-node-move>
                   </div>
                 </slds-layout-item>`
               : ''

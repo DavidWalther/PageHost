@@ -21,6 +21,9 @@ class Bookstore extends LitElement {
     _feedRequested: { type: Boolean, state: true },
     _activeFeedId: { type: String, state: true },
     _feedContentNumber: { type: Number, state: true },
+    // The node marked to be moved, `{ id, name, parentId }`, or null. One at a
+    // time, and only as long as the page: a reload drops it.
+    _marked: { type: Object, state: true },
   };
 
   constructor() {
@@ -37,6 +40,7 @@ class Bookstore extends LitElement {
     this._feedRequested = false;
     this._activeFeedId = null;
     this._feedContentNumber = null;
+    this._marked = null;
     this._hostListeners = this.createHostListeners();
   }
 
@@ -234,6 +238,8 @@ class Bookstore extends LitElement {
             data-role="content"
             can-create-content
             can-delete
+            can-move
+            .markedId="${this._marked?.id ?? null}"
             no-child-navigation
           ></custom-node>
         </div>
@@ -364,6 +370,7 @@ class Bookstore extends LitElement {
       // component keeps its old name.
       ['chapter-updated', (event) => this._handleChildUpdated(event)],
       ['node-deleted', (event) => this._handleNodeDeleted(event)],
+      ['node-mark-change', (event) => this._handleMarkChange(event)],
       ...[
         'chapter-created',
         'chapter-updated',
@@ -387,6 +394,20 @@ class Bookstore extends LitElement {
    * When the node above went, nothing of the two nodes is left to show: back
    * to the start page, as with the home button.
    */
+  /**
+   * Keeps or drops the mark to move a node. There is one mark: marking a node
+   * replaces the old one, and unmarking only drops the mark of that node.
+   */
+  _handleMarkChange(event) {
+    const { marked, node } = event.detail ?? {};
+    if (!node?.id) return;
+    if (marked) {
+      this._marked = { ...node };
+    } else if (this._marked?.id === node.id) {
+      this._marked = null;
+    }
+  }
+
   _handleNodeDeleted(event) {
     const { nodeId, nodeIds } = event.detail ?? {};
     if (!nodeId) return;
