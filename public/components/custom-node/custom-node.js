@@ -232,7 +232,7 @@ class CustomNode extends LitElement {
                       chapter-id="${this.id}"
                       story-id="${this._nodeData.parent_node_id || ''}"
                       name="${this._nodeData.name || ''}"
-                      sort-number="${this._nodeData.sortnumber || 1}"
+                      .sortNumber="${this._nodeData.sortnumber ?? null}"
                       ?reversed="${this._nodeData.reversed || false}"
                       publish-date="${this._nodeData.published_date || ''}"
                       @chapter-updated=${this._handleNodeUpdated}
@@ -846,9 +846,16 @@ class CustomNode extends LitElement {
       .map((child) =>
         child.id === childData.id ? { ...child, ...childData } : child
       )
-      .sort(
-        (first, second) => (first.sortnumber ?? 0) - (second.sortnumber ?? 0)
-      );
+      // As the backend sorts siblings: without a sortnumber at the end, a tie
+      // decided by the id. A moved node has no sortnumber.
+      .sort((first, second) => {
+        const firstSort = first.sortnumber ?? Number.MAX_SAFE_INTEGER;
+        const secondSort = second.sortnumber ?? Number.MAX_SAFE_INTEGER;
+        if (firstSort !== secondSort) {
+          return firstSort - secondSort;
+        }
+        return String(first.id).localeCompare(String(second.id));
+      });
     this._nodeData = { ...this._nodeData, nodes };
     this.requestUpdate();
   }
