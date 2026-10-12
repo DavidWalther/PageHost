@@ -730,3 +730,66 @@ describe('moving a node', () => {
     expect(cacheDelMany).not.toHaveBeenCalled();
   });
 });
+
+describe('clearing the node a create or delete changed', () => {
+  let facade;
+  let cacheDelMany;
+  let repository;
+
+  beforeEach(() => {
+    cacheDelMany = jest.fn();
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'createCache').mockReturnValue({
+      del: jest.fn(),
+      delMany: cacheDelMany,
+      set: jest.fn(),
+    });
+    repository = {
+      createRecord: jest.fn().mockResolvedValue({ id: 'n-new' }),
+      deleteRecord: jest.fn().mockResolvedValue({ nodes: [], contents: [] }),
+      getTouchedNodes: jest
+        .fn()
+        .mockReturnValue([{ id: 'n-parent', legacy_id: '000s1' }]),
+    };
+    jest.spyOn(facade, 'createContentRepository').mockReturnValue(repository);
+  });
+
+  const allClearedKeys = () =>
+    cacheDelMany.mock.calls.flatMap(([keys]) => keys);
+
+  it('clears the parent of a created node, by both ids', async () => {
+    await facade.createData({
+      object: 'node',
+      payload: { name: 'Neu', parent_node_id: 'n-parent' },
+    });
+
+    expect(allClearedKeys()).toEqual(
+      expect.arrayContaining(['node:n-parent', 'node:000s1'])
+    );
+  });
+
+  it('clears the node of a created content', async () => {
+    await facade.createData({
+      object: 'content',
+      payload: { node_id: 'n-parent' },
+    });
+
+    expect(allClearedKeys()).toEqual(expect.arrayContaining(['node:n-parent']));
+  });
+
+  it('clears the parent of a deleted node', async () => {
+    await facade.deleteData({ object: 'node', id: 'n-gone' });
+
+    expect(allClearedKeys()).toEqual(
+      expect.arrayContaining(['node:n-parent', 'node:000s1'])
+    );
+  });
+
+  it('still answers a create when the cache cannot be reached', async () => {
+    cacheDelMany.mockRejectedValue(new Error('redis down'));
+
+    await expect(
+      facade.createData({ object: 'node', payload: { name: 'Neu' } })
+    ).resolves.toEqual({ id: 'n-new' });
+  });
+});
