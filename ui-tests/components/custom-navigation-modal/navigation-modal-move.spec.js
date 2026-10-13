@@ -214,7 +214,7 @@ test.describe('Navigation modal: a leaf as the new parent', () => {
 
     // A plain selection: the host closes the modal.
     await expect(
-      page.locator('custom-navigation-modal slds-modal[heading="Navigation"]')
+      page.locator('custom-navigation-modal #modal-navigation')
     ).not.toHaveAttribute('open');
   });
 });

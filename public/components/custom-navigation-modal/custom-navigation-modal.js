@@ -221,7 +221,11 @@ class NavigationModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal heading="${this.labels.modalTitle}" footless>
+      <slds-modal
+        id="modal-navigation"
+        heading="${this.labels.modalTitle}"
+        footless
+      >
         ${this.marked?.id ? this._renderMarkedHint() : ''}
         ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
