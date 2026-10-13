@@ -9,6 +9,10 @@ const { cacheLitBundle } = require('../../support/component-page');
  * top level "Navigation" — and a long name is cut short. The top level has no
  * way back and so no footer at all: the missing footer says that this is the
  * top of the tree.
+ *
+ * Going back reports `navigation-level-back` with the level now open (`id`)
+ * and the one left (`childId`), so the page behind can show both. Back onto
+ * the top level reports nothing: there is no node to show.
  */
 
 const node = (id, name, childnodes = []) => ({
@@ -36,6 +40,14 @@ async function open(page) {
     route.fulfill({ json: TREE })
   );
   await cacheLitBundle(page);
+  await page.addInitScript(() => {
+    window.__reported = [];
+    for (const name of ['navigation-level-open', 'navigation-level-back']) {
+      document.addEventListener(name, (event) =>
+        window.__reported.push({ name, ...event.detail })
+      );
+    }
+  });
   // The start page: no location, the modal opens on the top level.
   await page.goto('/');
   await expect(page.locator('app-bookstore')).toBeAttached();
@@ -52,6 +64,7 @@ const tile = (page, text) =>
 const footer = (page) =>
   page.locator('custom-navigation-modal #modal-navigation .slds-modal__footer');
 const back = (page) => page.locator('custom-navigation-modal #button-back');
+const reported = (page) => page.evaluate(() => window.__reported);
 
 test.describe('Navigation modal: back in the footer', () => {
   test.use({ actionTimeout: 5000 });
@@ -145,5 +158,37 @@ test.describe('Navigation modal: back in the footer', () => {
 
     await expect(tile(page, 'Part')).toBeVisible();
     await expect(tile(page, 'Book')).toHaveCount(0);
+  });
+
+  test('going back reports the level now open and the one left', async ({
+    page,
+  }) => {
+    test.fail();
+    await open(page);
+    await tile(page, 'Book').click();
+    await tile(page, 'Part').click();
+    await expect(tile(page, 'Section')).toBeVisible();
+
+    await back(page).click();
+
+    await expect(tile(page, 'Part')).toBeVisible();
+    expect(await reported(page)).toEqual([
+      { name: 'navigation-level-open', id: 'book' },
+      { name: 'navigation-level-open', id: 'part' },
+      { name: 'navigation-level-back', id: 'book', childId: 'part' },
+    ]);
+  });
+
+  test('going back onto the top level reports nothing', async ({ page }) => {
+    await open(page);
+    await tile(page, 'Book').click();
+    await expect(tile(page, 'Part')).toBeVisible();
+
+    await back(page).click();
+
+    await expect(tile(page, 'Book')).toBeVisible();
+    expect(await reported(page)).toEqual([
+      { name: 'navigation-level-open', id: 'book' },
+    ]);
   });
 });
