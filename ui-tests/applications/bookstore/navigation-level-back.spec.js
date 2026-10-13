@@ -104,7 +104,6 @@ test.describe('Page: going back in the navigation modal', () => {
   test('shows the level now open above and the node left below', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
     await tile(page, 'Book').click();
     await tile(page, 'Part').click();
@@ -140,7 +139,6 @@ test.describe('Page: going back in the navigation modal', () => {
   test('back out of a leaf opened as a level shows the leaf below', async ({
     page,
   }) => {
-    test.fail();
     await open(page, { scopes: ['read', 'create'] });
     await tile(page, 'Book').click();
     await tile(page, 'Leaf').click({ modifiers: ['ControlOrMeta'] });
