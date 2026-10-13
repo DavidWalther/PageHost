@@ -166,7 +166,11 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
   - **`custom-navigation-modal`** zeigt den Inhaltsbaum als Kacheln, **Ebene
     für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
     (die Seite dahinter folgt, ein Titel-Knoten lädt), eine ohne Kinder wählt
-    aus. Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
+    aus. Die Überschrift nennt den Knoten, dessen Kinder zu sehen sind; der
+    Weg zurück ist ein Button im Footer, benannt nach der Ebene darüber — die
+    oberste Ebene hat keinen Footer. Auch beim Zurückgehen folgt die Seite:
+    oben die nun offene Ebene, unten der Knoten, aus dem man kommt.
+    Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
     der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
     einem Knoten lädt der `bookstore` den Baum neu.
     Mit Scope `create` endet jede Ebene in einer „+“-Kachel (ein weiteres Kind
