@@ -221,11 +221,7 @@ class NavigationModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal
-        id="modal-navigation"
-        heading="${this.labels.modalTitle}"
-        footless
-      >
+      <slds-modal id="modal-navigation" heading="${this._heading()}" footless>
         ${this.marked?.id ? this._renderMarkedHint() : ''}
         ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
@@ -237,6 +233,19 @@ class NavigationModal extends LitElement {
       <!-- The move action: run by the paste tile with the mark of the host. -->
       <custom-node-move no-trigger></custom-node-move>
     `;
+  }
+
+  /**
+   * The name of a level: of the node whose children it lists, and of the top
+   * level the title of the modal. The heading names the open level.
+   */
+  _levelName(id) {
+    const node = id ? findNode(this._shownTree, id) : null;
+    return node?.name ?? this.labels.modalTitle;
+  }
+
+  _heading() {
+    return this._levelName(this._currentElementId());
   }
 
   /** The create dialog decides about the create scope; one place for the rule. */
