@@ -163,7 +163,6 @@ test.describe('Navigation modal: back in the footer', () => {
   test('going back reports the level now open and the one left', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
     await tile(page, 'Book').click();
     await tile(page, 'Part').click();
