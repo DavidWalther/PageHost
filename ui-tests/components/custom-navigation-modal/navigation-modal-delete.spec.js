@@ -76,7 +76,7 @@ const deleteTile = (page) =>
   page.locator('custom-navigation-modal button.tile_delete');
 const modal = (page) =>
   page.locator('custom-navigation-modal #modal-navigation');
-const back = (page) => page.locator('custom-navigation-modal .back-button');
+const back = (page) => page.locator('custom-navigation-modal #button-back');
 
 test.describe('Navigation modal: delete', () => {
   test.use({ actionTimeout: 5000 });
