@@ -57,7 +57,6 @@ test.describe('Navigation modal: back in the footer', () => {
   test.use({ actionTimeout: 5000 });
 
   test('the top level has no footer and no way back', async ({ page }) => {
-    test.fail();
     await open(page);
     // Reached again from below, to tell "gone" from "never rendered".
     await tile(page, 'Book').click();
@@ -70,7 +69,6 @@ test.describe('Navigation modal: back in the footer', () => {
   });
 
   test('one level deep the button leads to "Navigation"', async ({ page }) => {
-    test.fail();
     await open(page);
 
     await tile(page, 'Book').click();
@@ -88,7 +86,6 @@ test.describe('Navigation modal: back in the footer', () => {
   test('deeper it is labelled with the name of the level above', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
     await tile(page, 'Book').click();
 
@@ -102,7 +99,6 @@ test.describe('Navigation modal: back in the footer', () => {
   test('it is a neutral SLDS button with a resolving icon', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
 
     await tile(page, 'Book').click();
@@ -117,7 +113,6 @@ test.describe('Navigation modal: back in the footer', () => {
   test('a long name is cut short and stays inside the footer', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
     await tile(page, LONG_NAME).click();
 
@@ -141,7 +136,6 @@ test.describe('Navigation modal: back in the footer', () => {
   });
 
   test('a click goes up exactly one level', async ({ page }) => {
-    test.fail();
     await open(page);
     await tile(page, 'Book').click();
     await tile(page, 'Part').click();
