@@ -75,7 +75,7 @@ const tile = (page, text) =>
 const deleteTile = (page) =>
   page.locator('custom-navigation-modal button.tile_delete');
 const modal = (page) =>
-  page.locator('custom-navigation-modal slds-modal[heading="Navigation"]');
+  page.locator('custom-navigation-modal #modal-navigation');
 const back = (page) => page.locator('custom-navigation-modal .back-button');
 
 test.describe('Navigation modal: delete', () => {
