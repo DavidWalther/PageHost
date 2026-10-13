@@ -65,7 +65,6 @@ test.describe('Navigation modal: the heading names the current element', () => {
   test('an opened level is headed by the name of its node', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
 
     await tile(page, 'Book').click();
@@ -77,7 +76,6 @@ test.describe('Navigation modal: the heading names the current element', () => {
   test('two levels deep it is the name of the deeper node', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
     await tile(page, 'Book').click();
 
@@ -90,7 +88,6 @@ test.describe('Navigation modal: the heading names the current element', () => {
   test('going back heads the level above again, up to "Navigation"', async ({
     page,
   }) => {
-    test.fail();
     await open(page);
     await tile(page, 'Book').click();
     await tile(page, 'Part').click();
@@ -104,7 +101,6 @@ test.describe('Navigation modal: the heading names the current element', () => {
   });
 
   test('a leaf opened as a level is headed by its name', async ({ page }) => {
-    test.fail();
     await open(page, { scopes: ['create'] });
 
     await tile(page, 'Single').click({ modifiers: ['ControlOrMeta'] });
