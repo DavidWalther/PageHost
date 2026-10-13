@@ -38,6 +38,7 @@ const ACTION_IDS = [
   'node-edit',
   'button-share',
   'button-create-content',
+  'node-move',
   'node-delete',
 ];
 
@@ -132,19 +133,26 @@ const ONLY_VISIBLE = [
     name: 'nur Scope edit',
     scopes: ['edit'],
     expected: {
-      navigation: ['node-edit', 'button-share'],
-      content: ['node-edit', 'button-share'],
+      // The node above is a root here, so it offers the mark as well.
+      navigation: ['node-edit', 'button-share', 'node-move'],
+      content: ['node-edit', 'button-share', 'node-move'],
     },
   },
   {
     name: 'alle Scopes',
     scopes: SESSION_SCOPES,
     expected: {
-      navigation: ['node-create-child', 'node-edit', 'button-share'],
+      navigation: [
+        'node-create-child',
+        'node-edit',
+        'button-share',
+        'node-move',
+      ],
       content: [
         'node-edit',
         'button-share',
         'button-create-content',
+        'node-move',
         'node-delete',
       ],
     },

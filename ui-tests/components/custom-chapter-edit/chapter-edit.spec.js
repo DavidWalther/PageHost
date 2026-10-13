@@ -20,9 +20,16 @@ const NODE = {
   sortNumber: 3,
 };
 
-async function mount(page, { scopes = ['edit', 'create'], edit = true } = {}) {
+async function mount(
+  page,
+  {
+    scopes = ['edit', 'create'],
+    edit = true,
+    sortNumber = NODE.sortNumber,
+  } = {}
+) {
   await page.evaluate(
-    async ({ scopes, edit, node }) => {
+    async ({ scopes, edit, node, sortNumber }) => {
       if (scopes.length > 0) {
         sessionStorage.setItem(
           'code_exchange_response',
@@ -48,12 +55,17 @@ async function mount(page, { scopes = ['edit', 'create'], edit = true } = {}) {
       if (edit) {
         el.setAttribute('chapter-id', node.id);
         el.setAttribute('name', node.name);
-        el.setAttribute('sort-number', String(node.sortNumber));
+        // `null`: a node without a sortnumber, as custom-node hands it over.
+        if (sortNumber === null) {
+          el.sortNumber = null;
+        } else {
+          el.setAttribute('sort-number', String(sortNumber));
+        }
       }
       document.body.appendChild(el);
       await el.updateComplete;
     },
-    { scopes, edit, node: NODE }
+    { scopes, edit, node: NODE, sortNumber }
   );
   return page.locator('custom-chapter-edit');
 }
@@ -248,6 +260,53 @@ test.describe('custom-chapter-edit: the form', () => {
   });
 });
 
+/**
+ * A moved node has no sortnumber: it stands at the end of its new siblings.
+ * Saving it — even only to rename it — must keep it there, not fill in the
+ * silent default `1` and move it to the front.
+ */
+test.describe('custom-chapter-edit: a node without a sort number', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('the field starts empty', async ({ page }) => {
+    const editor = await mount(page, { sortNumber: null });
+    await openThroughTrigger(page);
+
+    await expect(editor.locator('#input-number')).toHaveValue('');
+  });
+
+  test('renaming keeps the sort number empty', async ({ page }) => {
+    const editor = await mount(page, { sortNumber: null });
+    await captureWrites(page);
+    await captureToasts(page);
+    await openThroughTrigger(page);
+
+    await editor.locator('#input-text').fill('Chapter two');
+    await editor.locator('#input-text').blur();
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    const message = await written(page);
+    expect(message.payload.sortnumber).toBeNull();
+    expect(await toasts(page)).not.toContain(
+      'Sortierung muss mindestens 1 sein'
+    );
+  });
+
+  test('a number typed in is saved', async ({ page }) => {
+    const editor = await mount(page, { sortNumber: null });
+    await captureWrites(page);
+    await openThroughTrigger(page);
+
+    await editor.locator('#input-number').fill('4');
+    await editor.locator('#input-number').blur();
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    expect((await written(page)).payload.sortnumber).toBe(4);
+  });
+});
+
 test.describe('custom-chapter-edit: reverse order', () => {
   test.beforeEach(async ({ page }) => {
     await gotoComponentPage(page);
@@ -386,5 +445,38 @@ test.describe('custom-chapter-edit: opened from outside', () => {
     await expect(
       page.locator('custom-chapter-edit slds-modal')
     ).not.toHaveAttribute('open');
+  });
+});
+
+/**
+ * Saving the edit dialog must not touch the publication. Publishing has its
+ * own tab and endpoint; the edit form only carries what it shows.
+ */
+test.describe('custom-chapter-edit: saving keeps the publication', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoComponentPage(page);
+  });
+
+  test('a published node stays published when renamed', async ({ page }) => {
+    const editor = await mount(page);
+    await page.evaluate(async () => {
+      const el = document.querySelector('custom-chapter-edit');
+      el.setAttribute('publish-date', '2026-01-01T00:00:00.000Z');
+      await el.updateComplete;
+    });
+    await captureWrites(page);
+    await openThroughTrigger(page);
+
+    await editor.locator('#input-text').fill('Chapter two');
+    await editor.locator('#input-text').blur();
+    await editor.locator('button', { hasText: 'Speichern' }).click();
+
+    // Either the date as it was, or no date at all — never `null`, which
+    // withdraws the node.
+    const { payload } = await written(page);
+    expect(payload.published_date).not.toBeNull();
+    if ('published_date' in payload) {
+      expect(payload.published_date).toBe('2026-01-01T00:00:00.000Z');
+    }
   });
 });

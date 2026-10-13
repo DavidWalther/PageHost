@@ -21,6 +21,9 @@ class Bookstore extends LitElement {
     _feedRequested: { type: Boolean, state: true },
     _activeFeedId: { type: String, state: true },
     _feedContentNumber: { type: Number, state: true },
+    // The node marked to be moved, `{ id, name, parentId }`, or null. One at a
+    // time, and only as long as the page: a reload drops it.
+    _marked: { type: Object, state: true },
   };
 
   constructor() {
@@ -37,10 +40,20 @@ class Bookstore extends LitElement {
     this._feedRequested = false;
     this._activeFeedId = null;
     this._feedContentNumber = null;
+    this._marked = null;
+    // What the modal leaves out: the marked node. One list per mark, so the
+    // modal sees a change only when the mark changes.
+    this._hiddenIds = [];
     this._hostListeners = this.createHostListeners();
   }
 
   // =========== Lifecycle methods ============
+
+  willUpdate(changed) {
+    if (changed.has('_marked')) {
+      this._hiddenIds = this._marked ? [this._marked.id] : [];
+    }
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -175,6 +188,8 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
+        .marked="${this._marked}"
+        .hiddenIds="${this._hiddenIds}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
@@ -222,6 +237,8 @@ class Bookstore extends LitElement {
             data-role="navigation"
             child-buttons_number-max="2"
             can-create-child
+            can-move-root
+            .markedId="${this._marked?.id ?? null}"
             no-contents
           ></custom-node>
         </div>
@@ -234,6 +251,8 @@ class Bookstore extends LitElement {
             data-role="content"
             can-create-content
             can-delete
+            can-move
+            .markedId="${this._marked?.id ?? null}"
             no-child-navigation
           ></custom-node>
         </div>
@@ -364,10 +383,14 @@ class Bookstore extends LitElement {
       // component keeps its old name.
       ['chapter-updated', (event) => this._handleChildUpdated(event)],
       ['node-deleted', (event) => this._handleNodeDeleted(event)],
+      ['node-mark-change', (event) => this._handleMarkChange(event)],
+      ['node-mark-clear', () => (this._marked = null)],
+      ['node-moved', (event) => this._handleNodeMoved(event)],
       ...[
         'chapter-created',
         'chapter-updated',
         'node-deleted',
+        'node-moved',
         'published',
         'unpublished',
       ].map((name) => [name, reloadTree]),
@@ -387,6 +410,59 @@ class Bookstore extends LitElement {
    * When the node above went, nothing of the two nodes is left to show: back
    * to the start page, as with the home button.
    */
+  /**
+   * Keeps or drops the mark to move a node. There is one mark: marking a node
+   * replaces the old one, and unmarking only drops the mark of that node.
+   */
+  _handleMarkChange(event) {
+    const { marked, node } = event.detail ?? {};
+    if (!node?.id) return;
+    if (marked) {
+      this._marked = { ...node };
+    } else if (this._marked?.id === node.id) {
+      this._marked = null;
+    }
+  }
+
+  /**
+   * After a move the page shows the moved node as if it had been chosen in
+   * the navigation modal: below the node itself, above its new parent with
+   * the node selected. Both are fetched again — the node names its old parent
+   * otherwise, which its edit dialog would write back. A node moved to the
+   * top level has no parent to show; the old one above lets go of it. The
+   * mark is used up, the modal closes; the tree reloads with the other
+   * changes to a node.
+   */
+  _handleNodeMoved(event) {
+    const { nodeId, toParentId } = event.detail ?? {};
+    if (!nodeId) return;
+    this._marked = null;
+    this.hideFeed();
+
+    if (toParentId) {
+      if (this.navigationNode.getAttribute('id') === toParentId) {
+        this.navigationNode.reload();
+      } else {
+        // Keep the moved node selected when the new parent arrives, instead
+        // of its cover node (see handleNavigationNodeLoaded).
+        this._pendingChildSelection = nodeId;
+        this.navigationNode.setAttribute('id', toParentId);
+      }
+      this.navigationNode.setAttribute('selected-child', nodeId);
+    } else {
+      this.navigationNode.removeChildNode(nodeId);
+      this.navigationNode.removeAttribute('selected-child');
+    }
+
+    if (this.contentNode.getAttribute('id') === nodeId) {
+      this.contentNode.reload();
+    } else {
+      this.contentNode.setAttribute('id', nodeId);
+    }
+    this._setCurrentLocation(nodeId);
+    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+  }
+
   _handleNodeDeleted(event) {
     const { nodeId, nodeIds } = event.detail ?? {};
     if (!nodeId) return;

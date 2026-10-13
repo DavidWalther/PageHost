@@ -263,7 +263,7 @@ class CustomChapterEdit extends LitElement {
             type="number"
             label="${this.labels.sortNumber}"
             placeholder="${this.labels.sortNumberPlaceholder}"
-            value="${this.chapterData?.sortNumber || 1}"
+            value="${this.chapterData?.sortNumber ?? ''}"
             @change="${this._handleSortNumberChange}"
             min="1"
             required
@@ -419,20 +419,15 @@ class CustomChapterEdit extends LitElement {
    *
    * The check in `_validate` therefore never fires from this form. It stays as a
    * net for a consumer that sets `chapterData` directly.
+   *
+   * A node **without** a sort number (`null`, a moved node) shows an empty
+   * field and keeps `null` as long as the field is not touched.
    */
   _handleSortNumberChange(event) {
     const input = event.detail;
     this.chapterData = {
       ...this.chapterData,
       sortNumber: parseInt(input.value) || 1,
-    };
-  }
-
-  _handlePublishDateChange(event) {
-    const input = event.detail;
-    this.chapterData = {
-      ...this.chapterData,
-      publishDate: input.value || null,
     };
   }
 
@@ -498,17 +493,20 @@ class CustomChapterEdit extends LitElement {
   /**
    * Die zu setzenden Spalten eines Knotens.
    *
-   * Die Namen sind die des Datenmodells (`sortnumber`, `published_date`) —
-   * frueher standen hier `sortNumber`/`publishDate`, die die Datenschicht
-   * uebersetzen musste. Uebrig bleibt eine Uebersetzung: die Formularfelder
-   * heissen intern weiter wie bisher.
+   * Die Namen sind die des Datenmodells (`sortnumber`) — frueher standen hier
+   * `sortNumber`/`publishDate`, die die Datenschicht uebersetzen musste.
+   * Uebrig bleibt eine Uebersetzung: die Formularfelder heissen intern weiter
+   * wie bisher.
+   *
+   * **No `published_date`.** The form has no field for it; publishing is the
+   * publish tab's, through its own endpoint. Sending the form's empty value
+   * withdrew a published node on every save.
    */
   _nodeColumns() {
     return {
       name: this.chapterData.name,
       sortnumber: this.chapterData.sortNumber,
       reversed: this.chapterData.reversed || false,
-      published_date: this.chapterData.publishDate || null,
     };
   }
 
@@ -518,8 +516,10 @@ class CustomChapterEdit extends LitElement {
       return { valid: false, message: this.labels.nameRequired };
     }
 
-    const sortNumber = this.chapterData?.sortNumber;
-    if (!sortNumber || sortNumber < 1) {
+    // No sort number at all is allowed: a moved node has none and stands at
+    // the end of its siblings. Saving it untouched keeps it there.
+    const sortNumber = this.chapterData?.sortNumber ?? null;
+    if (sortNumber !== null && !(sortNumber >= 1)) {
       return { valid: false, message: this.labels.sortNumberRequired };
     }
 

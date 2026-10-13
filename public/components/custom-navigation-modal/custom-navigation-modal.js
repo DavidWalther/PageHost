@@ -4,9 +4,10 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
-import { findNode, findPath } from '/modules/content-tree.mjs';
+import { findNode, findPath, withoutNodes } from '/modules/content-tree.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
 import '/components/custom-node-delete/custom-node-delete.js';
+import '/components/custom-node-move/custom-node-move.js';
 
 class NavigationModal extends LitElement {
   //===========================
@@ -19,6 +20,9 @@ class NavigationModal extends LitElement {
     back: '< zurück',
     createChild: 'Neuen Eintrag anlegen',
     deleteCurrent: 'Diesen Eintrag löschen',
+    marked: (name) => `„${name}“ markiert`,
+    clearMark: 'Markierung aufheben',
+    pasteHere: 'Hier einfügen',
   };
 
   _isOpen = false;
@@ -76,7 +80,8 @@ class NavigationModal extends LitElement {
     }
 
     .tile_add svg,
-    .tile_delete svg {
+    .tile_delete svg,
+    .tile_paste svg {
       width: 1.25rem;
       height: 1.25rem;
       fill: currentColor;
@@ -98,6 +103,12 @@ class NavigationModal extends LitElement {
 
   static properties = {
     currentLocation: { type: String, attribute: 'current-location' },
+    // Nodes left out, each with everything below it: no tile, no level. The
+    // node marked to be moved is one — it cannot become its own new parent.
+    hiddenIds: { type: Array, attribute: 'hidden-ids' },
+    // The node marked to be moved, `{ id, name, parentId }`, or null. The host
+    // owns the mark; the modal names it and moves it.
+    marked: { type: Object },
     _tree: { state: true },
     _openPath: { state: true },
   };
@@ -105,6 +116,8 @@ class NavigationModal extends LitElement {
   constructor() {
     super();
     this.currentLocation = null;
+    this.hiddenIds = [];
+    this.marked = null;
     this._tree = [];
     // Ids of the nodes whose children are listed, top down. Empty: the roots.
     this._openPath = [];
@@ -149,11 +162,23 @@ class NavigationModal extends LitElement {
     );
   }
 
-  /** The leading part of `path` whose nodes are all still in the tree. */
+  /** The tree as the modal lists it: without the nodes in `hidden-ids`. */
+  get _shownTree() {
+    return withoutNodes(this._tree, this.hiddenIds || []);
+  }
+
+  /** Nodes left out while the modal is open: a level through them closes. */
+  willUpdate(changed) {
+    if (changed.has('hiddenIds')) {
+      this._openPath = this._existingPrefix(this._openPath);
+    }
+  }
+
+  /** The leading part of `path` whose nodes are all still listed. */
   _existingPrefix(path) {
     const kept = [];
     for (const id of path) {
-      if (!findNode(this._tree, id)) {
+      if (!findNode(this._shownTree, id)) {
         break;
       }
       kept.push(id);
@@ -171,21 +196,24 @@ class NavigationModal extends LitElement {
   /**
    * The levels to open for the current location: every ancestor of it, so the
    * modal lists the location among its siblings. A root (or no location)
-   * keeps the modal on the top level.
+   * keeps the modal on the top level, and so does a left-out node on the way:
+   * the path ends before it.
    */
   _resolveInitialPath() {
-    return this._locationPath()
-      .slice(0, -1)
-      .map((node) => node.id);
+    return this._existingPrefix(
+      this._locationPath()
+        .slice(0, -1)
+        .map((node) => node.id)
+    );
   }
 
   /** The nodes listed on the open level. */
   _currentLevel() {
     if (this._openPath.length === 0) {
-      return this._tree;
+      return this._shownTree;
     }
     const parent = findNode(
-      this._tree,
+      this._shownTree,
       this._openPath[this._openPath.length - 1]
     );
     return parent?.childnodes || [];
@@ -194,6 +222,7 @@ class NavigationModal extends LitElement {
   render() {
     return html`
       <slds-modal heading="${this.labels.modalTitle}" footless>
+        ${this.marked?.id ? this._renderMarkedHint() : ''}
         ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
       </slds-modal>
@@ -201,6 +230,8 @@ class NavigationModal extends LitElement {
       <custom-chapter-edit no-trigger></custom-chapter-edit>
       <!-- The delete action: run by the delete tile, its prompts and all. -->
       <custom-node-delete no-trigger></custom-node-delete>
+      <!-- The move action: run by the paste tile with the mark of the host. -->
+      <custom-node-move no-trigger></custom-node-move>
     `;
   }
 
@@ -222,9 +253,26 @@ class NavigationModal extends LitElement {
     return this._deleteAction?.canDelete() ?? false;
   }
 
+  /** The move action decides about the edit scope, as the others do. */
+  get _moveAction() {
+    return this.shadowRoot?.querySelector('custom-node-move') ?? null;
+  }
+
+  /**
+   * Is there a mark to paste here? Not on the level the marked node already
+   * hangs on — that move would change nothing. The top level stands for the
+   * roots: a root is not pasted there.
+   */
+  _canPasteHere() {
+    if (!this.marked?.id || !(this._moveAction?.canMove() ?? false)) {
+      return false;
+    }
+    return this._currentElementId() !== (this.marked.parentId ?? null);
+  }
+
   firstUpdated() {
-    // Editor and delete action exist only after the first render; ask again
-    // for their tiles.
+    // Editor and the delete and move actions exist only after the first
+    // render; ask again for their tiles.
     this.requestUpdate();
     // A hold ends wherever the pointer is let go — after the level changed,
     // the tile it started on is gone. So the end is watched on the whole root.
@@ -251,6 +299,46 @@ class NavigationModal extends LitElement {
     return this._openPath.length > 0
       ? this._openPath[this._openPath.length - 1]
       : null;
+  }
+
+  /**
+   * What is marked to be moved, on every level: the marked node itself is
+   * left out of the tiles, so this is where it can still be seen — and where
+   * the mark can be dropped.
+   */
+  _renderMarkedHint() {
+    return html`
+      <div id="marked-hint" class="slds-m-bottom_small">
+        <span class="slds-pill">
+          <span class="slds-pill__label">
+            ${this.labels.marked(this.marked.name)}
+          </span>
+          <button
+            class="slds-button slds-button_icon slds-pill__remove"
+            title="${this.labels.clearMark}"
+            aria-label="${this.labels.clearMark}"
+            @click="${this._clearMark}"
+          >
+            <svg class="slds-button__icon" aria-hidden="true">
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#close"
+              ></use>
+            </svg>
+          </button>
+        </span>
+      </div>
+    `;
+  }
+
+  /** Asks the host to drop the mark; the host owns it. */
+  _clearMark() {
+    this.dispatchEvent(
+      new CustomEvent('node-mark-clear', {
+        detail: { nodeId: this.marked?.id ?? null },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   _renderBack() {
@@ -308,6 +396,7 @@ class NavigationModal extends LitElement {
             ? this._renderDeleteTile()
             : ''
         }
+        ${this._canPasteHere() ? this._renderPasteTile() : ''}
       </slds-layout>
     `;
   }
@@ -347,6 +436,39 @@ class NavigationModal extends LitElement {
     const action = this._deleteAction;
     action.nodeId = this._currentElementId();
     return action.requestDelete();
+  }
+
+  /**
+   * The last tile of a level while a node is marked: moves it below the
+   * current element — on the top level, to the top level.
+   */
+  _renderPasteTile() {
+    return html`
+      <slds-layout-item size="1-of-2" medium-size="1-of-3" large-size="1-of-4">
+        <div class="slds-p-vertical_x-small">
+          <button
+            class="tile tile_paste"
+            title="${this.labels.pasteHere}"
+            aria-label="${this.labels.pasteHere}"
+            @click="${() => this._pasteHere()}"
+          >
+            <svg aria-hidden="true">
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#paste"
+              ></use>
+            </svg>
+          </button>
+        </div>
+      </slds-layout-item>
+    `;
+  }
+
+  /**
+   * Runs the move action for the mark. The action writes and reports
+   * `node-moved`; the host drops the mark and reloads the tree.
+   */
+  _pasteHere() {
+    return this._moveAction.requestMove(this.marked, this._currentElementId());
   }
 
   /** The last tile of a level: one more child of the current element. */
@@ -486,11 +608,14 @@ class NavigationModal extends LitElement {
 
   /**
    * A leaf is opened as a level for what its level offers: "+" creates its
-   * first child, the delete tile deletes it. Without either scope there is
-   * nothing to do there, and the gesture stays a plain click.
+   * first child, the delete tile deletes it, the paste tile moves the marked
+   * node below it. Without any of these there is nothing to do there, and the
+   * gesture stays a plain click.
    */
   _canOpenAnyLevel() {
-    return this._canCreate() || this._canDelete();
+    const canPaste =
+      !!this.marked?.id && (this._moveAction?.canMove() ?? false);
+    return this._canCreate() || this._canDelete() || canPaste;
   }
 
   /**

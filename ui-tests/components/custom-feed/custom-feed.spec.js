@@ -135,6 +135,7 @@ function readFeed(page) {
         noChildNavigation: element.hasAttribute('no-child-navigation'),
         canCreateContent: element.hasAttribute('can-create-content'),
         canDelete: element.hasAttribute('can-delete'),
+        canMove: element.hasAttribute('can-move'),
         noTitle: element.hasAttribute('no-title'),
         shownName:
           element.shadowRoot?.querySelector('#node-name')?.textContent.trim() ??
@@ -340,7 +341,7 @@ test.describe('custom-feed', () => {
       expect(nodeOf(state, 'feed-news').contentnumber).toBeNull();
     });
 
-    test('lets contents be created in a feed, but not the feed be deleted', async ({
+    test('lets contents be created in a feed, but not the feed be deleted or moved', async ({
       page,
     }) => {
       await mountFeed(page, { 'root-id': 'feed-root' });
@@ -352,6 +353,8 @@ test.describe('custom-feed', () => {
         expect(entry.noChildNavigation).toBe(true);
         expect(entry.canCreateContent).toBe(true);
         expect(entry.canDelete).toBe(false);
+        // The feeds never move; the backend refuses it as well.
+        expect(entry.canMove).toBe(false);
       });
     });
 

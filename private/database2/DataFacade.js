@@ -187,27 +187,12 @@ class DataFacadeSync {
     });
 
     try {
-      // the id vanishes on saving to postgres, so we need to save it again
-      let copyOfPayload = JSON.parse(JSON.stringify(payload));
-      let updatedData = ContentRepository.owns(object)
-        ? await this.createContentRepository().updateRecord(object, payload)
+      // No update writes the cache. It used to put the payload under the bare
+      // id, a key nothing reads; what an update leaves stale is cleared
+      // instead (`updateContentRecord`).
+      const updatedData = ContentRepository.owns(object)
+        ? await this.updateContentRecord(object, payload)
         : await this.createDirectStorage().updateData(object, payload);
-
-      if (!this.getSkipCache()) {
-        const cache = new DataCache2(this.environment);
-        await cache.set(copyOfPayload.id, copyOfPayload);
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Data updated successfully for object: ${object}`,
-        });
-      } else {
-        Logging.debugMessage({
-          severity: 'FINEST',
-          location: LOCATION,
-          message: `Skipping cache update for object: ${object}`,
-        });
-      }
       await this.invalidateContentsTreeAfterWrite(object);
       return updatedData;
     } catch (error) {
@@ -219,6 +204,104 @@ class DataFacadeSync {
       });
       throw error;
     }
+  }
+
+  /**
+   * Updates a node or a content through the repository.
+   *
+   * An update that sends `parent_node_id` may move the node. The repository
+   * checks a move against the feed root, which only the configuration knows
+   * (`feedRootNodeId`) — read only then, so a plain rename costs nothing.
+   */
+  async updateContentRecord(object, payload) {
+    const repository = this.createContentRepository();
+    const sendsParent = Object.keys(payload).some(
+      (field) => field.toLowerCase() === 'parent_node_id'
+    );
+    if (NodeWriteMapping.isNodeObject(object) && sendsParent) {
+      const configuration = await this.getConfigurations();
+      repository.setFeedRootId(configuration?.feedRootNodeId ?? null);
+    }
+    const record = await repository.updateRecord(object, payload);
+    await this.clearNodeEntries(repository.getTouchedNodes());
+    if (!NodeWriteMapping.isNodeObject(object)) {
+      await this.clearContentEntry(record, payload.id);
+    }
+    return record;
+  }
+
+  /**
+   * Drops the cached entry of an updated content, under every id it may be
+   * cached by: its own two and the one it was asked for. A changed node needs
+   * no such step — it is among the touched nodes.
+   */
+  async clearContentEntry(record, requestedId) {
+    const LOCATION = 'DataFacadeSync.clearContentEntry';
+    const keys = new Set(
+      [record?.id, record?.legacy_id, requestedId]
+        .filter(Boolean)
+        .map((id) => this.cacheKeyFor('content', id))
+    );
+    try {
+      await this.createCache().delMany([...keys]);
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear the cached content after an update',
+        error,
+      });
+    }
+  }
+
+  /**
+   * Drops the cache entries of nodes a write changed beyond its own record —
+   * the node a child or content hangs on, after a move also the node and its
+   * old parent: their cached entries carry the old children and contents.
+   * Each under both ids, like `clearCacheFor`.
+   *
+   * **Regardless of `skipCache`**, and an unreachable cache does not fail the
+   * write: the row is saved, a stale entry is no reason to drop the answer.
+   */
+  async clearNodeEntries(nodes) {
+    const LOCATION = 'DataFacadeSync.clearNodeEntries';
+    const keys = new Set();
+    nodes.forEach((node) => {
+      [node.id, node.legacy_id].forEach((value) => {
+        if (value) {
+          keys.add(this.cacheKeyFor('node', value));
+        }
+      });
+    });
+    if (keys.size === 0) {
+      return;
+    }
+    try {
+      await this.createCache().delMany([...keys]);
+      Logging.debugMessage({
+        severity: 'FINEST',
+        location: LOCATION,
+        message: `Cleared ${keys.size} node cache keys after a write`,
+      });
+    } catch (error) {
+      Logging.debugMessage({
+        severity: 'ERROR',
+        location: LOCATION,
+        message: 'Could not clear node cache keys after a write',
+        error,
+      });
+    }
+  }
+
+  /**
+   * Creates a node or a content through the repository, and clears the node
+   * it hangs on: a cached node lists its children and contents.
+   */
+  async createContentRecord(object, payload) {
+    const repository = this.createContentRepository();
+    const record = await repository.createRecord(object, payload);
+    await this.clearNodeEntries(repository.getTouchedNodes());
+    return record;
   }
 
   async createData(data) {
@@ -235,7 +318,7 @@ class DataFacadeSync {
     try {
       // Always skip cache for creation
       const createdRecord = ContentRepository.owns(object)
-        ? await this.createContentRepository().createRecord(object, payload)
+        ? await this.createContentRecord(object, payload)
         : await this.createDirectStorage().createRecord(
             this.createDirectTable(object),
             payload
@@ -275,11 +358,11 @@ class DataFacadeSync {
         return;
       }
 
-      const removed = await this.createContentRepository().deleteRecord(
-        object,
-        id
-      );
+      const repository = this.createContentRepository();
+      const removed = await repository.deleteRecord(object, id);
       await this.clearCacheFor(removed, id);
+      // The node it hung on lists it in its cached entry.
+      await this.clearNodeEntries(repository.getTouchedNodes());
     } catch (error) {
       Logging.debugMessage({
         severity: 'ERROR',

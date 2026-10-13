@@ -45,14 +45,16 @@ Zwei Familien mit **gegenläufiger Voreinstellung**. Rendering ist an und wird
 abgeschaltet (wie `no-load`/`no-display`/`no-footer` im Projekt); ein
 schreibender Weg ist aus und wird ausdrücklich gewährt.
 
-| Attribut              | Voreinstellung | Wirkung                                                                          |
-| :-------------------- | :------------- | :------------------------------------------------------------------------------- |
-| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert                        |
-| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen                  |
-| `no-title`            | aus (= zeigen) | Der Name des Knotens entfällt; die Aktionen im Kopf bleiben                      |
-| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')`            |
-| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`                 |
-| `can-delete`          | aus            | „Knoten löschen" (`custom-node-delete`) — **zusätzlich** zu `hasScope('delete')` |
+| Attribut              | Voreinstellung | Wirkung                                                                                 |
+| :-------------------- | :------------- | :-------------------------------------------------------------------------------------- |
+| `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert                               |
+| `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen                         |
+| `no-title`            | aus (= zeigen) | Der Name des Knotens entfällt; die Aktionen im Kopf bleiben                             |
+| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')`                   |
+| `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`                        |
+| `can-delete`          | aus            | „Knoten löschen" (`custom-node-delete`) — **zusätzlich** zu `hasScope('delete')`        |
+| `can-move`            | aus            | „Zum Verschieben markieren" (`custom-node-move`) — **zusätzlich** zu `hasScope('edit')` |
+| `can-move-root`       | aus            | wie `can-move`, aber nur, solange der Knoten **keinen** Elternknoten hat                |
 
 Die `can-…`-Attribute für schreibende Aktionen ersetzen die Scope-Prüfung
 **nicht**, sie kommen davor: Ohne passenden Scope erscheint die Aktion auch mit
@@ -64,6 +66,17 @@ leeres Element, das als Lücke stehen bliebe.
 Toast und `node-deleted` gehören ihr — dieselbe Aktion steht auch hinter der
 Lösch-Kachel des Navigations-Modals. Der Knoten leert sich nur selbst, sobald
 seine Aktion `node-deleted` meldet. → `public/components/custom-node-delete/README.md`
+
+**Verschieben ist ebenfalls eine eigene Komponente.** Mit `can-move` bettet der
+Knoten `custom-node-move` ein (in der Leiste als `node-move`) und reicht ihr Id,
+Name und Elternknoten. Der Knoten selbst markiert nichts: Die Aktion meldet
+`node-mark-change`, der Consumer hält die Markierung und gibt jedem Knoten die
+Id des markierten über die Property `markedId`; ob das er selbst ist, sagt der
+Knoten seiner Aktion. Verschoben wird im Navigations-Modal.
+`can-move-root` gilt für den oberen Knoten: Eine Wurzel steht immer dort, und
+nur dort ließe sie sich markieren; ein Knoten mit Elternknoten wird markiert, wo
+er der gewählte ist.
+→ `public/components/custom-node-move/README.md`
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
 sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.
@@ -88,14 +101,15 @@ tatsächlich nichts weiter.
 
 ## Ereignisse
 
-| Ereignis       | `detail`                              | Anlass                                                                                  |
-| :------------- | :------------------------------------ | :-------------------------------------------------------------------------------------- |
-| `navigation`   | `{ type: 'node', value: <id>, node }` | Ein Kind wurde ausgewählt                                                               |
-| `loaded`       | `{ nodeData }`                        | Der Knoten ist geladen                                                                  |
-| `node-deleted` | `{ nodeId, nodeIds }`                 | Der Knoten wurde gelöscht (von `custom-node-delete`, `nodeIds` = er und alles darunter) |
-| `toast`        | `{ message, variant }`                | Rückmeldung an den Nutzer                                                               |
-| `query`        | `{ payload: { object: 'node' } }`     | Datenabruf (beantwortet `index.js`)                                                     |
-| `create`       | `{ object: 'content', payload }`      | Neuer Inhalt an diesem Knoten                                                           |
+| Ereignis           | `detail`                              | Anlass                                                                                     |
+| :----------------- | :------------------------------------ | :----------------------------------------------------------------------------------------- |
+| `navigation`       | `{ type: 'node', value: <id>, node }` | Ein Kind wurde ausgewählt                                                                  |
+| `loaded`           | `{ nodeData }`                        | Der Knoten ist geladen                                                                     |
+| `node-deleted`     | `{ nodeId, nodeIds }`                 | Der Knoten wurde gelöscht (von `custom-node-delete`, `nodeIds` = er und alles darunter)    |
+| `node-mark-change` | `{ marked, node }`                    | Wunsch, diesen Knoten zu markieren oder die Markierung aufzuheben (von `custom-node-move`) |
+| `toast`            | `{ message, variant }`                | Rückmeldung an den Nutzer                                                                  |
+| `query`            | `{ payload: { object: 'node' } }`     | Datenabruf (beantwortet `index.js`)                                                        |
+| `create`           | `{ object: 'content', payload }`      | Neuer Inhalt an diesem Knoten                                                              |
 
 `navigation` meldet `type: 'node'` — nicht `story`/`chapter`. Wer den Ausschnitt
 umschaltet, entscheidet der Consumer, nicht der Knoten. Der **ganze Datensatz**
@@ -113,6 +127,13 @@ Nach außen verhält es sich wie ein Abruf: `id` wird gesetzt, `loaded` gemeldet
 ein gesetztes `contentnumber` ausgewertet. **Ein Listener auf `loaded` muss
 vorher hängen** — das Ereignis kommt sofort, nicht erst nach einer Antwort aus
 dem Netz. Ebenso muss `contentnumber` vor dem Aufruf gesetzt sein.
+
+## Einen Knoten neu laden
+
+`reload()` holt den Knoten unter **derselben** Id noch einmal. Die Id erneut zu
+setzen bewirkt nichts — der Knoten hat den Datensatz ja schon. Nach einem
+Verschieben ist er aber veraltet: anderer Elternknoten, andere Kinder; der
+Bearbeiten-Dialog schriebe den alten Elternknoten zurück. Ohne Id passiert nichts.
 
 ## Bekannte Altlasten
 

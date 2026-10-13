@@ -6,6 +6,7 @@ import {
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
 import '/components/custom-node-delete/custom-node-delete.js';
+import '/components/custom-node-move/custom-node-move.js';
 import '/slds-components/slds-progress-bar/slds-progress-bar.js';
 
 /**
@@ -61,6 +62,13 @@ class CustomNode extends LitElement {
     canCreateChild: { type: Boolean, attribute: 'can-create-child' },
     canCreateContent: { type: Boolean, attribute: 'can-create-content' },
     canDelete: { type: Boolean, attribute: 'can-delete' },
+    canMove: { type: Boolean, attribute: 'can-move' },
+    // Mark only while this node is a root: a root always stands in the upper
+    // node, a node with a parent is marked where it is the chosen one.
+    canMoveRoot: { type: Boolean, attribute: 'can-move-root' },
+    // Id of the node marked to be moved, wherever it is. The consumer owns the
+    // mark; the node compares, so a consumer that swaps the id need not care.
+    markedId: { type: String },
     _nodeData: { state: true },
     _loading: { state: true },
     _scrollPending: { state: true },
@@ -99,6 +107,9 @@ class CustomNode extends LitElement {
     this.canCreateChild = false;
     this.canCreateContent = false;
     this.canDelete = false;
+    this.canMove = false;
+    this.canMoveRoot = false;
+    this.markedId = null;
     this._nodeData = null;
     this._loading = false;
     this.pendingNewContentId = null;
@@ -232,7 +243,7 @@ class CustomNode extends LitElement {
                       chapter-id="${this.id}"
                       story-id="${this._nodeData.parent_node_id || ''}"
                       name="${this._nodeData.name || ''}"
-                      sort-number="${this._nodeData.sortnumber || 1}"
+                      .sortNumber="${this._nodeData.sortnumber ?? null}"
                       ?reversed="${this._nodeData.reversed || false}"
                       publish-date="${this._nodeData.published_date || ''}"
                       @chapter-updated=${this._handleNodeUpdated}
@@ -261,6 +272,23 @@ class CustomNode extends LitElement {
                       variant="container-filled"
                       @click=${this.handleCreateContentClick}
                     ></slds-button-icon>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+          ${
+            this._offersMark() && this.hasScope('edit')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <!-- Marks this node; the navigation modal moves the
+                         mark. The action is its own component. -->
+                    <custom-node-move
+                      id="node-move"
+                      node-id="${this.id}"
+                      node-name="${this._nodeData.name || ''}"
+                      parent-id="${this._nodeData.parent_node_id || ''}"
+                      .marked="${!!this.id && this.markedId === this.id}"
+                    ></custom-node-move>
                   </div>
                 </slds-layout-item>`
               : ''
@@ -732,6 +760,29 @@ class CustomNode extends LitElement {
     this.fetchNode(newId);
   }
 
+  /** Is marking granted for this node — always, or as a root only? */
+  _offersMark() {
+    return (
+      this.canMove || (this.canMoveRoot && !this._nodeData?.parent_node_id)
+    );
+  }
+
+  /**
+   * Fetches the node again under the same id. Setting the id again does
+   * nothing — the node holds that record already. After a move the record is
+   * stale (another parent, other children), and the edit dialog would write
+   * the old parent back.
+   */
+  reload() {
+    if (!this.id || this.id === 'null') {
+      return;
+    }
+    this._loading = true;
+    this._nodeData = null;
+    this._resetJumpState();
+    this.fetchNode(this.id);
+  }
+
   /**
    * Der Zaehlstand des Sprungs gehoert zum **aktuellen** Knoten.
    *
@@ -846,9 +897,16 @@ class CustomNode extends LitElement {
       .map((child) =>
         child.id === childData.id ? { ...child, ...childData } : child
       )
-      .sort(
-        (first, second) => (first.sortnumber ?? 0) - (second.sortnumber ?? 0)
-      );
+      // As the backend sorts siblings: without a sortnumber at the end, a tie
+      // decided by the id. A moved node has no sortnumber.
+      .sort((first, second) => {
+        const firstSort = first.sortnumber ?? Number.MAX_SAFE_INTEGER;
+        const secondSort = second.sortnumber ?? Number.MAX_SAFE_INTEGER;
+        if (firstSort !== secondSort) {
+          return firstSort - secondSort;
+        }
+        return String(first.id).localeCompare(String(second.id));
+      });
     this._nodeData = { ...this._nodeData, nodes };
     this.requestUpdate();
   }

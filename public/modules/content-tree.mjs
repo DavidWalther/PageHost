@@ -52,3 +52,21 @@ export function descendantIds(tree, id) {
     (nodes || []).flatMap((node) => [node.id, ...collect(node.childnodes)]);
   return collect(findNode(tree, id)?.childnodes);
 }
+
+/**
+ * The tree without the nodes with the given ids, each together with
+ * everything below it. What the navigation modal leaves out — the node marked
+ * to be moved: neither it nor anything below it may be its new parent.
+ *
+ * @param {Array<object>} tree root nodes
+ * @param {Array<string>} [ids]
+ * @returns {Array<object>} a new tree; the one given is not changed
+ */
+export function withoutNodes(tree, ids = []) {
+  const left = new Set(ids);
+  const keep = (nodes) =>
+    (nodes || [])
+      .filter((node) => !left.has(node.id))
+      .map((node) => ({ ...node, childnodes: keep(node.childnodes) }));
+  return keep(tree);
+}
