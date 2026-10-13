@@ -51,7 +51,7 @@ const tile = (page, text) =>
   });
 const heading = (page) =>
   page.locator('custom-navigation-modal #modal-navigation #modal-heading');
-const back = (page) => page.locator('custom-navigation-modal .back-button');
+const back = (page) => page.locator('custom-navigation-modal #button-back');
 
 test.describe('Navigation modal: the heading names the current element', () => {
   test.use({ actionTimeout: 5000 });

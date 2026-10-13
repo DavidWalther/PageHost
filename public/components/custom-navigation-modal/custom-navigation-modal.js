@@ -17,7 +17,7 @@ class NavigationModal extends LitElement {
   labels = {
     modalTitle: 'Navigation',
     empty: 'Keine Inhalte vorhanden.',
-    back: '< zurück',
+    back: (name) => `Zurück zu ${name}`,
     createChild: 'Neuen Eintrag anlegen',
     deleteCurrent: 'Diesen Eintrag löschen',
     marked: (name) => `„${name}“ markiert`,
@@ -87,17 +87,9 @@ class NavigationModal extends LitElement {
       fill: currentColor;
     }
 
-    .back-button {
-      background: none;
-      border: none;
-      color: inherit;
-      font: inherit;
-      cursor: pointer;
-      padding: 0.25rem 0.5rem;
-    }
-
-    .back-button:hover {
-      text-decoration: underline;
+    /* The label is the name of a node: it may be long, the footer is not. */
+    #button-back {
+      max-width: 100%;
     }
   `;
 
@@ -221,10 +213,14 @@ class NavigationModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal id="modal-navigation" heading="${this._heading()}" footless>
+      <slds-modal
+        id="modal-navigation"
+        heading="${this._heading()}"
+        ?footless="${this._openPath.length === 0}"
+      >
         ${this.marked?.id ? this._renderMarkedHint() : ''}
-        ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
+        ${this._openPath.length > 0 ? this._renderBack() : ''}
       </slds-modal>
       <!-- The create dialog: opened by the "+" tile, it opens over the modal. -->
       <custom-chapter-edit no-trigger></custom-chapter-edit>
@@ -354,13 +350,32 @@ class NavigationModal extends LitElement {
     );
   }
 
+  /**
+   * The way back, in the footer: labelled with where it leads, the level
+   * above. The top level has none — and so no footer, which says that this is
+   * the top of the tree.
+   */
   _renderBack() {
+    const target = this._levelName(this._openPath[this._openPath.length - 2]);
     return html`
-      <div class="slds-m-bottom_small">
-        <button class="back-button" @click="${this._handleBack}">
-          ${this.labels.back}
-        </button>
-      </div>
+      <button
+        id="button-back"
+        slot="footer"
+        class="slds-button slds-button_neutral"
+        title="${this.labels.back(target)}"
+        aria-label="${this.labels.back(target)}"
+        @click="${this._handleBack}"
+      >
+        <svg
+          class="slds-button__icon slds-button__icon_left"
+          aria-hidden="true"
+        >
+          <use
+            href="/assets/icons/utility-sprite/svg/symbols.svg#chevronleft"
+          ></use>
+        </svg>
+        <span class="slds-truncate">${target}</span>
+      </button>
     `;
   }
 

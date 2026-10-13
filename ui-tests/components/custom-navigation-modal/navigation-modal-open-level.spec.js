@@ -113,7 +113,7 @@ const plusTile = (page) =>
   page.locator('custom-navigation-modal button.tile_add');
 const modal = (page) =>
   page.locator('custom-navigation-modal #modal-navigation');
-const back = (page) => page.locator('custom-navigation-modal .back-button');
+const back = (page) => page.locator('custom-navigation-modal #button-back');
 const hint = (page) =>
   page.locator('custom-navigation-modal').getByText('Keine Inhalte vorhanden.');
 const confirm = (page) =>

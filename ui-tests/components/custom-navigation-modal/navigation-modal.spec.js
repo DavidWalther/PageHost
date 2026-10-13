@@ -11,7 +11,7 @@ const { cacheLitBundle } = require('../../support/component-page');
  * The modal loads the content tree on app start (`contents` callout, mocked)
  * and lists the roots as tiles. A tile with children opens its level and
  * reports `navigation-level-open`; one without children reports
- * `navigation-node-select` and the modal closes. „< zurück" goes up one level.
+ * `navigation-node-select` and the modal closes. The button in the footer goes up one level.
  *
  * Runs anonymously — every data callout is mocked via `page.route()`, no
  * Postgres or Redis involved.
@@ -59,8 +59,8 @@ test.describe('Navigation modal', () => {
     await expect(tiles(page)).toHaveCount(2);
     await expect(tileByText(page, 'Mock Story 2')).toHaveCount(0);
 
-    // „< zurück" führt wieder auf die Story-Ebene mit beiden Stories.
-    await page.locator('custom-navigation-modal .back-button').click();
+    // Zurück führt wieder auf die Story-Ebene mit beiden Stories.
+    await page.locator('custom-navigation-modal #button-back').click();
     await expect(tileByText(page, 'Mock Story 1')).toBeVisible();
     await expect(tileByText(page, 'Mock Story 2')).toBeVisible();
   });
@@ -149,7 +149,7 @@ test.describe('Navigation modal', () => {
     ).not.toHaveClass(/tile_current/);
 
     // … and one level up its parent is marked as well.
-    await page.locator('custom-navigation-modal .back-button').click();
+    await page.locator('custom-navigation-modal #button-back').click();
     await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
   });
 
@@ -236,7 +236,7 @@ test.describe('Navigation modal in any depth', () => {
   // By its id: the modal also holds the create dialog, a second slds-modal.
   const modal = (page) =>
     page.locator('custom-navigation-modal #modal-navigation');
-  const back = (page) => page.locator('custom-navigation-modal .back-button');
+  const back = (page) => page.locator('custom-navigation-modal #button-back');
   const openModal = (page) => page.locator('#button-navigation_open').click();
 
   // A missing tile fails the click quickly instead of running into the

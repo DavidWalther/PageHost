@@ -139,7 +139,7 @@ test.describe('Navigation modal reload', () => {
 
     await expect(tile(page, 'Mock Story 2')).toBeVisible();
     await expect(
-      page.locator('custom-navigation-modal .back-button')
+      page.locator('custom-navigation-modal #button-back')
     ).toHaveCount(0);
   });
 });
