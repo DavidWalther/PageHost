@@ -80,14 +80,13 @@ test.describe('bookstore: lifecycle', () => {
 
     const reloads = await page.evaluate((nodeId) => {
       const app = window.appUnderTest;
-      const modal = app.shadowRoot.querySelector('custom-navigation-modal');
       let count = 0;
-      const original = modal.reload.bind(modal);
-      modal.reload = () => {
+      const original = app._loadContentTree.bind(app);
+      app._loadContentTree = () => {
         count += 1;
         return original();
       };
-      // Every node change asks the navigation to load its tree again — once.
+      // Every node change loads the content tree again — once.
       app.dispatchEvent(
         new CustomEvent('node-deleted', { detail: { nodeId } })
       );

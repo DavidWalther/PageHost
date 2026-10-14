@@ -24,6 +24,8 @@ class Bookstore extends LitElement {
     // The node marked to be moved, `{ id, name, parentId }`, or null. One at a
     // time, and only as long as the page: a reload drops it.
     _marked: { type: Object, state: true },
+    // The content tree: loaded here once, handed to the navigation modal.
+    _tree: { type: Array, state: true },
   };
 
   constructor() {
@@ -41,6 +43,7 @@ class Bookstore extends LitElement {
     this._activeFeedId = null;
     this._feedContentNumber = null;
     this._marked = null;
+    this._tree = [];
     // What the modal leaves out: the marked node. One list per mark, so the
     // modal sees a change only when the mark changes.
     this._hiddenIds = [];
@@ -66,6 +69,7 @@ class Bookstore extends LitElement {
     this._initPara = this.createInitializationParameterObject();
 
     this.hydrate();
+    this._loadContentTree();
     this.label = {
       'setting-login_title': 'Login',
       'setting-lightswitch_title': 'Lichtschalter',
@@ -188,6 +192,7 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
+        .tree="${this._tree}"
         .marked="${this._marked}"
         .hiddenIds="${this._hiddenIds}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
@@ -528,15 +533,23 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Asks the navigation modal to load the tree again after a node changed.
-   * Publishing a content leaves the tree alone — contents are not in it.
+   * Loads the content tree again after a node changed. Publishing a content
+   * leaves the tree alone — contents are not in it.
    */
   _reloadNavigationTree(event) {
     const objectName = event.detail?.objectName;
     if (objectName && objectName !== 'node') {
       return;
     }
-    this.shadowRoot.querySelector('custom-navigation-modal')?.reload();
+    this._loadContentTree();
+  }
+
+  /** One request for everyone who needs the tree; a failed one keeps the old. */
+  async _loadContentTree() {
+    const tree = await this.queryRecord({ object: 'contents' });
+    if (Array.isArray(tree)) {
+      this._tree = tree;
+    }
   }
 
   /**
