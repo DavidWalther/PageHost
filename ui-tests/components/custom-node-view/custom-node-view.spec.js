@@ -285,9 +285,6 @@ test.describe('custom-node-view', () => {
   });
 
   test.describe('the actions on the node', () => {
-    // The actions do not exist yet.
-    test.fail();
-
     const ALL = ['publish', 'edit', 'create', 'delete'];
     /** The ids of the actions in the bar, in their order. */
     const actions = (host) =>

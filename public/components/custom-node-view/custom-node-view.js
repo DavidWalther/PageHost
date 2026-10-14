@@ -4,6 +4,10 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import '/components/custom-chapter-edit/custom-chapter-edit.js';
+import '/components/custom-content-publish/custom-content-publish.js';
+import '/components/custom-node-delete/custom-node-delete.js';
+import '/components/custom-node-move/custom-node-move.js';
 
 /**
  * The node itself — shown above its contents (`custom-node-contents`), both
@@ -19,6 +23,8 @@ class CustomNodeView extends LitElement {
   labels = {
     childLabel: 'Auswahl',
     childPlaceholder: 'Eintrag auswählen',
+    share: 'Link kopieren',
+    linkCopied: 'Link kopiert',
   };
 
   static properties = {
@@ -29,6 +35,9 @@ class CustomNodeView extends LitElement {
     // The ancestors from the root down, `[{ id, name }]`, without the node
     // itself — its name stands below. Empty for a root.
     path: { type: Array, attribute: false },
+    // Id of the node marked to be moved, wherever it is. The host owns the
+    // mark; the view tells its move action whether that is this node.
+    markedId: { type: String },
     _nodeData: { state: true },
     _loading: { state: true },
   };
@@ -57,6 +66,7 @@ class CustomNodeView extends LitElement {
     this.id = null;
     this.siblings = { previous: null, next: null };
     this.path = [];
+    this.markedId = null;
     this._nodeData = null;
     this._loading = false;
   }
@@ -100,7 +110,7 @@ class CustomNodeView extends LitElement {
             ${this._renderArrow('next', 'utility:chevronright')}
           </slds-layout-item>
         </slds-layout>
-        ${this._renderChildren()}
+        ${this._renderActions()} ${this._renderChildren()}
       </slds-card>
     `;
   }
@@ -127,6 +137,74 @@ class CustomNodeView extends LitElement {
       .items=${items}
       @breadcrumb-select=${(event) => this._navigate(event.detail.key)}
     ></slds-breadcrumbs>`;
+  }
+
+  /**
+   * The actions on the node. Each one only under its scope, and without one
+   * there is no element at all — an empty one would stand as a gap. Creating
+   * a child is not among them: that is the navigation modal's "+" tile.
+   */
+  _renderActions() {
+    const node = this._nodeData;
+    const actions = [
+      this.hasScope('publish') && this.hasScope('edit')
+        ? html`<custom-content-publish
+            id="node-publish"
+            object-name="node"
+            record-id="${node.id}"
+            publish-date="${node.published_date || ''}"
+          ></custom-content-publish>`
+        : null,
+      this.hasScope('edit')
+        ? html`<custom-chapter-edit
+            id="node-edit"
+            chapter-id="${node.id}"
+            story-id="${node.parent_node_id || ''}"
+            name="${node.name || ''}"
+            .sortNumber="${node.sortnumber ?? null}"
+            ?reversed="${node.reversed || false}"
+            publish-date="${node.published_date || ''}"
+            @chapter-updated=${this._handleNodeUpdated}
+          ></custom-chapter-edit>`
+        : null,
+      html`<slds-button-icon
+        id="button-share"
+        icon="utility:link"
+        variant="container-filled"
+        label="${this.labels.share}"
+        @click=${this._handleShareClick}
+      ></slds-button-icon>`,
+      this.hasScope('edit')
+        ? html`<custom-node-move
+            id="node-move"
+            node-id="${node.id}"
+            node-name="${node.name || ''}"
+            parent-id="${node.parent_node_id || ''}"
+            .marked="${!!node.id && this.markedId === node.id}"
+          ></custom-node-move>`
+        : null,
+      this.hasScope('delete')
+        ? html`<custom-node-delete
+            id="node-delete"
+            node-id="${node.id}"
+          ></custom-node-delete>`
+        : null,
+    ].filter(Boolean);
+
+    return html`<slds-layout
+      id="node-actions"
+      class="slds-m-top_x-small"
+      align-center
+      wrap
+      gutters-xxx-small
+    >
+      ${actions.map(
+        (action) =>
+          html`<slds-layout-item grow-none align-middle
+            >${action}</slds-layout-item
+          >`
+      )}
+    </slds-layout>`;
   }
 
   /** The way down: a combobox of the children, from a single child on. */
@@ -174,6 +252,42 @@ class CustomNodeView extends LitElement {
         composed: true,
       })
     );
+  }
+
+  _handleShareClick() {
+    const shareUrl = `${location.origin}/${this.id}`;
+    navigator.clipboard.writeText(shareUrl).catch((error) => {
+      console.error('Error copying text to clipboard:', error);
+    });
+    this.dispatchEvent(
+      new CustomEvent('toast', {
+        detail: { message: this.labels.linkCopied, variant: 'info' },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  /** The edit dialog saved: its fields replace the ones shown here. */
+  _handleNodeUpdated(event) {
+    const updated = event.detail?.chapterData;
+    if (!updated) return;
+    this._nodeData = { ...this._nodeData, ...updated };
+  }
+
+  /** Does the signed-in session carry this scope? */
+  hasScope(scope) {
+    const authData = sessionStorage.getItem('code_exchange_response');
+    if (!authData) return false;
+    try {
+      const parsed = JSON.parse(authData);
+      return (
+        parsed?.authenticationResult.access?.scopes?.includes(scope) || false
+      );
+    } catch (error) {
+      console.error('Failed to parse authenticationResult:', error);
+      return false;
+    }
   }
 
   // ==================================================

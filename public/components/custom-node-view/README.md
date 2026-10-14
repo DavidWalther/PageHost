@@ -49,6 +49,24 @@ Below the name, the way down: a combobox of the children (`slds-combobox`),
 from a single child on — never a row of buttons. Choosing one reports
 `node-view-navigate` with its id. Without children there is no combobox.
 
+## The actions on the node
+
+Between the name and the children, centred, in this order — each only under
+its scope, and without its scope not even an empty element:
+
+| Action  | Element                                            | Scope              |
+| :------ | :------------------------------------------------- | :----------------- |
+| publish | `custom-content-publish` with `object-name="node"` | `publish` + `edit` |
+| edit    | `custom-chapter-edit`                              | `edit`             |
+| share   | button, copies `/<id>`, toast `Link kopiert`       | always             |
+| move    | `custom-node-move` (marks the node)                | `edit`             |
+| delete  | `custom-node-delete`                               | `delete`           |
+
+Creating a child is **not** among them — that is the "+" tile of the
+navigation modal. Adding a content belongs to the list below
+(`custom-node-contents`). A name changed in the edit dialog is taken over at
+once (`chapter-updated`).
+
 ## Methods
 
 | Method              | Description                                                                      |
@@ -62,6 +80,7 @@ from a single child on — never a row of buttons. Choosing one reports
 | :------------------- | :-------------------------------- | :------------------------------------------------------------------ |
 | `query`              | `{ payload: { object: 'node' } }` | The component fetches its node (answered by `index.js`).            |
 | `loaded`             | `{ nodeData }`                    | The node is there — fetched, or handed in by `adoptNode`.           |
+| `toast`              | `{ message, variant }`            | The link was copied.                                                |
 | `node-view-navigate` | `{ id }`                          | A way to another node was taken: an arrow, a breadcrumb or a child. |
 
 All bubble and are composed. `adoptNode` reports `loaded` at once: a listener
