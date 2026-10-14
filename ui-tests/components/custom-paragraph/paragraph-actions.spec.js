@@ -53,6 +53,25 @@ test.describe('custom-paragraph: Aktionsleiste', () => {
     await expect(deleteTrigger(absatz)).toBeVisible();
   });
 
+  // The name each trigger carries, as tooltip and for assistive technology —
+  // a `title` on slds-button-icon never reached the inner button.
+  test('every trigger is named after its action', async ({ page }) => {
+    // The triggers still pass title, which slds-button-icon ignores.
+    test.fail();
+    await openBookstore(page, { scopes: ALL_SCOPES });
+
+    const absatz = paragraph(page);
+    for (const name of [
+      'Absatz bearbeiten',
+      'Absatz veröffentlichen',
+      'Absatz löschen',
+    ]) {
+      await expect(
+        absatz.getByRole('button', { name, exact: true })
+      ).toBeVisible({ timeout: 2000 });
+    }
+  });
+
   test('ohne Scope "publish" fehlt nur das Veröffentlichen', async ({
     page,
   }) => {
