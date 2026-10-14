@@ -43,6 +43,12 @@ name. Each carries the name of its sibling as tooltip and accessible name
 (`slds-button-icon` with `label`). A missing sibling leaves its place empty:
 both places keep their width, so the name never moves.
 
+## The children
+
+Below the name, the way down: a combobox of the children (`slds-combobox`),
+from a single child on — never a row of buttons. Choosing one reports
+`node-view-navigate` with its id. Without children there is no combobox.
+
 ## Methods
 
 | Method              | Description                                                                      |

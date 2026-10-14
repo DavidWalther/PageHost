@@ -243,8 +243,6 @@ test.describe('custom-node-view', () => {
     const combobox = (host) => host.locator('slds-combobox');
 
     test('are offered in a combobox', async ({ page }) => {
-      // The combobox does not exist yet.
-      test.fail();
       const host = await mount(page);
 
       const labels = await combobox(host).evaluate((el) =>
@@ -256,8 +254,6 @@ test.describe('custom-node-view', () => {
     test('are offered in a combobox for a single child too', async ({
       page,
     }) => {
-      // The combobox does not exist yet.
-      test.fail();
       const host = await mount(page, {
         node: { ...NODE, nodes: [NODE.nodes[0]] },
       });
@@ -266,8 +262,6 @@ test.describe('custom-node-view', () => {
     });
 
     test('lead down to the child chosen', async ({ page }) => {
-      // The combobox does not exist yet.
-      test.fail();
       const host = await mount(page);
 
       await combobox(host).evaluate((el) =>

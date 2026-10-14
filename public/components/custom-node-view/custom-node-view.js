@@ -16,6 +16,11 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
  * `node-view-navigate` with its id — what follows is the host's decision.
  */
 class CustomNodeView extends LitElement {
+  labels = {
+    childLabel: 'Auswahl',
+    childPlaceholder: 'Eintrag auswählen',
+  };
+
   static properties = {
     id: { type: String },
     // The siblings just before and after, `{ previous, next }`, each
@@ -95,6 +100,7 @@ class CustomNodeView extends LitElement {
             ${this._renderArrow('next', 'utility:chevronright')}
           </slds-layout-item>
         </slds-layout>
+        ${this._renderChildren()}
       </slds-card>
     `;
   }
@@ -121,6 +127,27 @@ class CustomNodeView extends LitElement {
       .items=${items}
       @breadcrumb-select=${(event) => this._navigate(event.detail.key)}
     ></slds-breadcrumbs>`;
+  }
+
+  /** The way down: a combobox of the children, from a single child on. */
+  _renderChildren() {
+    const children = this._nodeData?.nodes || [];
+    if (children.length === 0) {
+      return '';
+    }
+    const options = children.map((child) => ({
+      value: child.id,
+      label: child.name,
+      title: child.name,
+    }));
+    return html`<div id="child-navigation" class="slds-m-top_small">
+      <slds-combobox
+        options=${JSON.stringify(options)}
+        label="${this.labels.childLabel}"
+        placeholder="${this.labels.childPlaceholder}"
+        @combobox-select=${(event) => this._navigate(event.detail.value)}
+      ></slds-combobox>
+    </div>`;
   }
 
   /** The arrow to one sibling, named after it; nothing without one. */
