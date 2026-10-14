@@ -656,11 +656,10 @@ class NavigationModal extends LitElement {
 
   /**
    * Goes up one level. The page behind follows: it is told the level now
-   * open and the one left, to show both. On the top level there is no node
-   * to show, so nothing is reported and the page stays as it is.
+   * open, to show it. On the top level there is no node to show, so nothing
+   * is reported and the page stays as it is.
    */
   _handleBack() {
-    const childId = this._currentElementId();
     this._openPath = this._openPath.slice(0, -1);
     const id = this._currentElementId();
     if (!id) {
@@ -668,7 +667,7 @@ class NavigationModal extends LitElement {
     }
     this.dispatchEvent(
       new CustomEvent('navigation-level-back', {
-        detail: { id, childId },
+        detail: { id },
         bubbles: true,
         composed: true,
       })

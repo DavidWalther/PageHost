@@ -114,8 +114,8 @@ the top level „Navigation“. A long name is cut short; `title` and `aria-labe
 „Zurück zu ‹name›“. The top level has no way back and therefore **no footer**: the
 missing footer says that this is the top of the tree.
 
-Going back reports `navigation-level-back` with the level now open (`id`) and the
-one left (`childId`), so the page behind can show both. Back onto the top level
+Going back reports `navigation-level-back` with the level now open (`id`), so the
+page behind can show it — the node the heading names. Back onto the top level
 reports nothing — there is no node to show.
 
 ### Opening a tile as a level
@@ -199,12 +199,12 @@ The tile is only the trigger; the action is `custom-node-move`'s.
 
 ## Events
 
-| Event                    | `detail`           | Description                                                                             |
-| ------------------------ | ------------------ | --------------------------------------------------------------------------------------- |
-| `navigation-level-open`  | `{ id }`           | A tile with children was opened. The page behind may follow (cover node).               |
-| `navigation-level-back`  | `{ id, childId }`  | One level up: `id` is the level now open, `childId` the one left. Not on the top level. |
-| `navigation-node-select` | `{ id, parentId }` | A tile without children was chosen. `parentId` is `null` on the top level.              |
-| `node-mark-clear`        | `{ nodeId }`       | The ✕ of the hint: the host should drop the mark.                                       |
+| Event                    | `detail`           | Description                                                                |
+| ------------------------ | ------------------ | -------------------------------------------------------------------------- |
+| `navigation-level-open`  | `{ id }`           | A tile with children was opened. The page behind may follow (cover node).  |
+| `navigation-level-back`  | `{ id }`           | One level up: `id` is the level now open. Not on the top level.            |
+| `navigation-node-select` | `{ id, parentId }` | A tile without children was chosen. `parentId` is `null` on the top level. |
+| `node-mark-clear`        | `{ nodeId }`       | The ✕ of the hint: the host should drop the mark.                          |
 
 All events bubble and are composed.
 
