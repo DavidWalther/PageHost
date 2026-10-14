@@ -95,9 +95,6 @@ test.describe('custom-node-view', () => {
   test.use({ actionTimeout: 5000 });
 
   test.describe('the node', () => {
-    // The component does not exist yet.
-    test.fail();
-
     test('shows the name of the node it fetched', async ({ page }) => {
       const host = await mount(page);
 
