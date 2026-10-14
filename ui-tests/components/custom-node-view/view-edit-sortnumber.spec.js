@@ -7,7 +7,7 @@ const { cacheLitBundle } = require('../../support/component-page');
 const { withSession } = require('../../support/session');
 
 /**
- * The sort number custom-node hands to its edit dialog.
+ * The sort number the node view hands to its edit dialog.
  *
  * A moved node has no sortnumber and stands at the end of its siblings. The
  * dialog gets exactly that — no `1` filled in on the way, which saving would
@@ -16,7 +16,7 @@ const { withSession } = require('../../support/session');
 
 const NODE = MOCK_NODES.kind1;
 
-async function openLowerNode(page, sortnumber) {
+async function openNode(page, sortnumber) {
   await mockBookstoreCallouts(page);
   await cacheLitBundle(page);
   await withSession(page, ['edit']);
@@ -31,17 +31,15 @@ async function openLowerNode(page, sortnumber) {
   });
   await page.goto(`/${NODE.id}`);
   await expect(page.locator('app-bookstore')).toBeAttached();
-  await expect(
-    page.locator('custom-node[data-role="content"] #node-edit')
-  ).toBeAttached();
+  await expect(page.locator('custom-node-view #node-edit')).toBeAttached();
 }
 
-/** The sort number the lower node's edit dialog holds. */
+/** The sort number the edit dialog of the node view holds. */
 const dialogSortNumber = (page) =>
   page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
     return app.shadowRoot
-      .querySelector('custom-node[data-role="content"]')
+      .querySelector('custom-node-view')
       .shadowRoot.querySelector('#node-edit').sortNumber;
   });
 
@@ -49,13 +47,13 @@ test.describe('Node: sort number for the edit dialog', () => {
   test.use({ actionTimeout: 5000 });
 
   test('a node without a sortnumber hands over none', async ({ page }) => {
-    await openLowerNode(page, null);
+    await openNode(page, null);
 
     expect(await dialogSortNumber(page)).toBeNull();
   });
 
   test('a node with a sortnumber hands it over', async ({ page }) => {
-    await openLowerNode(page, 4);
+    await openNode(page, 4);
 
     expect(await dialogSortNumber(page)).toBe(4);
   });

@@ -159,12 +159,9 @@ test.describe('Navigation modal', () => {
     const readNodes = () =>
       page.evaluate(() => {
         const app = document.querySelector('app-bookstore');
-        return ['navigation', 'content'].map((role) => {
-          const node = app.shadowRoot.querySelector(
-            `custom-node[data-role="${role}"]`
-          );
-          return [node.getAttribute('id'), node.getAttribute('selected-child')];
-        });
+        return ['custom-node-view', 'custom-node-contents'].map((tag) =>
+          app.shadowRoot.querySelector(tag).getAttribute('id')
+        );
       });
     await openModal(page);
     await expect(tiles(page).first()).toBeVisible();
@@ -308,7 +305,10 @@ test.describe('Navigation modal in any depth', () => {
     await expect(modal(page)).not.toHaveAttribute('open');
   });
 
-  test('reopens on the level of a deep location and marks the whole path', async ({
+  // Back takes the page along: it stands on the level now open, so no tile
+  // on that level is the current one — until the top level, where the page
+  // stays and its root is marked.
+  test('reopens on the level of a deep location, back takes the page along', async ({
     page,
   }) => {
     await openModal(page);
@@ -326,9 +326,11 @@ test.describe('Navigation modal in any depth', () => {
     ]);
     await expect(tile(page, 'Deep Level 4 B')).toHaveClass(/tile_current/);
     await back(page).click();
-    await expect(tile(page, 'Deep Level 3')).toHaveClass(/tile_current/);
+    await expect(tile(page, 'Deep Level 3')).toBeVisible();
+    await expect(tile(page, 'Deep Level 3')).not.toHaveClass(/tile_current/);
     await back(page).click();
-    await expect(tile(page, 'Deep Level 2')).toHaveClass(/tile_current/);
+    await expect(tile(page, 'Deep Level 2')).toBeVisible();
+    await expect(tile(page, 'Deep Level 2')).not.toHaveClass(/tile_current/);
     await back(page).click();
     await expect(tile(page, 'Deep Root')).toHaveClass(/tile_current/);
     await expect(tile(page, 'Other Root')).not.toHaveClass(/tile_current/);

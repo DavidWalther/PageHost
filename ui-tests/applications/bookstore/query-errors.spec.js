@@ -11,8 +11,8 @@ const { withSession } = require('../../support/session');
  * reach the callback as an error too; otherwise the asker waits for ever.
  */
 
-const contentNode = (page) =>
-  page.locator('app-bookstore custom-node[data-role="content"]');
+/** The node shown, with its name and its actions. */
+const nodeView = (page) => page.locator('app-bookstore custom-node-view');
 
 test.describe('Failed queries', () => {
   test.use({ actionTimeout: 5000 });
@@ -24,7 +24,7 @@ test.describe('Failed queries', () => {
     await cacheLitBundle(page);
     await withSession(page, ['read', 'delete']);
     await page.goto('/000c00000000000001');
-    await expect(contentNode(page).locator('#button-delete')).toBeVisible();
+    await expect(nodeView(page).locator('#button-delete')).toBeVisible();
     // From now on the tree cannot be loaded.
     await page.route('**/api/1.0/contents/**', (route) => route.abort());
     const prompts = [];
@@ -33,7 +33,7 @@ test.describe('Failed queries', () => {
       return dialog.dismiss();
     });
 
-    await contentNode(page).locator('#button-delete').click();
+    await nodeView(page).locator('#button-delete').click();
 
     await expect(
       page.locator('slds-toast', {
@@ -52,7 +52,7 @@ test.describe('Failed queries', () => {
 
     await page.goto('/000c00000000000001');
 
-    await expect(contentNode(page).locator('#node-name')).toHaveText(
+    await expect(nodeView(page).locator('#node-name')).toHaveText(
       'Mock Chapter 1 for Story 1'
     );
   });

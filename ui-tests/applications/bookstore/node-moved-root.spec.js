@@ -11,10 +11,9 @@ const { withSession } = require('../../support/session');
 /**
  * Moving a root.
  *
- * A root always stands in the upper node, so that is where it is marked
- * (`can-move-root`). In the modal it is left out; the top level, its own
- * level, has no paste tile. Pasted below another node it is shown as any
- * moved node: below the node itself, above its new parent.
+ * A root is marked like any node, in the node view. In the modal it is left
+ * out; the top level, its own level, has no paste tile. Pasted below another
+ * node it is shown as any moved node: at its new place, naming its new parent.
  */
 
 const [STORY_1, STORY_2] = MOCK_CONTENTS.result;
@@ -84,8 +83,7 @@ async function open(page) {
   await expect(upperMoveButton(page)).toBeVisible();
 }
 
-const upperMoveButton = (page) =>
-  page.locator('custom-node[data-role="navigation"] #button-move');
+const upperMoveButton = (page) => page.locator('custom-node-view #button-move');
 const tile = (page, text) =>
   page.locator('custom-navigation-modal button.tile').filter({
     has: page.locator('.tile__name', {
@@ -98,17 +96,13 @@ const pasteTile = (page) =>
 function readPage(page) {
   return page.evaluate(() => {
     const root = document.querySelector('app-bookstore').shadowRoot;
-    const upper = root.querySelector('custom-node[data-role="navigation"]');
-    const lower = root.querySelector('custom-node[data-role="content"]');
+    const view = root.querySelector('custom-node-view');
     return {
-      upperId: upper.getAttribute('id'),
-      upperMarked: upper.shadowRoot.querySelector('#node-move')?.marked ?? null,
-      selectedChild: upper.getAttribute('selected-child'),
-      lowerId: lower.getAttribute('id'),
-      lowerParent:
-        lower.shadowRoot
-          .querySelector('#node-edit')
-          ?.getAttribute('story-id') ?? null,
+      viewId: view.getAttribute('id'),
+      upperMarked: view.shadowRoot.querySelector('#node-move')?.marked ?? null,
+      viewParent:
+        view.shadowRoot.querySelector('#node-edit')?.getAttribute('story-id') ??
+        null,
     };
   });
 }
@@ -116,7 +110,7 @@ function readPage(page) {
 test.describe('Page: moving a root', () => {
   test.use({ actionTimeout: 5000 });
 
-  test('the root above offers the mark', async ({ page }) => {
+  test('the root shown offers the mark', async ({ page }) => {
     await open(page);
 
     await upperMoveButton(page).click();
@@ -156,11 +150,8 @@ test.describe('Page: moving a root', () => {
       sortnumber: null,
     });
     await expect
-      .poll(async () => (await readPage(page)).lowerParent)
+      .poll(async () => (await readPage(page)).viewParent)
       .toBe(STORY_2.id);
-    const state = await readPage(page);
-    expect(state.lowerId).toBe(ROOT.id);
-    expect(state.upperId).toBe(STORY_2.id);
-    expect(state.selectedChild).toBe(ROOT.id);
+    expect((await readPage(page)).viewId).toBe(ROOT.id);
   });
 });

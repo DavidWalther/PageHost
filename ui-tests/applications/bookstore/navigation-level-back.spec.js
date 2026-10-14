@@ -6,10 +6,10 @@ const { withSession } = require('../../support/session');
 /**
  * Going back in the navigation modal: the page follows.
  *
- * Going down, the page shows the opened node. Going up it shows the level now
- * open above and, below, the node the visitor comes from — chosen, as if it
- * had been picked in the modal, but the modal stays open. Back onto the top
- * level changes nothing: there is no node to show above.
+ * Going down, the page shows the opened node; going up it shows the level now
+ * open — the node the modal's heading names, above the node itself, below its
+ * contents. The modal stays open. Back onto the top level changes nothing:
+ * there is no node to show.
  *
  *   book
  *   ├─ part
@@ -74,13 +74,12 @@ async function open(page, { scopes = null } = {}) {
 function readPage(page) {
   return page.evaluate(() => {
     const root = document.querySelector('app-bookstore').shadowRoot;
-    const upper = root.querySelector('custom-node[data-role="navigation"]');
-    const lower = root.querySelector('custom-node[data-role="content"]');
+    const view = root.querySelector('custom-node-view');
+    const contents = root.querySelector('custom-node-contents');
     const modal = root.querySelector('custom-navigation-modal');
     return {
-      upperId: upper.getAttribute('id'),
-      selectedChild: upper.getAttribute('selected-child'),
-      lowerId: lower.getAttribute('id'),
+      viewId: view.getAttribute('id'),
+      contentsId: contents.getAttribute('id'),
       modalOpen: modal.shadowRoot
         .querySelector('#modal-navigation')
         .hasAttribute('open'),
@@ -95,39 +94,41 @@ const tile = (page, text) =>
     }),
   });
 const back = (page) => page.locator('custom-navigation-modal #button-back');
-const lowerName = (page) =>
-  page.locator('custom-node[data-role="content"] #node-name');
+const viewName = (page) => page.locator('custom-node-view #node-name');
+
+/** Waits until both components stand on `id`. */
+const expectShown = (page, id) =>
+  expect
+    .poll(async () => {
+      const state = await readPage(page);
+      return [state.viewId, state.contentsId];
+    })
+    .toEqual([id, id]);
 
 test.describe('Page: going back in the navigation modal', () => {
   test.use({ actionTimeout: 5000 });
 
-  test('shows the level now open above and the node left below', async ({
-    page,
-  }) => {
+  test('shows the level now open, the modal stays open', async ({ page }) => {
     await open(page);
     await tile(page, 'Book').click();
     await tile(page, 'Part').click();
     await expect(tile(page, 'Section')).toBeVisible();
-    await expect.poll(async () => (await readPage(page)).upperId).toBe('part');
+    await expectShown(page, 'part');
 
     await back(page).click();
 
-    await expect.poll(async () => (await readPage(page)).upperId).toBe('book');
-    const state = await readPage(page);
-    expect(state.lowerId).toBe('part');
-    expect(state.selectedChild).toBe('part');
-    expect(state.modalOpen).toBe(true);
-    await expect(lowerName(page)).toHaveText('Part');
-    // The modal marks where the page stands: the node left, on the open level.
-    await expect(tile(page, 'Part')).toHaveClass(/tile_current/);
-    await expect(tile(page, 'Leaf')).not.toHaveClass(/tile_current/);
+    await expectShown(page, 'book');
+    await expect(viewName(page)).toHaveText('Book');
+    expect((await readPage(page)).modalOpen).toBe(true);
+    // The page stands on the open level itself, not on one of its tiles.
+    await expect(tile(page, 'Part')).not.toHaveClass(/tile_current/);
   });
 
   test('back onto the top level leaves the page as it is', async ({ page }) => {
     await open(page);
     await tile(page, 'Book').click();
     await expect(tile(page, 'Part')).toBeVisible();
-    await expect.poll(async () => (await readPage(page)).upperId).toBe('book');
+    await expectShown(page, 'book');
     const before = await readPage(page);
 
     await back(page).click();
@@ -136,20 +137,21 @@ test.describe('Page: going back in the navigation modal', () => {
     expect(await readPage(page)).toEqual(before);
   });
 
-  test('back out of a leaf opened as a level shows the leaf below', async ({
+  // A leaf opened as a level (the modified click) does not move the page —
+  // the modal reports nothing for it. Back from there shows its parent,
+  // which the page already shows.
+  test('back out of a leaf opened as a level shows its parent', async ({
     page,
   }) => {
     await open(page, { scopes: ['read', 'create'] });
     await tile(page, 'Book').click();
     await tile(page, 'Leaf').click({ modifiers: ['ControlOrMeta'] });
     await expect(tile(page, 'Leaf')).toHaveCount(0);
+    await expectShown(page, 'book');
 
     await back(page).click();
 
-    await expect.poll(async () => (await readPage(page)).lowerId).toBe('leaf');
-    const state = await readPage(page);
-    expect(state.upperId).toBe('book');
-    expect(state.selectedChild).toBe('leaf');
-    expect(state.modalOpen).toBe(true);
+    await expectShown(page, 'book');
+    expect((await readPage(page)).modalOpen).toBe(true);
   });
 });

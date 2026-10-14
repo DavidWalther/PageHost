@@ -1,7 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const { mockBookstoreCallouts } = require('../../support/mock-callouts');
-const { cacheLitBundle } = require('../../support/component-page');
-const { withSession } = require('../../support/session');
+const { MOCK_NODES } = require('../../support/mock-callouts');
+const { mountNode } = require('../../support/node-mount');
 
 /**
  * Aufbau der Actions-Leiste von `custom-node`.
@@ -21,19 +20,38 @@ const { withSession } = require('../../support/session');
 
 const SESSION_SCOPES = ['read', 'edit', 'create', 'delete'];
 
+/**
+ * Two ways to set the node up — the attributes the page once gave its two
+ * nodes, a selection above and a node with contents below. The node is
+ * mounted on its own; the page now shows its node through custom-node-view.
+ */
 const ROLES = {
-  navigation: 'Mock Story 1',
-  content: 'Mock Chapter 1 for Story 1',
+  navigation: {
+    node: { ...MOCK_NODES.wurzel, contents: [] },
+    attrs: {
+      'child-buttons_number-max': 2,
+      'can-create-child': true,
+      'can-move-root': true,
+      'no-contents': true,
+    },
+  },
+  content: {
+    node: MOCK_NODES.kind1,
+    attrs: {
+      'can-create-content': true,
+      'can-delete': true,
+      'can-move': true,
+      'no-child-navigation': true,
+    },
+  },
 };
 
-const nodeByRole = (page, role) =>
-  page.locator(`custom-node[data-role="${role}"]`);
-
-// Einstieg über einen Kind-Knoten: beide Instanzen haben Aktionen.
-const ENTRY = '/000c00000000000001';
+const mountRole = (page, role, scopes) =>
+  mountNode(page, { ...ROLES[role], scopes });
 
 // Die IDs der Aktionen — stabil, egal wie das Grid darum gebaut ist.
 const ACTION_IDS = [
+  'node-publish',
   'node-create-child',
   'node-edit',
   'button-share',
@@ -68,23 +86,13 @@ function readActions(node) {
 }
 
 test.describe('Knoten: Aufbau der Actions-Leiste', () => {
-  test.beforeEach(async ({ page }) => {
-    await mockBookstoreCallouts(page);
-    await cacheLitBundle(page);
-    await withSession(page, SESSION_SCOPES);
-    await page.goto(ENTRY);
-    for (const [role, name] of Object.entries(ROLES)) {
-      await expect(nodeByRole(page, role).locator('#node-name')).toHaveText(
-        name
-      );
-    }
-  });
-
   for (const role of Object.keys(ROLES)) {
     test(`${role}: die Leiste ist ein umbrechender Flex-Container`, async ({
       page,
     }) => {
-      const actions = await readActions(nodeByRole(page, role));
+      const actions = await readActions(
+        await mountRole(page, role, SESSION_SCOPES)
+      );
       expect(actions.display).toBe('flex');
       expect(actions.flexWrap).toBe('wrap');
     });
@@ -92,7 +100,9 @@ test.describe('Knoten: Aufbau der Actions-Leiste', () => {
     test(`${role}: jede Aktion steht in einem eigenen Element`, async ({
       page,
     }) => {
-      const actions = await readActions(nodeByRole(page, role));
+      const actions = await readActions(
+        await mountRole(page, role, SESSION_SCOPES)
+      );
       const placed = actions.items.flatMap((item) => item.ids);
 
       expect(actions.items.every((item) => item.ids.length <= 1)).toBe(true);
@@ -102,7 +112,9 @@ test.describe('Knoten: Aufbau der Actions-Leiste', () => {
     test(`${role}: jedes Element ist so breit wie seine Aktion plus 4px Gutter`, async ({
       page,
     }) => {
-      const actions = await readActions(nodeByRole(page, role));
+      const actions = await readActions(
+        await mountRole(page, role, SESSION_SCOPES)
+      );
       expect(actions.items.length).toBeGreaterThan(0);
       for (const item of actions.items) {
         expect(
@@ -165,17 +177,9 @@ test.describe('Knoten: Actions-Leiste ohne leere Elemente', () => {
       test(`${scenario.name}: ${role} hat nur Elemente mit sichtbarer Aktion`, async ({
         page,
       }) => {
-        await mockBookstoreCallouts(page);
-        await cacheLitBundle(page);
-        if (scenario.scopes) {
-          await withSession(page, scenario.scopes);
-        }
-        await page.goto(ENTRY);
-        await expect(nodeByRole(page, role).locator('#node-name')).toHaveText(
-          ROLES[role]
+        const actions = await readActions(
+          await mountRole(page, role, scenario.scopes)
         );
-
-        const actions = await readActions(nodeByRole(page, role));
         expect(actions.items.every((item) => item.contentWidth > 0)).toBe(true);
         expect(actions.items.map((item) => item.ids[0])).toEqual(
           scenario.expected[role]

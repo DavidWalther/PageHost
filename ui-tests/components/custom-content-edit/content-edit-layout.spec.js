@@ -21,12 +21,9 @@ const {
 function geometry(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
-    const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
-    );
+    const node = app.shadowRoot.querySelector('custom-node-contents');
     const editor = node.shadowRoot
-      .querySelector('custom-node-contents')
-      .shadowRoot.querySelector('custom-paragraph')
+      .querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit');
     const root = editor.shadowRoot;
     const height = (selector, from = root) => {
@@ -52,12 +49,9 @@ function geometry(page) {
 function wrapState(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
-    const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
-    );
+    const node = app.shadowRoot.querySelector('custom-node-contents');
     const field = node.shadowRoot
-      .querySelector('custom-node-contents')
-      .shadowRoot.querySelector('custom-paragraph')
+      .querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit')
       .shadowRoot.querySelector('#content-input');
 
@@ -73,12 +67,9 @@ function wrapState(page) {
 function toggleWrap(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
-    const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
-    );
+    const node = app.shadowRoot.querySelector('custom-node-contents');
     node.shadowRoot
-      .querySelector('custom-node-contents')
-      .shadowRoot.querySelector('custom-paragraph')
+      .querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit')
       .shadowRoot.querySelector('slds-toggle')
       .shadowRoot.querySelector('input[type="checkbox"]')
@@ -204,12 +195,9 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
   function stacking(page) {
     return page.evaluate(() => {
       const app = document.querySelector('app-bookstore');
-      const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="content"]'
-      );
+      const node = app.shadowRoot.querySelector('custom-node-contents');
       const root = node.shadowRoot
-        .querySelector('custom-node-contents')
-        .shadowRoot.querySelector('custom-paragraph')
+        .querySelector('custom-paragraph')
         .shadowRoot.querySelector('custom-content-edit').shadowRoot;
       const rect = (selector) =>
         root.querySelector(selector).getBoundingClientRect();
@@ -256,12 +244,9 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
       // Und unten angekommen ist die Entwurfs-Leiste wirklich zu sehen.
       await page.evaluate(() => {
         const app = document.querySelector('app-bookstore');
-        const node = app.shadowRoot.querySelector(
-          'custom-node[data-role="content"]'
-        );
+        const node = app.shadowRoot.querySelector('custom-node-contents');
         const scroller = node.shadowRoot
-          .querySelector('custom-node-contents')
-          .shadowRoot.querySelector('custom-paragraph')
+          .querySelector('custom-paragraph')
           .shadowRoot.querySelector('custom-content-edit')
           .shadowRoot.querySelector('slds-modal')
           .shadowRoot.querySelector('.slds-modal__content');

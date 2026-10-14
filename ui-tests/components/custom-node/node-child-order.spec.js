@@ -1,10 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const {
-  mockBookstoreCallouts,
-  MOCK_ROOT_PATH,
-  MOCK_NODES,
-} = require('../../support/mock-callouts');
-const { cacheLitBundle } = require('../../support/component-page');
+const { MOCK_NODES } = require('../../support/mock-callouts');
+const { mountNode } = require('../../support/node-mount');
 
 /**
  * The order of the children after one of them changed.
@@ -18,46 +14,34 @@ const { cacheLitBundle } = require('../../support/component-page');
 const ROOT = MOCK_NODES.wurzel;
 const [FIRST, SECOND] = ROOT.nodes;
 
+/** Ids of the children the node lists, in order. */
+const childIds = (node) =>
+  node.evaluate((host) => host.childNodeList.map((child) => child.id));
+
+const applyChildUpdate = (node, childData) =>
+  node.evaluate((host, data) => host.applyChildUpdate(data), childData);
+
 test.describe('Node: order of the children after a change', () => {
   test.use({ actionTimeout: 5000 });
 
+  let node;
   test.beforeEach(async ({ page }) => {
-    await mockBookstoreCallouts(page);
-    await cacheLitBundle(page);
-    await page.goto(MOCK_ROOT_PATH);
-    await expect(page.locator('app-bookstore')).toBeAttached();
-    await expect.poll(() => childIds(page)).toEqual([FIRST.id, SECOND.id]);
-  });
-
-  /** Ids of the children the upper node lists, in order. */
-  const childIds = (page) =>
-    page.evaluate(() => {
-      const app = document.querySelector('app-bookstore');
-      const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="navigation"]'
-      );
-      return (node?.childNodeList ?? []).map((child) => child.id);
+    node = await mountNode(page, {
+      node: { ...ROOT, contents: [] },
+      attrs: { 'no-contents': true },
     });
-
-  const applyChildUpdate = (page, childData) =>
-    page.evaluate((data) => {
-      const app = document.querySelector('app-bookstore');
-      app.shadowRoot
-        .querySelector('custom-node[data-role="navigation"]')
-        .applyChildUpdate(data);
-    }, childData);
-
-  test('a child without a sortnumber stands at the end', async ({ page }) => {
-    await applyChildUpdate(page, { id: FIRST.id, sortnumber: null });
-
-    expect(await childIds(page)).toEqual([SECOND.id, FIRST.id]);
+    await expect.poll(() => childIds(node)).toEqual([FIRST.id, SECOND.id]);
   });
 
-  test('a child with a sortnumber keeps its place by number', async ({
-    page,
-  }) => {
-    await applyChildUpdate(page, { id: FIRST.id, sortnumber: 3 });
+  test('a child without a sortnumber stands at the end', async () => {
+    await applyChildUpdate(node, { id: FIRST.id, sortnumber: null });
 
-    expect(await childIds(page)).toEqual([SECOND.id, FIRST.id]);
+    expect(await childIds(node)).toEqual([SECOND.id, FIRST.id]);
+  });
+
+  test('a child with a sortnumber keeps its place by number', async () => {
+    await applyChildUpdate(node, { id: FIRST.id, sortnumber: 3 });
+
+    expect(await childIds(node)).toEqual([SECOND.id, FIRST.id]);
   });
 });
