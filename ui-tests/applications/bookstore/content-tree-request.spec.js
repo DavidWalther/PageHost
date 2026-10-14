@@ -92,4 +92,28 @@ test.describe('Content tree request', () => {
 
     await expect(tile('Level 3')).toBeVisible();
   });
+
+  // One tree serves the whole page — the navigation modal and, above the
+  // node, the breadcrumbs and the arrows to the siblings. It is asked for
+  // once, and once more after every change to a node.
+  test('asks once when the page starts, and once more after a node changed', async ({
+    page,
+  }) => {
+    await expect.poll(() => requestedUrls.length).toBe(1);
+    // Give a second, unwanted request the time to go out.
+    await page.waitForTimeout(500);
+    expect(requestedUrls).toHaveLength(1);
+
+    await page.locator('app-bookstore').evaluate((host) =>
+      host.dispatchEvent(
+        new CustomEvent('chapter-updated', {
+          detail: { chapterData: { id: 'level-1', name: 'Level 1' } },
+        })
+      )
+    );
+
+    await expect.poll(() => requestedUrls.length).toBe(2);
+    await page.waitForTimeout(500);
+    expect(requestedUrls).toHaveLength(2);
+  });
 });
