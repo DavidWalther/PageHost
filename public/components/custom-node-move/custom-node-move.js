@@ -63,7 +63,7 @@ class CustomNodeMove extends LitElement {
         id="button-move"
         icon="${this.marked ? 'utility:clear' : 'utility:cut'}"
         variant="container-filled"
-        title="${this.marked ? this.labels.unmark : this.labels.mark}"
+        label="${this.marked ? this.labels.unmark : this.labels.mark}"
         @click=${this._handleClick}
       ></slds-button-icon>
     `;

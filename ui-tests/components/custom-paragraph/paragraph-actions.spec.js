@@ -56,8 +56,6 @@ test.describe('custom-paragraph: Aktionsleiste', () => {
   // The name each trigger carries, as tooltip and for assistive technology —
   // a `title` on slds-button-icon never reached the inner button.
   test('every trigger is named after its action', async ({ page }) => {
-    // The triggers still pass title, which slds-button-icon ignores.
-    test.fail();
     await openBookstore(page, { scopes: ALL_SCOPES });
 
     const absatz = paragraph(page);

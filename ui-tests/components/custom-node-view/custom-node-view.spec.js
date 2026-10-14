@@ -340,8 +340,6 @@ test.describe('custom-node-view', () => {
     });
 
     test('carry the names of their actions', async ({ page }) => {
-      // The actions still pass title, which slds-button-icon ignores.
-      test.fail();
       const host = await mount(page, { scopes: ['publish', ...ALL] });
 
       for (const name of [
