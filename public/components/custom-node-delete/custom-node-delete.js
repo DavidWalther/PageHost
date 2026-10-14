@@ -66,7 +66,7 @@ class CustomNodeDelete extends LitElement {
         id="button-delete"
         icon="utility:delete"
         variant="container-filled"
-        title="${this.labels.deleteNode}"
+        label="${this.labels.deleteNode}"
         @click=${() => this.requestDelete()}
       ></slds-button-icon>
     `;

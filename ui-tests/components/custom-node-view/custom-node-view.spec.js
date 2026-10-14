@@ -339,6 +339,22 @@ test.describe('custom-node-view', () => {
       await expect(host.locator('#button-create-content')).toHaveCount(0);
     });
 
+    test('carry the names of their actions', async ({ page }) => {
+      const host = await mount(page, { scopes: ['publish', ...ALL] });
+
+      for (const name of [
+        'Knoten veröffentlichen',
+        'Kapitel bearbeiten',
+        'Link kopieren',
+        'Zum Verschieben markieren',
+        'Knoten löschen',
+      ]) {
+        await expect(
+          host.getByRole('button', { name, exact: true })
+        ).toBeVisible({ timeout: 2000 });
+      }
+    });
+
     test('tell the move action whether this node is the marked one', async ({
       page,
     }) => {

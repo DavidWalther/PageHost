@@ -58,7 +58,7 @@ class CustomContentPublish extends LitElement {
         icon="utility:upload"
         variant="container-filled"
         size="x-small"
-        title="${labels.modalTitle}"
+        label="${labels.modalTitle}"
         @click=${this.show}
       ></slds-button-icon>
 

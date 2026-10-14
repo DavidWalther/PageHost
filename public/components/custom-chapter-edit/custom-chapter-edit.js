@@ -112,7 +112,7 @@ class CustomChapterEdit extends LitElement {
           ? html` <slds-button-icon
               icon="utility:edit"
               variant="container-filled"
-              title="${this.labels.labelEditChapter}"
+              label="${this.labels.labelEditChapter}"
               @click=${this._handleEditButtonClick}
             ></slds-button-icon>`
           : ''
@@ -124,7 +124,7 @@ class CustomChapterEdit extends LitElement {
           ? html` <slds-button-icon
               icon="utility:add"
               variant="container-filled"
-              title="${this.labels.labelCreateChapter}"
+              label="${this.labels.labelCreateChapter}"
               @click=${this._handleCreateButtonClick}
             ></slds-button-icon>`
           : ''

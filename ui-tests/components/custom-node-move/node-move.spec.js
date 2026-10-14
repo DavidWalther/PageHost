@@ -129,10 +129,13 @@ test.describe('custom-node-move', () => {
       const action = await mount(page);
 
       expect(await buttonIcon(action)).toBe('utility:cut');
-      await expect(action.locator('#button-move')).toHaveAttribute(
-        'title',
-        'Zum Verschieben markieren'
-      );
+      // The name as tooltip and accessible name (`label` of slds-button-icon).
+      await expect(
+        action.getByRole('button', {
+          name: 'Zum Verschieben markieren',
+          exact: true,
+        })
+      ).toBeVisible();
     });
 
     test('a click reports the node to mark', async ({ page }) => {
@@ -147,10 +150,10 @@ test.describe('custom-node-move', () => {
       const action = await mount(page, { marked: true });
 
       expect(await buttonIcon(action)).toBe('utility:clear');
-      await expect(action.locator('#button-move')).toHaveAttribute(
-        'title',
-        'Markierung aufheben'
-      );
+      // The name as tooltip and accessible name (`label` of slds-button-icon).
+      await expect(
+        action.getByRole('button', { name: 'Markierung aufheben', exact: true })
+      ).toBeVisible();
     });
 
     test('a click on a marked node reports to unmark it', async ({ page }) => {
