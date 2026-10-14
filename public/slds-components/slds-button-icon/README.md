@@ -22,12 +22,16 @@ native markup-caching pattern to Lit.
 
 ## Attributes
 
-| Attribute  | Type    | Default            | Description                                                                                                                        |
-| ---------- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `icon`     | String  | —                  | Icon in the form `type:name` (e.g. `utility:settings`). Drives the sprite `use` href and the (capitalised) assistive text.         |
-| `variant`  | String  | `container-filled` | One of `icon-only`, `container-transparent`, `container-filled`. Missing → `container-filled`; any other value → no variant class. |
-| `size`     | String  | —                  | One of `large`, `small`, `x-small`, `xx-small`. Any other/missing value → no size class.                                           |
-| `disabled` | Boolean | absent             | If present, the inner `<button>` is disabled (and therefore fires no click).                                                       |
+| Attribute  | Type    | Default            | Description                                                                                                                                                 |
+| ---------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `icon`     | String  | —                  | Icon in the form `type:name` (e.g. `utility:settings`). Drives the sprite `use` href and the (capitalised) assistive text.                                  |
+| `variant`  | String  | `container-filled` | One of `icon-only`, `container-transparent`, `container-filled`. Missing → `container-filled`; any other value → no variant class.                          |
+| `size`     | String  | —                  | One of `large`, `small`, `x-small`, `xx-small`. Any other/missing value → no size class.                                                                    |
+| `disabled` | Boolean | absent             | If present, the inner `<button>` is disabled (and therefore fires no click).                                                                                |
+| `label`    | String  | —                  | Names the button: the inner `title` (tooltip) and the assistive text. Without it the title stays empty and the assistive text is the capitalised icon name. |
+
+> `label`, not `title`: a `title` on the host never reaches the inner button,
+> which carries `title=""` — no tooltip, and the icon name as accessible name.
 
 > The legacy API also had a `no-border` attribute. It never did anything (no code
 > path read it) and has been removed — use `variant` to control the border.

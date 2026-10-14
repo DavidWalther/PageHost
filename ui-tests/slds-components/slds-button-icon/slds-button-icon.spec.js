@@ -187,8 +187,6 @@ test.describe('slds-button-icon', () => {
     test('names the button for the tooltip and assistive technology', async ({
       page,
     }) => {
-      // label does not exist yet.
-      test.fail();
       const result = await mountButton(page, {
         attrs: { icon: 'utility:chevronright', label: 'Kapitel 2' },
       });

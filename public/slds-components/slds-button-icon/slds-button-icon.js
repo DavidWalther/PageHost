@@ -18,6 +18,9 @@ class SLDSButtonIcon extends LitElement {
     size: { type: String },
     variant: { type: String },
     disabled: { type: Boolean },
+    // Not `title`: a global HTML attribute with a native property — on the host
+    // it never reaches the inner button, which keeps title="" (no tooltip).
+    label: { type: String },
   };
 
   connectedCallback() {
@@ -49,10 +52,16 @@ class SLDSButtonIcon extends LitElement {
       type && name
         ? `/assets/icons/${type}-sprite/svg/symbols.svg#${name}`
         : '';
-    const assistive = name ? name.charAt(0).toUpperCase() + name.slice(1) : '';
+    // A label names the button; without one the icon name does, as before.
+    const assistive =
+      this.label || (name ? name.charAt(0).toUpperCase() + name.slice(1) : '');
 
     return html`
-      <button class="${buttonClass}" title="" ?disabled=${this.disabled}>
+      <button
+        class="${buttonClass}"
+        title="${this.label || ''}"
+        ?disabled=${this.disabled}
+      >
         <svg class="slds-button__icon" aria-hidden="true">
           <use href="${href}"></use>
         </svg>
