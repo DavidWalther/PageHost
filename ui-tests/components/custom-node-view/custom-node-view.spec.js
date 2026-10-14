@@ -283,4 +283,94 @@ test.describe('custom-node-view', () => {
       await expect(combobox(host)).toHaveCount(0);
     });
   });
+
+  test.describe('the actions on the node', () => {
+    // The actions do not exist yet.
+    test.fail();
+
+    const ALL = ['publish', 'edit', 'create', 'delete'];
+    /** The ids of the actions in the bar, in their order. */
+    const actions = (host) =>
+      host
+        .locator('#node-actions slds-layout-item > *')
+        .evaluateAll((all) => all.map((element) => element.id));
+
+    test('are publish, edit, share, move and delete, in that order', async ({
+      page,
+    }) => {
+      const host = await mount(page, { scopes: ALL });
+
+      await expect
+        .poll(() => actions(host))
+        .toEqual([
+          'node-publish',
+          'node-edit',
+          'button-share',
+          'node-move',
+          'node-delete',
+        ]);
+      await expect(host.locator('#node-publish')).toHaveAttribute(
+        'object-name',
+        'node'
+      );
+    });
+
+    test('leave only share without a session, and no gaps', async ({
+      page,
+    }) => {
+      const host = await mount(page);
+
+      await expect.poll(() => actions(host)).toEqual(['button-share']);
+      await expect(host.locator('#node-actions slds-layout-item')).toHaveCount(
+        1
+      );
+    });
+
+    test('publish only with the scopes publish and edit', async ({ page }) => {
+      const host = await mount(page, { scopes: ['edit', 'delete'] });
+
+      await expect
+        .poll(() => actions(host))
+        .toEqual(['node-edit', 'button-share', 'node-move', 'node-delete']);
+    });
+
+    test('offer no child to create and no content to add', async ({ page }) => {
+      const host = await mount(page, { scopes: ALL });
+
+      await expect(host.locator('#node-edit')).toHaveCount(1);
+      await expect(host.locator('#node-create-child')).toHaveCount(0);
+      await expect(host.locator('#button-create-content')).toHaveCount(0);
+    });
+
+    test('tell the move action whether this node is the marked one', async ({
+      page,
+    }) => {
+      const host = await mount(page, { scopes: ALL });
+
+      await host.evaluate(async (el) => {
+        el.markedId = 'n-part';
+        await el.updateComplete;
+      });
+
+      expect(await host.locator('#node-move').evaluate((el) => el.marked)).toBe(
+        true
+      );
+    });
+
+    test('take over an edited name', async ({ page }) => {
+      const host = await mount(page, { scopes: ALL });
+
+      await host.locator('#node-edit').evaluate((el) =>
+        el.dispatchEvent(
+          new CustomEvent('chapter-updated', {
+            detail: { chapterData: { id: 'n-part', name: 'Renamed' } },
+            bubbles: true,
+            composed: true,
+          })
+        )
+      );
+
+      await expect(host.locator('#node-name')).toHaveText('Renamed');
+    });
+  });
 });
