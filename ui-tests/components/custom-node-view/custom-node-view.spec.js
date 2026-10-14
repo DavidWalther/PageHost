@@ -216,8 +216,6 @@ test.describe('custom-node-view', () => {
     const crumbs = (host) => host.locator('slds-breadcrumbs');
 
     test('show the way up, without the node itself', async ({ page }) => {
-      // The breadcrumbs do not exist yet.
-      test.fail();
       const host = await mount(page);
 
       await expect(crumbs(host).locator('li')).toHaveText(['Shelf', 'Book']);
@@ -227,8 +225,6 @@ test.describe('custom-node-view', () => {
     });
 
     test('lead up to the node clicked', async ({ page }) => {
-      // The breadcrumbs do not exist yet.
-      test.fail();
       const host = await mount(page);
 
       await crumbs(host).locator('a', { hasText: 'Book' }).click();

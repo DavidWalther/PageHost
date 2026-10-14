@@ -21,10 +21,19 @@ content tree and hands them in; every way to another node is one event,
 
 ## Attributes and properties
 
-| Attribute | Property   | Type   | Description                                                              |
-| :-------- | :--------- | :----- | :----------------------------------------------------------------------- |
-| `id`      | `id`       | String | Id of the node. Setting it fetches the node (`query`, `object: 'node'`). |
-| —         | `siblings` | Object | `{ previous, next }`, each `{ id, name }` or `null`. Default: neither.   |
+| Attribute | Property   | Type   | Description                                                                                |
+| :-------- | :--------- | :----- | :----------------------------------------------------------------------------------------- |
+| `id`      | `id`       | String | Id of the node. Setting it fetches the node (`query`, `object: 'node'`).                   |
+| —         | `siblings` | Object | `{ previous, next }`, each `{ id, name }` or `null`. Default: neither.                     |
+| —         | `path`     | Array  | The ancestors from the root down, `[{ id, name }]`, without the node itself. Default `[]`. |
+
+## The breadcrumbs
+
+Above the name, the way up: the ancestors from the root down, each a link
+(`slds-breadcrumbs` with `no-current-item` and `last-item-as-link`). The node
+itself is not among them — its name stands below. A root has no breadcrumbs.
+Each crumb carries the address of its node (`/<id>`); a click reports
+`node-view-navigate` instead of following it.
 
 ## The arrows to the siblings
 

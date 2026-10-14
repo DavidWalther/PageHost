@@ -21,6 +21,9 @@ class CustomNodeView extends LitElement {
     // The siblings just before and after, `{ previous, next }`, each
     // `{ id, name }` or null — from the host, which knows the tree.
     siblings: { type: Object, attribute: false },
+    // The ancestors from the root down, `[{ id, name }]`, without the node
+    // itself — its name stands below. Empty for a root.
+    path: { type: Array, attribute: false },
     _nodeData: { state: true },
     _loading: { state: true },
   };
@@ -48,6 +51,7 @@ class CustomNodeView extends LitElement {
     super();
     this.id = null;
     this.siblings = { previous: null, next: null };
+    this.path = [];
     this._nodeData = null;
     this._loading = false;
   }
@@ -77,6 +81,7 @@ class CustomNodeView extends LitElement {
 
     return html`
       <slds-card no-footer no-header>
+        ${this._renderBreadcrumbs()}
         <slds-layout id="node-title" vertical-align-center>
           <slds-layout-item id="item-previous">
             ${this._renderArrow('previous', 'utility:chevronleft')}
@@ -92,6 +97,30 @@ class CustomNodeView extends LitElement {
         </slds-layout>
       </slds-card>
     `;
+  }
+
+  /**
+   * The way up. Every crumb is a link — the trail ends above the node, whose
+   * name stands below — and carries the address of its node, so it can also
+   * be opened or copied as such.
+   */
+  _renderBreadcrumbs() {
+    const path = this.path || [];
+    if (path.length === 0) {
+      return '';
+    }
+    const items = path.map((node) => ({
+      key: node.id,
+      label: node.name || '',
+      href: `/${node.id}`,
+    }));
+    return html`<slds-breadcrumbs
+      size="small"
+      no-current-item
+      last-item-as-link
+      .items=${items}
+      @breadcrumb-select=${(event) => this._navigate(event.detail.key)}
+    ></slds-breadcrumbs>`;
   }
 
   /** The arrow to one sibling, named after it; nothing without one. */
