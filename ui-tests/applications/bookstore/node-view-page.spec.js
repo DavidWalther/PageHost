@@ -357,6 +357,26 @@ test.describe('Page: one node, above and below', () => {
         .toBe(true);
     });
 
+    // A child created in the navigation modal belongs in the combobox of the
+    // node shown: the view fetches the node again.
+    test('a child created below it is fetched into the node view', async ({
+      page,
+    }) => {
+      await open(page, '/book-a');
+      await expectShown(page, 'book-a');
+      const before = nodeQueries['book-a'];
+
+      await page.locator('app-bookstore').evaluate((host) =>
+        host.dispatchEvent(
+          new CustomEvent('chapter-created', {
+            detail: { chapterData: { id: 'part-3', parent_node_id: 'book-a' } },
+          })
+        )
+      );
+
+      await expect.poll(() => nodeQueries['book-a']).toBe(before + 1);
+    });
+
     test('a moved node stays shown and is fetched again', async ({ page }) => {
       await open(page, '/part-1');
       await expectShown(page, 'part-1');
