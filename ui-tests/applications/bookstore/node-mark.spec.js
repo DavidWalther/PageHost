@@ -30,25 +30,19 @@ function readNodeView(page) {
 
 const moveButton = (page) => page.locator('custom-node-view #button-move');
 
-/** Goes to a sibling of the node shown, with the arrow that names it. */
+/**
+ * Goes to the other child with the arrow of the node view: CHILD_2 is the
+ * next sibling of CHILD_1, CHILD_1 the previous one of CHILD_2. A locator,
+ * so the click waits until the tree has brought the arrows.
+ */
 const goToSibling = (page, id) =>
   page
-    .locator('custom-node-view')
-    .evaluate(
-      (view, id) =>
-        view.shadowRoot
-          .querySelector(
-            [view.siblings?.previous, view.siblings?.next]
-              .map((sibling, index) =>
-                sibling?.id === id
-                  ? ['#button-previous', '#button-next'][index]
-                  : null
-              )
-              .find(Boolean)
-          )
-          .click(),
-      id
-    );
+    .locator(
+      id === CHILD_2
+        ? 'custom-node-view #button-next'
+        : 'custom-node-view #button-previous'
+    )
+    .click();
 
 test.describe('Page: marking a node to move it', () => {
   test.use({ actionTimeout: 5000 });
