@@ -179,20 +179,24 @@ test.describe('custom-chapter-edit: the form', () => {
     );
   });
 
-  test('edit mode offers the publish tab, create mode does not', async ({
-    page,
-  }) => {
+  // A node is published through its own button (custom-node-view,
+  // custom-node). The dialog only edits: no tabs, the save button always there.
+  test('neither mode has tabs, and both can save', async ({ page }) => {
+    // The publish tab is still there.
+    test.fail();
     const editing = await mount(page);
     await openThroughTrigger(page);
+    await expect(editing.locator('.slds-tabs_default')).toHaveCount(0);
     await expect(
       editing.locator('a', { hasText: 'Veröffentlichen' })
-    ).toHaveCount(1);
+    ).toHaveCount(0);
+    await expect(
+      editing.locator('button', { hasText: 'Speichern' })
+    ).toBeVisible();
 
     const creating = await mount(page, { edit: false });
     await openThroughTrigger(page, 'utility:add');
-    await expect(
-      creating.locator('a', { hasText: 'Veröffentlichen' })
-    ).toHaveCount(0);
+    await expect(creating.locator('.slds-tabs_default')).toHaveCount(0);
   });
 
   /**
@@ -450,7 +454,7 @@ test.describe('custom-chapter-edit: opened from outside', () => {
 
 /**
  * Saving the edit dialog must not touch the publication. Publishing has its
- * own tab and endpoint; the edit form only carries what it shows.
+ * own button and endpoint; the edit form only carries what it shows.
  */
 test.describe('custom-chapter-edit: saving keeps the publication', () => {
   test.beforeEach(async ({ page }) => {
