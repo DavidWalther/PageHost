@@ -238,4 +238,55 @@ test.describe('custom-node-view', () => {
       await expect(crumbs(host)).toHaveCount(0);
     });
   });
+
+  test.describe('the children', () => {
+    const combobox = (host) => host.locator('slds-combobox');
+
+    test('are offered in a combobox', async ({ page }) => {
+      // The combobox does not exist yet.
+      test.fail();
+      const host = await mount(page);
+
+      const labels = await combobox(host).evaluate((el) =>
+        JSON.parse(el.getAttribute('options')).map((option) => option.label)
+      );
+      expect(labels).toEqual(['Section 1', 'Section 2']);
+    });
+
+    test('are offered in a combobox for a single child too', async ({
+      page,
+    }) => {
+      // The combobox does not exist yet.
+      test.fail();
+      const host = await mount(page, {
+        node: { ...NODE, nodes: [NODE.nodes[0]] },
+      });
+
+      await expect(combobox(host)).toHaveCount(1);
+    });
+
+    test('lead down to the child chosen', async ({ page }) => {
+      // The combobox does not exist yet.
+      test.fail();
+      const host = await mount(page);
+
+      await combobox(host).evaluate((el) =>
+        el.dispatchEvent(
+          new CustomEvent('combobox-select', {
+            detail: { value: 'n-section-2' },
+            bubbles: true,
+            composed: true,
+          })
+        )
+      );
+
+      expect(await navigated(page)).toEqual(['n-section-2']);
+    });
+
+    test('offer nothing without children', async ({ page }) => {
+      const host = await mount(page, { node: { ...NODE, nodes: [] } });
+
+      await expect(combobox(host)).toHaveCount(0);
+    });
+  });
 });
