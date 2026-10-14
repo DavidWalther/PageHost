@@ -49,8 +49,6 @@ test.describe('Node: the publish button', () => {
   test('shows with the scopes publish and edit, for the node', async ({
     page,
   }) => {
-    // The button does not exist yet.
-    test.fail();
     const node = await mount(page, { scopes: ['publish', 'edit'] });
 
     const publish = node.locator('#node-publish');
