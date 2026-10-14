@@ -17,7 +17,7 @@ class NavigationModal extends LitElement {
   labels = {
     modalTitle: 'Navigation',
     empty: 'Keine Inhalte vorhanden.',
-    back: '< zurück',
+    back: (name) => `Zurück zu ${name}`,
     createChild: 'Neuen Eintrag anlegen',
     deleteCurrent: 'Diesen Eintrag löschen',
     marked: (name) => `„${name}“ markiert`,
@@ -87,17 +87,18 @@ class NavigationModal extends LitElement {
       fill: currentColor;
     }
 
-    .back-button {
-      background: none;
-      border: none;
-      color: inherit;
-      font: inherit;
-      cursor: pointer;
-      padding: 0.25rem 0.5rem;
+    /*
+     * The label is the name of a node: it may be long, the footer is not. A
+     * flex item is never narrower than its content unless told so — without
+     * min-width the item would grow past the footer instead of the label
+     * being cut short.
+     */
+    #item-back {
+      min-width: 0;
     }
 
-    .back-button:hover {
-      text-decoration: underline;
+    #button-back {
+      max-width: 100%;
     }
   `;
 
@@ -221,10 +222,14 @@ class NavigationModal extends LitElement {
 
   render() {
     return html`
-      <slds-modal heading="${this.labels.modalTitle}" footless>
+      <slds-modal
+        id="modal-navigation"
+        heading="${this._heading()}"
+        ?footless="${this._openPath.length === 0}"
+      >
         ${this.marked?.id ? this._renderMarkedHint() : ''}
-        ${this._openPath.length > 0 ? this._renderBack() : ''}
         ${this._renderLevel(this._currentLevel())}
+        ${this._openPath.length > 0 ? this._renderBack() : ''}
       </slds-modal>
       <!-- The create dialog: opened by the "+" tile, it opens over the modal. -->
       <custom-chapter-edit no-trigger></custom-chapter-edit>
@@ -233,6 +238,19 @@ class NavigationModal extends LitElement {
       <!-- The move action: run by the paste tile with the mark of the host. -->
       <custom-node-move no-trigger></custom-node-move>
     `;
+  }
+
+  /**
+   * The name of a level: of the node whose children it lists, and of the top
+   * level the title of the modal. The heading names the open level.
+   */
+  _levelName(id) {
+    const node = id ? findNode(this._shownTree, id) : null;
+    return node?.name ?? this.labels.modalTitle;
+  }
+
+  _heading() {
+    return this._levelName(this._currentElementId());
   }
 
   /** The create dialog decides about the create scope; one place for the rule. */
@@ -341,13 +359,35 @@ class NavigationModal extends LitElement {
     );
   }
 
+  /**
+   * The way back, in the footer: labelled with where it leads, the level
+   * above. The top level has none — and so no footer, which says that this is
+   * the top of the tree.
+   */
   _renderBack() {
+    const target = this._levelName(this._openPath[this._openPath.length - 2]);
     return html`
-      <div class="slds-m-bottom_small">
-        <button class="back-button" @click="${this._handleBack}">
-          ${this.labels.back}
-        </button>
-      </div>
+      <slds-layout slot="footer">
+        <slds-layout-item id="item-back" grow-none>
+          <button
+            id="button-back"
+            class="slds-button slds-button_neutral"
+            title="${this.labels.back(target)}"
+            aria-label="${this.labels.back(target)}"
+            @click="${this._handleBack}"
+          >
+            <svg
+              class="slds-button__icon slds-button__icon_left"
+              aria-hidden="true"
+            >
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#chevronleft"
+              ></use>
+            </svg>
+            <span class="slds-truncate">${target}</span>
+          </button>
+        </slds-layout-item>
+      </slds-layout>
     `;
   }
 
@@ -637,8 +677,25 @@ class NavigationModal extends LitElement {
     );
   }
 
+  /**
+   * Goes up one level. The page behind follows: it is told the level now
+   * open and the one left, to show both. On the top level there is no node
+   * to show, so nothing is reported and the page stays as it is.
+   */
   _handleBack() {
+    const childId = this._currentElementId();
     this._openPath = this._openPath.slice(0, -1);
+    const id = this._currentElementId();
+    if (!id) {
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent('navigation-level-back', {
+        detail: { id, childId },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   //===========================

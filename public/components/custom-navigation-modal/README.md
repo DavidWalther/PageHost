@@ -35,6 +35,7 @@ programmatically:
 <custom-navigation-modal
   current-location="000n00000000000002"
   @navigation-level-open="${this.handleNavigationLevelOpen}"
+  @navigation-level-back="${this.handleNavigationLevelBack}"
   @navigation-node-select="${this.handleNavigationNodeSelect}"
 ></custom-navigation-modal>
 ```
@@ -92,12 +93,28 @@ can become its new parent.
 | --------------------------- | --------------------------------------------------------------------------------- |
 | a tile **with** children    | opens that tile's level and reports `navigation-level-open`; the modal stays open |
 | a tile **without** children | reports `navigation-node-select`; the host closes the modal                       |
-| `< zurück`                  | goes up exactly one level (shown on every level below the top)                    |
+| the button in the footer    | goes up exactly one level and reports `navigation-level-back`                     |
 
 A tile **with** children looks like a stack of cards (`.tile_stack`); the look is
 one CSS rule of the component. A tile carries only its name.
 
 An empty level reads „Keine Inhalte vorhanden.“
+
+### Heading and footer
+
+The **heading** names the current element — the node whose children the tiles list
+and on which the last tiles of a level act (create below it, delete it, paste below
+it). The top level has no current element; it is headed „Navigation“.
+
+The **footer** holds the way back and nothing else: one button
+(`#button-back`), labelled with where it leads — the name of the level above, for
+the top level „Navigation“. A long name is cut short; `title` and `aria-label` read
+„Zurück zu ‹name›“. The top level has no way back and therefore **no footer**: the
+missing footer says that this is the top of the tree.
+
+Going back reports `navigation-level-back` with the level now open (`id`) and the
+one left (`childId`), so the page behind can show both. Back onto the top level
+reports nothing — there is no node to show.
 
 ### Opening a tile as a level
 
@@ -180,12 +197,13 @@ The tile is only the trigger; the action is `custom-node-move`'s.
 
 ## Events
 
-| Event                    | `detail`                | Description                                                                |
-| ------------------------ | ----------------------- | -------------------------------------------------------------------------- |
-| `navigation-level-open`  | `{ id }`                | A tile with children was opened. The page behind may follow (cover node).  |
-| `navigation-node-select` | `{ id, parentId }`      | A tile without children was chosen. `parentId` is `null` on the top level. |
-| `node-mark-clear`        | `{ nodeId }`            | The ✕ of the hint: the host should drop the mark.                          |
-| `query`                  | `{ payload, callback }` | Internal: requests the content tree (`{ object: 'contents' }`).            |
+| Event                    | `detail`                | Description                                                                             |
+| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------- |
+| `navigation-level-open`  | `{ id }`                | A tile with children was opened. The page behind may follow (cover node).               |
+| `navigation-level-back`  | `{ id, childId }`       | One level up: `id` is the level now open, `childId` the one left. Not on the top level. |
+| `navigation-node-select` | `{ id, parentId }`      | A tile without children was chosen. `parentId` is `null` on the top level.              |
+| `node-mark-clear`        | `{ nodeId }`            | The ✕ of the hint: the host should drop the mark.                                       |
+| `query`                  | `{ payload, callback }` | Internal: requests the content tree (`{ object: 'contents' }`).                         |
 
 All events bubble and are composed.
 

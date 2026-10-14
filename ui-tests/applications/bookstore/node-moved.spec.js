@@ -227,9 +227,12 @@ test.describe('Page: moving a node', () => {
     await expect.poll(() => sent.length).toBe(1);
     expect(sent[0].payload.parent_node_id).toBeNull();
     await expect.poll(async () => (await readPage(page)).modalOpen).toBe(false);
+    // The lower node fetches itself again; its actions are back once it has.
+    await expect
+      .poll(async () => (await readPage(page)).lowerMarked)
+      .toBe(false);
     const state = await readPage(page);
     expect(state.lowerId).toBe(CHILD_1.id);
-    expect(state.lowerMarked).toBe(false);
     expect(state.upperChildren).not.toContain(CHILD_1.id);
     expect(state.selectedChild).toBeNull();
     expect(treeCalls).toBeGreaterThan(1);

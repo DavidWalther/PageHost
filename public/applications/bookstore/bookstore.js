@@ -191,6 +191,7 @@ class Bookstore extends LitElement {
         .marked="${this._marked}"
         .hiddenIds="${this._hiddenIds}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
+        @navigation-level-back="${this.handleNavigationLevelBack}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
 
@@ -314,6 +315,23 @@ class Bookstore extends LitElement {
       return;
     }
 
+    this._showChildOf(parentId, id);
+
+    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+  }
+
+  /**
+   * One level up in the modal: above the level now open, below the node the
+   * visitor comes from — as if it had been chosen, but the modal stays open.
+   */
+  handleNavigationLevelBack(event) {
+    const { id, childId } = event.detail;
+    this.hideFeed();
+    this._showChildOf(id, childId);
+  }
+
+  /** Shows a node below and its parent above, the node chosen there. */
+  _showChildOf(parentId, id) {
     const currentParentId = this.navigationNode.getAttribute('id');
     if (currentParentId !== parentId) {
       // Suppress the cover override in handleNavigationNodeLoaded for this
@@ -324,8 +342,6 @@ class Bookstore extends LitElement {
     this.contentNode.setAttribute('id', id);
     this.navigationNode.setAttribute('selected-child', id);
     this._setCurrentLocation(id);
-
-    this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
 
   /**

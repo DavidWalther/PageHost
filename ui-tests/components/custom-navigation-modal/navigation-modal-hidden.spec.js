@@ -62,7 +62,7 @@ const tile = (page, text) =>
       hasText: new RegExp(`^\\s*${text}\\s*$`),
     }),
   });
-const back = (page) => page.locator('custom-navigation-modal .back-button');
+const back = (page) => page.locator('custom-navigation-modal #button-back');
 
 test.describe('Navigation modal: hidden-ids', () => {
   test.use({ actionTimeout: 5000 });
