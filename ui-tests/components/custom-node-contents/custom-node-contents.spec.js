@@ -93,8 +93,6 @@ async function mount(
 
 test.describe('custom-node-contents', () => {
   test.use({ actionTimeout: 5000 });
-  // The component does not exist yet.
-  test.fail();
 
   test('shows the contents of an adopted node, in their order', async ({
     page,
