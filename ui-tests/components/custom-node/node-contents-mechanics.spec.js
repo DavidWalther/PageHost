@@ -83,20 +83,20 @@ async function mount(page, { node = NODE, attrs = {}, scopes = [] } = {}) {
   return page.locator('custom-node');
 }
 
-/** Which contents wait to be loaded, by sort number, in the order shown. */
+/** Which contents wait to be loaded, in the order shown. */
 const waiting = (host) =>
-  host.evaluate((el) =>
-    [...el.shadowRoot.querySelectorAll('custom-paragraph')].map((content) =>
-      content.hasAttribute('no-load')
-    )
-  );
+  host
+    .locator('custom-paragraph')
+    .evaluateAll((all) =>
+      all.map((content) => content.hasAttribute('no-load'))
+    );
 
 const sortNumbers = (host) =>
-  host.evaluate((el) =>
-    [...el.shadowRoot.querySelectorAll('custom-paragraph')].map((content) =>
-      Number(content.dataset.sortNumber)
-    )
-  );
+  host
+    .locator('custom-paragraph')
+    .evaluateAll((all) =>
+      all.map((content) => Number(content.dataset.sortNumber))
+    );
 
 test.describe('Node: how the contents are shown', () => {
   test.use({ actionTimeout: 5000 });

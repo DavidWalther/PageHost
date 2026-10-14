@@ -8,13 +8,14 @@ const { cacheLitBundle } = require('../../support/component-page');
 /**
  * Der Sprung zu einem Inhalt — und was passiert, wenn er nicht fertig wird.
  *
- * `custom-node` versteckt seine Karte (`?hidden=${this._scrollPending}`),
- * solange die Inhalte **vor** dem Sprungziel noch laden: Sonst springt die
- * Seite ins Leere. Sichtbar wird sie wieder, wenn der letzte davon `loaded`
- * meldet und das Zählwerk auf null steht.
+ * The list of contents (`custom-node-contents`, embedded in `custom-node`)
+ * stays hidden behind a progress bar while the contents **before** the jump
+ * target still load: the page would jump into nothing otherwise. It shows
+ * once the last of them reports `loaded` and the count stands at zero. The
+ * card with the name and the actions stays visible meanwhile.
  *
  * Das Zählwerk gehört damit zum **aktuellen** Knoten. Bleibt ein Rest darin
- * stehen und wird der Knoten gewechselt, bliebe die Karte des **nächsten**
+ * stehen und wird der Knoten gewechselt, bliebe die Liste des **nächsten**
  * Knotens verborgen — ohne dass irgendetwas an ihm falsch wäre.
  */
 
@@ -80,7 +81,7 @@ test.describe('Knoten: ein Sprung, der nicht fertig wird', () => {
     // Ziel nie ankommt. Bricht diese Zusicherung, prüft der zweite Test nichts
     // mehr — dann wäre gar kein Rest da, der überdauern könnte.
     await expect(contentNode(page).locator('slds-progress-bar')).toHaveCount(1);
-    await expect(contentNode(page).locator('slds-card')).toBeHidden();
+    await expect(contentNode(page).locator('#node-contents')).toBeHidden();
   });
 
   test('nach dem Wechsel ist der nächste Knoten sichtbar', async ({ page }) => {

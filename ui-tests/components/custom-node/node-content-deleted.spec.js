@@ -143,16 +143,17 @@ test.describe('custom-node: gelöschter Inhalt in einer Liste', () => {
       const node = app.shadowRoot.querySelector(
         'custom-node[data-role="content"]'
       );
-      return [...node.shadowRoot.querySelectorAll('custom-paragraph')].map(
-        (element) => ({
-          id: element.getAttribute('id'),
-          text: (
-            element.shadowRoot.querySelector('#content')?.textContent || ''
-          )
-            .replace(/\s+/g, ' ')
-            .trim(),
-        })
-      );
+      // The list is not rendered before the node has loaded.
+      return [
+        ...(node.shadowRoot
+          .querySelector('custom-node-contents')
+          ?.shadowRoot.querySelectorAll('custom-paragraph') ?? []),
+      ].map((element) => ({
+        id: element.getAttribute('id'),
+        text: (element.shadowRoot.querySelector('#content')?.textContent || '')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      }));
     });
   }
 

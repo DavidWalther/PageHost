@@ -25,7 +25,8 @@ function geometry(page) {
       'custom-node[data-role="content"]'
     );
     const editor = node.shadowRoot
-      .querySelector('custom-paragraph')
+      .querySelector('custom-node-contents')
+      .shadowRoot.querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit');
     const root = editor.shadowRoot;
     const height = (selector, from = root) => {
@@ -55,7 +56,8 @@ function wrapState(page) {
       'custom-node[data-role="content"]'
     );
     const field = node.shadowRoot
-      .querySelector('custom-paragraph')
+      .querySelector('custom-node-contents')
+      .shadowRoot.querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit')
       .shadowRoot.querySelector('#content-input');
 
@@ -75,7 +77,8 @@ function toggleWrap(page) {
       'custom-node[data-role="content"]'
     );
     node.shadowRoot
-      .querySelector('custom-paragraph')
+      .querySelector('custom-node-contents')
+      .shadowRoot.querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit')
       .shadowRoot.querySelector('slds-toggle')
       .shadowRoot.querySelector('input[type="checkbox"]')
@@ -205,7 +208,8 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
         'custom-node[data-role="content"]'
       );
       const root = node.shadowRoot
-        .querySelector('custom-paragraph')
+        .querySelector('custom-node-contents')
+        .shadowRoot.querySelector('custom-paragraph')
         .shadowRoot.querySelector('custom-content-edit').shadowRoot;
       const rect = (selector) =>
         root.querySelector(selector).getBoundingClientRect();
@@ -256,7 +260,8 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
           'custom-node[data-role="content"]'
         );
         const scroller = node.shadowRoot
-          .querySelector('custom-paragraph')
+          .querySelector('custom-node-contents')
+          .shadowRoot.querySelector('custom-paragraph')
           .shadowRoot.querySelector('custom-content-edit')
           .shadowRoot.querySelector('slds-modal')
           .shadowRoot.querySelector('.slds-modal__content');

@@ -64,7 +64,10 @@ function readPage(page) {
           id: element.getAttribute('id'),
           contentnumber: element.getAttribute('contentnumber'),
           contentIds: [
-            ...element.shadowRoot.querySelectorAll('custom-paragraph'),
+            // Not rendered before the node has loaded.
+            ...(element.shadowRoot
+              .querySelector('custom-node-contents')
+              ?.shadowRoot.querySelectorAll('custom-paragraph') ?? []),
           ].map((paragraph) => paragraph.id),
         })
       ),
