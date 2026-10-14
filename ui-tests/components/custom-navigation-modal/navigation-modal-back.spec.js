@@ -134,7 +134,9 @@ test.describe('Navigation modal: back in the footer', () => {
     await expect(tile(page, 'Leaf')).toBeVisible();
     const sizes = await back(page).evaluate((button) => {
       const label = button.querySelector('.slds-truncate');
-      const footer = button.assignedSlot.parentElement;
+      // Whatever wraps the button, the outermost element sits in the slot.
+      const slotted = button.closest('[slot="footer"]');
+      const footer = slotted.assignedSlot.parentElement;
       return {
         cut: label.scrollWidth > label.clientWidth,
         buttonRight: button.getBoundingClientRect().right,

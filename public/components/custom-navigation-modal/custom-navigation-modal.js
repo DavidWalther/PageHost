@@ -87,7 +87,16 @@ class NavigationModal extends LitElement {
       fill: currentColor;
     }
 
-    /* The label is the name of a node: it may be long, the footer is not. */
+    /*
+     * The label is the name of a node: it may be long, the footer is not. A
+     * flex item is never narrower than its content unless told so — without
+     * min-width the item would grow past the footer instead of the label
+     * being cut short.
+     */
+    #item-back {
+      min-width: 0;
+    }
+
     #button-back {
       max-width: 100%;
     }
@@ -358,24 +367,27 @@ class NavigationModal extends LitElement {
   _renderBack() {
     const target = this._levelName(this._openPath[this._openPath.length - 2]);
     return html`
-      <button
-        id="button-back"
-        slot="footer"
-        class="slds-button slds-button_neutral"
-        title="${this.labels.back(target)}"
-        aria-label="${this.labels.back(target)}"
-        @click="${this._handleBack}"
-      >
-        <svg
-          class="slds-button__icon slds-button__icon_left"
-          aria-hidden="true"
-        >
-          <use
-            href="/assets/icons/utility-sprite/svg/symbols.svg#chevronleft"
-          ></use>
-        </svg>
-        <span class="slds-truncate">${target}</span>
-      </button>
+      <slds-layout slot="footer">
+        <slds-layout-item id="item-back" grow-none>
+          <button
+            id="button-back"
+            class="slds-button slds-button_neutral"
+            title="${this.labels.back(target)}"
+            aria-label="${this.labels.back(target)}"
+            @click="${this._handleBack}"
+          >
+            <svg
+              class="slds-button__icon slds-button__icon_left"
+              aria-hidden="true"
+            >
+              <use
+                href="/assets/icons/utility-sprite/svg/symbols.svg#chevronleft"
+              ></use>
+            </svg>
+            <span class="slds-truncate">${target}</span>
+          </button>
+        </slds-layout-item>
+      </slds-layout>
     `;
   }
 
