@@ -24,10 +24,13 @@ Ein Knoten weiß nicht, ob er einmal eine Story war.
 
 **Wofür** eine einzelne Instanz da ist, weiß er ebenso wenig — das sagt der
 Consumer über Attribute (siehe unten). Beides ist nötig und ersetzt einander
-nicht: Der `bookstore` stellt zwei Instanzen übereinander, oben die Auswahl,
-unten den gewählten Knoten. Ohne diese Angabe böte die obere Instanz Aktionen
-an, die an ihrer Stelle ins Leere führen — etwa das Löschen des Knotens, an dem
-die ganze Auswahl hängt.
+nicht.
+
+**Who uses it.** The page no longer does: it shows its node in two components,
+`custom-node-view` above for the node itself and `custom-node-contents` below
+for its contents. `custom-node` lives on in the feeds (`custom-feed`), one per
+tab, without child navigation. Its contents it shows through the very
+`custom-node-contents` the page uses below the view.
 
 ## Attribute
 
@@ -73,9 +76,9 @@ Name und Elternknoten. Der Knoten selbst markiert nichts: Die Aktion meldet
 `node-mark-change`, der Consumer hält die Markierung und gibt jedem Knoten die
 Id des markierten über die Property `markedId`; ob das er selbst ist, sagt der
 Knoten seiner Aktion. Verschoben wird im Navigations-Modal.
-`can-move-root` gilt für den oberen Knoten: Eine Wurzel steht immer dort, und
-nur dort ließe sie sich markieren; ein Knoten mit Elternknoten wird markiert, wo
-er der gewählte ist.
+`can-move-root` grants the mark only while the node is a root. It was made for
+the upper of the page's two nodes, where a root always stood; no consumer sets
+it any more, nor `can-create-child`.
 → `public/components/custom-node-move/README.md`
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
@@ -84,10 +87,18 @@ sie, und ein Attribut, das jeder Consumer setzen müsste, wäre nur Rauschen.
 Kommt eine Rolle dazu, für die das nicht mehr gilt, ist das der Moment, es
 nachzuziehen — nicht vorher.
 
-Mit `no-contents` wird auch die Inhalts-Mechanik stillgelegt (Nachladen per
-`IntersectionObserver`, Sprung zu einem Inhalt). Sonst würde `contentnumber`
-den Knoten in den Wartezustand versetzen, aus dem ihn nichts mehr holt: Es lädt
-kein Inhalt, der das Zählwerk weiterdreht.
+With `no-contents` the node renders no `custom-node-contents` at all, and with
+it the mechanism of the contents is gone (loading in chunks, the jump to a
+content). Otherwise `contentnumber` would put a list into a waiting state no
+content ever ends.
+
+**The contents are `custom-node-contents`.** The node hands its record over
+once it has it, `contentnumber` with it — the jump belongs to the list from
+then on, the next node does not jump again. While a jump waits, the list hides
+behind its progress bar; the card with the name and the actions stays. The add
+button in the header adds through the list (`createContent()`), which reports
+`content-created`; the node counts the new content for its hint.
+→ `public/components/custom-node-contents/README.md`
 
 `no-title` ist für Consumer gedacht, die den Knoten schon an anderer Stelle
 benennen — `custom-feed` etwa im Tab. Es nimmt nur den Namen weg, nicht den
@@ -119,9 +130,8 @@ ihn nachladen, etwa um die alte Id zu kennen.
 ## Einen geladenen Knoten übergeben
 
 `adoptNode(record)` setzt einen **bereits geladenen** Datensatz, statt ihn
-abrufen zu lassen. Gebraucht beim Einstieg: `bookstore.resolveEntryPoint` löst
-ohnehin auf, was hinter einer Id steckt — ohne die Übergabe holte der Knoten
-genau das noch einmal.
+abrufen zu lassen — für einen Consumer, der den Datensatz schon in der Hand hat
+und ihn sonst ein zweites Mal holen ließe.
 
 Nach außen verhält es sich wie ein Abruf: `id` wird gesetzt, `loaded` gemeldet,
 ein gesetztes `contentnumber` ausgewertet. **Ein Listener auf `loaded` muss
@@ -148,9 +158,10 @@ Bearbeiten-Dialog schriebe den alten Elternknoten zurück. Ohne Id passiert nich
 
 ## Ein gelöschter Inhalt
 
-Ein Absatz, der gelöscht wurde, meldet `content-deleted` mit seiner Id. Der
-Knoten nimmt den Inhalt daraufhin aus `_nodeData.contents` — aus den **Daten**,
-nicht aus dem DOM: Sein Container käme beim nächsten Rendern sonst zurück.
+Ein Absatz, der gelöscht wurde, meldet `content-deleted` mit seiner Id. The list
+(`custom-node-contents`) takes the content out of its **data**, not out of the
+DOM — its container would come back on the next render otherwise —, and the
+node does the same with its own record, for the hint below.
 
 Der Absatz entfernt sich **nicht** selbst; er meldet nur. Diese Liste wird von
 Lit gerendert, und ein `remove()` von innen bringt deren Buchführung
