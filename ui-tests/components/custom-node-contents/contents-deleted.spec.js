@@ -7,7 +7,7 @@ const {
 } = require('../../support/paragraph-editor');
 
 /**
- * Der Knoten räumt auf, wenn ein Inhalt gelöscht wird.
+ * The list of contents tidies up when a content is deleted.
  *
  * Vorher nahm sich der Absatz nur selbst aus dem Dokument. Der umgebende
  * `div.content-container` blieb als leere Hülle stehen — samt seiner Abstände —
@@ -19,12 +19,12 @@ const {
  * DOM schneidet, käme beim nächsten Rendern zurück.
  */
 
-/** Der untere Knoten — der mit den Inhalten. */
+/** The contents of the node shown, below it on the page. */
 function contentNode(page) {
-  return page.locator('custom-node[data-role="content"]');
+  return page.locator('custom-node-contents');
 }
 
-test.describe('custom-node: gelöschter Inhalt', () => {
+test.describe('custom-node-contents: a deleted content', () => {
   test('der leere Container verschwindet mit dem Absatz', async ({ page }) => {
     await openBookstore(page, { scopes: ['read', 'edit', 'delete'] });
 
@@ -42,7 +42,9 @@ test.describe('custom-node: gelöschter Inhalt', () => {
     await expect(knoten.locator('.content-container')).toHaveCount(0);
   });
 
-  test('ohne Inhalte sagt der Knoten es auch', async ({ page }) => {
+  // With the scope edit the list stays when it runs empty: a list to add to.
+  // It carries no hint — the page says nothing about an empty list.
+  test('an emptied list stays with the scope edit', async ({ page }) => {
     await openBookstore(page, { scopes: ['read', 'edit', 'delete'] });
 
     await page.route('**/api/1.0/data/delete**', (route) =>
@@ -52,15 +54,12 @@ test.describe('custom-node: gelöschter Inhalt', () => {
 
     await triggerDelete(paragraph(page));
 
-    // Der Mock-Knoten hat keine Kinder — bleibt kein Inhalt, ist der Hinweis
-    // die einzig richtige Aussage.
-    await expect(knotenHinweis(page)).toBeVisible();
+    await expect(contentNode(page).locator('custom-paragraph')).toHaveCount(0);
+    // Not hidden — just empty, so it has no height to be seen.
+    await expect(contentNode(page)).not.toHaveAttribute('hidden');
+    await expect(contentNode(page).locator('#no-contents')).toHaveCount(0);
   });
 });
-
-function knotenHinweis(page) {
-  return contentNode(page).locator('#no-contents');
-}
 
 /**
  * Löschen **mitten in einer Liste**.
@@ -83,7 +82,7 @@ function knotenHinweis(page) {
  *    seines Vorgängers — und sein Editor arbeitet auf einem Datensatz, der
  *    nicht mehr in der Liste steht.
  */
-test.describe('custom-node: gelöschter Inhalt in einer Liste', () => {
+test.describe('custom-node-contents: a deleted content in a list', () => {
   const IDS = [
     '00cn00000000000001',
     '00cn00000000000002',
@@ -140,14 +139,9 @@ test.describe('custom-node: gelöschter Inhalt in einer Liste', () => {
   function angezeigt(page) {
     return page.evaluate(() => {
       const app = document.querySelector('app-bookstore');
-      const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="content"]'
-      );
-      // The list is not rendered before the node has loaded.
+      const contents = app.shadowRoot.querySelector('custom-node-contents');
       return [
-        ...(node.shadowRoot
-          .querySelector('custom-node-contents')
-          ?.shadowRoot.querySelectorAll('custom-paragraph') ?? []),
+        ...(contents.shadowRoot?.querySelectorAll('custom-paragraph') ?? []),
       ].map((element) => ({
         id: element.getAttribute('id'),
         text: (element.shadowRoot.querySelector('#content')?.textContent || '')
