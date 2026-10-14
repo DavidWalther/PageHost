@@ -145,4 +145,55 @@ test.describe('custom-content-publish', () => {
 
     expect(seen).toEqual(['00cn00000000000001']);
   });
+
+  // The node view publishes its node with the same trigger. Without the
+  // attribute everything stays as it was: a content.
+  test.describe('object-name', () => {
+    test('node publishes a node, under a heading of its own', async ({
+      page,
+    }) => {
+      // object-name does not exist yet.
+      test.fail();
+      const component = await mount(page, {
+        attrs: { ...ATTRS, 'object-name': 'node' },
+      });
+      await open(page);
+
+      await expect(component.locator('custom-publishing')).toHaveAttribute(
+        'object-name',
+        'node',
+        { timeout: 1000 }
+      );
+      await expect(component.locator('slds-modal')).toHaveAttribute(
+        'heading',
+        'Knoten veröffentlichen',
+        { timeout: 1000 }
+      );
+    });
+
+    test('an unknown value falls back to a content', async ({ page }) => {
+      const component = await mount(page, {
+        attrs: { ...ATTRS, 'object-name': 'chapter' },
+      });
+      await open(page);
+
+      await expect(component.locator('custom-publishing')).toHaveAttribute(
+        'object-name',
+        'content'
+      );
+      await expect(component.locator('slds-modal')).toHaveAttribute(
+        'heading',
+        'Absatz veröffentlichen'
+      );
+    });
+
+    test('the scope rule is the same for a node', async ({ page }) => {
+      const component = await mount(page, {
+        scopes: ['edit'],
+        attrs: { ...ATTRS, 'object-name': 'node' },
+      });
+
+      await expect(component.locator('slds-button-icon')).toHaveCount(0);
+    });
+  });
 });
