@@ -26,7 +26,8 @@ private/                      Backend (nie an den Client ausgeliefert)
   scripts/                    CLI-Skripte (chapter:*, story:*, cache:* …)
 public/                       Frontend (statisch ausgeliefert)
   components/                 App-Komponenten,   HTML-Tag-Präfix custom-*
-                              custom-node stellt einen Knoten dar (Auswahl + Inhalte)
+                              custom-node-view / custom-node-contents: ein Knoten
+                              und seine Inhalte; custom-node: ein Knoten im Feed
   slds-components/            Wiederverwendbare SLDS-Bausteine, Präfix slds-*
   modules/                    Frontend-Util (global-styles, content-tree, authTokenManager …)
   applications/               Einstiegsseiten (z. B. bookstore)
@@ -146,18 +147,30 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
   löscht dort alle Caches der Origin und deregistriert den Service Worker — den
   `index.js` auch registriert. Die Anwendung sagt nur, **dass** zurückgesetzt
   werden soll, und entscheidet anhand der Rückmeldung über Reload oder Toast.
-  - **`custom-node`** stellt **einen Knoten** dar: seine Kind-Knoten als
-    Auswahl, seine Inhalte als Text. Es gibt keinen Modus und keine
-    Tiefenangabe — die Daten sagen, **was** ein Knoten hat. **Wofür** eine
-    Instanz da ist, sagt der Consumer über Attribute (`no-…` fürs Rendering,
-    `can-…` für Aktionen). Die App (`bookstore`) hält zwei davon: oben die
-    Auswahl, unten den gewählten Knoten — dieselbe Komponente, verschieden
-    beauftragt. → `public/components/custom-node/README.md`
+  - **The page shows one node**, in two components that always refer to
+    it: **`custom-node-view`** above — the node itself: its name between
+    arrows to the previous and next sibling, the way up as breadcrumbs, its
+    children in a combobox and the actions on it (publish, edit, share, move,
+    delete, each under its scope) — and **`custom-node-contents`** below,
+    its contents with adding one; hidden for visitors while the list is empty.
+    The `bookstore` keeps the location as **one** value and fetches the node
+    once: the view loads it, the contents take the same record. The view
+    knows no tree: the `bookstore` loads the content tree (once, again after
+    every change to a node) and hands it the path and the siblings
+    (`findPath`, `findSiblings`), and the modal the tree itself.
+    → `public/components/custom-node-view/README.md`,
+    `public/components/custom-node-contents/README.md`
+  - **`custom-node`** shows **one node** in one component: its children to
+    choose from, its contents (through `custom-node-contents`). There is no
+    mode and no depth — the data say **what** a node has; **what an instance
+    is for** the consumer says with attributes (`no-…` for rendering, `can-…`
+    for actions). The page no longer uses it; it lives on in the feeds.
+    → `public/components/custom-node/README.md`
   - **`custom-feed`** is the **start page**: it reads the feed root and shows
     each feed as a tab (`slds-tabset`), a single feed without a tab bar. A tab
     holds a `custom-node` without child navigation, so everything a node does
     for its contents works in a feed, and a feed loads when its tab is first
-    shown. The `bookstore` shows **either** the feeds **or** its two nodes:
+    shown. The `bookstore` shows **either** the feeds **or** its node:
     without an id in the address, with an unknown one, and for the feed root,
     a feed or a content of a feed it shows the feeds; opening a node through
     the navigation hides them, the home button in the header brings them
@@ -169,7 +182,7 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     aus. Die Überschrift nennt den Knoten, dessen Kinder zu sehen sind; der
     Weg zurück ist ein Button im Footer, benannt nach der Ebene darüber — die
     oberste Ebene hat keinen Footer. Auch beim Zurückgehen folgt die Seite:
-    oben die nun offene Ebene, unten der Knoten, aus dem man kommt.
+    die nun offene Ebene — der Knoten, den die Überschrift nennt.
     Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
     der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
     einem Knoten lädt der `bookstore` den Baum neu.
@@ -185,7 +198,7 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     aus; der `bookstore` blendet so den markierten Knoten aus.
     → `public/components/custom-navigation-modal/README.md`
   - **`custom-node-delete`** ist **die** Lösch-Aktion für Knoten; der Button
-    am unteren `custom-node` und die Lösch-Kachel des Modals sind nur
+    in `custom-node-view` und die Lösch-Kachel des Modals sind nur
     Auslöser. Das Backend löscht einen Knoten samt allem darunter, ohne Waisen
     (jeder Verweis auf `node` ist `ON DELETE RESTRICT`, der Schreibpfad räumt
     die Verweise der Reihe nach ab). Deshalb fragt die Aktion: einmal für den
@@ -194,9 +207,9 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     `node-deleted` nennt alle entfernten Ids; die Seite lässt sie los.
     → `public/components/custom-node-delete/README.md`
   - **`custom-node-move`** ist **die** Verschiebe-Aktion, in zwei Schritten
-    an zwei Orten: Der Button am unteren `custom-node` (`can-move`, Scope
-    `edit`) markiert den Knoten — am oberen nur eine Wurzel (`can-move-root`),
-    denn eine Wurzel steht immer oben —, die Einfügen-Kachel des Modals hängt ihn um.
+    an zwei Orten: Der Button in `custom-node-view` (Scope `edit`)
+    markiert den gezeigten Knoten, Wurzeln eingeschlossen; die Einfügen-Kachel
+    des Modals hängt ihn um.
     Die Markierung hält der `bookstore` — genau eine, nur solange die Seite
     lebt. Verschoben wird mit einem gewöhnlichen Update (`parent_node_id`,
     keine `sortnumber`: ans Ende der neuen Geschwister); das Backend lehnt
