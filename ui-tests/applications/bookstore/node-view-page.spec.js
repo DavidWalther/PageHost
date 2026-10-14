@@ -167,8 +167,6 @@ async function openModal(page) {
 
 test.describe('Page: one node, above and below', () => {
   test.use({ actionTimeout: 5000 });
-  // The page still shows two custom-node.
-  test.fail();
 
   test.describe('a deep link', () => {
     test('shows the node above and its contents below', async ({ page }) => {
