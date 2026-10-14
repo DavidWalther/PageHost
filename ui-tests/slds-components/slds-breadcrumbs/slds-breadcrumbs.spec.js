@@ -157,9 +157,6 @@ test.describe('slds-breadcrumbs', () => {
   // A trail that ends above the current page — the node view shows the name
   // of the current node itself, the crumbs only lead up.
   test.describe('no-current-item', () => {
-    // no-current-item does not exist yet.
-    test.fail();
-
     test('marks no item as the current page', async ({ page }) => {
       const res = await mountBreadcrumbs(page, {
         attrs: { 'no-current-item': true },
