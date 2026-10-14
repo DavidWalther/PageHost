@@ -8,25 +8,24 @@ const { cacheLitBundle } = require('../../support/component-page');
 /**
  * The application element cleans up after itself.
  *
- * It listens on itself for what its nodes report (`navigation`,
- * `chapter-updated`, `node-deleted`, …). Taken out of the document it has to
- * stop listening, and put back in it has to listen again — exactly once.
+ * It listens on itself for what its components report (`chapter-updated`,
+ * `node-deleted`, …). Taken out of the document it has to stop listening, and
+ * put back in it has to listen again — exactly once.
  *
- * `node-deleted` is the probe: the application answers it by emptying the
- * lower node when that node is the deleted one, which can be read from outside.
+ * `node-deleted` is the probe: the application answers it by letting go of
+ * the node shown when that node is the deleted one — the node view then
+ * stands on another node, or on none. That can be read from outside.
  */
 
 const CHILD = MOCK_NODES.kind1;
-const contentNode = (page) => page.locator('custom-node[data-role="content"]');
+const nodeView = (page) => page.locator('custom-node-view');
 
-/** Reports the lower node as deleted and returns the id it shows afterwards. */
+/** Reports the node shown as deleted; returns the id the view shows then. */
 function reportDeleted(page, nodeId) {
   return page.evaluate((nodeId) => {
     const app = window.appUnderTest ?? document.querySelector('app-bookstore');
     app.dispatchEvent(new CustomEvent('node-deleted', { detail: { nodeId } }));
-    return app.shadowRoot
-      .querySelector('custom-node[data-role="content"]')
-      .getAttribute('id');
+    return app.shadowRoot.querySelector('custom-node-view').getAttribute('id');
   }, nodeId);
 }
 
@@ -48,15 +47,13 @@ test.describe('bookstore: lifecycle', () => {
     await mockBookstoreCallouts(page);
     await cacheLitBundle(page);
     await page.goto(`/${CHILD.id}`);
-    await expect(contentNode(page).locator('#node-name')).toHaveText(
-      CHILD.name
-    );
+    await expect(nodeView(page).locator('#node-name')).toHaveText(CHILD.name);
   });
 
   test('answers a deleted node while it is in the document', async ({
     page,
   }) => {
-    expect(await reportDeleted(page, CHILD.id)).toBeNull();
+    expect(await reportDeleted(page, CHILD.id)).not.toBe(CHILD.id);
   });
 
   test('stops listening when it is taken out of the document', async ({
@@ -71,7 +68,7 @@ test.describe('bookstore: lifecycle', () => {
     await detach(page);
     await attach(page);
 
-    expect(await reportDeleted(page, CHILD.id)).toBeNull();
+    expect(await reportDeleted(page, CHILD.id)).not.toBe(CHILD.id);
   });
 
   test('listens only once after it was put back', async ({ page }) => {
