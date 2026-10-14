@@ -192,4 +192,30 @@ test.describe('custom-content-publish', () => {
       await expect(component.locator('slds-button-icon')).toHaveCount(0);
     });
   });
+
+  // At a paragraph the trigger is small; in the action bar of a node it is
+  // as large as the others there.
+  test.describe('trigger-size', () => {
+    test('is x-small by default', async ({ page }) => {
+      const component = await mount(page, { attrs: ATTRS });
+
+      await expect(component.locator('slds-button-icon')).toHaveAttribute(
+        'size',
+        'x-small'
+      );
+    });
+
+    test('empty gives the default size of slds-button-icon', async ({
+      page,
+    }) => {
+      const component = await mount(page, {
+        attrs: { ...ATTRS, 'trigger-size': '' },
+      });
+
+      await expect(component.locator('slds-button-icon')).not.toHaveAttribute(
+        'size',
+        /.*/
+      );
+    });
+  });
 });

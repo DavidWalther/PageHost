@@ -1,6 +1,7 @@
 import {
   LitElement,
   html,
+  nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-publishing/custom-publishing.js';
@@ -32,6 +33,9 @@ class CustomContentPublish extends LitElement {
     publishDate: { type: String, attribute: 'publish-date' },
     // `content` (default) or `node`: the node view publishes its node here.
     objectName: { type: String, attribute: 'object-name' },
+    // Size of the trigger: x-small next to a paragraph; empty gives the
+    // default size of slds-button-icon, as the other actions of a node have.
+    triggerSize: { type: String, attribute: 'trigger-size' },
   };
 
   constructor() {
@@ -39,6 +43,7 @@ class CustomContentPublish extends LitElement {
     this.recordId = '';
     this.publishDate = '';
     this.objectName = 'content';
+    this.triggerSize = 'x-small';
   }
 
   connectedCallback() {
@@ -57,7 +62,7 @@ class CustomContentPublish extends LitElement {
       <slds-button-icon
         icon="utility:upload"
         variant="container-filled"
-        size="x-small"
+        size="${this.triggerSize || nothing}"
         label="${labels.modalTitle}"
         @click=${this.show}
       ></slds-button-icon>
