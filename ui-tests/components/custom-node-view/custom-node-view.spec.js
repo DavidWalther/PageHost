@@ -211,4 +211,35 @@ test.describe('custom-node-view', () => {
       expect(withNeither.x).toBe(withBoth.x);
     });
   });
+
+  test.describe('the breadcrumbs', () => {
+    const crumbs = (host) => host.locator('slds-breadcrumbs');
+
+    test('show the way up, without the node itself', async ({ page }) => {
+      // The breadcrumbs do not exist yet.
+      test.fail();
+      const host = await mount(page);
+
+      await expect(crumbs(host).locator('li')).toHaveText(['Shelf', 'Book']);
+      // The name of the node stands below; no crumb is the current page.
+      await expect(crumbs(host).locator('li[aria-current]')).toHaveCount(0);
+      await expect(crumbs(host).locator('li a')).toHaveCount(2);
+    });
+
+    test('lead up to the node clicked', async ({ page }) => {
+      // The breadcrumbs do not exist yet.
+      test.fail();
+      const host = await mount(page);
+
+      await crumbs(host).locator('a', { hasText: 'Book' }).click();
+
+      expect(await navigated(page)).toEqual(['n-book']);
+    });
+
+    test('are left out for a root', async ({ page }) => {
+      const host = await mount(page, { path: [] });
+
+      await expect(crumbs(host)).toHaveCount(0);
+    });
+  });
 });
