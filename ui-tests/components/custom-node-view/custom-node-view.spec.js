@@ -355,6 +355,23 @@ test.describe('custom-node-view', () => {
       }
     });
 
+    test('are all of one size', async ({ page }) => {
+      // The publish trigger is still the small one of the paragraph.
+      test.fail();
+      const host = await mount(page, { scopes: ['publish', ...ALL] });
+      await expect(
+        host.locator('#node-publish slds-button-icon')
+      ).toBeVisible();
+
+      const heights = await host
+        .locator('#node-actions slds-button-icon button')
+        .evaluateAll((all) =>
+          all.map((button) => Math.round(button.getBoundingClientRect().height))
+        );
+      expect(heights.length).toBe(5);
+      expect(new Set(heights).size).toBe(1);
+    });
+
     test('tell the move action whether this node is the marked one', async ({
       page,
     }) => {
