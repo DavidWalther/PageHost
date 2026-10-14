@@ -35,11 +35,12 @@ Rahmen, kein deaktiviertes Icon.
 
 ## Attribute
 
-| Attribut       | Typ    | Beschreibung                                                                                           |
-| -------------- | ------ | ------------------------------------------------------------------------------------------------------ |
-| `record-id`    | String | Id des Inhalts, der veröffentlicht wird.                                                               |
-| `publish-date` | String | Aktuelles Veröffentlichungsdatum; leer heißt unveröffentlicht.                                         |
-| `object-name`  | String | `content` (Standard) oder `node`. Geht an `custom-publishing` und bestimmt die Überschrift des Modals. |
+| Attribut       | Typ    | Beschreibung                                                                                                                                        |
+| -------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `record-id`    | String | Id des Inhalts, der veröffentlicht wird.                                                                                                            |
+| `publish-date` | String | Aktuelles Veröffentlichungsdatum; leer heißt unveröffentlicht.                                                                                      |
+| `object-name`  | String | `content` (Standard) oder `node`. Geht an `custom-publishing` und bestimmt die Überschrift des Modals.                                              |
+| `trigger-size` | String | Größe des Auslösers, Standard `x-small` (neben dem Absatz). Leer: die Standardgröße von `slds-button-icon`, wie die übrigen Aktionen eines Knotens. |
 
 ## A node, too
 

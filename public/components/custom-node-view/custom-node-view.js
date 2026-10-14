@@ -151,6 +151,7 @@ class CustomNodeView extends LitElement {
         ? html`<custom-content-publish
             id="node-publish"
             object-name="node"
+            trigger-size=""
             record-id="${node.id}"
             publish-date="${node.published_date || ''}"
           ></custom-content-publish>`

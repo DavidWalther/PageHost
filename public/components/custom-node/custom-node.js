@@ -198,6 +198,7 @@ class CustomNode extends LitElement {
                     <custom-content-publish
                       id="node-publish"
                       object-name="node"
+                      trigger-size=""
                       record-id="${this.id}"
                       publish-date="${this._nodeData.published_date || ''}"
                     ></custom-content-publish>

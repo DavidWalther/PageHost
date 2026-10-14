@@ -208,16 +208,13 @@ test.describe('custom-content-publish', () => {
     test('empty gives the default size of slds-button-icon', async ({
       page,
     }) => {
-      // trigger-size does not exist yet.
-      test.fail();
       const component = await mount(page, {
         attrs: { ...ATTRS, 'trigger-size': '' },
       });
 
       await expect(component.locator('slds-button-icon')).not.toHaveAttribute(
         'size',
-        /.*/,
-        { timeout: 1000 }
+        /.*/
       );
     });
   });

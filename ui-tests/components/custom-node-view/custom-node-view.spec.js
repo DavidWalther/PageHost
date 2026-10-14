@@ -356,8 +356,6 @@ test.describe('custom-node-view', () => {
     });
 
     test('are all of one size', async ({ page }) => {
-      // The publish trigger is still the small one of the paragraph.
-      test.fail();
       const host = await mount(page, { scopes: ['publish', ...ALL] });
       await expect(
         host.locator('#node-publish slds-button-icon')
