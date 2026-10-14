@@ -163,7 +163,6 @@ class CustomNodeView extends LitElement {
             name="${node.name || ''}"
             .sortNumber="${node.sortnumber ?? null}"
             ?reversed="${node.reversed || false}"
-            publish-date="${node.published_date || ''}"
             @chapter-updated=${this._handleNodeUpdated}
           ></custom-chapter-edit>`
         : null,

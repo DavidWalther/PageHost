@@ -5,6 +5,7 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
+import '/components/custom-content-publish/custom-content-publish.js';
 import '/components/custom-node-delete/custom-node-delete.js';
 import '/components/custom-node-move/custom-node-move.js';
 import '/components/custom-node-contents/custom-node-contents.js';
@@ -189,6 +190,22 @@ class CustomNode extends LitElement {
               : ''
           }
           ${
+            this.hasScope('publish') && this.hasScope('edit')
+              ? html`<slds-layout-item grow-none align-middle>
+                  <div class="slds-align_absolute-center">
+                    <!-- The node is published through its own button, as in
+                         custom-node-view; the edit dialog has no publish tab. -->
+                    <custom-content-publish
+                      id="node-publish"
+                      object-name="node"
+                      record-id="${this.id}"
+                      publish-date="${this._nodeData.published_date || ''}"
+                    ></custom-content-publish>
+                  </div>
+                </slds-layout-item>`
+              : ''
+          }
+          ${
             this.hasScope('edit')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
@@ -199,7 +216,6 @@ class CustomNode extends LitElement {
                       name="${this._nodeData.name || ''}"
                       .sortNumber="${this._nodeData.sortnumber ?? null}"
                       ?reversed="${this._nodeData.reversed || false}"
-                      publish-date="${this._nodeData.published_date || ''}"
                       @chapter-updated=${this._handleNodeUpdated}
                     ></custom-chapter-edit>
                   </div>
