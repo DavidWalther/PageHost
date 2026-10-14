@@ -223,11 +223,10 @@ test.describe('Knoten-Rollen: Rendering', () => {
 });
 
 test.describe('Knoten-Rollen: der Sprung zu einem Inhalt bleibt heil', () => {
-  // Regressionsnetz für die Kehrseite von `no-contents`: Es legt im oberen
-  // Knoten `setupContentObserving()` und `_buildPendingDisplaySet()` still.
-  // Wird dabei zu viel abgeschaltet, bliebe der **untere** Knoten hinter
-  // `?hidden=${this._scrollPending}` verborgen — der Fortschrittsbalken liefe
-  // nie zu Ende, weil niemand mehr zählt.
+  // Safety net for the flip side of `no-contents`: the upper node renders no
+  // list of contents (`custom-node-contents`) at all. Switched off too much,
+  // the list of the **lower** node would stay hidden behind its progress bar,
+  // which would never finish because nobody counts any more.
   const INHALTE = [1, 2, 3, 4, 5].map((nummer) => ({
     id: `00cn0000000000009${nummer}`,
     name: `Absatz ${nummer}`,

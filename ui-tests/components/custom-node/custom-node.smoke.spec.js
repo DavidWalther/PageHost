@@ -37,9 +37,11 @@ async function readNodes(page) {
           ...root.querySelectorAll('#child-navigation button'),
         ].map((button) => button.textContent.trim()),
         hasNavigation: !!root.querySelector('#child-navigation'),
-        contentIds: [...root.querySelectorAll('custom-paragraph')].map(
-          (element) => element.id
-        ),
+        contentIds: [
+          ...(root
+            .querySelector('custom-node-contents')
+            ?.shadowRoot.querySelectorAll('custom-paragraph') ?? []),
+        ].map((element) => element.id),
       };
     };
     return { navigation: read('navigation'), content: read('content') };
