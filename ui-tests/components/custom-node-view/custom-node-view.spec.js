@@ -38,6 +38,10 @@ const SIBLINGS = {
   next: { id: 'n-part-3', name: 'Part 3' },
 };
 
+// The arrows are measured: the page needs the SLDS styles, which the
+// components take over into their shadow roots when they connect.
+const STYLESHEET = '/assets/styles/salesforce-lightning-design-system.min.css';
+
 /**
  * Mounts the view for `node`, with `path` and `siblings` handed in as the
  * host would. Every `node-view-navigate` is recorded in `window.__navigated`.
@@ -51,7 +55,16 @@ async function mount(
   }
   await gotoComponentPage(page);
   await page.evaluate(
-    async ({ node, path, siblings }) => {
+    async ({ node, path, siblings, stylesheet }) => {
+      if (!document.querySelector(`link[href="${stylesheet}"]`)) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = stylesheet;
+        await new Promise((resolve) => {
+          link.onload = resolve;
+          document.head.appendChild(link);
+        });
+      }
       window.__queries = 0;
       window.__navigated = [];
       document.body.addEventListener('query', (event) => {
@@ -82,7 +95,7 @@ async function mount(
       document.body.appendChild(el);
       await el.updateComplete;
     },
-    { node, path, siblings }
+    { node, path, siblings, stylesheet: STYLESHEET }
   );
   const host = page.locator('custom-node-view');
   await expect(host.locator('#node-name')).toHaveText(node.name);
@@ -134,9 +147,6 @@ test.describe('custom-node-view', () => {
   });
 
   test.describe('the arrows to the siblings', () => {
-    // The arrows do not exist yet.
-    test.fail();
-
     const previous = (host) => host.locator('#button-previous');
     const next = (host) => host.locator('#button-next');
 

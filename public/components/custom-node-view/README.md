@@ -21,9 +21,18 @@ content tree and hands them in; every way to another node is one event,
 
 ## Attributes and properties
 
-| Attribute | Property | Type   | Description                                                              |
-| :-------- | :------- | :----- | :----------------------------------------------------------------------- |
-| `id`      | `id`     | String | Id of the node. Setting it fetches the node (`query`, `object: 'node'`). |
+| Attribute | Property   | Type   | Description                                                              |
+| :-------- | :--------- | :----- | :----------------------------------------------------------------------- |
+| `id`      | `id`       | String | Id of the node. Setting it fetches the node (`query`, `object: 'node'`). |
+| —         | `siblings` | Object | `{ previous, next }`, each `{ id, name }` or `null`. Default: neither.   |
+
+## The arrows to the siblings
+
+Left of the name an arrow to the previous sibling (`utility:chevronleft`),
+right of it one to the next (`utility:chevronright`), at the height of the
+name. Each carries the name of its sibling as tooltip and accessible name
+(`slds-button-icon` with `label`). A missing sibling leaves its place empty:
+both places keep their width, so the name never moves.
 
 ## Methods
 

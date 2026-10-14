@@ -18,6 +18,9 @@ import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 class CustomNodeView extends LitElement {
   static properties = {
     id: { type: String },
+    // The siblings just before and after, `{ previous, next }`, each
+    // `{ id, name }` or null — from the host, which knows the tree.
+    siblings: { type: Object, attribute: false },
     _nodeData: { state: true },
     _loading: { state: true },
   };
@@ -26,11 +29,25 @@ class CustomNodeView extends LitElement {
     :host {
       display: block;
     }
+
+    /*
+     * Both arrows keep their place, with a button or without one: the name
+     * between them must not move when a sibling is missing.
+     */
+    #item-previous,
+    #item-next {
+      flex: 0 0 2.5rem;
+    }
+
+    #item-name {
+      min-width: 0;
+    }
   `;
 
   constructor() {
     super();
     this.id = null;
+    this.siblings = { previous: null, next: null };
     this._nodeData = null;
     this._loading = false;
   }
@@ -60,11 +77,47 @@ class CustomNodeView extends LitElement {
 
     return html`
       <slds-card no-footer no-header>
-        <div class="slds-text-heading_medium">
-          <span id="node-name">${this._nodeData.name || ''}</span>
-        </div>
+        <slds-layout id="node-title" vertical-align-center>
+          <slds-layout-item id="item-previous">
+            ${this._renderArrow('previous', 'utility:chevronleft')}
+          </slds-layout-item>
+          <slds-layout-item id="item-name">
+            <div class="slds-text-heading_medium slds-text-align_center">
+              <span id="node-name">${this._nodeData.name || ''}</span>
+            </div>
+          </slds-layout-item>
+          <slds-layout-item id="item-next">
+            ${this._renderArrow('next', 'utility:chevronright')}
+          </slds-layout-item>
+        </slds-layout>
       </slds-card>
     `;
+  }
+
+  /** The arrow to one sibling, named after it; nothing without one. */
+  _renderArrow(which, icon) {
+    const sibling = this.siblings?.[which];
+    if (!sibling?.id) {
+      return '';
+    }
+    return html`<slds-button-icon
+      id="button-${which}"
+      icon="${icon}"
+      variant="container-transparent"
+      label="${sibling.name || ''}"
+      @click=${() => this._navigate(sibling.id)}
+    ></slds-button-icon>`;
+  }
+
+  /** Every way to another node ends here: the host decides what follows. */
+  _navigate(id) {
+    this.dispatchEvent(
+      new CustomEvent('node-view-navigate', {
+        detail: { id },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   // ==================================================
