@@ -132,4 +132,73 @@ test.describe('custom-node-view', () => {
       expect(await page.evaluate(() => window.__queries)).toBe(1);
     });
   });
+
+  test.describe('the arrows to the siblings', () => {
+    // The arrows do not exist yet.
+    test.fail();
+
+    const previous = (host) => host.locator('#button-previous');
+    const next = (host) => host.locator('#button-next');
+
+    test('lead to the previous and the next sibling', async ({ page }) => {
+      const host = await mount(page);
+
+      await previous(host).click();
+      await next(host).click();
+
+      expect(await navigated(page)).toEqual(['n-part-1', 'n-part-3']);
+    });
+
+    test('carry the name of the sibling as tooltip and accessible name', async ({
+      page,
+    }) => {
+      const host = await mount(page);
+
+      await expect(previous(host)).toHaveAttribute(
+        'icon',
+        'utility:chevronleft'
+      );
+      await expect(next(host)).toHaveAttribute('icon', 'utility:chevronright');
+      await expect(previous(host).locator('button')).toHaveAttribute(
+        'title',
+        'Part 1'
+      );
+      await expect(
+        host.getByRole('button', { name: 'Part 3', exact: true })
+      ).toBeVisible();
+    });
+
+    test('stand at the height of the name', async ({ page }) => {
+      const host = await mount(page);
+
+      const name = await host.locator('#node-name').boundingBox();
+      for (const arrow of [previous(host), next(host)]) {
+        const box = await arrow.boundingBox();
+        const middle = box.y + box.height / 2;
+        expect(middle).toBeGreaterThan(name.y);
+        expect(middle).toBeLessThan(name.y + name.height);
+      }
+    });
+
+    test('leave out a missing sibling without moving the name', async ({
+      page,
+    }) => {
+      let host = await mount(page);
+      const withBoth = await host.locator('#node-name').boundingBox();
+
+      host = await mount(page, {
+        siblings: { previous: null, next: SIBLINGS.next },
+      });
+      await expect(previous(host)).toHaveCount(0);
+      await expect(next(host)).toBeVisible();
+      const withoutPrevious = await host.locator('#node-name').boundingBox();
+
+      host = await mount(page, { siblings: { previous: null, next: null } });
+      await expect(next(host)).toHaveCount(0);
+      const withNeither = await host.locator('#node-name').boundingBox();
+
+      expect(withoutPrevious.x).toBe(withBoth.x);
+      expect(withNeither.x).toBe(withBoth.x);
+    });
+  });
 });
