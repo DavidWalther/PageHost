@@ -43,6 +43,7 @@ async function mountButton(page, { attrs = {} } = {}) {
         // nicht-genamespacetes/nicht-auflösbares href auf (Icon würde fehlen).
         href: use ? use.href.baseVal : null,
         assistive: assistive ? assistive.textContent : null,
+        title: button ? button.getAttribute('title') : null,
       };
     },
     { attrs }
@@ -177,5 +178,37 @@ test.describe('slds-button-icon', () => {
       attrs: { icon: 'utility:settings', disabled: true },
     });
     expect(disabled).toBe(0);
+  });
+
+  // A host `title` does not reach the inner button: it keeps `title=""`, so
+  // there is no tooltip, and its name is the icon name. `label` names the
+  // button for both — the arrows to a sibling carry the sibling's name.
+  test.describe('label', () => {
+    test('names the button for the tooltip and assistive technology', async ({
+      page,
+    }) => {
+      // label does not exist yet.
+      test.fail();
+      const result = await mountButton(page, {
+        attrs: { icon: 'utility:chevronright', label: 'Kapitel 2' },
+      });
+
+      expect(result.title).toBe('Kapitel 2');
+      expect(result.assistive).toBe('Kapitel 2');
+      await expect(
+        page.getByRole('button', { name: 'Kapitel 2', exact: true })
+      ).toBeVisible();
+    });
+
+    test('without label keeps the capitalised icon name and no tooltip', async ({
+      page,
+    }) => {
+      const result = await mountButton(page, {
+        attrs: { icon: 'utility:chevronright' },
+      });
+
+      expect(result.title).toBe('');
+      expect(result.assistive).toBe('Chevronright');
+    });
   });
 });
