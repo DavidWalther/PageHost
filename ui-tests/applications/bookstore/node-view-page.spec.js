@@ -311,6 +311,17 @@ test.describe('Page: one node, above and below', () => {
       await expect(contents(page)).toBeHidden();
     });
 
+    test('stand in a card of their own', async ({ page }) => {
+      // The contents still stand on the bare page background.
+      test.fail();
+      await open(page, '/part-1');
+      await expectShown(page, 'part-1');
+
+      await expect(
+        contents(page).locator('slds-card custom-paragraph')
+      ).toHaveCount(2, { timeout: 1000 });
+    });
+
     test('are shown with the scope edit, also while there are none', async ({
       page,
     }) => {
