@@ -126,6 +126,8 @@ test.describe('custom-node-contents', () => {
     const host = await mount(page, { node: EMPTY, scopes: ['create'] });
 
     await expect(host).toBeHidden();
+    // Hidden for real, not just empty — with a card it would show otherwise.
+    await expect(host).toHaveCSS('display', 'none');
     await expect(host.locator('custom-paragraph')).toHaveCount(0);
   });
 
@@ -182,12 +184,10 @@ test.describe('custom-node-contents', () => {
     test('puts the list into a card without header and footer', async ({
       page,
     }) => {
-      // The attribute does not exist yet.
-      test.fail();
       const host = await mount(page, { attrs: { card: true } });
 
       const card = host.locator('slds-card');
-      await expect(card).toHaveCount(1, { timeout: 1000 });
+      await expect(card).toHaveCount(1);
       await expect(card).toHaveAttribute('no-header', '');
       await expect(card).toHaveAttribute('no-footer', '');
       await expect(card.locator('custom-paragraph')).toHaveCount(3);

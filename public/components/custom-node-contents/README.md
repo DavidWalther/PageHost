@@ -16,7 +16,7 @@ The page shows a node in two components that always refer to the same node:
   src="/components/custom-node-contents/custom-node-contents.js"
 ></script>
 
-<custom-node-contents can-create></custom-node-contents>
+<custom-node-contents can-create card></custom-node-contents>
 ```
 
 ```js
@@ -28,12 +28,13 @@ contents.setAttribute('id', nodeId);
 
 ## Attributes
 
-| Attribute            | Property           | Type    | Description                                                                |
-| :------------------- | :----------------- | :------ | :------------------------------------------------------------------------- |
-| `id`                 | `id`               | String  | Id of the node. Setting it fetches the node (`query`, `object: 'node'`).   |
-| `contentnumber`      | `contentnumber`    | Number  | `sortnumber` of a content to jump to once loaded. Set it before the data.  |
-| `loading-chunk-size` | `loadingChunkSize` | Number  | How many contents load per step (default 10).                              |
-| `can-create`         | `canCreate`        | Boolean | Offers adding a content — **on top of** the scope `create`, never instead. |
+| Attribute            | Property           | Type    | Description                                                                                          |
+| :------------------- | :----------------- | :------ | :--------------------------------------------------------------------------------------------------- |
+| `id`                 | `id`               | String  | Id of the node. Setting it fetches the node (`query`, `object: 'node'`).                             |
+| `contentnumber`      | `contentnumber`    | Number  | `sortnumber` of a content to jump to once loaded. Set it before the data.                            |
+| `loading-chunk-size` | `loadingChunkSize` | Number  | How many contents load per step (default 10).                                                        |
+| `can-create`         | `canCreate`        | Boolean | Offers adding a content — **on top of** the scope `create`, never instead.                           |
+| `card`               | `card`             | Boolean | Puts the list into an `slds-card` without header and footer — where it stands alone, as on the page. |
 
 ## When it shows
 
