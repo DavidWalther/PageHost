@@ -152,8 +152,6 @@ test.describe('custom-content-publish', () => {
     test('node publishes a node, under a heading of its own', async ({
       page,
     }) => {
-      // object-name does not exist yet.
-      test.fail();
       const component = await mount(page, {
         attrs: { ...ATTRS, 'object-name': 'node' },
       });
@@ -161,13 +159,11 @@ test.describe('custom-content-publish', () => {
 
       await expect(component.locator('custom-publishing')).toHaveAttribute(
         'object-name',
-        'node',
-        { timeout: 1000 }
+        'node'
       );
       await expect(component.locator('slds-modal')).toHaveAttribute(
         'heading',
-        'Knoten veröffentlichen',
-        { timeout: 1000 }
+        'Knoten veröffentlichen'
       );
     });
 

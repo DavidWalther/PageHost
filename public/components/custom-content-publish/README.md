@@ -35,13 +35,19 @@ Rahmen, kein deaktiviertes Icon.
 
 ## Attribute
 
-| Attribut       | Typ    | Beschreibung                                                   |
-| -------------- | ------ | -------------------------------------------------------------- |
-| `record-id`    | String | Id des Inhalts, der veröffentlicht wird.                       |
-| `publish-date` | String | Aktuelles Veröffentlichungsdatum; leer heißt unveröffentlicht. |
+| Attribut       | Typ    | Beschreibung                                                                                           |
+| -------------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| `record-id`    | String | Id des Inhalts, der veröffentlicht wird.                                                               |
+| `publish-date` | String | Aktuelles Veröffentlichungsdatum; leer heißt unveröffentlicht.                                         |
+| `object-name`  | String | `content` (Standard) oder `node`. Geht an `custom-publishing` und bestimmt die Überschrift des Modals. |
 
-`object-name` gibt es nicht: Die Komponente veröffentlicht Inhalte, und das
-steht fest verdrahtet als `content` im Markup.
+## A node, too
+
+With `object-name="node"` the same trigger publishes a node — the node view
+(`custom-node-view`) uses it for its own publish action. The modal is then
+headed `Knoten veröffentlichen` instead of `Absatz veröffentlichen`. Any other
+value falls back to a content, silently, as before the attribute existed. The
+scope rule is the same for both.
 
 ## Berechtigung
 
