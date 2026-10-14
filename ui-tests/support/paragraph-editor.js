@@ -51,7 +51,7 @@ function paragraph(page, id = CONTENT_ID) {
  * Ersetzt die Antwort des `content`-Endpunkts für **diesen** Test.
  *
  * Muss sein: Die gemeinsame Fixture liefert genau einen Inhalt in der Fassung
- * `html`, und sie lässt sich nicht erweitern — `custom-node.smoke.spec.js` prüft
+ * `html`, und sie lässt sich nicht erweitern — `deep-link-routing.spec.js` prüft
  * die Inhalts-Ids des Knotens exakt. Ein zweiter Inhalt dort bräche diesen Spec.
  */
 async function respondWithContent(page, record) {

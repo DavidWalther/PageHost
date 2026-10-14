@@ -155,8 +155,8 @@ const MOCK_NODES = {
 
 /**
  * Path of a deep link to the mock root node. The application starts on the
- * feeds; a spec about nodes enters here instead (UC-B-03: the root fills the
- * selection, its cover node is loaded below).
+ * feeds; a spec about nodes enters here instead and finds the root shown,
+ * above the node itself, below its contents (UC-B-03).
  */
 const MOCK_ROOT_PATH = '/000n00000000000011';
 
