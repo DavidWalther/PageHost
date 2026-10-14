@@ -188,9 +188,6 @@ test.describe('content-tree module', () => {
   });
 
   test.describe('findSiblings', () => {
-    // findSiblings does not exist yet.
-    test.fail();
-
     const pair = (siblings) => [
       siblings.previous?.id ?? null,
       siblings.next?.id ?? null,
