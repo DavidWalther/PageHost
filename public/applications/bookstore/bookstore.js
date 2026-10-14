@@ -245,7 +245,7 @@ class Bookstore extends LitElement {
           ></custom-node-view>
         </div>
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <custom-node-contents can-create></custom-node-contents>
+          <custom-node-contents can-create card></custom-node-contents>
         </div>
       </div>
     `;

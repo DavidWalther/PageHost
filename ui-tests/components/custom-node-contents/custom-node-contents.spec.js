@@ -126,6 +126,8 @@ test.describe('custom-node-contents', () => {
     const host = await mount(page, { node: EMPTY, scopes: ['create'] });
 
     await expect(host).toBeHidden();
+    // Hidden for real, not just empty — with a card it would show otherwise.
+    await expect(host).toHaveCSS('display', 'none');
     await expect(host.locator('custom-paragraph')).toHaveCount(0);
   });
 
@@ -173,5 +175,29 @@ test.describe('custom-node-contents', () => {
 
     await expect(host.locator('#node-contents')).toBeVisible();
     await expect(host.locator('custom-paragraph[no-display]')).toHaveCount(0);
+  });
+
+  // On the page the list stands on its own and needs a card of its own — on
+  // the bare page background its text is hard to read in dark mode. Inside
+  // custom-node it sits in that card already.
+  test.describe('card', () => {
+    test('puts the list into a card without header and footer', async ({
+      page,
+    }) => {
+      const host = await mount(page, { attrs: { card: true } });
+
+      const card = host.locator('slds-card');
+      await expect(card).toHaveCount(1);
+      await expect(card).toHaveAttribute('no-header', '');
+      await expect(card).toHaveAttribute('no-footer', '');
+      await expect(card.locator('custom-paragraph')).toHaveCount(3);
+    });
+
+    test('without it there is no card', async ({ page }) => {
+      const host = await mount(page);
+
+      await expect(host.locator('custom-paragraph')).toHaveCount(3);
+      await expect(host.locator('slds-card')).toHaveCount(0);
+    });
   });
 });

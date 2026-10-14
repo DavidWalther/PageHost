@@ -4,6 +4,7 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
+import '/slds-components/slds-card/slds-card.js';
 import '/slds-components/slds-progress-bar/slds-progress-bar.js';
 
 /**
@@ -34,6 +35,9 @@ class CustomNodeContents extends LitElement {
     loadingChunkSize: { type: Number, attribute: 'loading-chunk-size' },
     // The add action of the list: granted here, and on top the scope `create`.
     canCreate: { type: Boolean, attribute: 'can-create' },
+    // The list in a card of its own, without header and footer — for a page
+    // where it stands alone. Inside custom-node it sits in that card already.
+    card: { type: Boolean },
     _nodeData: { state: true },
     _loading: { state: true },
     _scrollPending: { state: true },
@@ -43,6 +47,11 @@ class CustomNodeContents extends LitElement {
   static styles = css`
     :host {
       display: block;
+    }
+    /* :host above outranks the hidden attribute; an empty list of a visitor
+       would otherwise stay, with its card. */
+    :host([hidden]) {
+      display: none;
     }
     .content-container.pending {
       min-height: 120px;
@@ -62,6 +71,7 @@ class CustomNodeContents extends LitElement {
     this.contentnumber = null;
     this.loadingChunkSize = 10;
     this.canCreate = false;
+    this.card = false;
     this._nodeData = null;
     this._loading = false;
     this.pendingNewContentId = null;
@@ -153,7 +163,7 @@ class CustomNodeContents extends LitElement {
       return html``;
     }
 
-    return html`
+    const body = html`
       ${
         this._scrollPending
           ? html`<slds-progress-bar
@@ -166,6 +176,9 @@ class CustomNodeContents extends LitElement {
         ${this._renderActions()} ${this._renderList()}
       </div>
     `;
+    return this.card
+      ? html`<slds-card no-header no-footer>${body}</slds-card>`
+      : body;
   }
 
   /** The actions on the list as a whole: adding a content. */
