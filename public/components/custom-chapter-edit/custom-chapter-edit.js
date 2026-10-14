@@ -4,7 +4,6 @@ import {
   css,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
-import '/components/custom-publishing/custom-publishing.js';
 
 class CustomChapterEdit extends LitElement {
   labels = {
@@ -28,8 +27,6 @@ class CustomChapterEdit extends LitElement {
     chapterUpdated: 'Kapitel gespeichert',
     chapterUpdateError: 'Fehler beim Speichern des Kapitels',
     chapterLoadError: 'Fehler beim Laden des Kapitels',
-    TabEdit: 'Edits',
-    TabPublish: 'Veröffentlichen',
   };
 
   static properties = {
@@ -38,14 +35,12 @@ class CustomChapterEdit extends LitElement {
     name: { type: String, attribute: 'name' },
     sortNumber: { type: Number, attribute: 'sort-number' },
     reversed: { type: Boolean, attribute: 'reversed' },
-    publishDate: { type: String, attribute: 'publish-date' },
     mode: { type: String }, // 'create' or 'edit' (kept for backward compatibility)
     chapterData: { type: Object },
     chapters: { type: Array }, // Array of existing chapters for sort number calculation
     // The host is the trigger (e.g. the "+" tile of the navigation modal):
     // no button of its own; the host calls openCreate().
     noTrigger: { type: Boolean, attribute: 'no-trigger' },
-    _activeTab: { state: true },
   };
 
   static styles = css`
@@ -67,12 +62,10 @@ class CustomChapterEdit extends LitElement {
     this.name = '';
     this.sortNumber = 1;
     this.reversed = false;
-    this.publishDate = null;
     this.mode = 'create';
     this.chapterData = {};
     this.chapters = [];
     this.noTrigger = false;
-    this._activeTab = 'edit';
   }
 
   connectedCallback() {
@@ -140,7 +133,7 @@ class CustomChapterEdit extends LitElement {
       <!-- Modal -->
       <slds-modal heading="${modalTitle}" @close=${this._handleModalClose}>
         <!-- Modal Content -->
-        ${this.renderTabs()}
+        ${this.renderForm()}
 
         <!-- Modal Footer -->
         <div slot="footer">
@@ -150,100 +143,23 @@ class CustomChapterEdit extends LitElement {
           >
             ${this.labels.cancelButton}
           </button>
-          ${
-            this._activeTab === 'edit'
-              ? html`
-                  <button
-                    class="slds-button slds-button_brand"
-                    @click=${this._handleConfirm}
-                  >
-                    ${confirmLabel}
-                  </button>
-                `
-              : ''
-          }
+          <button
+            class="slds-button slds-button_brand"
+            @click=${this._handleConfirm}
+          >
+            ${confirmLabel}
+          </button>
         </div>
       </slds-modal>
     `;
   }
 
   /**
-   * Renders the tab navigation and content based on the current mode (create/edit) and permissions.
-   * @returns {TemplateResult} The template for the tabs.
+   * The form: name, sort number and the reversed order. Publishing is not
+   * here — a node is published through its own button (custom-node-view,
+   * custom-node), so the dialog has no tabs.
    */
-  renderTabs() {
-    let tabHeads = [];
-    let tabPanels = [];
-
-    // Edit Tab
-    tabHeads.push(
-      html` <li
-        class="slds-tabs_default__item ${
-          this._activeTab === 'edit' ? 'slds-is-active' : ''
-        }"
-        role="presentation"
-      >
-        <a
-          class="slds-tabs_default__link"
-          role="tab"
-          @click=${() => this._setTab('edit')}
-          >${this.labels.TabEdit}</a
-        >
-      </li>`
-    );
-    tabPanels.push(
-      html` <div
-        class="slds-tabs_default__content ${
-          this._activeTab === 'edit' ? 'slds-show' : 'slds-hide'
-        }"
-      >
-        ${this.renderEditTab()}
-      </div>`
-    );
-
-    if (this._isEditMode) {
-      // Publish Tab
-      tabHeads.push(
-        html` <li
-          class="slds-tabs_default__item ${
-            this._activeTab === 'publish' ? 'slds-is-active' : ''
-          }"
-          role="presentation"
-        >
-          <a
-            class="slds-tabs_default__link"
-            role="tab"
-            @click=${() => this._setTab('publish')}
-            >${this.labels.TabPublish}</a
-          >
-        </li>`
-      );
-      tabPanels.push(
-        html` <div
-          class="slds-tabs_default__content ${
-            this._activeTab === 'publish' ? 'slds-show' : 'slds-hide'
-          }"
-        >
-          ${this.renderPublishTab()}
-        </div>`
-      );
-    }
-
-    return html`
-      <!-- Tabs Navigation -->
-      <div class="slds-tabs_default" role="tablist">
-        <!-- Tabs Headers -->
-        <ul class="slds-tabs_default__nav" role="tablist">
-          ${tabHeads}
-        </ul>
-
-        <!-- Tabs Content -->
-        ${tabPanels}
-      </div>
-    `;
-  }
-
-  renderEditTab() {
+  renderForm() {
     return html`
       <!-- Name Field -->
       <div class="slds-grid slds-wrap slds-grid_vertical-align-end">
@@ -280,16 +196,6 @@ class CustomChapterEdit extends LitElement {
           </div>
         </div>
       </div>
-    `;
-  }
-
-  renderPublishTab() {
-    return html`
-      <custom-publishing
-        record-id="${this.chapterId}"
-        object-name="node"
-        publish-date="${this.publishDate || ''}"
-      ></custom-publishing>
     `;
   }
 
@@ -445,13 +351,8 @@ class CustomChapterEdit extends LitElement {
   }
 
   _handleModalClose() {
-    this._activeTab = 'edit';
     this.reset();
     this._dispatchCancelEvent();
-  }
-
-  _setTab(tabName) {
-    this._activeTab = tabName;
   }
 
   _handleCancel() {

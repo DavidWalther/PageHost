@@ -216,7 +216,6 @@ class CustomNode extends LitElement {
                       name="${this._nodeData.name || ''}"
                       .sortNumber="${this._nodeData.sortnumber ?? null}"
                       ?reversed="${this._nodeData.reversed || false}"
-                      publish-date="${this._nodeData.published_date || ''}"
                       @chapter-updated=${this._handleNodeUpdated}
                     ></custom-chapter-edit>
                   </div>

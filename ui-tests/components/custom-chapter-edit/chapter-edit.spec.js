@@ -182,8 +182,6 @@ test.describe('custom-chapter-edit: the form', () => {
   // A node is published through its own button (custom-node-view,
   // custom-node). The dialog only edits: no tabs, the save button always there.
   test('neither mode has tabs, and both can save', async ({ page }) => {
-    // The publish tab is still there.
-    test.fail();
     const editing = await mount(page);
     await openThroughTrigger(page);
     await expect(editing.locator('.slds-tabs_default')).toHaveCount(0);
