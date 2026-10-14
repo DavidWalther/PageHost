@@ -1,8 +1,9 @@
 # custom-node-delete
 
 **The one action that deletes a node.** Every trigger that deletes a node runs
-it: the delete button of `custom-node` and the delete tile of the navigation
-modal. Triggers may move or multiply; the action stays here.
+it: the delete button of `custom-node-view` (and of `custom-node`) and the
+delete tile of the navigation modal. Triggers may move or multiply; the action
+stays here.
 
 The backend deletes a node **with everything below it** — its contents, the
 nodes below it and their contents. Nothing is left behind without its node.

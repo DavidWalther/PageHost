@@ -174,8 +174,7 @@ The tile is only the trigger; the action is `custom-node-delete`'s.
 
 ### Moving nodes
 
-A node is marked at the page (`custom-node-move` in the lower node, or in the upper
-one for a root); the host hands
+A node is marked at the page (`custom-node-move` in `custom-node-view`); the host hands
 the mark over as `marked` and leaves the node out with `hidden-ids`. The modal then
 
 - names the mark above the tiles on every level (`#marked-hint`, „‚Name‘ markiert“),
@@ -201,7 +200,7 @@ The tile is only the trigger; the action is `custom-node-move`'s.
 
 | Event                    | `detail`           | Description                                                                |
 | ------------------------ | ------------------ | -------------------------------------------------------------------------- |
-| `navigation-level-open`  | `{ id }`           | A tile with children was opened. The page behind may follow (cover node).  |
+| `navigation-level-open`  | `{ id }`           | A tile with children was opened. The page behind shows that node.          |
 | `navigation-level-back`  | `{ id }`           | One level up: `id` is the level now open. Not on the top level.            |
 | `navigation-node-select` | `{ id, parentId }` | A tile without children was chosen. `parentId` is `null` on the top level. |
 | `node-mark-clear`        | `{ nodeId }`       | The ✕ of the hint: the host should drop the mark.                          |
