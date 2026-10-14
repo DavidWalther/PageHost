@@ -43,10 +43,11 @@ both places keep their width, so the name never moves.
 
 ## Events
 
-| Event    | `detail`                          | When                                                      |
-| :------- | :-------------------------------- | :-------------------------------------------------------- |
-| `query`  | `{ payload: { object: 'node' } }` | The component fetches its node (answered by `index.js`).  |
-| `loaded` | `{ nodeData }`                    | The node is there — fetched, or handed in by `adoptNode`. |
+| Event                | `detail`                          | When                                                                |
+| :------------------- | :-------------------------------- | :------------------------------------------------------------------ |
+| `query`              | `{ payload: { object: 'node' } }` | The component fetches its node (answered by `index.js`).            |
+| `loaded`             | `{ nodeData }`                    | The node is there — fetched, or handed in by `adoptNode`.           |
+| `node-view-navigate` | `{ id }`                          | A way to another node was taken: an arrow, a breadcrumb or a child. |
 
 All bubble and are composed. `adoptNode` reports `loaded` at once: a listener
 has to hang before the call.
