@@ -10,8 +10,7 @@ const { mountNode } = require('../../support/node-mount');
  * attributes, never read from anything else:
  *
  *   rendering (`no-…`, on by default):  no-child-navigation, no-contents
- *   actions   (`can-…`, off by default): can-create-child,
- *                                        can-create-content, can-delete
+ *   actions   (`can-…`, off by default): can-create-content, can-delete
  *
  * The page once held two instances, a selection above and a node with its
  * contents below; their sets of attributes are the two set-ups here. The
@@ -25,7 +24,6 @@ const SESSION_SCOPES = ['read', 'edit', 'create', 'delete'];
 /** The selection: a root with its children, no contents. */
 const SELECTION = {
   'child-buttons_number-max': 2,
-  'can-create-child': true,
   'no-contents': true,
 };
 
@@ -55,7 +53,7 @@ const PLUS = 'slds-button-icon[icon="utility:add"]';
 test.describe('Node attributes: actions', () => {
   test.use({ actionTimeout: 5000 });
 
-  test('the selection offers create child, not create content or delete', async ({
+  test('the selection offers neither create content nor delete', async ({
     page,
   }) => {
     const node = await mountNode(page, {
@@ -64,25 +62,20 @@ test.describe('Node attributes: actions', () => {
       scopes: SESSION_SCOPES,
     });
 
-    await expect(node.locator('#node-create-child')).toHaveCount(1);
     await expect(node.locator('#button-create-content')).toHaveCount(0);
     await expect(node.locator('#button-delete')).toHaveCount(0);
-    await expect(node.locator(PLUS)).toHaveCount(1);
+    await expect(node.locator(PLUS)).toHaveCount(0);
   });
 
-  test('the contents offer create content and delete, not create child', async ({
-    page,
-  }) => {
+  test('the contents offer create content and delete', async ({ page }) => {
     const node = await mountNode(page, {
       node: NODE_WITH_BOTH,
       attrs: CONTENTS,
       scopes: SESSION_SCOPES,
     });
 
-    await expect(node.locator('#node-create-child')).toHaveCount(0);
     await expect(node.locator('#button-create-content')).toBeVisible();
     await expect(node.locator('#button-delete')).toBeVisible();
-    // One "+" — two utility:add side by side could not be told apart.
     await expect(node.locator(PLUS)).toHaveCount(1);
   });
 
@@ -110,13 +103,11 @@ test.describe('Node attributes: attribute and scope together', () => {
   }) => {
     const node = await mountNode(page, {
       node: NODE_WITH_BOTH,
-      attrs: { ...CONTENTS, 'can-create-child': true },
+      attrs: CONTENTS,
     });
 
     await expect(node.locator('#button-create-content')).toHaveCount(0);
     await expect(node.locator('#button-delete')).toHaveCount(0);
-    // Not even an empty element for create child.
-    await expect(node.locator('#node-create-child')).toHaveCount(0);
     await expect(node.locator(PLUS)).toHaveCount(0);
   });
 });
