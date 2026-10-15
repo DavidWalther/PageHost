@@ -312,6 +312,41 @@ test.describe('Page: one node, above and below', () => {
       await expect(contents(page)).toHaveCSS('display', 'none');
     });
 
+    test.fail(
+      'give way at once when another node is chosen',
+      async ({ page }) => {
+        // Before, the old list stayed until the next node had arrived, and was
+        // then replaced content by content.
+        await open(page, '/part-1');
+        await expectShown(page, 'part-1');
+        await expect(contents(page).locator('custom-paragraph')).toHaveCount(2);
+
+        let release;
+        const held = new Promise((resolve) => (release = resolve));
+        await page.route('**/data/query/node?id=book-a', async (route) => {
+          await held;
+          return route.fallback();
+        });
+
+        await view(page)
+          .locator('slds-breadcrumbs a', { hasText: 'Book A' })
+          .click();
+        await expect
+          .poll(async () => (await readPage(page)).viewId)
+          .toBe('book-a');
+
+        // The next node is still on its way: nothing of the old one stays.
+        await expect(contents(page).locator('custom-paragraph')).toHaveCount(0);
+
+        release();
+        await expectShown(page, 'book-a');
+        await expect(contents(page).locator('custom-paragraph')).toHaveCount(1);
+        await expect(
+          contents(page).locator('custom-paragraph[id="c-a1"]')
+        ).toBeAttached();
+      }
+    );
+
     test('stand in a card of their own', async ({ page }) => {
       await open(page, '/part-1');
       await expectShown(page, 'part-1');
