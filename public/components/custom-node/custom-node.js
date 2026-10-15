@@ -493,42 +493,6 @@ class CustomNode extends LitElement {
     this._handOverContents();
   }
 
-  /**
-   * Übernimmt die Änderung eines Kind-Knotens in die Auswahl.
-   *
-   * Wird vom Consumer aufgerufen: geändert wird das Kind in seiner eigenen
-   * Darstellung, angezeigt wird es hier.
-   */
-  applyChildUpdate(childData) {
-    if (!childData?.id || !this._nodeData) return;
-    const nodes = this.childNodeList
-      .map((child) =>
-        child.id === childData.id ? { ...child, ...childData } : child
-      )
-      // As the backend sorts siblings: without a sortnumber at the end, a tie
-      // decided by the id. A moved node has no sortnumber.
-      .sort((first, second) => {
-        const firstSort = first.sortnumber ?? Number.MAX_SAFE_INTEGER;
-        const secondSort = second.sortnumber ?? Number.MAX_SAFE_INTEGER;
-        if (firstSort !== secondSort) {
-          return firstSort - secondSort;
-        }
-        return String(first.id).localeCompare(String(second.id));
-      });
-    this._nodeData = { ...this._nodeData, nodes };
-    this.requestUpdate();
-  }
-
-  /** Nimmt einen geloeschten Kind-Knoten aus der Auswahl. */
-  removeChildNode(childId) {
-    if (!childId || !this._nodeData) return;
-    this._nodeData = {
-      ...this._nodeData,
-      nodes: this.childNodeList.filter((child) => child.id !== childId),
-    };
-    this.requestUpdate();
-  }
-
   // ==================================================
   // Callouts
   // ==================================================
