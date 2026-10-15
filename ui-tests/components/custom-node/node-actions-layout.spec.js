@@ -30,8 +30,6 @@ const ROLES = {
     node: { ...MOCK_NODES.wurzel, contents: [] },
     attrs: {
       'child-buttons_number-max': 2,
-      'can-create-child': true,
-      'can-move-root': true,
       'no-contents': true,
     },
   },
@@ -52,7 +50,6 @@ const mountRole = (page, role, scopes) =>
 // Die IDs der Aktionen — stabil, egal wie das Grid darum gebaut ist.
 const ACTION_IDS = [
   'node-publish',
-  'node-create-child',
   'node-edit',
   'button-share',
   'button-create-content',
@@ -145,8 +142,7 @@ const ONLY_VISIBLE = [
     name: 'nur Scope edit',
     scopes: ['edit'],
     expected: {
-      // The node above is a root here, so it offers the mark as well.
-      navigation: ['node-edit', 'button-share', 'node-move'],
+      navigation: ['node-edit', 'button-share'],
       content: ['node-edit', 'button-share', 'node-move'],
     },
   },
@@ -154,12 +150,7 @@ const ONLY_VISIBLE = [
     name: 'alle Scopes',
     scopes: SESSION_SCOPES,
     expected: {
-      navigation: [
-        'node-create-child',
-        'node-edit',
-        'button-share',
-        'node-move',
-      ],
+      navigation: ['node-edit', 'button-share'],
       content: [
         'node-edit',
         'button-share',

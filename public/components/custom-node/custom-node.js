@@ -58,13 +58,9 @@ class CustomNode extends LitElement {
     noTitle: { type: Boolean, attribute: 'no-title' },
     // Aktionen: Voreinstellung **aus** — ein schreibender Weg wird
     // ausdruecklich gewaehrt, nicht stillschweigend mitgeliefert.
-    canCreateChild: { type: Boolean, attribute: 'can-create-child' },
     canCreateContent: { type: Boolean, attribute: 'can-create-content' },
     canDelete: { type: Boolean, attribute: 'can-delete' },
     canMove: { type: Boolean, attribute: 'can-move' },
-    // Mark only while this node is a root: a root always stands in the upper
-    // node, a node with a parent is marked where it is the chosen one.
-    canMoveRoot: { type: Boolean, attribute: 'can-move-root' },
     // Id of the node marked to be moved, wherever it is. The consumer owns the
     // mark; the node compares, so a consumer that swaps the id need not care.
     markedId: { type: String },
@@ -91,11 +87,9 @@ class CustomNode extends LitElement {
     this.noChildNavigation = false;
     this.noContents = false;
     this.noTitle = false;
-    this.canCreateChild = false;
     this.canCreateContent = false;
     this.canDelete = false;
     this.canMove = false;
-    this.canMoveRoot = false;
     this.markedId = null;
     this._nodeData = null;
     this._loading = false;
@@ -169,26 +163,9 @@ class CustomNode extends LitElement {
         }
         <slds-layout slot="actions" wrap gutters-xxx-small>
           <!-- Ein Element je Aktion, aber nur, wenn die Aktion sichtbar ist —
-               sonst bliebe ein leerer Rahmen als Lücke stehen. Für die beiden
-               custom-chapter-edit prüft custom-node dafür dieselben Scopes, die
-               die Komponente selbst prüft (create bzw. edit): bewusst doppelt. -->
-          ${
-            this.canCreateChild && this.hasScope('create')
-              ? html`<slds-layout-item grow-none align-middle>
-                  <div class="slds-align_absolute-center">
-                    <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
-                         Komponente im Anlege-Modus. -->
-                    <custom-chapter-edit
-                      id="node-create-child"
-                      story-id="${this.id}"
-                      mode="create"
-                      .chapters="${this.childNodeList}"
-                      @chapter-created=${this._handleChildCreated}
-                    ></custom-chapter-edit>
-                  </div>
-                </slds-layout-item>`
-              : ''
-          }
+               sonst bliebe ein leerer Rahmen als Lücke stehen. Für custom-chapter-edit
+               prüft custom-node dafür denselben Scope (edit), den die
+               Komponente selbst prüft: bewusst doppelt. -->
           ${
             this.hasScope('publish') && this.hasScope('edit')
               ? html`<slds-layout-item grow-none align-middle>
@@ -248,7 +225,7 @@ class CustomNode extends LitElement {
               : ''
           }
           ${
-            this._offersMark() && this.hasScope('edit')
+            this.canMove && this.hasScope('edit')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
                     <!-- Marks this node; the navigation modal moves the
@@ -415,13 +392,6 @@ class CustomNode extends LitElement {
     this.fetchNode(newId);
   }
 
-  /** Is marking granted for this node — always, or as a root only? */
-  _offersMark() {
-    return (
-      this.canMove || (this.canMoveRoot && !this._nodeData?.parent_node_id)
-    );
-  }
-
   /**
    * Fetches the node again under the same id. Setting the id again does
    * nothing — the node holds that record already. After a move the record is
@@ -521,18 +491,6 @@ class CustomNode extends LitElement {
     this.requestUpdate();
     // `reversed` may have changed: the list shows the new order.
     this._handOverContents();
-  }
-
-  /** Ein neu angelegter Kind-Knoten kommt in die Auswahl. */
-  _handleChildCreated(event) {
-    const created = event.detail?.chapterData;
-    if (!created?.id || !this._nodeData) return;
-
-    this._nodeData = {
-      ...this._nodeData,
-      nodes: [...this.childNodeList, created],
-    };
-    this.requestUpdate();
   }
 
   /**

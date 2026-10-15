@@ -53,11 +53,9 @@ schreibender Weg ist aus und wird ausdrücklich gewährt.
 | `no-child-navigation` | aus (= zeigen) | Kind-Auswahl (Buttons bzw. Combobox) wird nicht gerendert                               |
 | `no-contents`         | aus (= zeigen) | Inhalte **und** der Hinweis „Keine Inhalte vorhanden" entfallen                         |
 | `no-title`            | aus (= zeigen) | Der Name des Knotens entfällt; die Aktionen im Kopf bleiben                             |
-| `can-create-child`    | aus            | Button „Kind-Knoten anlegen" — **zusätzlich** zu `hasScope('create')`                   |
 | `can-create-content`  | aus            | Button „Inhalt anlegen" — **zusätzlich** zu `hasScope('create')`                        |
 | `can-delete`          | aus            | „Knoten löschen" (`custom-node-delete`) — **zusätzlich** zu `hasScope('delete')`        |
 | `can-move`            | aus            | „Zum Verschieben markieren" (`custom-node-move`) — **zusätzlich** zu `hasScope('edit')` |
-| `can-move-root`       | aus            | wie `can-move`, aber nur, solange der Knoten **keinen** Elternknoten hat                |
 
 Die `can-…`-Attribute für schreibende Aktionen ersetzen die Scope-Prüfung
 **nicht**, sie kommen davor: Ohne passenden Scope erscheint die Aktion auch mit
@@ -76,9 +74,6 @@ Name und Elternknoten. Der Knoten selbst markiert nichts: Die Aktion meldet
 `node-mark-change`, der Consumer hält die Markierung und gibt jedem Knoten die
 Id des markierten über die Property `markedId`; ob das er selbst ist, sagt der
 Knoten seiner Aktion. Verschoben wird im Navigations-Modal.
-`can-move-root` grants the mark only while the node is a root. It was made for
-the upper of the page's two nodes, where a root always stood; no consumer sets
-it any more, nor `can-create-child`.
 → `public/components/custom-node-move/README.md`
 
 **`Bearbeiten` und `Teilen` haben bewusst kein Attribut.** Beide Rollen tragen
