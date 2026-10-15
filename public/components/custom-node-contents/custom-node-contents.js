@@ -75,6 +75,7 @@ class CustomNodeContents extends LitElement {
     this._nodeData = null;
     this._loading = false;
     this.pendingNewContentId = null;
+    this._adopting = null;
     this.intersectionObserver = null;
     this.currentObservedChunkIndex = 1;
     this.observedElements = new Map();
@@ -565,11 +566,30 @@ class CustomNodeContents extends LitElement {
   /**
    * Takes a record **already loaded**, instead of fetching it. A set
    * `contentnumber` is evaluated here, so it has to be set before.
+   *
+   * Over the list of another node the list is emptied first and the record
+   * taken after that render: rendered over, the old elements would be reused
+   * and show the old contents until each has loaded anew.
    */
   adoptNode(record) {
     if (!record?.id) {
       return;
     }
+    this._adopting = record;
+    if (this._nodeData?.id && this._nodeData.id !== record.id) {
+      this.clearContent();
+      this.updateComplete.then(() => this._takeNode(record));
+      return;
+    }
+    this._takeNode(record);
+  }
+
+  _takeNode(record) {
+    // A later adoption wins over one still waiting for its render.
+    if (this._adopting !== record) {
+      return;
+    }
+    this._adopting = null;
     this._loading = false;
     this.applyNodeData(record);
     // The attribute, not only the property: consumers read the id as one.
@@ -587,6 +607,7 @@ class CustomNodeContents extends LitElement {
     this.fetchNode(this.id);
   }
 
+  /** Empties the list — for a consumer that switches to another node. */
   clearContent() {
     this.cleanupIntersectionObserver();
     this._resetJumpState();

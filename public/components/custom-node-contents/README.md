@@ -63,11 +63,12 @@ Unchanged from `custom-node` (and `custom-chapter` before it):
 
 ## Methods
 
-| Method              | Description                                                                      |
-| :------------------ | :------------------------------------------------------------------------------- |
-| `adoptNode(record)` | Takes a record already loaded instead of fetching it; sets `id` as an attribute. |
-| `reload()`          | Fetches the node again under the same id. Without an id nothing happens.         |
-| `createContent()`   | Adds a content at the end. For a consumer with an add button of its own.         |
+| Method              | Description                                                                                                                                                                                                         |
+| :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `adoptNode(record)` | Takes a record already loaded instead of fetching it; sets `id` as an attribute. Over the list of another node it empties first and takes the record after that render — the old paragraph elements are not reused. |
+| `reload()`          | Fetches the node again under the same id. Without an id nothing happens.                                                                                                                                            |
+| `clearContent()`    | Empties the list at once — for a consumer switching to another node, so nothing of the old one stays while the next loads.                                                                                          |
+| `createContent()`   | Adds a content at the end. For a consumer with an add button of its own.                                                                                                                                            |
 
 ## Events
 

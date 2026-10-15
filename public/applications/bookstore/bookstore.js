@@ -301,6 +301,10 @@ class Bookstore extends LitElement {
     this.hideFeed();
     this._setCurrentLocation(id);
     this._pendingContentNumber = contentnumber;
+    // Another node: its contents go at once, not only once it has loaded.
+    if (this.nodeContents.getAttribute('id') !== id) {
+      this.nodeContents.clearContent();
+    }
     if (record) {
       this.nodeView.adoptNode(record);
     } else if (this.nodeView.getAttribute('id') === id) {

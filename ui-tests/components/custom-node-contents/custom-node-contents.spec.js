@@ -177,6 +177,37 @@ test.describe('custom-node-contents', () => {
     await expect(host.locator('custom-paragraph[no-display]')).toHaveCount(0);
   });
 
+  test('a node adopted in place of another gets contents of its own', async ({
+    page,
+  }) => {
+    // Reused, an element keeps showing the old content until the new one has
+    // loaded — on a switch the old list gives way piece by piece.
+    const host = await mount(page);
+    await expect(host.locator('custom-paragraph')).toHaveCount(3);
+    await host.evaluate((el) => {
+      el.shadowRoot
+        .querySelectorAll('custom-paragraph')
+        .forEach((content) => (content.__previous = true));
+    });
+
+    await host.evaluate((el, node) => el.adoptNode(node), {
+      ...NODE,
+      id: 'n-2',
+      contents: [4, 5].map((number) => ({
+        id: `c-${number}`,
+        name: `Content ${number}`,
+        sortnumber: number,
+      })),
+    });
+
+    await expect(host.locator('custom-paragraph')).toHaveCount(2);
+    expect(
+      await host
+        .locator('custom-paragraph')
+        .evaluateAll((all) => all.some((content) => content.__previous))
+    ).toBe(false);
+  });
+
   // On the page the list stands on its own and needs a card of its own — on
   // the bare page background its text is hard to read in dark mode. Inside
   // custom-node it sits in that card already.
