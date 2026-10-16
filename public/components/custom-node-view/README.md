@@ -27,9 +27,18 @@ content tree and hands them in; every way to another node is one event,
 | —         | `siblings` | Object | `{ previous, next }`, each `{ id, name }` or `null`. Default: neither.                     |
 | —         | `path`     | Array  | The ancestors from the root down, `[{ id, name }]`, without the node itself. Default `[]`. |
 
+## The card
+
+One `slds-card` with `no-footer no-header-title`. Its header holds the
+breadcrumbs on the left (slot `header`) and the actions on the right (slot
+`actions`), in one row; it is no heading — the breadcrumbs are no title, and
+the name stands below. The body holds the name between its arrows, then the
+combobox of the children. A root has no breadcrumbs: its header holds only
+the actions, on the right.
+
 ## The breadcrumbs
 
-Above the name, the way up: the ancestors from the root down, each a link
+In the header, on the left, the way up: the ancestors from the root down, each a link
 (`slds-breadcrumbs` with `no-current-item` and `last-item-as-link`). The node
 itself is not among them — its name stands below. A root has no breadcrumbs.
 Each crumb carries the address of its node (`/<id>`); a click reports
@@ -51,7 +60,7 @@ from a single child on — never a row of buttons. Choosing one reports
 
 ## The actions on the node
 
-Between the name and the children, centred, in this order — each only under
+In the header, on the right, in this order — each only under
 its scope, and without its scope not even an empty element:
 
 | Action  | Element                                            | Scope              |

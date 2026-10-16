@@ -95,8 +95,10 @@ class CustomNodeView extends LitElement {
     }
 
     return html`
-      <slds-card no-footer no-header>
-        ${this._renderBreadcrumbs()}
+      <!-- The header holds the way up on the left and the actions on the
+           right; it is no heading, the breadcrumbs are no title. -->
+      <slds-card no-footer no-header-title>
+        ${this._renderBreadcrumbs()} ${this._renderActions()}
         <slds-layout id="node-title" vertical-align-center>
           <slds-layout-item id="item-previous">
             ${this._renderArrow('previous', 'utility:chevronleft')}
@@ -110,7 +112,7 @@ class CustomNodeView extends LitElement {
             ${this._renderArrow('next', 'utility:chevronright')}
           </slds-layout-item>
         </slds-layout>
-        ${this._renderActions()} ${this._renderChildren()}
+        ${this._renderChildren()}
       </slds-card>
     `;
   }
@@ -131,6 +133,7 @@ class CustomNodeView extends LitElement {
       href: `/${node.id}`,
     }));
     return html`<slds-breadcrumbs
+      slot="header"
       size="small"
       no-current-item
       last-item-as-link
@@ -193,8 +196,8 @@ class CustomNodeView extends LitElement {
 
     return html`<slds-layout
       id="node-actions"
-      class="slds-m-top_x-small"
-      align-center
+      slot="actions"
+      align-end
       wrap
       gutters-xxx-small
     >

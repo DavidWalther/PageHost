@@ -284,6 +284,80 @@ test.describe('custom-node-view', () => {
     });
   });
 
+  // The header of the card holds the way up on the left and the actions on
+  // the right, in one row; the name with its arrows stands below. The header
+  // is no heading: the breadcrumbs are no title.
+  test.describe('the card', () => {
+    const ALL = ['publish', 'edit', 'create', 'delete'];
+    const box = (locator) =>
+      locator.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+        };
+      });
+
+    test('has a header that is no heading', async ({ page }) => {
+      const host = await mount(page, { scopes: ALL });
+      const card = host.locator('slds-card');
+
+      await expect(card).toHaveAttribute('no-header-title', '');
+      await expect(card).not.toHaveAttribute('no-header', /.*/);
+      await expect(card).toHaveAttribute('no-footer', '');
+    });
+
+    test('puts the breadcrumbs left and the actions right, in one row', async ({
+      page,
+    }) => {
+      const host = await mount(page, { scopes: ALL });
+      const crumbs = host.locator('slds-breadcrumbs');
+      const actions = host.locator('#node-actions');
+
+      await expect(crumbs).toHaveAttribute('slot', 'header');
+      await expect(actions).toHaveAttribute('slot', 'actions');
+
+      // The links, not the host: that is a block across the whole left side.
+      const [crumbsBox, actionsBox, titleBox] = await Promise.all([
+        box(crumbs.locator('a').last()),
+        box(actions),
+        box(host.locator('#node-title')),
+      ]);
+      expect(crumbsBox.right).toBeLessThanOrEqual(actionsBox.left);
+      // One row: each overlaps the other vertically.
+      expect(crumbsBox.top).toBeLessThan(actionsBox.bottom);
+      expect(actionsBox.top).toBeLessThan(crumbsBox.bottom);
+      // The name with its arrows below.
+      expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
+    });
+
+    test('keeps the actions in the header of a root, without breadcrumbs', async ({
+      page,
+    }) => {
+      const host = await mount(page, { path: [], scopes: ALL });
+      const actions = host.locator('#node-actions');
+
+      await expect(host.locator('slds-breadcrumbs')).toHaveCount(0);
+      await expect(actions).toHaveAttribute('slot', 'actions');
+      const [actionsBox, titleBox] = await Promise.all([
+        box(actions),
+        box(host.locator('#node-title')),
+      ]);
+      expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
+    });
+
+    test('shows a visitor only share in the header', async ({ page }) => {
+      const host = await mount(page);
+      const actions = host.locator('#node-actions');
+
+      await expect(actions).toHaveAttribute('slot', 'actions');
+      await expect(actions.locator('slds-layout-item')).toHaveCount(1);
+      await expect(actions.locator('#button-share')).toBeVisible();
+    });
+  });
+
   test.describe('the actions on the node', () => {
     const ALL = ['publish', 'edit', 'create', 'delete'];
     /** The ids of the actions in the bar, in their order. */
