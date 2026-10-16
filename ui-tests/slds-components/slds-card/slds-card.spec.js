@@ -47,6 +47,14 @@ async function mountCard(page, { attrs = {}, slots = {} } = {}) {
         hasHeaderBlock: !!root.querySelector('.slds-card__header'),
         hasHeaderSlot: !!root.querySelector('slot[name="header"]'),
         hasActionsSlot: !!root.querySelector('slot[name="actions"]'),
+        headerSlotInHeading: !!root
+          .querySelector('slot[name="header"]')
+          ?.closest('h2'),
+        hasHeaderTitle: !!root.querySelector('.slds-card__header-title'),
+        // The actions stay in the header, next to the header slot.
+        actionsInHeader: !!root
+          .querySelector('slot[name="actions"]')
+          ?.closest('.slds-card__header'),
         hasBodyInner: !!root.querySelector('.slds-card__body_inner'),
         hasDefaultSlot: !!root.querySelector(
           '.slds-card__body_inner slot:not([name])'
@@ -115,6 +123,31 @@ test.describe('slds-card', () => {
     expect(res.hasBodyInner).toBe(true);
     expect(res.hasFooter).toBe(true);
   });
+
+  test('without no-header-title the header slot is a heading', async ({
+    page,
+  }) => {
+    const res = await mountCard(page);
+    expect(res.headerSlotInHeading).toBe(true);
+    expect(res.hasHeaderTitle).toBe(true);
+  });
+
+  test.fail(
+    'no-header-title renders the header slot without a heading',
+    async ({ page }) => {
+      // For a header that is no title — breadcrumbs, say: in an <h2> they
+      // would be read out as a heading and inherit its bold type.
+      const res = await mountCard(page, {
+        attrs: { 'no-header-title': true },
+        slots: { header: 'Weg', actions: 'Aktion' },
+      });
+      expect(res.headerSlotInHeading).toBe(false);
+      expect(res.hasHeaderTitle).toBe(false);
+      expect(res.actionsInHeader).toBe(true);
+      expect(res.assigned.header).toContain('Weg');
+      expect(res.assigned.actions).toContain('Aktion');
+    }
+  );
 
   test('Slot-Projektion: header/actions/footer/default', async ({ page }) => {
     const res = await mountCard(page, {
