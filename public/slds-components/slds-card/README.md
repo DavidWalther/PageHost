@@ -24,18 +24,19 @@ footer — unless `no-footer` is set.
 
 ## Attributes
 
-| Attribute   | Type    | Default | Description                                                                    |
-| ----------- | ------- | ------- | ------------------------------------------------------------------------------ |
-| `no-header` | Boolean | `false` | Omits the header region (title and actions).                                   |
-| `no-footer` | Boolean | `false` | Omits the footer region.                                                       |
-| `no-border` | Boolean | `false` | Adds the `no-border` class to the `<article>` (removes border and box-shadow). |
+| Attribute         | Type    | Default | Description                                                                                                                                                               |
+| ----------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-header`       | Boolean | `false` | Omits the header region (title and actions).                                                                                                                              |
+| `no-footer`       | Boolean | `false` | Omits the footer region.                                                                                                                                                  |
+| `no-border`       | Boolean | `false` | Adds the `no-border` class to the `<article>` (removes border and box-shadow).                                                                                            |
+| `no-header-title` | Boolean | `false` | Renders the `header` slot without the `<h2 class="slds-card__header-title">` around it — for a header that is no title, such as breadcrumbs. The actions stay next to it. |
 
 ## Slots
 
 | Slot        | Description                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------------- |
 | _(default)_ | Card body content.                                                                           |
-| `header`    | Header title text.                                                                           |
+| `header`    | Header title text — a heading (`<h2>`) unless `no-header-title` is set.                      |
 | `actions`   | Header action area (e.g. buttons).                                                           |
 | `footer`    | Footer text (inside the footer's assistive text). Only rendered when `no-footer` is not set. |
 

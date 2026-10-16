@@ -132,22 +132,21 @@ test.describe('slds-card', () => {
     expect(res.hasHeaderTitle).toBe(true);
   });
 
-  test.fail(
-    'no-header-title renders the header slot without a heading',
-    async ({ page }) => {
-      // For a header that is no title — breadcrumbs, say: in an <h2> they
-      // would be read out as a heading and inherit its bold type.
-      const res = await mountCard(page, {
-        attrs: { 'no-header-title': true },
-        slots: { header: 'Weg', actions: 'Aktion' },
-      });
-      expect(res.headerSlotInHeading).toBe(false);
-      expect(res.hasHeaderTitle).toBe(false);
-      expect(res.actionsInHeader).toBe(true);
-      expect(res.assigned.header).toContain('Weg');
-      expect(res.assigned.actions).toContain('Aktion');
-    }
-  );
+  test('no-header-title renders the header slot without a heading', async ({
+    page,
+  }) => {
+    // For a header that is no title — breadcrumbs, say: in an <h2> they
+    // would be read out as a heading and inherit its bold type.
+    const res = await mountCard(page, {
+      attrs: { 'no-header-title': true },
+      slots: { header: 'Weg', actions: 'Aktion' },
+    });
+    expect(res.headerSlotInHeading).toBe(false);
+    expect(res.hasHeaderTitle).toBe(false);
+    expect(res.actionsInHeader).toBe(true);
+    expect(res.assigned.header).toContain('Weg');
+    expect(res.assigned.actions).toContain('Aktion');
+  });
 
   test('Slot-Projektion: header/actions/footer/default', async ({ page }) => {
     const res = await mountCard(page, {

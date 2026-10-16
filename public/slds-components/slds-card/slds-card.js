@@ -10,6 +10,9 @@ class Card extends LitElement {
     noHeader: { type: Boolean, attribute: 'no-header' },
     noFooter: { type: Boolean, attribute: 'no-footer' },
     noBorder: { type: Boolean, attribute: 'no-border' },
+    // The header slot without the heading around it — for a header that is
+    // no title (breadcrumbs, say), which an <h2> would announce as one.
+    noHeaderTitle: { type: Boolean, attribute: 'no-header-title' },
   };
 
   static styles = css`
@@ -28,6 +31,7 @@ class Card extends LitElement {
     this.noHeader = false;
     this.noFooter = false;
     this.noBorder = false;
+    this.noHeaderTitle = false;
   }
 
   connectedCallback() {
@@ -51,9 +55,13 @@ class Card extends LitElement {
                     class="slds-media slds-media_center slds-has-flexi-truncate"
                   >
                     <div class="slds-media__body">
-                      <h2 class="slds-card__header-title">
-                        <span><slot name="header"></slot></span>
-                      </h2>
+                      ${
+                        this.noHeaderTitle
+                          ? html`<slot name="header"></slot>`
+                          : html`<h2 class="slds-card__header-title">
+                              <span><slot name="header"></slot></span>
+                            </h2>`
+                      }
                     </div>
                     <div class="slds-no-flex">
                       <slot name="actions"></slot>
