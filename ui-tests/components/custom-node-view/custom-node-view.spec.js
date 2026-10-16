@@ -300,7 +300,7 @@ test.describe('custom-node-view', () => {
         };
       });
 
-    test.fail('has a header that is no heading', async ({ page }) => {
+    test('has a header that is no heading', async ({ page }) => {
       const host = await mount(page, { scopes: ALL });
       const card = host.locator('slds-card');
 
@@ -309,47 +309,46 @@ test.describe('custom-node-view', () => {
       await expect(card).toHaveAttribute('no-footer', '');
     });
 
-    test.fail(
-      'puts the breadcrumbs left and the actions right, in one row',
-      async ({ page }) => {
-        const host = await mount(page, { scopes: ALL });
-        const crumbs = host.locator('slds-breadcrumbs');
-        const actions = host.locator('#node-actions');
+    test('puts the breadcrumbs left and the actions right, in one row', async ({
+      page,
+    }) => {
+      const host = await mount(page, { scopes: ALL });
+      const crumbs = host.locator('slds-breadcrumbs');
+      const actions = host.locator('#node-actions');
 
-        await expect(crumbs).toHaveAttribute('slot', 'header');
-        await expect(actions).toHaveAttribute('slot', 'actions');
+      await expect(crumbs).toHaveAttribute('slot', 'header');
+      await expect(actions).toHaveAttribute('slot', 'actions');
 
-        const [crumbsBox, actionsBox, titleBox] = await Promise.all([
-          box(crumbs),
-          box(actions),
-          box(host.locator('#node-title')),
-        ]);
-        expect(crumbsBox.right).toBeLessThanOrEqual(actionsBox.left);
-        // One row: each overlaps the other vertically.
-        expect(crumbsBox.top).toBeLessThan(actionsBox.bottom);
-        expect(actionsBox.top).toBeLessThan(crumbsBox.bottom);
-        // The name with its arrows below.
-        expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
-      }
-    );
+      // The links, not the host: that is a block across the whole left side.
+      const [crumbsBox, actionsBox, titleBox] = await Promise.all([
+        box(crumbs.locator('a').last()),
+        box(actions),
+        box(host.locator('#node-title')),
+      ]);
+      expect(crumbsBox.right).toBeLessThanOrEqual(actionsBox.left);
+      // One row: each overlaps the other vertically.
+      expect(crumbsBox.top).toBeLessThan(actionsBox.bottom);
+      expect(actionsBox.top).toBeLessThan(crumbsBox.bottom);
+      // The name with its arrows below.
+      expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
+    });
 
-    test.fail(
-      'keeps the actions in the header of a root, without breadcrumbs',
-      async ({ page }) => {
-        const host = await mount(page, { path: [], scopes: ALL });
-        const actions = host.locator('#node-actions');
+    test('keeps the actions in the header of a root, without breadcrumbs', async ({
+      page,
+    }) => {
+      const host = await mount(page, { path: [], scopes: ALL });
+      const actions = host.locator('#node-actions');
 
-        await expect(host.locator('slds-breadcrumbs')).toHaveCount(0);
-        await expect(actions).toHaveAttribute('slot', 'actions');
-        const [actionsBox, titleBox] = await Promise.all([
-          box(actions),
-          box(host.locator('#node-title')),
-        ]);
-        expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
-      }
-    );
+      await expect(host.locator('slds-breadcrumbs')).toHaveCount(0);
+      await expect(actions).toHaveAttribute('slot', 'actions');
+      const [actionsBox, titleBox] = await Promise.all([
+        box(actions),
+        box(host.locator('#node-title')),
+      ]);
+      expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
+    });
 
-    test.fail('shows a visitor only share in the header', async ({ page }) => {
+    test('shows a visitor only share in the header', async ({ page }) => {
       const host = await mount(page);
       const actions = host.locator('#node-actions');
 
