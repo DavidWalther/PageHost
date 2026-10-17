@@ -83,6 +83,7 @@ class Bookstore extends LitElement {
 
   render() {
     return html`
+      <div style="position:sticky; top: 0; z-index:1">
       <slds-card no-footer no-header>
         <slds-layout wrap>
           <slds-layout-item align-middle size="3-of-12">
@@ -127,6 +128,7 @@ class Bookstore extends LitElement {
           </slds-layout-item>
         </slds-layout>
       </slds-card>
+      </div>
       <custom-settings-modal>
         <slds-layout wrap vertical>
           <slds-layout-item size="1-of-1">
