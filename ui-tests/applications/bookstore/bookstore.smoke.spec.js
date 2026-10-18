@@ -18,6 +18,20 @@ test.describe('Bookstore smoke', () => {
     await cacheLitBundle(page);
   });
 
+  test.fail('keeps the header at the top while scrolling', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('app-bookstore')).toBeAttached();
+
+    // The wrapper around the header card; its styling sits in the styles of
+    // the application, not inline.
+    const header = page.locator('app-bookstore .header-sticky');
+    await expect(header).toHaveCount(1);
+    await expect(header).not.toHaveAttribute('style', /.*/);
+    await expect(header).toHaveCSS('position', 'sticky');
+    await expect(header).toHaveCSS('top', '0px');
+    await expect(header).toHaveCSS('z-index', '1');
+  });
+
   test('App lädt und rendert die Grundstruktur', async ({ page }) => {
     await page.goto('/');
 
