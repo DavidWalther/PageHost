@@ -16,27 +16,13 @@
 
 const { mockBookstoreCallouts } = require('./mock-callouts');
 const { cacheLitBundle } = require('./component-page');
+const { withSession } = require('./session');
 
 /** Deep-Link auf den Knoten, der im Mock Inhalte trägt (alte Id, wie im Feld). */
 const CHAPTER_URL = '/000c00000000000001';
 
 /** Der eine Inhalt, den `MOCK_NODES.kind1` hält. */
 const CONTENT_ID = '00cn00000000000001';
-
-/**
- * Attrappen-JWT mit ferner Ablaufzeit: `authenticatedFetch` versucht dann keinen
- * Refresh. Geprüft wird das Token clientseitig ohnehin nicht.
- */
-function fakeJwt() {
-  const encode = (value) =>
-    Buffer.from(JSON.stringify(value))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
-  return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
-}
 
 /**
  * Bootet die App auf dem Kapitel-Knoten.
@@ -49,19 +35,7 @@ async function openBookstore(page, { scopes = [] } = {}) {
   await cacheLitBundle(page);
 
   if (scopes.length > 0) {
-    await page.addInitScript(
-      ([token, grantedScopes]) => {
-        sessionStorage.setItem(
-          'code_exchange_response',
-          JSON.stringify({
-            authenticationResult: {
-              access: { access_token: token, scopes: grantedScopes },
-            },
-          })
-        );
-      },
-      [fakeJwt(), scopes]
-    );
+    await withSession(page, scopes);
   }
 
   await page.goto(CHAPTER_URL);
@@ -77,7 +51,7 @@ function paragraph(page, id = CONTENT_ID) {
  * Ersetzt die Antwort des `content`-Endpunkts für **diesen** Test.
  *
  * Muss sein: Die gemeinsame Fixture liefert genau einen Inhalt in der Fassung
- * `html`, und sie lässt sich nicht erweitern — `custom-node.smoke.spec.js` prüft
+ * `html`, und sie lässt sich nicht erweitern — `deep-link-routing.spec.js` prüft
  * die Inhalts-Ids des Knotens exakt. Ein zweiter Inhalt dort bräche diesen Spec.
  */
 async function respondWithContent(page, record) {
@@ -189,7 +163,6 @@ function editor(paragraphLocator) {
 module.exports = {
   CHAPTER_URL,
   CONTENT_ID,
-  fakeJwt,
   openBookstore,
   paragraph,
   respondWithContent,

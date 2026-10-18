@@ -12,12 +12,16 @@ jest.mock('../../../modules/logging');
 
 const { PostgresActions } = require('../../DataStorage/pgConnector.js');
 const { NodeContentRepository } = require('../NodeContentRepository.js');
+const { NodeMoveRejected } = require('../../../modules/NodeMoveRule.js');
 
 const APPLICATION_KEY = 'schreibApp';
 
 /** Ausgeführte Statements: `{ sql, parameters }` in Reihenfolge. */
 let executed;
-/** Antworten je Statement-Muster; erste Übereinstimmung gewinnt. */
+/**
+ * Antworten je Statement-Muster; erste Übereinstimmung gewinnt. Eine Antwort
+ * darf eine Funktion der gebundenen Werte sein.
+ */
 let responses;
 /** Wurde die Transaktion angefordert? */
 let transactionUsed;
@@ -54,7 +58,12 @@ beforeEach(() => {
       return callback(async (sql, parameters = []) => {
         executed.push({ sql, parameters });
         const match = responses.find((entry) => sql.includes(entry.pattern));
-        return match ? match.rows : [];
+        if (!match) {
+          return [];
+        }
+        return typeof match.rows === 'function'
+          ? match.rows(parameters)
+          : match.rows;
       });
     }),
     executeParameterizedSql: jest.fn(async () => []),
@@ -544,5 +553,307 @@ describe('Schreibpfad unter den Namen node und content', () => {
         positionOf('DELETE FROM content_node')
       );
     });
+  });
+});
+
+/**
+ * Moving: an update whose `parent_node_id` differs from the stored one.
+ *
+ * The tree behind the answers:
+ *
+ *   n-a            n-b            n-feed
+ *   └─ n-a1                       └─ n-f1
+ *      └─ n-a1x
+ */
+describe('updateRecord: moving a node', () => {
+  const PARENTS = {
+    'n-a': null,
+    'n-a1': 'n-a',
+    'n-a1x': 'n-a1',
+    'n-b': null,
+    'n-feed': null,
+    'n-f1': 'n-feed',
+  };
+  const LEGACY_IDS = { 'n-a1': '000c1', 'n-a': '000s1' };
+
+  const chainOf = (id) => {
+    const chain = [];
+    for (let current = id; current; current = PARENTS[current]) {
+      chain.push({ id: current });
+    }
+    return chain;
+  };
+
+  beforeEach(() => {
+    respondWith('RECURSIVE ancestors', ([id]) => chainOf(id));
+    respondWith('SELECT parent_node_id FROM node WHERE id = $1', ([id]) => [
+      { parent_node_id: PARENTS[id] },
+    ]);
+    respondWith('SELECT id, legacy_id FROM node WHERE id = ANY($1)', ([ids]) =>
+      ids.map((id) => ({ id, legacy_id: LEGACY_IDS[id] ?? null }))
+    );
+    respondWith('SELECT id FROM node WHERE', ([id]) =>
+      id in PARENTS ? [{ id }] : []
+    );
+    respondWith('UPDATE node SET', [{ id: 'n-a1' }]);
+  });
+
+  const move = (id, parentId, repository = createRepository()) =>
+    repository.updateRecord('node', {
+      id,
+      parent_node_id: parentId,
+      sortnumber: null,
+    });
+
+  it('reads no chain when no parent is sent', async () => {
+    await createRepository().updateRecord('node', { id: 'n-a1', name: 'Neu' });
+
+    expect(statementsMatching('SELECT parent_node_id')).toHaveLength(0);
+    expect(statementsMatching('RECURSIVE ancestors')).toHaveLength(0);
+  });
+
+  it('reads no chain when the parent stays the same', async () => {
+    await move('n-a1', 'n-a');
+
+    expect(statementsMatching('RECURSIVE ancestors')).toHaveLength(0);
+  });
+
+  it('reads the chains of the node and of the new parent', async () => {
+    await move('n-a1', 'n-b');
+
+    expect(
+      statementsMatching('RECURSIVE ancestors').map((entry) => entry.parameters)
+    ).toEqual([['n-a1'], ['n-b']]);
+  });
+
+  it('writes the new parent and the empty sortnumber', async () => {
+    await move('n-a1', 'n-b');
+
+    const [update] = statementsMatching('UPDATE node SET');
+    expect(update.sql).toContain('parent_node_id = $1');
+    expect(update.sql).toContain('sortnumber = $2');
+    expect(update.parameters).toEqual(['n-b', null, 'n-a1']);
+  });
+
+  it('rejects a move below the node itself and writes nothing', async () => {
+    await expect(move('n-a', 'n-a1x')).rejects.toThrow(NodeMoveRejected);
+
+    expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
+  });
+
+  it('rejects a move into the feeds once the feed root is known', async () => {
+    const repository = createRepository().setFeedRootId('n-feed');
+
+    await expect(move('n-a1', 'n-f1', repository)).rejects.toThrow(
+      NodeMoveRejected
+    );
+    expect(statementsMatching('UPDATE node SET')).toHaveLength(0);
+  });
+
+  it('rejects moving a feed once the feed root is known', async () => {
+    const repository = createRepository().setFeedRootId('n-feed');
+
+    await expect(move('n-f1', 'n-a', repository)).rejects.toThrow(
+      NodeMoveRejected
+    );
+  });
+
+  it('adds an include row for the own app when the node becomes a root', async () => {
+    await move('n-a1', null);
+
+    const [include] = statementsMatching('INSERT INTO app_node');
+    expect(include.parameters).toEqual(['n-a1', APPLICATION_KEY]);
+    expect(positionOf('UPDATE node SET')).toBeLessThan(
+      positionOf('INSERT INTO app_node')
+    );
+  });
+
+  it('adds no include row when the node moves below another node', async () => {
+    await move('n-a1', 'n-b');
+
+    expect(statementsMatching('INSERT INTO app_node')).toHaveLength(0);
+  });
+
+  it('names the node and both parents as touched, with both ids', async () => {
+    const repository = createRepository();
+    await move('n-a1', 'n-b', repository);
+
+    // A set, not a sequence: Postgres returns `ANY` matches in its own order.
+    expect(repository.getTouchedNodes()).toHaveLength(3);
+    expect(repository.getTouchedNodes()).toEqual(
+      expect.arrayContaining([
+        { id: 'n-a1', legacy_id: '000c1' },
+        { id: 'n-a', legacy_id: '000s1' },
+        { id: 'n-b', legacy_id: null },
+      ])
+    );
+  });
+
+  it('names only the node and its old parent when it becomes a root', async () => {
+    const repository = createRepository();
+    await move('n-a1', null, repository);
+
+    expect(
+      repository
+        .getTouchedNodes()
+        .map((node) => node.id)
+        .sort()
+    ).toEqual(['n-a', 'n-a1']);
+  });
+
+  // Not moved, still changed: the node's own entry, and its parent's, which
+  // lists it among its children.
+  it('names the node and its parent when nothing moved', async () => {
+    responses.unshift({
+      pattern: 'UPDATE node SET',
+      rows: [{ id: 'n-a1', parent_node_id: 'n-a' }],
+    });
+    const repository = createRepository();
+    await move('n-a1', 'n-a', repository);
+
+    expect(
+      repository
+        .getTouchedNodes()
+        .map((node) => node.id)
+        .sort()
+    ).toEqual(['n-a', 'n-a1']);
+  });
+});
+
+/**
+ * A cached node carries its children and its contents. Creating or deleting
+ * one changes the entry of the node it hangs on, so the repository names that
+ * node for the facade to clear — as after a move.
+ */
+describe('touched nodes after creating and deleting', () => {
+  const LEGACY_IDS = { 'n-parent': '000s1', 'n-holder': '000c1' };
+
+  beforeEach(() => {
+    respondWith('SELECT id, legacy_id FROM node WHERE id = ANY($1)', ([ids]) =>
+      ids.map((id) => ({ id, legacy_id: LEGACY_IDS[id] ?? null }))
+    );
+  });
+
+  it('names the parent of a created child', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-parent' }]);
+    respondWith('INSERT INTO node', [{ id: 'n-new' }]);
+    const repository = createRepository();
+
+    await repository.createRecord('node', {
+      name: 'Neu',
+      parent_node_id: 'n-parent',
+    });
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-parent', legacy_id: '000s1' },
+    ]);
+  });
+
+  it('names nothing for a created root', async () => {
+    respondWith('INSERT INTO node', [{ id: 'n-new' }]);
+    const repository = createRepository();
+
+    await repository.createRecord('node', { name: 'Neu' });
+
+    expect(repository.getTouchedNodes()).toEqual([]);
+  });
+
+  it('names the node a created content hangs on', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-holder' }]);
+    respondWith('INSERT INTO content_node', [{ id: 'cn-new' }]);
+    const repository = createRepository();
+
+    await repository.createRecord('content', {
+      name: 'Absatz',
+      node_id: 'n-holder',
+      content: 'Text',
+    });
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-holder', legacy_id: '000c1' },
+    ]);
+  });
+
+  it('names the parent of a deleted node, read before the delete', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-gone' }]);
+    respondWith('SELECT parent_node_id FROM node WHERE id = $1', [
+      { parent_node_id: 'n-parent' },
+    ]);
+    respondWith('WITH RECURSIVE', [{ id: 'n-gone' }]);
+    const repository = createRepository();
+
+    await repository.deleteRecord('node', 'n-gone');
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-parent', legacy_id: '000s1' },
+    ]);
+    expect(positionOf('SELECT parent_node_id')).toBeLessThan(
+      positionOf('DELETE FROM node')
+    );
+  });
+
+  it('names the node of a deleted content', async () => {
+    respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-gone' }]);
+    respondWith('SELECT id, legacy_id, node_id FROM content_node', [
+      { id: 'cn-gone', legacy_id: null, node_id: 'n-holder' },
+    ]);
+    const repository = createRepository();
+
+    await repository.deleteRecord('content', 'cn-gone');
+
+    expect(repository.getTouchedNodes()).toEqual([
+      { id: 'n-holder', legacy_id: '000c1' },
+    ]);
+  });
+});
+
+describe('touched nodes after an update', () => {
+  beforeEach(() => {
+    respondWith('SELECT id, legacy_id FROM node WHERE id = ANY($1)', ([ids]) =>
+      ids.map((id) => ({ id, legacy_id: null }))
+    );
+  });
+
+  it('names a renamed node and its parent', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-child' }]);
+    respondWith('UPDATE node SET', [
+      { id: 'n-child', parent_node_id: 'n-parent' },
+    ]);
+    const repository = createRepository();
+
+    await repository.updateRecord('node', { id: 'n-child', name: 'Neu' });
+
+    expect(
+      repository
+        .getTouchedNodes()
+        .map((node) => node.id)
+        .sort()
+    ).toEqual(['n-child', 'n-parent']);
+  });
+
+  it('names only a renamed root', async () => {
+    respondWith('SELECT id FROM node WHERE', [{ id: 'n-root' }]);
+    respondWith('UPDATE node SET', [{ id: 'n-root', parent_node_id: null }]);
+    const repository = createRepository();
+
+    await repository.updateRecord('node', { id: 'n-root', name: 'Neu' });
+
+    expect(repository.getTouchedNodes().map((node) => node.id)).toEqual([
+      'n-root',
+    ]);
+  });
+
+  it('names the node of an updated content', async () => {
+    respondWith('SELECT id FROM content_node WHERE', [{ id: 'cn-1' }]);
+    respondWith('UPDATE content_node SET', [
+      { id: 'cn-1', node_id: 'n-holder' },
+    ]);
+    const repository = createRepository();
+
+    await repository.updateRecord('content', { id: 'cn-1', name: 'Neu' });
+
+    expect(repository.getTouchedNodes().map((node) => node.id)).toEqual([
+      'n-holder',
+    ]);
   });
 });

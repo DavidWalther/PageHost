@@ -104,4 +104,139 @@ test.describe('content-tree module', () => {
       expect(node).toBeNull();
     });
   });
+
+  test.describe('descendantIds', () => {
+    test('returns every descendant in any depth', async ({ page }) => {
+      const found = await inPage(page, (m, tree) =>
+        m.descendantIds(tree, 'root-1')
+      );
+
+      expect([...found].sort()).toEqual(
+        ['level-2', 'level-2-b', 'level-3', 'level-4'].sort()
+      );
+    });
+
+    test('does not count the node itself', async ({ page }) => {
+      const found = await inPage(page, (m, tree) =>
+        m.descendantIds(tree, 'level-3')
+      );
+
+      expect(found).toEqual(['level-4']);
+    });
+
+    test('returns no ids for a leaf or an unknown id', async ({ page }) => {
+      const found = await inPage(page, (m, tree) => [
+        m.descendantIds(tree, 'level-4'),
+        m.descendantIds(tree, 'nope'),
+        m.descendantIds(undefined, 'root-1'),
+      ]);
+
+      expect(found).toEqual([[], [], []]);
+    });
+  });
+
+  test.describe('withoutNodes', () => {
+    const allIds = (nodes) =>
+      nodes.flatMap((node) => [node.id, ...allIds(node.childnodes || [])]);
+
+    test('leaves out a node together with everything below it', async ({
+      page,
+    }) => {
+      const tree = await inPage(page, (m, tree) =>
+        m.withoutNodes(tree, ['level-2'])
+      );
+
+      expect(allIds(tree)).toEqual(['root-1', 'level-2-b', 'root-2']);
+    });
+
+    test('leaves out a root', async ({ page }) => {
+      const tree = await inPage(page, (m, tree) =>
+        m.withoutNodes(tree, ['root-1'])
+      );
+
+      expect(allIds(tree)).toEqual(['root-2']);
+    });
+
+    test('leaves out several nodes on different levels', async ({ page }) => {
+      const tree = await inPage(page, (m, tree) =>
+        m.withoutNodes(tree, ['level-3', 'root-2'])
+      );
+
+      expect(allIds(tree)).toEqual(['root-1', 'level-2', 'level-2-b']);
+    });
+
+    test('returns the tree as it is without ids', async ({ page }) => {
+      const result = await inPage(page, (m, tree) => ({
+        none: m.withoutNodes(tree, []),
+        missing: m.withoutNodes(tree),
+        unknown: m.withoutNodes(tree, ['nope']),
+      }));
+
+      expect(allIds(result.none)).toEqual(allIds(result.missing));
+      expect(allIds(result.unknown)).toEqual(allIds(result.none));
+      expect(allIds(result.none)).toHaveLength(6);
+    });
+
+    test('does not change the tree it is given', async ({ page }) => {
+      const untouched = await inPage(page, (m, tree) => {
+        m.withoutNodes(tree, ['level-3']);
+        return tree[0].childnodes[0].childnodes.length;
+      });
+
+      expect(untouched).toBe(1);
+    });
+  });
+
+  test.describe('findSiblings', () => {
+    const pair = (siblings) => [
+      siblings.previous?.id ?? null,
+      siblings.next?.id ?? null,
+    ];
+
+    test('returns the neighbours in tree order', async ({ page }) => {
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'level-2')
+      );
+
+      expect(pair(result)).toEqual([null, 'level-2-b']);
+    });
+
+    test('has no next on the last sibling', async ({ page }) => {
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'level-2-b')
+      );
+
+      expect(pair(result)).toEqual(['level-2', null]);
+    });
+
+    test('has neither for an only child', async ({ page }) => {
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'level-4')
+      );
+
+      expect(pair(result)).toEqual([null, null]);
+    });
+
+    test('treats the roots as siblings of each other', async ({ page }) => {
+      const result = await inPage(page, (m, tree) =>
+        m.findSiblings(tree, 'root-2')
+      );
+
+      expect(pair(result)).toEqual(['root-1', null]);
+    });
+
+    test('has neither for an unknown id or a missing tree', async ({
+      page,
+    }) => {
+      const results = await inPage(page, (m, tree) => [
+        m.findSiblings(tree, 'nope'),
+        m.findSiblings(undefined, 'root-1'),
+      ]);
+
+      expect(results.map(pair)).toEqual([
+        [null, null],
+        [null, null],
+      ]);
+    });
+  });
 });

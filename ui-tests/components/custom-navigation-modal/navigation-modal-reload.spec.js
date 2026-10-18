@@ -13,8 +13,8 @@ const { cacheLitBundle } = require('../../support/component-page');
  * a node. The app listens for the events the editing components already send
  * and asks the modal to reload.
  *
- * The events are dispatched on the navigation node, the way the editing
- * components inside it send them (bubbling, composed). The contents callout
+ * The events are dispatched on the node view, the way the editing components
+ * inside it send them (bubbling, composed). The contents callout
  * answers with a changed tree from the second call on.
  */
 
@@ -40,13 +40,13 @@ async function open(page) {
   await expect.poll(() => contentsCalls).toBe(1);
 }
 
-/** Dispatches `name` from the navigation node, like an editing component. */
-function dispatchFromNavigationNode(page, name, detail) {
+/** Dispatches `name` from the node view, like an editing component. */
+function dispatchFromNodeView(page, name, detail) {
   return page.evaluate(
     ({ eventName, eventDetail }) => {
       const node = document
         .querySelector('app-bookstore')
-        .shadowRoot.querySelector('custom-node[data-role="navigation"]');
+        .shadowRoot.querySelector('custom-node-view');
       node.dispatchEvent(
         new CustomEvent(eventName, {
           detail: eventDetail,
@@ -60,7 +60,9 @@ function dispatchFromNavigationNode(page, name, detail) {
 }
 
 const tile = (page, text) =>
-  page.locator('custom-navigation-modal button.tile', { hasText: text });
+  page
+    .locator('custom-navigation-modal button.tile')
+    .filter({ has: page.locator('.tile__name', { hasText: text }) });
 const openModal = (page) => page.locator('#button-navigation_open').click();
 
 test.describe('Navigation modal reload', () => {
@@ -79,7 +81,7 @@ test.describe('Navigation modal reload', () => {
     test(`shows the new tree after ${name}`, async ({ page }) => {
       await open(page);
 
-      await dispatchFromNavigationNode(page, name, detail);
+      await dispatchFromNodeView(page, name, detail);
       await openModal(page);
 
       await expect(tile(page, 'Mock Story 1 (changed)')).toBeVisible();
@@ -89,13 +91,15 @@ test.describe('Navigation modal reload', () => {
   test('does not reload when a content was published', async ({ page }) => {
     await open(page);
 
-    await dispatchFromNavigationNode(page, 'published', {
+    await dispatchFromNodeView(page, 'published', {
       recordId: '00cn00000000000001',
       objectName: 'content',
     });
     await openModal(page);
 
-    await expect(tile(page, 'Mock Story 1')).toHaveText('Mock Story 1');
+    await expect(tile(page, 'Mock Story 1').locator('.tile__name')).toHaveText(
+      'Mock Story 1'
+    );
     expect(contentsCalls).toBe(1);
   });
 
@@ -107,7 +111,7 @@ test.describe('Navigation modal reload', () => {
     await tile(page, 'Mock Story 1').click();
     await expect(tile(page, 'Mock Chapter 2 for Story 1')).toBeVisible();
 
-    await dispatchFromNavigationNode(page, 'chapter-created', {
+    await dispatchFromNodeView(page, 'chapter-created', {
       chapterData: { id: '000n00000000000099' },
     });
 
@@ -129,13 +133,13 @@ test.describe('Navigation modal reload', () => {
     await tile(page, 'Mock Story 1').click();
     await expect(tile(page, 'Mock Chapter 2 for Story 1')).toBeVisible();
 
-    await dispatchFromNavigationNode(page, 'node-deleted', {
+    await dispatchFromNodeView(page, 'node-deleted', {
       nodeId: '000n00000000000011',
     });
 
     await expect(tile(page, 'Mock Story 2')).toBeVisible();
     await expect(
-      page.locator('custom-navigation-modal .back-button')
+      page.locator('custom-navigation-modal #button-back')
     ).toHaveCount(0);
   });
 });

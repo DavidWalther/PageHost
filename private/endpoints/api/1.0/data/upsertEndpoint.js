@@ -1,6 +1,7 @@
 const { EndpointLogic } = require('../../../EndpointLogic.js');
 const { Logging } = require('../../../../modules/logging.js');
 const { DataFacade } = require('../../../../database2/DataFacade.js');
+const { NodeMoveRejected } = require('../../../../modules/NodeMoveRule.js');
 
 class UpsertEndpoint extends EndpointLogic {
   async execute() {
@@ -136,13 +137,16 @@ class UpsertEndpoint extends EndpointLogic {
         location: LOCATION,
       });
     } catch (error) {
+      // A rejected move is a request the client may not make, not a fault of
+      // the server.
+      const status = error instanceof NodeMoveRejected ? 400 : 500;
       Logging.debugMessage({
-        severity: 'ERROR',
+        severity: status === 400 ? 'INFO' : 'ERROR',
         message: `Upsert operation failed: ${error.message}`,
         location: LOCATION,
       });
       this.responseObject
-        .status(500)
+        .status(status)
         .json({ success: false, error: error.message });
     }
   }

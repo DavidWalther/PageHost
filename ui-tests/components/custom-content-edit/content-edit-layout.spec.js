@@ -21,9 +21,7 @@ const {
 function geometry(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
-    const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
-    );
+    const node = app.shadowRoot.querySelector('custom-node-contents');
     const editor = node.shadowRoot
       .querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit');
@@ -51,9 +49,7 @@ function geometry(page) {
 function wrapState(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
-    const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
-    );
+    const node = app.shadowRoot.querySelector('custom-node-contents');
     const field = node.shadowRoot
       .querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit')
@@ -71,9 +67,7 @@ function wrapState(page) {
 function toggleWrap(page) {
   return page.evaluate(() => {
     const app = document.querySelector('app-bookstore');
-    const node = app.shadowRoot.querySelector(
-      'custom-node[data-role="content"]'
-    );
+    const node = app.shadowRoot.querySelector('custom-node-contents');
     node.shadowRoot
       .querySelector('custom-paragraph')
       .shadowRoot.querySelector('custom-content-edit')
@@ -201,9 +195,7 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
   function stacking(page) {
     return page.evaluate(() => {
       const app = document.querySelector('app-bookstore');
-      const node = app.shadowRoot.querySelector(
-        'custom-node[data-role="content"]'
-      );
+      const node = app.shadowRoot.querySelector('custom-node-contents');
       const root = node.shadowRoot
         .querySelector('custom-paragraph')
         .shadowRoot.querySelector('custom-content-edit').shadowRoot;
@@ -252,9 +244,7 @@ test.describe('custom-content-edit: gedrehter Schirm', () => {
       // Und unten angekommen ist die Entwurfs-Leiste wirklich zu sehen.
       await page.evaluate(() => {
         const app = document.querySelector('app-bookstore');
-        const node = app.shadowRoot.querySelector(
-          'custom-node[data-role="content"]'
-        );
+        const node = app.shadowRoot.querySelector('custom-node-contents');
         const scroller = node.shadowRoot
           .querySelector('custom-paragraph')
           .shadowRoot.querySelector('custom-content-edit')

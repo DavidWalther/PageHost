@@ -292,7 +292,9 @@ describe('updateData', () => {
     expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 
-  it('should call DataStorage.updateData and DataCache.set on success', async () => {
+  // The write once put the payload into the cache under the bare id — a key
+  // nothing reads. No update writes the cache any more.
+  it('should call DataStorage.updateData and write nothing into the cache', async () => {
     const validData = {
       object: 'configuration',
       payload: { id: '1234', key: 'testKey', value: 'testValue' },
@@ -308,7 +310,7 @@ describe('updateData', () => {
       'configuration',
       validData.payload
     );
-    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+    expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 
   it('should throw an error if DataStorage.updateData fails', async () => {
@@ -352,7 +354,7 @@ describe('updateData', () => {
     expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 
-  it('should write to cache when skipCache is false', async () => {
+  it('should not write to cache when skipCache is false either', async () => {
     const validData = {
       object: 'configuration',
       payload: { id: '1234', key: 'testKey', value: 'testValue' },
@@ -369,7 +371,7 @@ describe('updateData', () => {
       'configuration',
       validData.payload
     );
-    expect(mockDataCache.set).toHaveBeenCalledWith('1234', validData.payload);
+    expect(mockDataCache.set).not.toHaveBeenCalled();
   });
 });
 
@@ -590,6 +592,7 @@ describe('clearing the cached contents tree after a write', () => {
     });
     jest.spyOn(facade, 'createContentRepository').mockReturnValue({
       updateRecord: jest.fn().mockResolvedValue({ id: 'n-1' }),
+      getTouchedNodes: jest.fn().mockReturnValue([]),
       createRecord: jest.fn().mockResolvedValue({ id: 'n-2' }),
     });
   });
@@ -626,5 +629,230 @@ describe('clearing the cached contents tree after a write', () => {
     await expect(
       facade.updateData({ object: 'node', payload: { id: 'n-1' } })
     ).resolves.toEqual({ id: 'n-1' });
+  });
+});
+
+describe('moving a node', () => {
+  let facade;
+  let cacheDelMany;
+  let repository;
+
+  beforeEach(() => {
+    cacheDelMany = jest.fn();
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'createCache').mockReturnValue({
+      del: jest.fn(),
+      delMany: cacheDelMany,
+      set: jest.fn(),
+    });
+    jest
+      .spyOn(facade, 'getConfigurations')
+      .mockResolvedValue({ feedRootNodeId: 'n-feed' });
+    repository = {
+      setFeedRootId: jest.fn(() => repository),
+      updateRecord: jest.fn().mockResolvedValue({ id: 'n-1' }),
+      getTouchedNodes: jest.fn().mockReturnValue([
+        { id: 'n-1', legacy_id: '000c1' },
+        { id: 'n-old', legacy_id: null },
+        { id: 'n-new', legacy_id: '000s2' },
+      ]),
+    };
+    jest.spyOn(facade, 'createContentRepository').mockReturnValue(repository);
+  });
+
+  const move = () =>
+    facade.updateData({
+      object: 'node',
+      payload: { id: 'n-1', parent_node_id: 'n-new', sortnumber: null },
+    });
+
+  it('names the configured feed root to the repository', async () => {
+    await move();
+
+    expect(repository.setFeedRootId).toHaveBeenCalledWith('n-feed');
+    expect(repository.setFeedRootId.mock.invocationCallOrder[0]).toBeLessThan(
+      repository.updateRecord.mock.invocationCallOrder[0]
+    );
+  });
+
+  it('reads no configuration when the update sends no parent', async () => {
+    repository.getTouchedNodes.mockReturnValue([]);
+
+    await facade.updateData({
+      object: 'node',
+      payload: { id: 'n-1', name: 'Neu' },
+    });
+
+    expect(facade.getConfigurations).not.toHaveBeenCalled();
+    expect(repository.setFeedRootId).not.toHaveBeenCalled();
+  });
+
+  it('clears the touched nodes from the cache, by both ids', async () => {
+    await move();
+
+    expect(cacheDelMany).toHaveBeenCalledTimes(1);
+    expect(cacheDelMany.mock.calls[0][0].sort()).toEqual(
+      [
+        'node:000c1',
+        'node:000s2',
+        'node:n-1',
+        'node:n-new',
+        'node:n-old',
+      ].sort()
+    );
+  });
+
+  it('clears them even when the write skips the cache', async () => {
+    facade.setSkipCache(true);
+
+    await move();
+
+    expect(cacheDelMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears no node entries when nothing moved', async () => {
+    repository.getTouchedNodes.mockReturnValue([]);
+
+    await move();
+
+    expect(cacheDelMany).not.toHaveBeenCalled();
+  });
+
+  it('still answers the move when the cache cannot be reached', async () => {
+    cacheDelMany.mockRejectedValue(new Error('redis down'));
+
+    await expect(move()).resolves.toEqual({ id: 'n-1' });
+  });
+
+  it('lets a rejected move through to the caller', async () => {
+    const rejection = new Error('A node cannot be moved below itself');
+    repository.updateRecord.mockRejectedValue(rejection);
+
+    await expect(move()).rejects.toBe(rejection);
+    expect(cacheDelMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('clearing the node a create or delete changed', () => {
+  let facade;
+  let cacheDelMany;
+  let repository;
+
+  beforeEach(() => {
+    cacheDelMany = jest.fn();
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'createCache').mockReturnValue({
+      del: jest.fn(),
+      delMany: cacheDelMany,
+      set: jest.fn(),
+    });
+    repository = {
+      createRecord: jest.fn().mockResolvedValue({ id: 'n-new' }),
+      deleteRecord: jest.fn().mockResolvedValue({ nodes: [], contents: [] }),
+      getTouchedNodes: jest
+        .fn()
+        .mockReturnValue([{ id: 'n-parent', legacy_id: '000s1' }]),
+    };
+    jest.spyOn(facade, 'createContentRepository').mockReturnValue(repository);
+  });
+
+  const allClearedKeys = () =>
+    cacheDelMany.mock.calls.flatMap(([keys]) => keys);
+
+  it('clears the parent of a created node, by both ids', async () => {
+    await facade.createData({
+      object: 'node',
+      payload: { name: 'Neu', parent_node_id: 'n-parent' },
+    });
+
+    expect(allClearedKeys()).toEqual(
+      expect.arrayContaining(['node:n-parent', 'node:000s1'])
+    );
+  });
+
+  it('clears the node of a created content', async () => {
+    await facade.createData({
+      object: 'content',
+      payload: { node_id: 'n-parent' },
+    });
+
+    expect(allClearedKeys()).toEqual(expect.arrayContaining(['node:n-parent']));
+  });
+
+  it('clears the parent of a deleted node', async () => {
+    await facade.deleteData({ object: 'node', id: 'n-gone' });
+
+    expect(allClearedKeys()).toEqual(
+      expect.arrayContaining(['node:n-parent', 'node:000s1'])
+    );
+  });
+
+  it('still answers a create when the cache cannot be reached', async () => {
+    cacheDelMany.mockRejectedValue(new Error('redis down'));
+
+    await expect(
+      facade.createData({ object: 'node', payload: { name: 'Neu' } })
+    ).resolves.toEqual({ id: 'n-new' });
+  });
+});
+
+describe('clearing what an update leaves stale', () => {
+  let facade;
+  let cacheDelMany;
+  let repository;
+
+  beforeEach(() => {
+    cacheDelMany = jest.fn();
+    facade = new DataFacadeSync(MOCK_ENVIRONMENT);
+    jest.spyOn(facade, 'createCache').mockReturnValue({
+      del: jest.fn(),
+      delMany: cacheDelMany,
+      set: jest.fn(),
+    });
+    repository = {
+      updateRecord: jest
+        .fn()
+        .mockResolvedValue({ id: 'cn-1', legacy_id: '000p1', node_id: 'n-1' }),
+      getTouchedNodes: jest
+        .fn()
+        .mockReturnValue([{ id: 'n-1', legacy_id: null }]),
+    };
+    jest.spyOn(facade, 'createContentRepository').mockReturnValue(repository);
+  });
+
+  const allClearedKeys = () =>
+    cacheDelMany.mock.calls.flatMap(([keys]) => keys);
+
+  it('clears an updated content under every id it may be cached by', async () => {
+    await facade.updateData({ object: 'content', payload: { id: '000p1' } });
+
+    expect(allClearedKeys()).toEqual(
+      expect.arrayContaining(['content:cn-1', 'content:000p1'])
+    );
+  });
+
+  it('clears the node of an updated content', async () => {
+    await facade.updateData({ object: 'content', payload: { id: 'cn-1' } });
+
+    expect(allClearedKeys()).toEqual(expect.arrayContaining(['node:n-1']));
+  });
+
+  it('clears an updated node through the touched nodes', async () => {
+    repository.updateRecord.mockResolvedValue({ id: 'n-1' });
+
+    await facade.updateData({ object: 'node', payload: { id: 'n-1' } });
+
+    expect(allClearedKeys()).toEqual(expect.arrayContaining(['node:n-1']));
+    expect(allClearedKeys().some((key) => key.startsWith('content:'))).toBe(
+      false
+    );
+  });
+
+  it('still answers the update when the cache cannot be reached', async () => {
+    cacheDelMany.mockRejectedValue(new Error('redis down'));
+
+    await expect(
+      facade.updateData({ object: 'content', payload: { id: 'cn-1' } })
+    ).resolves.toEqual({ id: 'cn-1', legacy_id: '000p1', node_id: 'n-1' });
   });
 });

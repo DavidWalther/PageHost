@@ -2,6 +2,7 @@ const { ContentRepository } = require('./ContentRepository.js');
 const { PostgresActions } = require('../DataStorage/pgConnector.js');
 const { NodeVisibility } = require('../../modules/NodeVisibility.js');
 const { NodeWriteMapping } = require('../../modules/NodeWriteMapping.js');
+const { NodeMoveRule } = require('../../modules/NodeMoveRule.js');
 const { Logging } = require('../../modules/logging.js');
 
 /**
@@ -343,6 +344,8 @@ class NodeContentRepository extends ContentRepository {
       await this.addAppInclude(run, node.id);
     }
 
+    // The parent's cached entry lists its children.
+    await this.touch(run, [withDefaults.parent_node_id]);
     return this.outwardRecord(object, node);
   }
 
@@ -363,6 +366,8 @@ class NodeContentRepository extends ContentRepository {
     );
 
     await this.writeContentItems(run, contentNode.id, payload);
+    // The node's cached entry lists its contents.
+    await this.touch(run, [columns.node_id]);
     return this.outwardRecord(object, contentNode);
   }
 
@@ -437,6 +442,12 @@ class NodeContentRepository extends ContentRepository {
         NodeWriteMapping.columnsFor(object, payload)
       );
 
+      // Before the write: a rejected move must leave the row as it was.
+      const move =
+        isNode && 'parent_node_id' in columns
+          ? await this.checkMove(run, recordId, columns.parent_node_id ?? null)
+          : null;
+
       let record;
       if (Object.keys(columns).length > 0) {
         const update = updateClause(columns);
@@ -459,8 +470,107 @@ class NodeContentRepository extends ContentRepository {
         await this.writeContentItems(run, recordId, payload);
       }
 
+      // A root has no parent to inherit from: without a row of its own it
+      // would be visible in no app, together with everything below it. The
+      // same row `createNode` adds for a new root.
+      if (move && !move.toParentId) {
+        await this.addAppInclude(run, recordId);
+      }
+
+      // A cached node carries its children and contents: a changed node
+      // stales its own entry and its parent's, a changed content its node's,
+      // a move the old parent's as well. The facade clears them. Read here,
+      // inside the transaction, so both ids are known.
+      await this.touch(
+        run,
+        isNode
+          ? [
+              recordId,
+              record?.parent_node_id,
+              move?.fromParentId,
+              move?.toParentId,
+            ]
+          : [record?.node_id]
+      );
+
       return this.outwardRecord(object, record);
     });
+  }
+
+  /**
+   * The nodes whose cache entries the last write changed beyond its own
+   * record, each as `{ id, legacy_id }`. A cached node carries its children
+   * and contents, so: after changing a node the node and its parent, after a
+   * move also the old parent; after creating or deleting a child its parent;
+   * after writing a content its node.
+   */
+  getTouchedNodes() {
+    return this.touchedNodes ?? [];
+  }
+
+  /** Notes the nodes with these ids (empty ones skipped) as touched. */
+  async touch(run, ids) {
+    const nodeIds = [...new Set(ids.filter(Boolean))];
+    this.touchedNodes =
+      nodeIds.length > 0
+        ? await run(`SELECT id, legacy_id FROM node WHERE id = ANY($1)`, [
+            nodeIds,
+          ])
+        : [];
+  }
+
+  /**
+   * The feed root named by the configuration (`feedRootNodeId`). Moving
+   * checks against it; without it, the feeds are not protected from moves.
+   */
+  setFeedRootId(feedRootId) {
+    this.feedRootId = feedRootId;
+    return this;
+  }
+
+  /**
+   * Checks a move: the update sets `parent_node_id`, and it differs from the
+   * stored one. The edit dialog sends the current parent on every save, so an
+   * unchanged parent is no move — and is not checked.
+   *
+   * Throws `NodeMoveRejected` (see `NodeMoveRule`). Returns the move as
+   * `{ fromParentId, toParentId }`, or `null` when the parent stays.
+   */
+  async checkMove(run, recordId, toParentId) {
+    const [stored] = await run(
+      `SELECT parent_node_id FROM node WHERE id = $1`,
+      [recordId]
+    );
+    const fromParentId = stored?.parent_node_id ?? null;
+    if (fromParentId === toParentId) {
+      return null;
+    }
+
+    NodeMoveRule.check({
+      nodeId: recordId,
+      sourceChain: await this.chainOf(run, recordId),
+      targetChain: toParentId ? await this.chainOf(run, toParentId) : [],
+      feedRootId: this.feedRootId,
+    });
+    return { fromParentId, toParentId };
+  }
+
+  /**
+   * The node and its ancestors, as ids. `UNION` instead of `UNION ALL` ends the
+   * walk on a loop already in the data, instead of running forever.
+   */
+  async chainOf(run, nodeId) {
+    const rows = await run(
+      `WITH RECURSIVE ancestors AS (
+           SELECT id, parent_node_id FROM node WHERE id = $1
+           UNION
+           SELECT n.id, n.parent_node_id
+           FROM node n JOIN ancestors a ON n.id = a.parent_node_id
+         )
+         SELECT id FROM ancestors`,
+      [nodeId]
+    );
+    return rows.map((row) => row.id);
   }
 
   /**
@@ -495,12 +605,21 @@ class NodeContentRepository extends ContentRepository {
 
       if (!NodeWriteMapping.isNodeObject(object)) {
         const [content] = await run(
-          `SELECT id, legacy_id FROM content_node WHERE id = $1`,
+          `SELECT id, legacy_id, node_id FROM content_node WHERE id = $1`,
           [recordId]
         );
         await this.deleteContentNodes(run, [recordId]);
+        // The node's cached entry lists its contents.
+        await this.touch(run, [content?.node_id]);
         return { nodes: [], contents: content ? [content] : [] };
       }
+
+      // The parent's cached entry lists its children; read it while the row
+      // is still there.
+      const [stored] = await run(
+        `SELECT parent_node_id FROM node WHERE id = $1`,
+        [recordId]
+      );
 
       // Teilbaum, tiefste Ebene zuerst — Kinder vor Eltern.
       const subtree = await run(
@@ -536,6 +655,7 @@ class NodeContentRepository extends ContentRepository {
       for (const nodeId of nodeIds) {
         await run(`DELETE FROM node WHERE id = $1`, [nodeId]);
       }
+      await this.touch(run, [stored?.parent_node_id]);
 
       return { nodes: subtree, contents: contentNodes };
     });

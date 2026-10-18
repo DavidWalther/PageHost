@@ -1,10 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const {
-  mockBookstoreCallouts,
-  MOCK_ROOT_PATH,
-  MOCK_NODES,
-} = require('../../support/mock-callouts');
-const { cacheLitBundle } = require('../../support/component-page');
+const { MOCK_NODES } = require('../../support/mock-callouts');
+const { mountNode } = require('../../support/node-mount');
 
 /**
  * Aufbau der Kind-Navigation von `custom-node`.
@@ -25,9 +21,6 @@ const { cacheLitBundle } = require('../../support/component-page');
 // Gutter der Kind-Navigation: slds-gutters, 12px je Seite.
 const GUTTER = 24;
 
-const navigationNode = (page) =>
-  page.locator('custom-node[data-role="navigation"]');
-
 function readChildNavigation(node) {
   return node.evaluate((host) => {
     const nav = host.shadowRoot.querySelector('#child-navigation');
@@ -45,39 +38,30 @@ function readChildNavigation(node) {
   });
 }
 
-const ROOT = MOCK_NODES.wurzel;
+const ROOT = { ...MOCK_NODES.wurzel, contents: [] };
 
 // Mehr Kinder als child-buttons_number-max (2) -> die Combobox erscheint.
 const NODE_WITH_MANY_CHILDREN = {
   ...ROOT,
   nodes: [1, 2, 3, 4].map((n) => ({
     id: `000c0000000000000${n}`,
-    legacy_id: `000c0000000000000${n}`,
     name: `Mock Chapter ${n}`,
-    description: null,
     sortnumber: n,
-    reversed: null,
     parent_node_id: ROOT.id,
-    cover_node_id: null,
-    published_date: '2022-01-01 00:00:00',
   })),
 };
 
-test.describe('Knoten: Aufbau der Kind-Navigation', () => {
-  test.beforeEach(async ({ page }) => {
-    await mockBookstoreCallouts(page);
-    await cacheLitBundle(page);
-  });
+// Mounted on its own (the page shows its node through custom-node-view).
+const ATTRS = { 'child-buttons_number-max': 2, 'no-contents': true };
 
+test.describe('Knoten: Aufbau der Kind-Navigation', () => {
   test('Buttons: jedes Element ist so breit wie sein Button plus Gutter', async ({
     page,
   }) => {
-    await page.goto('/000c00000000000001');
-    await expect(
-      navigationNode(page).locator('#child-navigation button')
-    ).toHaveCount(2);
+    const node = await mountNode(page, { node: ROOT, attrs: ATTRS });
+    await expect(node.locator('#child-navigation button')).toHaveCount(2);
 
-    const nav = await readChildNavigation(navigationNode(page));
+    const nav = await readChildNavigation(node);
     expect(nav.items).toHaveLength(2);
     for (const item of nav.items) {
       expect(item.kind).toBe('button');
@@ -88,23 +72,15 @@ test.describe('Knoten: Aufbau der Kind-Navigation', () => {
   });
 
   test('Combobox: ihr Element nimmt die volle Breite ein', async ({ page }) => {
-    await page.route('**/data/query/node**', (route) => {
-      const id = new URL(route.request().url()).searchParams.get('id');
-      const match =
-        id === ROOT.id || id === ROOT.legacy_id
-          ? NODE_WITH_MANY_CHILDREN
-          : Object.values(MOCK_NODES).find(
-              (node) => node.id === id || node.legacy_id === id
-            );
-      return route.fulfill({ json: match || {} });
+    const node = await mountNode(page, {
+      node: NODE_WITH_MANY_CHILDREN,
+      attrs: ATTRS,
     });
-    // The application starts on the feeds; these tests are about a node.
-    await page.goto(MOCK_ROOT_PATH);
-    await expect(
-      navigationNode(page).locator('#child-navigation slds-combobox')
-    ).toHaveCount(1);
+    await expect(node.locator('#child-navigation slds-combobox')).toHaveCount(
+      1
+    );
 
-    const nav = await readChildNavigation(navigationNode(page));
+    const nav = await readChildNavigation(node);
     expect(nav.items).toHaveLength(1);
     const [item] = nav.items;
     expect(item.kind).toBe('slds-combobox');

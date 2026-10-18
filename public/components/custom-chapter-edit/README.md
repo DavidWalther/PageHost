@@ -1,8 +1,10 @@
 # custom-chapter-edit
 
-Creates and edits **a node** in a modal, and offers publishing it in a second
-tab. The component owns both the triggering icon button **and** the modal — the
-same shape as `custom-content-edit`, only with tabs.
+Creates and edits **a node** in a modal. The component owns both the triggering
+icon button **and** the modal — the same shape as `custom-content-edit`.
+Publishing is not here: a node is published through its own button
+(`custom-content-publish` with `object-name="node"`, in `custom-node-view` and
+`custom-node`).
 
 > **The name comes from the retired data model.** There are no chapters any more;
 > this component writes `object: 'node'`, and its attributes (`story-id`,
@@ -32,7 +34,6 @@ Editing a node, as `custom-node` does it:
   story-id="00nd00000000000000"
   name="Chapter one"
   sort-number="3"
-  publish-date="2022-01-01 00:00:00"
   @chapter-updated="${this._handleNodeUpdated}"
 ></custom-chapter-edit>
 ```
@@ -51,17 +52,18 @@ the next sort number can be proposed:
 
 ## Properties
 
-| Attribute      | Property      | Type    | Meaning                                                                       |
-| -------------- | ------------- | ------- | ----------------------------------------------------------------------------- |
-| `chapter-id`   | `chapterId`   | String  | Id of the node to edit. **Absent means create.**                              |
-| `story-id`     | `storyId`     | String  | Id of the parent node, written as `parent_node_id`.                           |
-| `name`         | `name`        | String  | Name to start the form with.                                                  |
-| `sort-number`  | `sortNumber`  | Number  | Sort number to start with.                                                    |
-| `reversed`     | `reversed`    | Boolean | Whether the node's contents are shown against `sortnumber`.                   |
-| `publish-date` | `publishDate` | String  | Current publication date, handed to the publish tab. Empty means unpublished. |
-| `mode`         | `mode`        | String  | Legacy; `chapter-id` decides (see above).                                     |
-| —              | `chapters`    | Array   | Existing siblings. Property only (`.chapters`).                               |
-| —              | `chapterData` | Object  | The form state. Property only.                                                |
+| Attribute     | Property      | Type    | Meaning                                                                  |
+| ------------- | ------------- | ------- | ------------------------------------------------------------------------ |
+| `chapter-id`  | `chapterId`   | String  | Id of the node to edit. **Absent means create.**                         |
+| `story-id`    | `storyId`     | String  | Id of the parent node, written as `parent_node_id`.                      |
+| `name`        | `name`        | String  | Name to start the form with.                                             |
+| `sort-number` | `sortNumber`  | Number  | Sort number to start with; `null` (property) for a node without one.     |
+| `reversed`    | `reversed`    | Boolean | Whether the node's contents are shown against `sortnumber`.              |
+| `mode`        | `mode`        | String  | Legacy; `chapter-id` decides (see above).                                |
+| `no-trigger`  | `noTrigger`   | Boolean | No button of its own — the host is the trigger and calls `openCreate()`. |
+| —             | `chapters`    | Array   | Siblings with `sortnumber`; create proposes the highest plus one.        |
+| —             | `chapters`    | Array   | Existing siblings. Property only (`.chapters`).                          |
+| —             | `chapterData` | Object  | The form state. Property only.                                           |
 
 ### What `chapters` is for
 
@@ -79,24 +81,22 @@ Both checks read the session from `sessionStorage`:
 | plus    | `create` | nothing is rendered |
 
 No disabled buttons — the trigger is absent, and so is the element around it.
-The publish tab inside the modal behaves differently: it holds
-`custom-publishing`, which renders its toggle **disabled** without `publish` and
-`edit`. → `../custom-publishing/README.md`
 
 > Reading the session out of `sessionStorage` happens in several frontend
 > components by now. That is known and will be cleaned up in one go.
 
 ## The modal
 
-Two tabs, but only in edit mode:
+One form, no tabs: name (required), sort number (at least 1) and a switch for
+the reverse order. The publish tab it once had is gone — a node has its own
+publish button now.
 
-1. **"Edits"** — name (required), sort number (at least 1) and a switch for the
-   reverse order.
-2. **"Veröffentlichen"** — `custom-publishing` for this node. **Create mode has
-   no such tab**: there is no record yet that could be published.
+The footer carries "Abbrechen" and the confirm button.
 
-The footer carries "Abbrechen" and the confirm button; the confirm button only
-appears on the edit tab, since the publish toggle acts on its own.
+**Saving never touches the publication.** The payload carries name, sort number
+and the switch — no `published_date`: the form has no field for it, and
+publishing writes through its own endpoint. The form once sent its empty
+value along and withdrew a published node on every save.
 
 ## Validation
 
@@ -115,6 +115,12 @@ emptied name field is refused out loud.
 is `1` deserves an answer rather than a complaint. Its rule in `_validate`
 therefore never fires from this form and stays as a net for a consumer that sets
 `chapterData` directly. Both behaviours are pinned in `chapter-edit.spec.js`.
+
+**A node without a sort number keeps none.** A moved node has no `sortnumber`
+and stands at the end of its siblings. Handed `null` as `sortNumber`, the
+dialog shows an empty field and saves `null` as long as the field is not
+touched — renaming does not move the node to the front. Typing a number saves
+it; emptying the field again falls back to `1` as above.
 
 ## Events
 
@@ -140,10 +146,11 @@ the field stays out of the payload.
 
 ## Methods
 
-| Method   | Description       |
-| -------- | ----------------- |
-| `show()` | Opens the modal.  |
-| `hide()` | Closes the modal. |
+| Method         | Description                                                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show()`       | Opens the modal.                                                                                                                                                                  |
+| `hide()`       | Closes the modal.                                                                                                                                                                 |
+| `openCreate()` | Opens the modal in create mode: name „Neues Kapitel“, sort number = highest of `chapters` + 1, parent = `story-id` (a root without it). Opens nothing without the `create` scope. |
 
 ## Known leftovers
 

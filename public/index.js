@@ -176,11 +176,13 @@ function fetchDatabase(eventpayload) {
         break;
       }
       case 'contents': {
-        doFetch(`/api/1.0/contents/all?depth=2`, preparedHeaders)
+        // No depth: the whole tree. The navigation modal lists any depth.
+        doFetch('/api/1.0/contents/all', preparedHeaders)
           .then((contentsResponse) => contentsResponse.json())
           .then((contents) => {
             resolve(contents.result);
-          });
+          })
+          .catch(reject);
         break;
       }
       case 'metadata': {
@@ -188,7 +190,8 @@ function fetchDatabase(eventpayload) {
           .then((metadataResponse) => metadataResponse.json())
           .then((metadata) => {
             resolve(metadata);
-          });
+          })
+          .catch(reject);
         break;
       }
       default: {

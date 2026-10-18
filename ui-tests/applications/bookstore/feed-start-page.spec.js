@@ -45,8 +45,6 @@ function readPage(page) {
     const isShown = (element) => element.getClientRects().length > 0;
     const feed = root.querySelector('custom-feed');
     const tabset = feed.shadowRoot.querySelector('slds-tabset');
-    const nodeOf = (role) =>
-      root.querySelector(`custom-node[data-role="${role}"]`);
     return {
       feedsShown: isShown(root.querySelector('#feeds')),
       nodesShown: isShown(root.querySelector('#bookshelf')),
@@ -64,12 +62,16 @@ function readPage(page) {
           id: element.getAttribute('id'),
           contentnumber: element.getAttribute('contentnumber'),
           contentIds: [
-            ...element.shadowRoot.querySelectorAll('custom-paragraph'),
+            // Not rendered before the node has loaded.
+            ...(element.shadowRoot
+              .querySelector('custom-node-contents')
+              ?.shadowRoot.querySelectorAll('custom-paragraph') ?? []),
           ].map((paragraph) => paragraph.id),
         })
       ),
-      navigationId: nodeOf('navigation').getAttribute('id'),
-      contentId: nodeOf('content').getAttribute('id'),
+      // The node shown: above the node itself, below its contents.
+      viewId: root.querySelector('custom-node-view').getAttribute('id'),
+      contentsId: root.querySelector('custom-node-contents').getAttribute('id'),
       path: window.location.pathname,
     };
   });
@@ -103,8 +105,8 @@ test.describe('Feeds as the start page', () => {
     expect(state.feedsShown).toBe(true);
     expect(state.nodesShown).toBe(false);
     // No node stands in for a start page any more.
-    expect(state.navigationId).toBeNull();
-    expect(state.contentId).toBeNull();
+    expect(state.viewId).toBeNull();
+    expect(state.contentsId).toBeNull();
     expect(state.path).toBe('/');
   });
 
@@ -122,7 +124,7 @@ test.describe('Feeds as the start page', () => {
     const state = await readPage(page);
     expect(state.feedsShown).toBe(true);
     // The feed root is not a selection.
-    expect(state.navigationId).toBeNull();
+    expect(state.viewId).toBeNull();
   });
 
   test('a deep link to a feed opens its tab', async ({ page }) => {
@@ -137,8 +139,8 @@ test.describe('Feeds as the start page', () => {
     expect(state.feedsShown).toBe(true);
     expect(state.nodesShown).toBe(false);
     // Its parent is the feed root — that does not become the selection.
-    expect(state.navigationId).toBeNull();
-    expect(state.contentId).toBeNull();
+    expect(state.viewId).toBeNull();
+    expect(state.contentsId).toBeNull();
   });
 
   test('a deep link to a content of a feed opens the tab and jumps to it', async ({
@@ -151,7 +153,7 @@ test.describe('Feeds as the start page', () => {
     await expect
       .poll(async () => (await feedNode(page, NEWS))?.contentnumber)
       .toBe(String(target.sortnumber));
-    expect((await readPage(page)).contentId).toBeNull();
+    expect((await readPage(page)).contentsId).toBeNull();
   });
 
   test('opening another feed puts it into the address', async ({ page }) => {
@@ -182,7 +184,7 @@ test.describe('Feeds as the start page', () => {
     await expect.poll(async () => (await readPage(page)).nodesShown).toBe(true);
     const state = await readPage(page);
     expect(state.feedsShown).toBe(false);
-    expect(state.navigationId).toBe('000n00000000000011');
+    expect(state.viewId).toBe('000n00000000000011');
   });
 
   test('the navigation does not list the feed root', async ({ page }) => {
@@ -203,8 +205,8 @@ test.describe('Feeds as the start page', () => {
     await open(page, MOCK_ROOT_PATH);
 
     await expect
-      .poll(async () => (await readPage(page)).contentId)
-      .toBe('000n00000000000001');
+      .poll(async () => (await readPage(page)).contentsId)
+      .toBe('000n00000000000011');
     await page.waitForTimeout(300);
 
     const state = await readPage(page);
@@ -234,8 +236,8 @@ test.describe('Home', () => {
     const queries = recordQueries(page);
     await open(page, MOCK_ROOT_PATH);
     await expect
-      .poll(async () => (await readPage(page)).contentId)
-      .toBe('000n00000000000001');
+      .poll(async () => (await readPage(page)).contentsId)
+      .toBe('000n00000000000011');
     expect(queries.join('\n')).not.toContain(MOCK_FEED_ROOT.id);
 
     await home(page).click();

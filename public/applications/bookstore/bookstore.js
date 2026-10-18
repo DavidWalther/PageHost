@@ -6,21 +6,38 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import OIDCComponent from '/modules/oIdcComponent.js';
+import { findNode, findPath, findSiblings } from '/modules/content-tree.mjs';
+import '/components/custom-node-view/custom-node-view.js';
+import '/components/custom-node-contents/custom-node-contents.js';
 
 console.log('Bookstore.js file loaded');
 
 class Bookstore extends LitElement {
+  static styles = css`
+    /* The header stays at the top while the page scrolls, above the content. */
+    .header-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+  `;
+
   static properties = {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
     _currentLocation: { type: String, state: true },
     // The start page: the feeds below the feed root the configuration names
-    // (`feedRootNodeId`). Shown instead of the two nodes, never next to them.
+    // (`feedRootNodeId`). Shown instead of the node, never next to it.
     _feedRootId: { type: String, state: true },
     _feedVisible: { type: Boolean, state: true },
     _feedRequested: { type: Boolean, state: true },
     _activeFeedId: { type: String, state: true },
     _feedContentNumber: { type: Number, state: true },
+    // The node marked to be moved, `{ id, name, parentId }`, or null. One at a
+    // time, and only as long as the page: a reload drops it.
+    _marked: { type: Object, state: true },
+    // The content tree: loaded here once, handed to the navigation modal.
+    _tree: { type: Array, state: true },
   };
 
   constructor() {
@@ -30,17 +47,29 @@ class Bookstore extends LitElement {
     // Initialize component state
     this.isHydrated = false;
     this._initPara = null;
-    this._pendingChildSelection = null;
+    // A jump to a content, waiting for the node it belongs to.
+    this._pendingContentNumber = null;
     this._currentLocation = null;
     this._feedRootId = null;
     this._feedVisible = false;
     this._feedRequested = false;
     this._activeFeedId = null;
     this._feedContentNumber = null;
+    this._marked = null;
+    this._tree = [];
+    // What the modal leaves out: the marked node. One list per mark, so the
+    // modal sees a change only when the mark changes.
+    this._hiddenIds = [];
     this._hostListeners = this.createHostListeners();
   }
 
   // =========== Lifecycle methods ============
+
+  willUpdate(changed) {
+    if (changed.has('_marked')) {
+      this._hiddenIds = this._marked ? [this._marked.id] : [];
+    }
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -53,6 +82,7 @@ class Bookstore extends LitElement {
     this._initPara = this.createInitializationParameterObject();
 
     this.hydrate();
+    this._loadContentTree();
     this.label = {
       'setting-login_title': 'Login',
       'setting-lightswitch_title': 'Lichtschalter',
@@ -62,50 +92,52 @@ class Bookstore extends LitElement {
 
   render() {
     return html`
-      <slds-card no-footer no-header>
-        <slds-layout wrap>
-          <slds-layout-item align-middle size="3-of-12">
-            <slds-layout wrap gutters-xx-small>
-              <slds-layout-item grow-none>
-                <slds-button-icon
-                  id="button-home"
-                  icon="utility:home"
-                  size="medium"
-                  variant="container-transparent"
-                  @click="${this.handleHome}"
-                ></slds-button-icon>
-              </slds-layout-item>
-              <slds-layout-item grow-none>
-                <slds-button-icon
-                  id="button-navigation_open"
-                  icon="utility:rows"
-                  size="medium"
-                  variant="container-transparent"
-                  @click="${this.handleOpenNavigation}"
-                ></slds-button-icon>
-              </slds-layout-item>
-            </slds-layout>
-          </slds-layout-item>
-          <slds-layout-item size="6-of-12">
-            <div class="slds-text-align_center slds-text-heading_large">
-              <span id="page-header-headline"></span>
-            </div>
-          </slds-layout-item>
-          <slds-layout-item align-middle size="3-of-12">
-            <slds-layout align-end>
-              <slds-layout-item grow-none>
-                <slds-button-icon
-                  id="button-settings_open"
-                  icon="utility:settings"
-                  size="medium"
-                  variant="container-transparent"
-                  @click="${this.handleOpenSettings}"
-                ></slds-button-icon>
-              </slds-layout-item>
-            </slds-layout>
-          </slds-layout-item>
-        </slds-layout>
-      </slds-card>
+      <div class="header-sticky">
+        <slds-card no-footer no-header>
+          <slds-layout wrap>
+            <slds-layout-item align-middle size="3-of-12">
+              <slds-layout wrap gutters-xx-small>
+                <slds-layout-item grow-none>
+                  <slds-button-icon
+                    id="button-home"
+                    icon="utility:home"
+                    size="medium"
+                    variant="container-transparent"
+                    @click="${this.handleHome}"
+                  ></slds-button-icon>
+                </slds-layout-item>
+                <slds-layout-item grow-none>
+                  <slds-button-icon
+                    id="button-navigation_open"
+                    icon="utility:rows"
+                    size="medium"
+                    variant="container-transparent"
+                    @click="${this.handleOpenNavigation}"
+                  ></slds-button-icon>
+                </slds-layout-item>
+              </slds-layout>
+            </slds-layout-item>
+            <slds-layout-item size="6-of-12">
+              <div class="slds-text-align_center slds-text-heading_large">
+                <span id="page-header-headline"></span>
+              </div>
+            </slds-layout-item>
+            <slds-layout-item align-middle size="3-of-12">
+              <slds-layout align-end>
+                <slds-layout-item grow-none>
+                  <slds-button-icon
+                    id="button-settings_open"
+                    icon="utility:settings"
+                    size="medium"
+                    variant="container-transparent"
+                    @click="${this.handleOpenSettings}"
+                  ></slds-button-icon>
+                </slds-layout-item>
+              </slds-layout>
+            </slds-layout-item>
+          </slds-layout>
+        </slds-card>
+      </div>
       <custom-settings-modal>
         <slds-layout wrap vertical>
           <slds-layout-item size="1-of-1">
@@ -175,7 +207,11 @@ class Bookstore extends LitElement {
       </custom-settings-modal>
       <custom-navigation-modal
         current-location="${this._currentLocation}"
+        .tree="${this._tree}"
+        .marked="${this._marked}"
+        .hiddenIds="${this._hiddenIds}"
         @navigation-level-open="${this.handleNavigationLevelOpen}"
+        @navigation-level-back="${this.handleNavigationLevelBack}"
         @navigation-node-select="${this.handleNavigationNodeSelect}"
       ></custom-navigation-modal>
 
@@ -200,16 +236,9 @@ class Bookstore extends LitElement {
       </div>
 
       <!--
-        Zwei Knoten, nicht zwei Typen: oben der Knoten, dessen Kinder zur
-        Auswahl stehen, unten der ausgewählte Knoten mit seinen Inhalten.
-        Welche Rolle ein Knoten spielt, entscheidet allein seine Position hier
-        — die Komponente ist beide Male dieselbe.
-
-        data-role ist dabei nur der Selektor für die Getter unten. Wirksam
-        wird die Rolle über die Attribute: Die Daten sagen, WAS ein Knoten hat,
-        diese Zeilen sagen, WOFÜR die jeweilige Instanz da ist. Sie stehen im
-        Template, weil sie sich nie ändern — damit gelten sie vor der ersten
-        Zuweisung von id oder contentnumber.
+        One node, in two components that always refer to it: above the node
+        itself, below its contents. The node is fetched once, above; the
+        contents get the record handed over (_handleNodeViewLoaded).
       -->
       <div
         id="bookshelf"
@@ -218,24 +247,15 @@ class Bookstore extends LitElement {
         }"
       >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <custom-node
-            data-role="navigation"
-            child-buttons_number-max="2"
-            can-create-child
-            no-contents
-          ></custom-node>
+          <custom-node-view
+            .siblings="${this._siblings()}"
+            .markedId="${this._marked?.id ?? null}"
+            @loaded="${this._handleNodeViewLoaded}"
+            @node-view-navigate="${this.handleNodeViewNavigate}"
+          ></custom-node-view>
         </div>
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
-          <!-- Keine Kind-Auswahl: handleNavigationEvent wertet nur Meldungen
-               des oberen Knotens aus, ein Klick bliebe hier wirkungslos.
-               Kein "Kind anlegen": Das Angelegte erschiene in genau der
-               Auswahl, die hier nicht gezeigt wird. -->
-          <custom-node
-            data-role="content"
-            can-create-content
-            can-delete
-            no-child-navigation
-          ></custom-node>
+          <custom-node-contents can-create card></custom-node-contents>
         </div>
       </div>
     `;
@@ -266,47 +286,66 @@ class Bookstore extends LitElement {
       typeof record === 'string' ? record : (record.id ?? null);
   }
 
-  /** A level opened in the modal: the page shows that node (F13/F14). */
-  handleNavigationLevelOpen(event) {
-    const { id } = event.detail;
-    this._setCurrentLocation(id);
-    this.dispatchEvent(
-      new CustomEvent('navigation', {
-        detail: { type: 'story', value: id },
-        bubbles: true,
-      })
-    );
-    // The modal stays open; the visitor may go deeper or choose.
+  /** The siblings of the node shown, for its arrows: `{ previous, next }`. */
+  _siblings() {
+    const { previous, next } = findSiblings(this._tree, this._currentLocation);
+    const pick = (node) => (node ? { id: node.id, name: node.name } : null);
+    return { previous: pick(previous), next: pick(next) };
   }
 
-  /** A node chosen in the modal: its parent above, the node below. */
-  handleNavigationNodeSelect(event) {
-    const { id, parentId } = event.detail;
+  /**
+   * Shows the node with the given id — the one way every path through the
+   * tree ends. Above the node itself, below its contents. A record already
+   * loaded is handed over instead of being fetched; a jump to a content
+   * waits for the node and goes to the contents with it.
+   */
+  _showNode(id, { record = null, contentnumber = null } = {}) {
+    if (!id) return;
     this.hideFeed();
-
-    if (!parentId) {
-      // A root without children: it has no parent to fill the selection, so
-      // it takes the selection itself — like a deep link to a root (UC-B-03).
-      this.navigationNode.setAttribute('id', id);
-      this.contentNode.removeAttribute('id');
-      this.navigationNode.removeAttribute('selected-child');
-      this._setCurrentLocation(id);
-      this.shadowRoot.querySelector('custom-navigation-modal').hide();
-      return;
-    }
-
-    const currentParentId = this.navigationNode.getAttribute('id');
-    if (currentParentId !== parentId) {
-      // Suppress the cover override in handleNavigationNodeLoaded for this
-      // reload, so the explicitly selected child is kept.
-      this._pendingChildSelection = id;
-      this.navigationNode.setAttribute('id', parentId);
-    }
-    this.contentNode.setAttribute('id', id);
-    this.navigationNode.setAttribute('selected-child', id);
     this._setCurrentLocation(id);
+    this._pendingContentNumber = contentnumber;
+    // Another node: its contents go at once, not only once it has loaded.
+    if (this.nodeContents.getAttribute('id') !== id) {
+      this.nodeContents.clearContent();
+    }
+    if (record) {
+      this.nodeView.adoptNode(record);
+    } else if (this.nodeView.getAttribute('id') === id) {
+      this.nodeView.reload();
+    } else {
+      this.nodeView.setAttribute('id', id);
+    }
+  }
 
+  /** The node above has loaded: the contents below take the same record. */
+  _handleNodeViewLoaded(event) {
+    const nodeData = event.detail?.nodeData;
+    if (event.target !== this.nodeView || !nodeData?.id) return;
+    this.nodeContents.contentnumber = this._pendingContentNumber;
+    this._pendingContentNumber = null;
+    this.nodeContents.adoptNode(nodeData);
+  }
+
+  /** A way taken in the node view: a child, a sibling, an ancestor. */
+  handleNodeViewNavigate(event) {
+    this._showNode(event.detail.id);
+  }
+
+  /** A level opened in the modal: the page shows that node. */
+  handleNavigationLevelOpen(event) {
+    // The modal stays open; the visitor may go deeper or choose.
+    this._showNode(event.detail.id);
+  }
+
+  /** A node without children chosen in the modal: shown, the modal closes. */
+  handleNavigationNodeSelect(event) {
+    this._showNode(event.detail.id);
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
+  }
+
+  /** One level up in the modal: the page shows the level now open. */
+  handleNavigationLevelBack(event) {
+    this._showNode(event.detail.id);
   }
 
   /**
@@ -359,36 +398,105 @@ class Bookstore extends LitElement {
     // Every change to a node changes the content tree of the navigation modal.
     const reloadTree = (event) => this._reloadNavigationTree(event);
     return [
-      ['navigation', (event) => this.handleNavigationEvent(event)],
-      // `custom-chapter-edit` still reports `chapter-updated` — the edit
-      // component keeps its old name.
-      ['chapter-updated', (event) => this._handleChildUpdated(event)],
+      // `custom-chapter-edit` still reports `chapter-created` and
+      // `chapter-updated` — the edit component keeps its old names.
+      ['chapter-created', (event) => this._handleNodeChanged(event)],
+      ['chapter-updated', (event) => this._handleNodeChanged(event)],
       ['node-deleted', (event) => this._handleNodeDeleted(event)],
+      ['node-mark-change', (event) => this._handleMarkChange(event)],
+      ['node-mark-clear', () => (this._marked = null)],
+      ['node-moved', (event) => this._handleNodeMoved(event)],
       ...[
         'chapter-created',
         'chapter-updated',
         'node-deleted',
+        'node-moved',
         'published',
         'unpublished',
       ].map((name) => [name, reloadTree]),
     ];
   }
 
-  _handleChildUpdated(event) {
-    const updated = event.detail?.chapterData;
-    if (updated && this.navigationNode) {
-      this.navigationNode.applyChildUpdate(updated);
+  /**
+   * A node was created or saved. The node view takes over its own edits; the
+   * contents below follow (the order may have turned). A child of the node
+   * shown, created or renamed, is in the combobox above: the view fetches
+   * the node again, and the contents take the new record with it.
+   */
+  _handleNodeChanged(event) {
+    const changed = event.detail?.chapterData;
+    const current = this._currentLocation;
+    if (!changed?.id || !current) return;
+    if (changed.id === current) {
+      this.nodeContents.reload();
+      return;
+    }
+    const children = findNode(this._tree, current)?.childnodes ?? [];
+    if (
+      changed.parent_node_id === current ||
+      children.some((child) => child.id === changed.id)
+    ) {
+      this.nodeView.reload();
     }
   }
 
-  _handleNodeDeleted(event) {
-    const nodeId = event.detail?.nodeId;
-    if (!nodeId) return;
-    if (this.navigationNode) {
-      this.navigationNode.removeChildNode(nodeId);
+  /**
+   * Keeps or drops the mark to move a node. There is one mark: marking a node
+   * replaces the old one, and unmarking only drops the mark of that node.
+   */
+  _handleMarkChange(event) {
+    const { marked, node } = event.detail ?? {};
+    if (!node?.id) return;
+    if (marked) {
+      this._marked = { ...node };
+    } else if (this._marked?.id === node.id) {
+      this._marked = null;
     }
-    if (this.contentNode?.getAttribute('id') === nodeId) {
-      this.contentNode.removeAttribute('id');
+  }
+
+  /**
+   * After a move the page shows the moved node, fetched again — it names its
+   * old parent otherwise, which its edit dialog would write back. The mark is
+   * used up, the modal closes; the tree reloads with the other changes to a
+   * node, and the arrows follow it.
+   */
+  _handleNodeMoved(event) {
+    const { nodeId } = event.detail ?? {};
+    if (!nodeId) return;
+    this._marked = null;
+    this._showNode(nodeId);
+    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+  }
+
+  /**
+   * Lets go of a deleted node. `nodeIds` is the node and everything that went
+   * with it; a sender without it names the node alone. The node shown gone:
+   * its parent takes its place, a root gives way to the start page. A child
+   * of it gone: the view fetches the node again, its combobox lists one less.
+   * The tree still holds the deleted nodes here — it reloads after this.
+   */
+  _handleNodeDeleted(event) {
+    const { nodeId, nodeIds } = event.detail ?? {};
+    const current = this._currentLocation;
+    if (!nodeId || !current) return;
+    const gone = new Set(nodeIds ?? [nodeId]);
+
+    if (gone.has(current)) {
+      const path = findPath(this._tree, current);
+      const parent = path[path.length - 2];
+      this.nodeView.removeAttribute('id');
+      this.nodeContents.removeAttribute('id');
+      if (parent && !gone.has(parent.id)) {
+        this._showNode(parent.id);
+      } else {
+        this.handleHome();
+      }
+      return;
+    }
+
+    const children = findNode(this._tree, current)?.childnodes ?? [];
+    if (children.some((child) => gone.has(child.id))) {
+      this.nodeView.reload();
     }
   }
 
@@ -416,15 +524,23 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Asks the navigation modal to load the tree again after a node changed.
-   * Publishing a content leaves the tree alone — contents are not in it.
+   * Loads the content tree again after a node changed. Publishing a content
+   * leaves the tree alone — contents are not in it.
    */
   _reloadNavigationTree(event) {
     const objectName = event.detail?.objectName;
     if (objectName && objectName !== 'node') {
       return;
     }
-    this.shadowRoot.querySelector('custom-navigation-modal')?.reload();
+    this._loadContentTree();
+  }
+
+  /** One request for everyone who needs the tree; a failed one keeps the old. */
+  async _loadContentTree() {
+    const tree = await this.queryRecord({ object: 'contents' });
+    if (Array.isArray(tree)) {
+      this._tree = tree;
+    }
   }
 
   /**
@@ -481,14 +597,10 @@ class Bookstore extends LitElement {
         // A feed. Its parent is the feed root, which is not a selection —
         // the feed is shown where feeds are shown, with its tab open.
         this.enterFeed({ feedId: node.id, contentnumber });
-      } else if (parentId) {
-        // Ein Knoten mit Eltern: er füllt den Inhalt, sein Elternknoten die
-        // Auswahl. Beides ist schon bekannt — es muss nichts abgewartet werden.
-        this.showChildOf(parentId, node, contentnumber);
       } else {
-        this._attachNavigationNodeListeners();
-        this._setCurrentLocation(node);
-        this.navigationNode.adoptNode(node);
+        // Any other node: exactly this one, already loaded — nothing to wait
+        // for.
+        this._showNode(node.id, { record: node, contentnumber });
       }
       return;
     }
@@ -509,39 +621,15 @@ class Bookstore extends LitElement {
     this.enterFeed();
   }
 
-  /** Auswahl oben, Inhalt unten — der Regelfall nach einem Deep-Link. */
-  showChildOf(parentId, childNode, contentnumber = null) {
-    const childId = childNode.id;
-    if (contentnumber) {
-      // Muss vor der Übergabe stehen: der Knoten wertet es beim Übernehmen aus.
-      this.contentNode.setAttribute('contentnumber', contentnumber);
-    }
-    this.contentNode.adoptNode(childNode);
-
-    this.navigationNode.setAttribute('selected-child', childId);
-    // Der Titel-Knoten des Elternteils darf die ausdrückliche Wahl nicht
-    // überschreiben.
-    this._pendingChildSelection = childId;
-    this._setCurrentLocation(childNode);
-    this._attachNavigationNodeListeners();
-    // Den Elternknoten kennen wir nur mit Id — den holt er sich selbst.
-    this.navigationNode.setAttribute('id', parentId);
-  }
-
   // =========== Feed ============
 
-  /**
-   * The entry leads to the feeds. The selection node gets its listeners here
-   * as on every other entry path: the visitor may still open a node through
-   * the navigation, and that node reports to them.
-   */
+  /** The entry leads to the feeds. */
   enterFeed(target) {
-    this._attachNavigationNodeListeners();
     this.showFeed(target);
   }
 
   /**
-   * Shows the feeds instead of the two nodes.
+   * Shows the feeds instead of the node.
    *
    * The feed component only gets its root from the first time it is shown: a
    * visitor who enters on a node and never comes here loads no feed.
@@ -591,37 +679,6 @@ class Bookstore extends LitElement {
         })
       );
     });
-  }
-
-  /** Auswahl-Knoten: Navigation und „geladen" hängen immer zusammen. */
-  _attachNavigationNodeListeners() {
-    this.navigationNode.addEventListener(
-      'navigation',
-      this.handleNavigationEvent.bind(this)
-    );
-    this.navigationNode.addEventListener('loaded', (event) =>
-      this.handleNavigationNodeLoaded(event)
-    );
-  }
-
-  handleNavigationNodeLoaded(event) {
-    const nodeData = event.detail?.nodeData;
-    if (!nodeData?.id) {
-      return;
-    }
-
-    if (this._pendingChildSelection) {
-      // Ein Kind wurde ausdrücklich gewählt — im Navigations-Modal oder über
-      // einen Deep-Link. Diese Wahl schlägt den Titel-Knoten.
-      this._pendingChildSelection = null;
-      return;
-    }
-
-    const coverId = nodeData.cover_node_id;
-    if (coverId) {
-      this.navigationNode.setAttribute('selected-child', coverId);
-      this.contentNode.setAttribute('id', coverId);
-    }
   }
 
   // =========== Hydration - End ============
@@ -721,35 +778,6 @@ class Bookstore extends LitElement {
       .classList.toggle('dark-mode', !event.detail.checked);
   }
 
-  handleNavigationEvent(event) {
-    event.stopPropagation();
-    if (!this.isHydrated) {
-      return;
-    }
-
-    const { type, value } = event.detail;
-    // Beide Knoten sind dieselbe Komponente — der Tag-Name unterscheidet sie
-    // nicht mehr. Maßgeblich ist, WELCHER der beiden gemeldet hat.
-    const fromNavigationNode = event.target === this.navigationNode;
-    const fromPanel = event.target === this;
-
-    if (fromPanel && type === 'story') {
-      this.hideFeed();
-      this.navigationNode.setAttribute('id', value);
-      this.contentNode.removeAttribute('id');
-      this.navigationNode.removeAttribute('selected-child');
-      this._setCurrentLocation(value);
-      return;
-    }
-    if (fromNavigationNode && type === 'node') {
-      this.hideFeed();
-      this.contentNode.setAttribute('id', value);
-      this.navigationNode.setAttribute('selected-child', value);
-      this._setCurrentLocation(event.detail.node ?? value);
-      return;
-    }
-  }
-
   // ============ action methods ============
 
   fireToast(message, variant) {
@@ -840,14 +868,14 @@ class Bookstore extends LitElement {
     return this.shadowRoot.querySelector('span#page-header-headline');
   }
 
-  /** Der Knoten, dessen Kinder zur Auswahl stehen. */
-  get navigationNode() {
-    return this.shadowRoot.querySelector('custom-node[data-role="navigation"]');
+  /** The node shown, above. */
+  get nodeView() {
+    return this.shadowRoot.querySelector('custom-node-view');
   }
 
-  /** Der ausgewählte Knoten, dessen Inhalte gezeigt werden. */
-  get contentNode() {
-    return this.shadowRoot.querySelector('custom-node[data-role="content"]');
+  /** The contents of the node shown, below. */
+  get nodeContents() {
+    return this.shadowRoot.querySelector('custom-node-contents');
   }
 
   get storyContainer() {

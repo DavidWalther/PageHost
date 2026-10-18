@@ -11,15 +11,18 @@ const { cacheLitBundle } = require('../../support/component-page');
  * The modal loads the content tree on app start (`contents` callout, mocked)
  * and lists the roots as tiles. A tile with children opens its level and
  * reports `navigation-level-open`; one without children reports
- * `navigation-node-select` and the modal closes. „< zurück" goes up one level.
+ * `navigation-node-select` and the modal closes. The button in the footer goes up one level.
  *
  * Runs anonymously — every data callout is mocked via `page.route()`, no
  * Postgres or Redis involved.
  */
 test.describe('Navigation modal', () => {
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  // A tile is found by its name, not by its whole text (which may carry more).
   const tileByText = (page, text) =>
-    page.locator('custom-navigation-modal button.tile', { hasText: text });
+    page
+      .locator('custom-navigation-modal button.tile')
+      .filter({ has: page.locator('.tile__name', { hasText: text }) });
 
   test.beforeEach(async ({ page }) => {
     await mockBookstoreCallouts(page);
@@ -56,8 +59,8 @@ test.describe('Navigation modal', () => {
     await expect(tiles(page)).toHaveCount(2);
     await expect(tileByText(page, 'Mock Story 2')).toHaveCount(0);
 
-    // „< zurück" führt wieder auf die Story-Ebene mit beiden Stories.
-    await page.locator('custom-navigation-modal .back-button').click();
+    // Zurück führt wieder auf die Story-Ebene mit beiden Stories.
+    await page.locator('custom-navigation-modal #button-back').click();
     await expect(tileByText(page, 'Mock Story 1')).toBeVisible();
     await expect(tileByText(page, 'Mock Story 2')).toBeVisible();
   });
@@ -146,7 +149,7 @@ test.describe('Navigation modal', () => {
     ).not.toHaveClass(/tile_current/);
 
     // … and one level up its parent is marked as well.
-    await page.locator('custom-navigation-modal .back-button').click();
+    await page.locator('custom-navigation-modal #button-back').click();
     await expect(tileByText(page, 'Mock Story 1')).toHaveClass(/tile_current/);
   });
 
@@ -156,12 +159,9 @@ test.describe('Navigation modal', () => {
     const readNodes = () =>
       page.evaluate(() => {
         const app = document.querySelector('app-bookstore');
-        return ['navigation', 'content'].map((role) => {
-          const node = app.shadowRoot.querySelector(
-            `custom-node[data-role="${role}"]`
-          );
-          return [node.getAttribute('id'), node.getAttribute('selected-child')];
-        });
+        return ['custom-node-view', 'custom-node-contents'].map((tag) =>
+          app.shadowRoot.querySelector(tag).getAttribute('id')
+        );
       });
     await openModal(page);
     await expect(tiles(page).first()).toBeVisible();
@@ -222,12 +222,18 @@ test.describe('Navigation modal in any depth', () => {
   };
 
   const tiles = (page) => page.locator('custom-navigation-modal button.tile');
+  const tileNames = (page) =>
+    page.locator('custom-navigation-modal button.tile .tile__name');
   const tile = (page, text) =>
-    page.locator('custom-navigation-modal button.tile', {
-      hasText: new RegExp(`^\\s*${text}\\s*$`),
+    page.locator('custom-navigation-modal button.tile').filter({
+      has: page.locator('.tile__name', {
+        hasText: new RegExp(`^\\s*${text}\\s*$`),
+      }),
     });
-  const modal = (page) => page.locator('custom-navigation-modal slds-modal');
-  const back = (page) => page.locator('custom-navigation-modal .back-button');
+  // By its id: the modal also holds the create dialog, a second slds-modal.
+  const modal = (page) =>
+    page.locator('custom-navigation-modal #modal-navigation');
+  const back = (page) => page.locator('custom-navigation-modal #button-back');
   const openModal = (page) => page.locator('#button-navigation_open').click();
 
   // A missing tile fails the click quickly instead of running into the
@@ -250,7 +256,10 @@ test.describe('Navigation modal in any depth', () => {
     await tile(page, 'Deep Level 2').click();
     await tile(page, 'Deep Level 3').click();
 
-    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tileNames(page)).toHaveText([
+      'Deep Level 4',
+      'Deep Level 4 B',
+    ]);
   });
 
   test('goes up exactly one level with back', async ({ page }) => {
@@ -261,7 +270,26 @@ test.describe('Navigation modal in any depth', () => {
 
     await back(page).click();
 
-    await expect(tiles(page)).toHaveText(['Deep Level 3']);
+    await expect(tileNames(page)).toHaveText(['Deep Level 3']);
+  });
+
+  // Only the class is pinned, not the look: how the stack is drawn is one CSS
+  // rule of the modal and may change without touching this spec.
+  test('a tile with children is marked as a stack, a leaf is not', async ({
+    page,
+  }) => {
+    await openModal(page);
+
+    await expect(tile(page, 'Deep Root')).toHaveClass(/tile_stack/);
+    await expect(tile(page, 'Other Root')).not.toHaveClass(/tile_stack/);
+  });
+
+  test('a tile carries only its name, no number of children', async ({
+    page,
+  }) => {
+    await openModal(page);
+
+    await expect(tile(page, 'Deep Root')).toHaveText(/^\s*Deep Root\s*$/);
   });
 
   test('a tile without children selects the node and closes', async ({
@@ -277,7 +305,10 @@ test.describe('Navigation modal in any depth', () => {
     await expect(modal(page)).not.toHaveAttribute('open');
   });
 
-  test('reopens on the level of a deep location and marks the whole path', async ({
+  // Back takes the page along: it stands on the level now open, so no tile
+  // on that level is the current one — until the top level, where the page
+  // stays and its root is marked.
+  test('reopens on the level of a deep location, back takes the page along', async ({
     page,
   }) => {
     await openModal(page);
@@ -289,12 +320,17 @@ test.describe('Navigation modal in any depth', () => {
 
     await openModal(page);
 
-    await expect(tiles(page)).toHaveText(['Deep Level 4', 'Deep Level 4 B']);
+    await expect(tileNames(page)).toHaveText([
+      'Deep Level 4',
+      'Deep Level 4 B',
+    ]);
     await expect(tile(page, 'Deep Level 4 B')).toHaveClass(/tile_current/);
     await back(page).click();
-    await expect(tile(page, 'Deep Level 3')).toHaveClass(/tile_current/);
+    await expect(tile(page, 'Deep Level 3')).toBeVisible();
+    await expect(tile(page, 'Deep Level 3')).not.toHaveClass(/tile_current/);
     await back(page).click();
-    await expect(tile(page, 'Deep Level 2')).toHaveClass(/tile_current/);
+    await expect(tile(page, 'Deep Level 2')).toBeVisible();
+    await expect(tile(page, 'Deep Level 2')).not.toHaveClass(/tile_current/);
     await back(page).click();
     await expect(tile(page, 'Deep Root')).toHaveClass(/tile_current/);
     await expect(tile(page, 'Other Root')).not.toHaveClass(/tile_current/);
