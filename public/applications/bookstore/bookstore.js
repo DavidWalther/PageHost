@@ -13,6 +13,15 @@ import '/components/custom-node-contents/custom-node-contents.js';
 console.log('Bookstore.js file loaded');
 
 class Bookstore extends LitElement {
+  static styles = css`
+    /* The header stays at the top while the page scrolls, above the content. */
+    .header-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+  `;
+
   static properties = {
     isHydrated: { type: Boolean, state: true },
     _initPara: { type: Object, state: true },
@@ -83,51 +92,51 @@ class Bookstore extends LitElement {
 
   render() {
     return html`
-      <div style="position:sticky; top: 0; z-index:1">
-      <slds-card no-footer no-header>
-        <slds-layout wrap>
-          <slds-layout-item align-middle size="3-of-12">
-            <slds-layout wrap gutters-xx-small>
-              <slds-layout-item grow-none>
-                <slds-button-icon
-                  id="button-home"
-                  icon="utility:home"
-                  size="medium"
-                  variant="container-transparent"
-                  @click="${this.handleHome}"
-                ></slds-button-icon>
-              </slds-layout-item>
-              <slds-layout-item grow-none>
-                <slds-button-icon
-                  id="button-navigation_open"
-                  icon="utility:rows"
-                  size="medium"
-                  variant="container-transparent"
-                  @click="${this.handleOpenNavigation}"
-                ></slds-button-icon>
-              </slds-layout-item>
-            </slds-layout>
-          </slds-layout-item>
-          <slds-layout-item size="6-of-12">
-            <div class="slds-text-align_center slds-text-heading_large">
-              <span id="page-header-headline"></span>
-            </div>
-          </slds-layout-item>
-          <slds-layout-item align-middle size="3-of-12">
-            <slds-layout align-end>
-              <slds-layout-item grow-none>
-                <slds-button-icon
-                  id="button-settings_open"
-                  icon="utility:settings"
-                  size="medium"
-                  variant="container-transparent"
-                  @click="${this.handleOpenSettings}"
-                ></slds-button-icon>
-              </slds-layout-item>
-            </slds-layout>
-          </slds-layout-item>
-        </slds-layout>
-      </slds-card>
+      <div class="header-sticky">
+        <slds-card no-footer no-header>
+          <slds-layout wrap>
+            <slds-layout-item align-middle size="3-of-12">
+              <slds-layout wrap gutters-xx-small>
+                <slds-layout-item grow-none>
+                  <slds-button-icon
+                    id="button-home"
+                    icon="utility:home"
+                    size="medium"
+                    variant="container-transparent"
+                    @click="${this.handleHome}"
+                  ></slds-button-icon>
+                </slds-layout-item>
+                <slds-layout-item grow-none>
+                  <slds-button-icon
+                    id="button-navigation_open"
+                    icon="utility:rows"
+                    size="medium"
+                    variant="container-transparent"
+                    @click="${this.handleOpenNavigation}"
+                  ></slds-button-icon>
+                </slds-layout-item>
+              </slds-layout>
+            </slds-layout-item>
+            <slds-layout-item size="6-of-12">
+              <div class="slds-text-align_center slds-text-heading_large">
+                <span id="page-header-headline"></span>
+              </div>
+            </slds-layout-item>
+            <slds-layout-item align-middle size="3-of-12">
+              <slds-layout align-end>
+                <slds-layout-item grow-none>
+                  <slds-button-icon
+                    id="button-settings_open"
+                    icon="utility:settings"
+                    size="medium"
+                    variant="container-transparent"
+                    @click="${this.handleOpenSettings}"
+                  ></slds-button-icon>
+                </slds-layout-item>
+              </slds-layout>
+            </slds-layout-item>
+          </slds-layout>
+        </slds-card>
       </div>
       <custom-settings-modal>
         <slds-layout wrap vertical>
