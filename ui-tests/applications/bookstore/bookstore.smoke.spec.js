@@ -32,6 +32,34 @@ test.describe('Bookstore smoke', () => {
     await expect(header).toHaveCSS('z-index', '1');
   });
 
+  test('the header sticks to the top of the page when it scrolls', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 400, height: 500 });
+    await page.goto('/');
+    const header = page.locator('app-bookstore .header-sticky');
+    await expect(header).toBeVisible();
+    await expect(page.locator('#feeds')).toBeVisible();
+
+    // Enough below the header to scroll, whatever the mocked feeds bring.
+    await page.locator('app-bookstore').evaluate((host) => {
+      const spacer = document.createElement('div');
+      spacer.style.height = '3000px';
+      host.shadowRoot.appendChild(spacer);
+    });
+    const feedsBefore = (await page.locator('#feeds').boundingBox()).y;
+
+    await page.evaluate(() => window.scrollTo(0, 1000));
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(1000);
+
+    // The page moved, the header did not: it stays at the top, in view.
+    expect((await page.locator('#feeds').boundingBox()).y).toBeLessThan(
+      feedsBefore
+    );
+    expect((await header.boundingBox()).y).toBe(0);
+    await expect(header).toBeInViewport();
+  });
+
   test('App lädt und rendert die Grundstruktur', async ({ page }) => {
     await page.goto('/');
 
