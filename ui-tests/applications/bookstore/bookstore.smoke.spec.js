@@ -18,7 +18,7 @@ test.describe('Bookstore smoke', () => {
     await cacheLitBundle(page);
   });
 
-  test.fail('keeps the header at the top while scrolling', async ({ page }) => {
+  test('keeps the header at the top while scrolling', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('app-bookstore')).toBeAttached();
 
