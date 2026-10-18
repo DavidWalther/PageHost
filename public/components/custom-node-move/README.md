@@ -1,8 +1,8 @@
 # custom-node-move
 
 **The one action that moves a node.** Every trigger that moves a node runs it:
-the button in the action bar of the lower `custom-node` (and of the upper one
-while it shows a root, which always stands there), which marks, and the
+the button in the action bar of `custom-node-view` — of the node shown, roots
+included —, which marks, and the
 paste tile of the navigation modal, which moves the mark there. Triggers may
 move or multiply; the action stays here.
 

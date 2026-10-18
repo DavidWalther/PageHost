@@ -5,9 +5,10 @@ import {
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-chapter-edit/custom-chapter-edit.js';
+import '/components/custom-content-publish/custom-content-publish.js';
 import '/components/custom-node-delete/custom-node-delete.js';
 import '/components/custom-node-move/custom-node-move.js';
-import '/slds-components/slds-progress-bar/slds-progress-bar.js';
+import '/components/custom-node-contents/custom-node-contents.js';
 
 /**
  * Ein Knoten des Inhaltsbaums.
@@ -31,16 +32,14 @@ import '/slds-components/slds-progress-bar/slds-progress-bar.js';
  * verschieden aussehen, weil sie an verschiedenen Stellen verschiedene
  * Aufgaben haben. Welche Attribute es gibt, steht in der README.
  *
- * Die Lade-Mechanik der Inhalte (Chunks, IntersectionObserver, Sprung zu einem
- * Inhalt) ist aus `custom-chapter` übernommen und bewusst unverändert: sie war
- * dort erprobt, und sie hing nie an der Ebene, sondern an der Länge der Liste.
+ * The contents themselves — chunks, the jump to a content, adding one — are
+ * `custom-node-contents`, embedded here. The page uses the same component
+ * below its node view; a node in a feed shows its contents the same way.
  */
 class CustomNode extends LitElement {
   labels = {
     labelNoContents: 'Keine Inhalte vorhanden',
     labelLinkCopied: 'Link kopiert',
-    labelContentCreated: 'Inhalt erstellt',
-    labelContentCreateError: 'Fehler beim Erstellen des Inhalts',
   };
 
   static properties = {
@@ -59,38 +58,22 @@ class CustomNode extends LitElement {
     noTitle: { type: Boolean, attribute: 'no-title' },
     // Aktionen: Voreinstellung **aus** — ein schreibender Weg wird
     // ausdruecklich gewaehrt, nicht stillschweigend mitgeliefert.
-    canCreateChild: { type: Boolean, attribute: 'can-create-child' },
     canCreateContent: { type: Boolean, attribute: 'can-create-content' },
     canDelete: { type: Boolean, attribute: 'can-delete' },
     canMove: { type: Boolean, attribute: 'can-move' },
-    // Mark only while this node is a root: a root always stands in the upper
-    // node, a node with a parent is marked where it is the chosen one.
-    canMoveRoot: { type: Boolean, attribute: 'can-move-root' },
     // Id of the node marked to be moved, wherever it is. The consumer owns the
     // mark; the node compares, so a consumer that swaps the id need not care.
     markedId: { type: String },
     _nodeData: { state: true },
     _loading: { state: true },
-    _scrollPending: { state: true },
-    _pendingTotalCount: { state: true },
   };
 
   static styles = css`
     :host {
       display: block;
     }
-    #node-content {
+    custom-node-contents {
       margin-top: 1rem;
-    }
-    .content-container.pending {
-      min-height: 120px;
-    }
-    .content-container {
-      width: 100%;
-      transition: min-height 0.3s ease;
-    }
-    .content-container.loaded {
-      min-height: auto;
     }
   `;
 
@@ -104,21 +87,12 @@ class CustomNode extends LitElement {
     this.noChildNavigation = false;
     this.noContents = false;
     this.noTitle = false;
-    this.canCreateChild = false;
     this.canCreateContent = false;
     this.canDelete = false;
     this.canMove = false;
-    this.canMoveRoot = false;
     this.markedId = null;
     this._nodeData = null;
     this._loading = false;
-    this.pendingNewContentId = null;
-    this.intersectionObserver = null;
-    this.currentObservedChunkIndex = 1;
-    this.observedElements = new Map();
-    this._pendingDisplaySet = new Set();
-    this._scrollPending = false;
-    this._pendingTotalCount = 0;
   }
 
   // ==================================================
@@ -128,9 +102,7 @@ class CustomNode extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot);
-    this.addEventListener('loaded', this._onContentLoaded, true);
     this.addEventListener('content-deleted', this._onContentDeleted, true);
-    this.initializeIntersectionObserver();
     // Kein Laden hier: eine vor dem Upgrade gesetzte `id` steht in der ersten
     // `changedProperties`-Map, `updated` deckt den Fall also mit ab. Beides zu
     // tun hieße, den Knoten zweimal zu holen.
@@ -138,23 +110,12 @@ class CustomNode extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    this.removeEventListener('loaded', this._onContentLoaded, true);
     this.removeEventListener('content-deleted', this._onContentDeleted, true);
-    this.cleanupIntersectionObserver();
   }
 
   updated(changedProperties) {
     if (changedProperties.has('id')) {
       this.handleIdChange(this.id);
-    }
-
-    if (
-      changedProperties.has('_nodeData') &&
-      !this._loading &&
-      !this.noContents &&
-      this.contents.length > 0
-    ) {
-      this.setupContentObserving();
     }
   }
 
@@ -172,13 +133,9 @@ class CustomNode extends LitElement {
     return this._nodeData?.contents || [];
   }
 
-  get loadingProgress() {
-    if (this._pendingTotalCount === 0) return 0;
-    return Math.round(
-      ((this._pendingTotalCount - this._pendingDisplaySet.size) /
-        this._pendingTotalCount) *
-        100
-    );
+  /** The embedded list of contents, once rendered. */
+  get _contentsElement() {
+    return this.shadowRoot?.querySelector('custom-node-contents') ?? null;
   }
 
   // ==================================================
@@ -194,15 +151,7 @@ class CustomNode extends LitElement {
     }
 
     return html`
-      ${
-        this._scrollPending
-          ? html`<slds-progress-bar
-              percent=${this.loadingProgress}
-              circular
-            ></slds-progress-bar>`
-          : ''
-      }
-      <slds-card no-footer ?hidden=${this._scrollPending}>
+      <slds-card no-footer>
         <!-- Only the name goes with no-title: the actions share the header
              and stay. -->
         ${
@@ -214,22 +163,22 @@ class CustomNode extends LitElement {
         }
         <slds-layout slot="actions" wrap gutters-xxx-small>
           <!-- Ein Element je Aktion, aber nur, wenn die Aktion sichtbar ist —
-               sonst bliebe ein leerer Rahmen als Lücke stehen. Für die beiden
-               custom-chapter-edit prüft custom-node dafür dieselben Scopes, die
-               die Komponente selbst prüft (create bzw. edit): bewusst doppelt. -->
+               sonst bliebe ein leerer Rahmen als Lücke stehen. Für custom-chapter-edit
+               prüft custom-node dafür denselben Scope (edit), den die
+               Komponente selbst prüft: bewusst doppelt. -->
           ${
-            this.canCreateChild && this.hasScope('create')
+            this.hasScope('publish') && this.hasScope('edit')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
-                    <!-- Neuen Kind-Knoten anlegen: ohne chapter-id ist die
-                         Komponente im Anlege-Modus. -->
-                    <custom-chapter-edit
-                      id="node-create-child"
-                      story-id="${this.id}"
-                      mode="create"
-                      .chapters="${this.childNodeList}"
-                      @chapter-created=${this._handleChildCreated}
-                    ></custom-chapter-edit>
+                    <!-- The node is published through its own button, as in
+                         custom-node-view; the edit dialog has no publish tab. -->
+                    <custom-content-publish
+                      id="node-publish"
+                      object-name="node"
+                      trigger-size=""
+                      record-id="${this.id}"
+                      publish-date="${this._nodeData.published_date || ''}"
+                    ></custom-content-publish>
                   </div>
                 </slds-layout-item>`
               : ''
@@ -245,7 +194,6 @@ class CustomNode extends LitElement {
                       name="${this._nodeData.name || ''}"
                       .sortNumber="${this._nodeData.sortnumber ?? null}"
                       ?reversed="${this._nodeData.reversed || false}"
-                      publish-date="${this._nodeData.published_date || ''}"
                       @chapter-updated=${this._handleNodeUpdated}
                     ></custom-chapter-edit>
                   </div>
@@ -277,7 +225,7 @@ class CustomNode extends LitElement {
               : ''
           }
           ${
-            this._offersMark() && this.hasScope('edit')
+            this.canMove && this.hasScope('edit')
               ? html`<slds-layout-item grow-none align-middle>
                   <div class="slds-align_absolute-center">
                     <!-- Marks this node; the navigation modal moves the
@@ -387,344 +335,29 @@ class CustomNode extends LitElement {
       return '';
     }
 
-    const contents = this.contents;
-    if (contents.length === 0) {
-      // Ein Knoten, der nur weiterführt, ist kein Fehlerfall — der Hinweis
-      // gilt nur, wenn hier auch nichts weiterführt. Massgeblich ist, was
-      // **diese Instanz** rendert: mit `no-child-navigation` fuehrt hier
-      // nichts weiter, auch wenn der Knoten Kinder hat.
-      const showsChildNavigation =
-        !this.noChildNavigation && this.childNodeList.length > 0;
-      return showsChildNavigation
-        ? ''
-        : html`<p id="no-contents">${this.labels.labelNoContents}</p>`;
-    }
+    // Ein Knoten, der nur weiterführt, ist kein Fehlerfall — der Hinweis
+    // gilt nur, wenn hier auch nichts weiterführt. Massgeblich ist, was
+    // **diese Instanz** rendert: mit `no-child-navigation` fuehrt hier
+    // nichts weiter, auch wenn der Knoten Kinder hat.
+    const showsChildNavigation =
+      !this.noChildNavigation && this.childNodeList.length > 0;
+    const hint =
+      this.contents.length === 0 && !showsChildNavigation
+        ? html`<p id="no-contents">${this.labels.labelNoContents}</p>`
+        : '';
 
-    const ordered = this._nodeData?.reversed
-      ? [...contents].reverse()
-      : contents;
-
-    let targetIndex = -1;
-    if (this.contentnumber) {
-      targetIndex = ordered.findIndex(
-        (entry) => entry.sortnumber == this.contentnumber
-      );
-    }
-
-    const immediateLoadUpToChunk =
-      targetIndex === -1 ? this.getImmediateLoadChunkBoundary() : null;
-
-    return html`
-      <div id="node-content">
-        ${ordered.map((entry, index) => {
-          const chunkIndex = this.getChunkIndex(index);
-          const shouldLazyLoad =
-            targetIndex !== -1
-              ? index > targetIndex
-              : chunkIndex > immediateLoadUpToChunk;
-          const shouldHide = targetIndex > 0 && index < targetIndex;
-
-          return html`
-            <div
-              class="slds-p-bottom_small content-container pending"
-              data-content-id=${entry.id}
-              data-chunk-index=${chunkIndex}
-            >
-              <custom-paragraph
-                id=${entry.id}
-                data-name=${entry.name || ''}
-                data-sort-number=${entry.sortnumber || ''}
-                ?no-load=${shouldLazyLoad}
-                ?no-display=${shouldHide}
-              ></custom-paragraph>
-            </div>
-          `;
-        })}
-      </div>
-    `;
-  }
-
-  // ==================================================
-  // Chunk-Rechnung
-  // ==================================================
-
-  getChunkIndex(itemIndex) {
-    return Math.floor(itemIndex / this.loadingChunkSize);
-  }
-
-  getChunkStartIndex(chunkIndex) {
-    return chunkIndex * this.loadingChunkSize;
-  }
-
-  getChunkEndIndex(chunkIndex) {
-    return Math.min(
-      (chunkIndex + 1) * this.loadingChunkSize - 1,
-      this.contents.length - 1
-    );
-  }
-
-  /** Bis zu welchem Chunk wird sofort geladen (ohne Sprungziel: nur der erste)? */
-  getImmediateLoadChunkBoundary() {
-    if (!this.contentnumber) return 0;
-
-    const ordered = this._nodeData?.reversed
-      ? [...this.contents].reverse()
-      : this.contents;
-    const targetIndex = ordered.findIndex(
-      (entry) => entry.sortnumber == this.contentnumber
-    );
-
-    if (targetIndex === -1) {
-      console.warn(`contentnumber ${this.contentnumber} not found in contents`);
-      return 0;
-    }
-    return this.getChunkIndex(targetIndex);
-  }
-
-  // ==================================================
-  // Nachladen beim Scrollen
-  // ==================================================
-
-  initializeIntersectionObserver() {
-    this.intersectionObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            this.executeChunkLoading(entry.target);
-          }
-        });
-      },
-      { root: null, rootMargin: '200px', threshold: 0 }
-    );
-  }
-
-  cleanupIntersectionObserver() {
-    if (this.intersectionObserver) {
-      this.intersectionObserver.disconnect();
-      this.intersectionObserver = null;
-    }
-    this.observedElements.clear();
-  }
-
-  observeElement(element) {
-    if (this.intersectionObserver && element) {
-      this.intersectionObserver.observe(element);
-      this.observedElements.set(element, 'chunk-endpoint');
-    }
-  }
-
-  /**
-   * Element, dessen Sichtbarkeit den nächsten Chunk nachlädt: bewusst nicht das
-   * letzte des aktuellen Chunks, sondern etwa bei 75 % — sonst beginnt das
-   * Laden erst, wenn der Leser schon am Ende steht.
-   */
-  identifyNextObserverTarget(nextChunkIndex) {
-    const totalChunks = Math.ceil(this.contents.length / this.loadingChunkSize);
-    if (nextChunkIndex >= totalChunks) {
-      return null;
-    }
-
-    const currentChunkIndex = nextChunkIndex - 1;
-    const currentChunkStart = this.getChunkStartIndex(currentChunkIndex);
-    const currentChunkEnd = this.getChunkEndIndex(currentChunkIndex);
-    const chunkSize = currentChunkEnd - currentChunkStart + 1;
-    const triggerIndex = currentChunkStart + Math.floor(chunkSize * 0.75);
-
-    const containers = this.shadowRoot.querySelectorAll('.content-container');
-    return containers[triggerIndex] || containers[currentChunkEnd] || null;
-  }
-
-  collectContentsToLoad(chunkIndex) {
-    const startIndex = this.getChunkStartIndex(chunkIndex);
-    const endIndex = this.getChunkEndIndex(chunkIndex);
-
-    return Array.from(this.shadowRoot.querySelectorAll('.content-container'))
-      .filter((_, index) => index >= startIndex && index <= endIndex)
-      .map((container) => ({
-        container,
-        content: container.querySelector('custom-paragraph'),
-      }))
-      .filter(({ content }) => content && content.hasAttribute('no-load'));
-  }
-
-  executeChunkLoading(observedElement) {
-    const triggerChunkIndex = parseInt(observedElement.dataset.chunkIndex);
-    const chunkToLoad = triggerChunkIndex + 1;
-
-    const nextObserverTarget = this.identifyNextObserverTarget(chunkToLoad + 1);
-    const elementsToLoad = this.collectContentsToLoad(chunkToLoad);
-
-    if (this.intersectionObserver && observedElement) {
-      this.intersectionObserver.unobserve(observedElement);
-      this.observedElements.delete(observedElement);
-    }
-
-    elementsToLoad.forEach(({ content }) => content.removeAttribute('no-load'));
-    elementsToLoad.forEach(({ container }) => {
-      container.classList.add('loading');
-      container.classList.remove('pending');
-      setTimeout(() => {
-        container.classList.remove('loading');
-        container.classList.add('loaded');
-      }, 100);
-    });
-
-    if (nextObserverTarget) {
-      requestAnimationFrame(() => {
-        this.observeElement(nextObserverTarget);
-        this.currentObservedChunkIndex = chunkToLoad + 1;
-      });
-    }
-  }
-
-  setupContentObserving() {
-    this.cleanupIntersectionObserver();
-    this.initializeIntersectionObserver();
-
-    const ordered = this._nodeData?.reversed
-      ? [...this.contents].reverse()
-      : this.contents;
-    const targetIndex = this.contentnumber
-      ? ordered.findIndex((entry) => entry.sortnumber == this.contentnumber)
-      : -1;
-
-    const firstLazyChunk =
-      targetIndex !== -1
-        ? this.getChunkIndex(targetIndex + 1)
-        : this.getImmediateLoadChunkBoundary() + 1;
-
-    this.currentObservedChunkIndex = firstLazyChunk;
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const containers =
-          this.shadowRoot.querySelectorAll('.content-container');
-        const totalChunks = Math.ceil(
-          this.contents.length / this.loadingChunkSize
-        );
-
-        if (firstLazyChunk >= totalChunks) {
-          containers.forEach((container) => {
-            container.classList.remove('pending');
-            container.classList.add('loaded');
-          });
-          return;
-        }
-
-        const initialTarget = this.identifyNextObserverTarget(firstLazyChunk);
-        if (initialTarget) {
-          this.observeElement(initialTarget);
-        }
-
-        containers.forEach((container, index) => {
-          const isImmediate =
-            targetIndex !== -1
-              ? index <= targetIndex
-              : this.getChunkIndex(index) < firstLazyChunk;
-          if (isImmediate) {
-            container.classList.remove('pending');
-            container.classList.add('loaded');
-          }
-        });
-      });
-    });
-  }
-
-  // ==================================================
-  // Sprung zu einem Inhalt
-  // ==================================================
-
-  /**
-   * Sammelt die Inhalte, die vor dem Sprungziel liegen. Erst wenn sie geladen
-   * sind, wird der Knoten gezeigt — sonst springt die Seite ins Leere.
-   */
-  _buildPendingDisplaySet(contents) {
-    const ordered = this._nodeData?.reversed
-      ? [...contents].reverse()
-      : contents;
-    const targetIndex = ordered.findIndex(
-      (entry) => entry.sortnumber == this.contentnumber
-    );
-
-    if (targetIndex <= 0) {
-      this._resetJumpState();
-      return;
-    }
-
-    this._scrollPending = true;
-    this._pendingDisplaySet = new Set(
-      ordered.slice(0, targetIndex).map((entry) => entry.id)
-    );
-    this._pendingTotalCount = this._pendingDisplaySet.size;
-  }
-
-  _revealAndScroll() {
-    const target = this.contentnumber;
-    this._scrollPending = false;
-
-    this.updateComplete.then(() => {
-      this.shadowRoot
-        .querySelectorAll('custom-paragraph[no-display]')
-        .forEach((element) => element.removeAttribute('no-display'));
-
-      requestAnimationFrame(() => {
-        this.scrollToContent({ contentSortNumber: target });
-        this.contentnumber = null;
-      });
-    });
-  }
-
-  scrollToContent({ contentId, contentSortNumber }) {
-    const container = this.shadowRoot.getElementById('node-content');
-    if (!container) return;
-
-    const elements = Array.from(container.querySelectorAll('custom-paragraph'));
-    const match = contentSortNumber
-      ? elements.find(
-          (element) => element.dataset.sortNumber == contentSortNumber
-        )
-      : elements.find((element) => element.id == contentId);
-
-    if (match) {
-      match.scrollIntoView({ behavior: 'smooth' });
-    }
+    // The list is always there, also empty: the add button in the header
+    // adds through it. It gets its data handed over (_handOverContents).
+    return html`${hint}
+      <custom-node-contents
+        loading-chunk-size="${this.loadingChunkSize}"
+        @content-created=${this._onContentCreated}
+      ></custom-node-contents>`;
   }
 
   // ==================================================
   // Ereignisse
   // ==================================================
-
-  _onContentLoaded = (event) => {
-    // Der Knoten meldet `loaded` auch fuer sich selbst (`applyNodeData`), und
-    // der Listener haengt mit `capture` an ihm — er sieht also beides.
-    //
-    // Unterschieden wird am **Inhalt der Meldung**, nicht an `event.target`:
-    // Ein `composed` Ereignis aus dem eigenen Shadow-DOM wird am Host auf den
-    // Host umgeschrieben. `event.target` ist hier deshalb immer dieser Knoten,
-    // gleichgueltig ob ein Absatz oder er selbst gemeldet hat.
-    const contentData = event.detail?.paragraphData;
-    if (!contentData) {
-      return;
-    }
-
-    if (
-      this.pendingNewContentId &&
-      contentData.id === this.pendingNewContentId
-    ) {
-      this.requestUpdate();
-      this.pendingNewContentId = null;
-    }
-
-    if (this._pendingDisplaySet.size > 0) {
-      if (this._pendingDisplaySet.has(contentData.id)) {
-        this._pendingDisplaySet.delete(contentData.id);
-      }
-      this.requestUpdate();
-      if (this._pendingDisplaySet.size === 0) {
-        this._revealAndScroll();
-      }
-    }
-  };
 
   /**
    * Ein Inhalt hat sich abgemeldet.
@@ -756,15 +389,7 @@ class CustomNode extends LitElement {
     }
     this._loading = true;
     this._nodeData = null;
-    this._resetJumpState();
     this.fetchNode(newId);
-  }
-
-  /** Is marking granted for this node — always, or as a root only? */
-  _offersMark() {
-    return (
-      this.canMove || (this.canMoveRoot && !this._nodeData?.parent_node_id)
-    );
   }
 
   /**
@@ -779,22 +404,7 @@ class CustomNode extends LitElement {
     }
     this._loading = true;
     this._nodeData = null;
-    this._resetJumpState();
     this.fetchNode(this.id);
-  }
-
-  /**
-   * Der Zaehlstand des Sprungs gehoert zum **aktuellen** Knoten.
-   *
-   * Bleibt ein Rest darin stehen — etwa weil ein Inhalt vor dem Sprungziel nie
-   * ankam — und wird danach der Knoten gewechselt, bliebe `_scrollPending`
-   * gesetzt und versteckte die Karte des **naechsten** Knotens, an dem gar
-   * nichts auszusetzen war.
-   */
-  _resetJumpState() {
-    this._pendingDisplaySet = new Set();
-    this._pendingTotalCount = 0;
-    this._scrollPending = false;
   }
 
   /**
@@ -823,8 +433,6 @@ class CustomNode extends LitElement {
   }
 
   clearContent() {
-    this.cleanupIntersectionObserver();
-    this._resetJumpState();
     this._nodeData = null;
   }
 
@@ -855,9 +463,19 @@ class CustomNode extends LitElement {
     this.fireToast(this.labels.labelLinkCopied, 'info');
   }
 
+  /** The add button in the header adds through the list below. */
   handleCreateContentClick = () => {
-    if (!this._nodeData) return;
-    this.fireCreateEvent_Content(this._nodeData.id);
+    this._contentsElement?.createContent();
+  };
+
+  /** A content was added below: it counts here too (no hint any more). */
+  _onContentCreated = (event) => {
+    const created = event.detail?.content;
+    if (!created?.id || !this._nodeData) return;
+    this._nodeData = {
+      ...this._nodeData,
+      contents: [...this.contents, created],
+    };
   };
 
   /** This node is gone: show nothing of it any more. */
@@ -871,54 +489,8 @@ class CustomNode extends LitElement {
 
     this._nodeData = { ...this._nodeData, ...updated };
     this.requestUpdate();
-  }
-
-  /** Ein neu angelegter Kind-Knoten kommt in die Auswahl. */
-  _handleChildCreated(event) {
-    const created = event.detail?.chapterData;
-    if (!created?.id || !this._nodeData) return;
-
-    this._nodeData = {
-      ...this._nodeData,
-      nodes: [...this.childNodeList, created],
-    };
-    this.requestUpdate();
-  }
-
-  /**
-   * Übernimmt die Änderung eines Kind-Knotens in die Auswahl.
-   *
-   * Wird vom Consumer aufgerufen: geändert wird das Kind in seiner eigenen
-   * Darstellung, angezeigt wird es hier.
-   */
-  applyChildUpdate(childData) {
-    if (!childData?.id || !this._nodeData) return;
-    const nodes = this.childNodeList
-      .map((child) =>
-        child.id === childData.id ? { ...child, ...childData } : child
-      )
-      // As the backend sorts siblings: without a sortnumber at the end, a tie
-      // decided by the id. A moved node has no sortnumber.
-      .sort((first, second) => {
-        const firstSort = first.sortnumber ?? Number.MAX_SAFE_INTEGER;
-        const secondSort = second.sortnumber ?? Number.MAX_SAFE_INTEGER;
-        if (firstSort !== secondSort) {
-          return firstSort - secondSort;
-        }
-        return String(first.id).localeCompare(String(second.id));
-      });
-    this._nodeData = { ...this._nodeData, nodes };
-    this.requestUpdate();
-  }
-
-  /** Nimmt einen geloeschten Kind-Knoten aus der Auswahl. */
-  removeChildNode(childId) {
-    if (!childId || !this._nodeData) return;
-    this._nodeData = {
-      ...this._nodeData,
-      nodes: this.childNodeList.filter((child) => child.id !== childId),
-    };
-    this.requestUpdate();
+    // `reversed` may have changed: the list shows the new order.
+    this._handOverContents();
   }
 
   // ==================================================
@@ -951,13 +523,23 @@ class CustomNode extends LitElement {
       })
     );
 
-    // Ohne gerenderte Inhalte darf `_scrollPending` nie gesetzt werden: Es
-    // versteckt die Karte hinter `?hidden`, und niemand zaehlt sie wieder
-    // hervor — es laedt ja kein Absatz.
-    if (!this.noContents && this.contentnumber && this.contents.length > 0) {
-      this._buildPendingDisplaySet(this.contents);
-    }
     this._loading = false;
+    this._handOverContents();
+  }
+
+  /**
+   * Hands the record to the list of contents, once it is rendered. The jump
+   * to `contentnumber` goes along and belongs to the list from then on: the
+   * next node does not jump again.
+   */
+  async _handOverContents() {
+    if (this.noContents) return;
+    await this.updateComplete;
+    const contents = this._contentsElement;
+    if (!contents || !this._nodeData?.id) return;
+    contents.contentnumber = this.contentnumber;
+    contents.adoptNode(this._nodeData);
+    this.contentnumber = null;
   }
 
   fireQueryEvent_Node(nodeId, callback) {
@@ -968,42 +550,6 @@ class CustomNode extends LitElement {
         composed: true,
       })
     );
-  }
-
-  fireCreateEvent_Content(nodeId) {
-    this.dispatchEvent(
-      new CustomEvent('create', {
-        detail: {
-          object: 'content',
-          payload: {
-            node_id: nodeId,
-            name: '',
-            content: '',
-            htmlcontent:
-              '<slds-card no-footer><span slot="header">Neuer Inhalt</span></slds-card>',
-          },
-          callback: this.createEventCallback_Content.bind(this),
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
-
-  createEventCallback_Content(error, data) {
-    if (error) {
-      this.fireToast(this.labels.labelContentCreateError, 'error');
-      return;
-    }
-    const created = data?.result;
-    if (!created?.id) return;
-
-    this.fireToast(this.labels.labelContentCreated, 'success');
-    this._nodeData = {
-      ...this._nodeData,
-      contents: [...this.contents, created],
-    };
-    this.pendingNewContentId = created.id;
   }
 
   // ==================================================

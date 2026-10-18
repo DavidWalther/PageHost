@@ -1,19 +1,17 @@
 const { test, expect } = require('@playwright/test');
-const {
-  mockBookstoreCallouts,
-  MOCK_ROOT_PATH,
-} = require('../../support/mock-callouts');
+const { mockBookstoreCallouts } = require('../../support/mock-callouts');
 const { cacheLitBundle } = require('../../support/component-page');
 
 /**
  * What the page does after a node was deleted.
  *
  * `node-deleted` names the node (`nodeId`) and everything that went with it
- * (`nodeIds`). The page lets go of every one of them it shows: a node that
- * went from the selection above, the node below, or — when the node above
- * went — both, back to the start page as with the home button.
+ * (`nodeIds`). The page shows one node: is it among them, its parent takes
+ * its place — a root gives way to the start page, as with the home button.
+ * Is a child of it among them, the node is fetched again: its combobox of
+ * children lists one less.
  *
- * The event is fired here directly from the lower node; who deletes does not
+ * The event is fired here directly from the node view; who deletes does not
  * matter to the page (the delete action has its own spec).
  */
 
@@ -21,22 +19,20 @@ const ROOT = '000n00000000000011';
 const CHILD_1 = '000n00000000000001';
 const CHILD_2 = '000n00000000000002';
 
+/** How often each node was asked for. */
+let nodeQueries;
+
 function readPage(page) {
   return page.evaluate(() => {
     const root = document.querySelector('app-bookstore').shadowRoot;
     const isShown = (element) => element.getClientRects().length > 0;
-    const nodeOf = (role) =>
-      root.querySelector(`custom-node[data-role="${role}"]`);
+    const view = root.querySelector('custom-node-view');
     return {
       feedsShown: isShown(root.querySelector('#feeds')),
       nodesShown: isShown(root.querySelector('#bookshelf')),
-      navigationId: nodeOf('navigation').getAttribute('id'),
-      contentId: nodeOf('content').getAttribute('id'),
-      selection: [
-        ...nodeOf('navigation').shadowRoot.querySelectorAll(
-          '#child-navigation button'
-        ),
-      ].map((button) => button.dataset.nodeId),
+      viewId: view.getAttribute('id'),
+      contentsId: root.querySelector('custom-node-contents').getAttribute('id'),
+      treeLoaded: !!(view.siblings?.previous || view.siblings?.next),
       path: window.location.pathname,
     };
   });
@@ -46,7 +42,7 @@ function readPage(page) {
 function reportDeleted(page, detail) {
   return page.evaluate((detail) => {
     const root = document.querySelector('app-bookstore').shadowRoot;
-    root.querySelector('custom-node[data-role="content"]').dispatchEvent(
+    root.querySelector('custom-node-view').dispatchEvent(
       new CustomEvent('node-deleted', {
         detail,
         bubbles: true,
@@ -56,60 +52,70 @@ function reportDeleted(page, detail) {
   }, detail);
 }
 
+/** Opens the page on `id` and waits until it stands there, tree and all. */
+async function openOn(page, id) {
+  nodeQueries = {};
+  await mockBookstoreCallouts(page);
+  await page.route('**/data/query/node**', (route) => {
+    const asked = new URL(route.request().url()).searchParams.get('id');
+    nodeQueries[asked] = (nodeQueries[asked] ?? 0) + 1;
+    return route.fallback();
+  });
+  await cacheLitBundle(page);
+  await page.goto(`/${id}`);
+  await expect.poll(async () => (await readPage(page)).contentsId).toBe(id);
+  await expect.poll(async () => (await readPage(page)).treeLoaded).toBe(true);
+}
+
 test.describe('Page after deleting a node', () => {
   test.use({ actionTimeout: 5000 });
 
-  test.beforeEach(async ({ page }) => {
-    await mockBookstoreCallouts(page);
-    await cacheLitBundle(page);
-    await page.goto(MOCK_ROOT_PATH);
-    await expect
-      .poll(async () => (await readPage(page)).contentId)
-      .toBe(CHILD_1);
-    await expect
-      .poll(async () => (await readPage(page)).selection)
-      .toEqual([CHILD_1, CHILD_2]);
-  });
+  test('the node shown gone, its parent takes its place', async ({ page }) => {
+    await openOn(page, CHILD_1);
 
-  test('a deleted child leaves the selection, the node below is emptied', async ({
-    page,
-  }) => {
     await reportDeleted(page, { nodeId: CHILD_1, nodeIds: [CHILD_1] });
 
     await expect
-      .poll(async () => (await readPage(page)).selection)
-      .toEqual([CHILD_2]);
-    const state = await readPage(page);
-    expect(state.contentId).toBeNull();
-    expect(state.navigationId).toBe(ROOT);
-    expect(state.nodesShown).toBe(true);
+      .poll(async () => {
+        const state = await readPage(page);
+        return [state.viewId, state.contentsId];
+      })
+      .toEqual([ROOT, ROOT]);
+    expect((await readPage(page)).nodesShown).toBe(true);
   });
 
-  test('without nodeIds the node alone is let go of', async ({ page }) => {
-    await reportDeleted(page, { nodeId: CHILD_2 });
-
-    await expect
-      .poll(async () => (await readPage(page)).selection)
-      .toEqual([CHILD_1]);
-    expect((await readPage(page)).contentId).toBe(CHILD_1);
-  });
-
-  test('the node below goes when it is only among nodeIds', async ({
+  test('a child of the node shown gone, the node is fetched again', async ({
     page,
   }) => {
+    await openOn(page, ROOT);
+    const before = nodeQueries[ROOT] ?? 0;
+
+    // Without nodeIds the node alone went.
+    await reportDeleted(page, { nodeId: CHILD_2 });
+
+    await expect.poll(() => nodeQueries[ROOT] ?? 0).toBe(before + 1);
+    expect((await readPage(page)).viewId).toBe(ROOT);
+  });
+
+  test('the node shown goes when it is only among nodeIds', async ({
+    page,
+  }) => {
+    await openOn(page, CHILD_1);
+
     // Gone as part of a subtree: the deleted node itself is not shown.
     await reportDeleted(page, {
       nodeId: 'not-on-the-page',
       nodeIds: ['not-on-the-page', CHILD_1],
     });
 
-    await expect.poll(async () => (await readPage(page)).contentId).toBeNull();
-    expect((await readPage(page)).selection).toEqual([CHILD_2]);
+    await expect.poll(async () => (await readPage(page)).viewId).toBe(ROOT);
   });
 
-  test('a deleted node above leads back to the start page', async ({
+  test('a node shown gone with its root leads back to the start page', async ({
     page,
   }) => {
+    await openOn(page, CHILD_1);
+
     await reportDeleted(page, {
       nodeId: ROOT,
       nodeIds: [ROOT, CHILD_1, CHILD_2],
@@ -118,8 +124,8 @@ test.describe('Page after deleting a node', () => {
     await expect.poll(async () => (await readPage(page)).feedsShown).toBe(true);
     const state = await readPage(page);
     expect(state.nodesShown).toBe(false);
-    expect(state.navigationId).toBeNull();
-    expect(state.contentId).toBeNull();
+    expect(state.viewId).toBeNull();
+    expect(state.contentsId).toBeNull();
     expect(state.path).toBe('/');
   });
 });

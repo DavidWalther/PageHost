@@ -10,9 +10,9 @@ const { cacheLitBundle } = require('../../support/component-page');
  * way back and so no footer at all: the missing footer says that this is the
  * top of the tree.
  *
- * Going back reports `navigation-level-back` with the level now open (`id`)
- * and the one left (`childId`), so the page behind can show both. Back onto
- * the top level reports nothing: there is no node to show.
+ * Going back reports `navigation-level-back` with the level now open (`id`),
+ * so the page behind can show it. Back onto the top level reports nothing:
+ * there is no node to show.
  */
 
 const node = (id, name, childnodes = []) => ({
@@ -162,9 +162,7 @@ test.describe('Navigation modal: back in the footer', () => {
     await expect(tile(page, 'Book')).toHaveCount(0);
   });
 
-  test('going back reports the level now open and the one left', async ({
-    page,
-  }) => {
+  test('going back reports the level now open', async ({ page }) => {
     await open(page);
     await tile(page, 'Book').click();
     await tile(page, 'Part').click();
@@ -176,7 +174,7 @@ test.describe('Navigation modal: back in the footer', () => {
     expect(await reported(page)).toEqual([
       { name: 'navigation-level-open', id: 'book' },
       { name: 'navigation-level-open', id: 'part' },
-      { name: 'navigation-level-back', id: 'book', childId: 'part' },
+      { name: 'navigation-level-back', id: 'book' },
     ]);
   });
 

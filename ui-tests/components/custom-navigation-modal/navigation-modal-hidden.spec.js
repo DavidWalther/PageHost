@@ -16,24 +16,20 @@ const [CHAPTER_1, CHAPTER_2] = STORY_1.childnodes;
 
 /**
  * Mounts the modal on its own: in the application the host owns
- * `hidden-ids` and would set it back on its next render. The `query` for
- * the tree is answered here, as the application would.
+ * `hidden-ids` and would set it back on its next render. The tree is handed
+ * in here, as the application does.
  */
 async function open(page, { location = null } = {}) {
   await gotoComponentPage(page);
   await page.evaluate(
     async ({ location, tree }) => {
-      document.body.addEventListener('query', (event) => {
-        if (event.detail.payload.object === 'contents') {
-          event.detail.callback(null, tree);
-        }
-      });
       await import('/slds-components/slds-modal/slds-modal.js');
       await import('/slds-components/slds-layout/slds-layout.js');
       await import('/slds-components/slds-layout/slds-layout-item.js');
       await import('/slds-components/slds-button-icon/slds-button-icon.js');
       await import('/components/custom-navigation-modal/custom-navigation-modal.js');
       const modal = document.createElement('custom-navigation-modal');
+      modal.tree = tree;
       if (location) {
         modal.setAttribute('current-location', location);
       }

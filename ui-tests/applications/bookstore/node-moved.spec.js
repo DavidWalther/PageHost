@@ -1,7 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const {
   mockBookstoreCallouts,
-  MOCK_ROOT_PATH,
   MOCK_CONTENTS,
   MOCK_NODES,
 } = require('../../support/mock-callouts');
@@ -14,9 +13,8 @@ const { withSession } = require('../../support/session');
  * The page hands its mark to the navigation modal (`marked`, and the node
  * left out with `hidden-ids`); the modal's ✕ drops it. After `node-moved` the
  * mark is gone, the tree reloads, the modal closes, and the page shows the
- * moved node as if it had been chosen in the modal: below the node itself —
- * fetched again, it names its new parent — above its new parent. A node moved
- * to the top level has no parent to show; the old one above lets go of it.
+ * moved node at its new place: fetched again, it names its new parent, and its
+ * arrows lead to its new siblings — at their end, after the last of them.
  */
 
 const [STORY_1, STORY_2] = MOCK_CONTENTS.result;
@@ -105,29 +103,28 @@ async function open(page) {
     movedTo = body.payload.parent_node_id;
     return route.fulfill({ json: { success: true, result: body.payload } });
   });
-  await page.goto(MOCK_ROOT_PATH);
-  await expect
-    .poll(async () => (await readPage(page)).lowerId)
-    .toBe(CHILD_1.id);
+  await page.goto(`/${CHILD_1.id}`);
+  await expect.poll(async () => (await readPage(page)).viewId).toBe(CHILD_1.id);
   await expect(moveButton(page)).toBeVisible();
 }
 
 function readPage(page) {
   return page.evaluate(() => {
     const root = document.querySelector('app-bookstore').shadowRoot;
-    const upper = root.querySelector('custom-node[data-role="navigation"]');
-    const lower = root.querySelector('custom-node[data-role="content"]');
+    const view = root.querySelector('custom-node-view');
     const modal = root.querySelector('custom-navigation-modal');
     return {
-      upperId: upper.getAttribute('id'),
-      upperChildren: (upper.childNodeList ?? []).map((child) => child.id),
-      selectedChild: upper.getAttribute('selected-child'),
-      lowerId: lower.getAttribute('id'),
-      lowerParent:
-        lower.shadowRoot
-          .querySelector('#node-edit')
-          ?.getAttribute('story-id') ?? null,
-      lowerMarked: lower.shadowRoot.querySelector('#node-move')?.marked ?? null,
+      viewId: view.getAttribute('id'),
+      contentsId: root.querySelector('custom-node-contents').getAttribute('id'),
+      // The parent the edit dialog would write back.
+      viewParent:
+        view.shadowRoot.querySelector('#node-edit')?.getAttribute('story-id') ??
+        null,
+      siblings: [
+        view.siblings?.previous?.id ?? null,
+        view.siblings?.next?.id ?? null,
+      ],
+      viewMarked: view.shadowRoot.querySelector('#node-move')?.marked ?? null,
       modalMarked: modal.marked?.id ?? null,
       modalHidden: modal.hiddenIds ?? [],
       modalOpen: modal.shadowRoot
@@ -137,8 +134,7 @@ function readPage(page) {
   });
 }
 
-const moveButton = (page) =>
-  page.locator('custom-node[data-role="content"] #button-move');
+const moveButton = (page) => page.locator('custom-node-view #button-move');
 const tile = (page, text) =>
   page.locator('custom-navigation-modal button.tile').filter({
     has: page.locator('.tile__name', {
@@ -149,13 +145,15 @@ const pasteTile = (page) =>
   page.locator('custom-navigation-modal button.tile_paste');
 
 /**
- * Marks the lower node and opens the modal. The page entered at the root, so
- * the modal opens on the top level.
+ * Marks the node shown and opens the modal on the top level. The modal opens
+ * on the level of the node, below its root; back onto the top level leaves
+ * the page as it is.
  */
 async function markAndOpenModal(page) {
   await moveButton(page).click();
-  await expect.poll(async () => (await readPage(page)).lowerMarked).toBe(true);
+  await expect.poll(async () => (await readPage(page)).viewMarked).toBe(true);
   await page.locator('#button-navigation_open').click();
+  await page.locator('custom-navigation-modal #button-back').click();
   await expect(tile(page, STORY_2.name)).toBeVisible();
 }
 
@@ -183,7 +181,7 @@ test.describe('Page: moving a node', () => {
       .click();
 
     await expect
-      .poll(async () => (await readPage(page)).lowerMarked)
+      .poll(async () => (await readPage(page)).viewMarked)
       .toBe(false);
     const state = await readPage(page);
     expect(state.modalMarked).toBeNull();
@@ -201,24 +199,21 @@ test.describe('Page: moving a node', () => {
 
     await expect.poll(() => sent.length).toBe(1);
     await expect
-      .poll(async () => (await readPage(page)).lowerParent)
+      .poll(async () => (await readPage(page)).viewParent)
       .toBe(STORY_2.id);
     const state = await readPage(page);
     expect(state.modalOpen).toBe(false);
-    expect(state.lowerId).toBe(CHILD_1.id);
-    expect(state.lowerMarked).toBe(false);
+    expect(state.viewId).toBe(CHILD_1.id);
+    expect(state.contentsId).toBe(CHILD_1.id);
+    expect(state.viewMarked).toBe(false);
     expect(state.modalMarked).toBeNull();
-    expect(state.upperId).toBe(STORY_2.id);
-    expect(state.selectedChild).toBe(CHILD_1.id);
     await expect
-      .poll(async () => (await readPage(page)).upperChildren)
-      .toEqual([CHAPTER_3.id, CHILD_1.id]);
+      .poll(async () => (await readPage(page)).siblings)
+      .toEqual([CHAPTER_3.id, null]);
     expect(treeCalls).toBeGreaterThan(1);
   });
 
-  test('after moving to the top level the old parent lets go of it', async ({
-    page,
-  }) => {
+  test('after moving to the top level the node is a root', async ({ page }) => {
     await open(page);
     await markAndOpenModal(page);
 
@@ -227,14 +222,16 @@ test.describe('Page: moving a node', () => {
     await expect.poll(() => sent.length).toBe(1);
     expect(sent[0].payload.parent_node_id).toBeNull();
     await expect.poll(async () => (await readPage(page)).modalOpen).toBe(false);
-    // The lower node fetches itself again; its actions are back once it has.
+    // The node view fetches itself again; its actions are back once it has.
     await expect
-      .poll(async () => (await readPage(page)).lowerMarked)
+      .poll(async () => (await readPage(page)).viewMarked)
       .toBe(false);
+    await expect
+      .poll(async () => (await readPage(page)).siblings)
+      .toEqual([STORY_2.id, null]);
     const state = await readPage(page);
-    expect(state.lowerId).toBe(CHILD_1.id);
-    expect(state.upperChildren).not.toContain(CHILD_1.id);
-    expect(state.selectedChild).toBeNull();
+    expect(state.viewId).toBe(CHILD_1.id);
+    expect(state.viewParent).toBe('');
     expect(treeCalls).toBeGreaterThan(1);
   });
 });

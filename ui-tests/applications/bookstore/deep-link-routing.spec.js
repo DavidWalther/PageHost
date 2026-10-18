@@ -18,24 +18,25 @@ const { cacheLitBundle } = require('../../support/component-page');
  * start page: `feed-start-page.spec.js`.
  */
 
-/** Zustand beider Knoten nach dem Einstieg. */
+/**
+ * What the page shows after the entry: the node view above, the contents
+ * below — both always on the same node.
+ */
 async function readEntry(page) {
   return page.evaluate(() => {
-    const app = document.querySelector('app-bookstore');
-    const read = (role) => {
-      const element = app.shadowRoot.querySelector(
-        `custom-node[data-role="${role}"]`
-      );
-      return {
-        recordId: element.getAttribute('id'),
-        selectedChild: element.getAttribute('selected-child'),
-        contentNumber: element.getAttribute('contentnumber'),
-        name:
-          element.shadowRoot.querySelector('#node-name')?.textContent?.trim() ??
-          null,
-      };
+    const root = document.querySelector('app-bookstore').shadowRoot;
+    const view = root.querySelector('custom-node-view');
+    const contents = root.querySelector('custom-node-contents');
+    return {
+      recordId: view.getAttribute('id'),
+      contentsId: contents.getAttribute('id'),
+      name:
+        view.shadowRoot.querySelector('#node-name')?.textContent?.trim() ??
+        null,
+      contentIds: [
+        ...(contents.shadowRoot?.querySelectorAll('custom-paragraph') ?? []),
+      ].map((paragraph) => paragraph.id),
     };
-    return { navigation: read('navigation'), content: read('content') };
   });
 }
 
@@ -59,62 +60,50 @@ function recordQueries(page) {
 }
 
 test.describe('Deep-Link ohne Präfix-Typisierung', () => {
-  test('alte Kapitel-Id öffnet den Knoten samt seiner Auswahl', async ({
-    page,
-  }) => {
+  test('a retired chapter id opens exactly that node', async ({ page }) => {
     await open(page, '/000c00000000000002');
 
     await expect
-      .poll(async () => (await readEntry(page)).content.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Chapter 2 for Story 1');
 
-    const { navigation, content } = await readEntry(page);
-    // Der Elternknoten kommt aus der Antwort, nicht aus dem Präfix.
-    expect(navigation.recordId).toBe('000n00000000000011');
-    expect(navigation.selectedChild).toBe('000n00000000000002');
-    // Nach der Aufloesung arbeitet die App mit der NEUEN Id weiter.
-    expect(content.recordId).toBe('000n00000000000002');
+    // After resolving, the app goes on with the NEW id, above and below.
+    const entry = await readEntry(page);
+    expect(entry.recordId).toBe('000n00000000000002');
+    expect(entry.contentsId).toBe('000n00000000000002');
   });
 
-  test('neue Knoten-Id führt zum selben Ergebnis', async ({ page }) => {
+  test('a new node id leads to the same', async ({ page }) => {
     await open(page, '/000n00000000000002');
 
     await expect
-      .poll(async () => (await readEntry(page)).content.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Chapter 2 for Story 1');
-
-    const { navigation } = await readEntry(page);
-    expect(navigation.selectedChild).toBe('000n00000000000002');
+    expect((await readEntry(page)).contentsId).toBe('000n00000000000002');
   });
 
-  test('alte Story-Id öffnet den Wurzelknoten als Auswahl', async ({
-    page,
-  }) => {
+  test('a retired story id opens the root itself', async ({ page }) => {
     await open(page, '/000s00000000000011');
 
     await expect
-      .poll(async () => (await readEntry(page)).navigation.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Story 1');
-
-    const { navigation } = await readEntry(page);
-    expect(navigation.recordId).toBe('000n00000000000011');
+    expect((await readEntry(page)).recordId).toBe('000n00000000000011');
   });
 
-  test('alte Absatz-Id öffnet den Knoten, an dem der Absatz hängt', async ({
+  test('a retired paragraph id opens the node it hangs on, at the paragraph', async ({
     page,
   }) => {
-    // Neu: früher fiel ein `000p…`-Link stillschweigend auf die Startseite
-    // zurück — die Präfix-Tabelle kannte den Typ, der Einstieg aber nicht.
+    // A `000p…` link once fell back to the start page without a word — the
+    // prefix table knew the type, the entry did not.
     await open(page, '/000p00000000000001');
 
     await expect
-      .poll(async () => (await readEntry(page)).content.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Chapter 1 for Story 1');
-
-    const { navigation, content } = await readEntry(page);
-    expect(navigation.recordId).toBe('000n00000000000011');
-    // Und es wird zu genau diesem Absatz gesprungen.
-    expect(content.contentNumber).toBe('1');
+    await expect
+      .poll(async () => (await readEntry(page)).contentIds)
+      .toEqual(['00cn00000000000001']);
   });
 
   test('the navigation modal knows the location after a deep link with a retired id', async ({
@@ -127,7 +116,7 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
     await open(page, '/000c00000000000002');
 
     await expect
-      .poll(async () => (await readEntry(page)).content.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Chapter 2 for Story 1');
 
     await page.locator('#button-navigation_open').click();
@@ -136,60 +125,61 @@ test.describe('Deep-Link ohne Präfix-Typisierung', () => {
     await expect(current).toHaveText('Mock Chapter 2 for Story 1');
   });
 
-  test('holt keinen Knoten zweimal', async ({ page }) => {
-    // Regressionswächter. `resolveEntryPoint` löst den Knoten auf und gibt
-    // den Datensatz an `custom-node` weiter; ohne diese Übergabe holte der
-    // Knoten genau das noch einmal, was gerade angekommen war.
+  test('fetches no node twice', async ({ page }) => {
+    // Guard. `resolveEntryPoint` resolves the node and hands the record to
+    // the node view, which hands it on to the contents. Without that both
+    // would fetch again what has just arrived.
     const queries = recordQueries(page);
     await open(page, '/000n00000000000002');
 
     await expect
-      .poll(async () => (await readEntry(page)).content.name)
-      .toBe('Mock Chapter 2 for Story 1');
+      .poll(async () => (await readEntry(page)).contentsId)
+      .toBe('000n00000000000002');
     await page.waitForTimeout(300);
 
-    expect(queries).toEqual([
-      // der aufgelöste Knoten selbst …
-      '/data/query/node?id=000n00000000000002',
-      // … und sein Elternknoten, den nur die Id benennt
-      '/data/query/node?id=000n00000000000011',
-    ]);
+    // The resolved node itself, and nothing else: there is no parent above
+    // to fetch any more.
+    expect(queries).toEqual(['/data/query/node?id=000n00000000000002']);
   });
 
-  test('holt beim Einstieg über einen Inhalt nichts doppelt', async ({
+  test('fetches nothing twice on the entry through a content', async ({
     page,
   }) => {
     const queries = recordQueries(page);
     await open(page, '/000p00000000000001');
 
     await expect
-      .poll(async () => (await readEntry(page)).content.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Chapter 1 for Story 1');
     await page.waitForTimeout(300);
 
-    // Kein Eintrag kommt zweimal vor.
+    // No entry comes twice.
     expect(new Set(queries).size).toBe(queries.length);
     expect(queries).toContain('/data/query/content?id=000p00000000000001');
     expect(queries).toContain('/data/query/node?id=000n00000000000001');
   });
 
-  test('Navigation im Knoten schaltet den Inhalt um', async ({ page }) => {
+  test('a child chosen in the node view becomes the node shown', async ({
+    page,
+  }) => {
     await open(page, '/000s00000000000011');
 
     await expect
-      .poll(async () => (await readEntry(page)).navigation.name)
+      .poll(async () => (await readEntry(page)).name)
       .toBe('Mock Story 1');
 
-    await page.evaluate(() => {
-      const app = document.querySelector('app-bookstore');
-      app.shadowRoot
-        .querySelector('custom-node[data-role="navigation"]')
-        .shadowRoot.querySelector('button[data-node-id="000n00000000000002"]')
-        .click();
-    });
+    await page.locator('custom-node-view slds-combobox').evaluate((combobox) =>
+      combobox.dispatchEvent(
+        new CustomEvent('combobox-select', {
+          detail: { value: '000n00000000000002' },
+          bubbles: true,
+          composed: true,
+        })
+      )
+    );
 
     await expect
-      .poll(async () => (await readEntry(page)).content.recordId)
+      .poll(async () => (await readEntry(page)).contentsId)
       .toBe('000n00000000000002');
   });
 });

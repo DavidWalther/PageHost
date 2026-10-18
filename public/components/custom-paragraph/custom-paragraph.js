@@ -256,7 +256,7 @@ class CustomParagraph extends LitElement {
                 icon="utility:delete"
                 variant="container-filled"
                 size="x-small"
-                title="${this.labels.labelDelete}"
+                label="${this.labels.labelDelete}"
                 @click=${this.handleDeleteClick}
               ></slds-button-icon>`
             : ''

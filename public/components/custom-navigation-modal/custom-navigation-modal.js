@@ -110,7 +110,9 @@ class NavigationModal extends LitElement {
     // The node marked to be moved, `{ id, name, parentId }`, or null. The host
     // owns the mark; the modal names it and moves it.
     marked: { type: Object },
-    _tree: { state: true },
+    // The content tree, as the host loads it. The modal asks for nothing
+    // itself: the page needs the same tree for the siblings.
+    tree: { type: Array, attribute: false },
     _openPath: { state: true },
   };
 
@@ -119,7 +121,7 @@ class NavigationModal extends LitElement {
     this.currentLocation = null;
     this.hiddenIds = [];
     this.marked = null;
-    this._tree = [];
+    this.tree = [];
     // Ids of the nodes whose children are listed, top down. Empty: the roots.
     this._openPath = [];
     // show() ran before the tree arrived; position once it is there.
@@ -129,48 +131,23 @@ class NavigationModal extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
-    this._loadContents();
-  }
-
-  //===========================
-  // Data
-  //===========================
-
-  _loadContents() {
-    this.dispatchEvent(
-      new CustomEvent('query', {
-        detail: {
-          payload: { object: 'contents' },
-          callback: (error, data) => {
-            if (error) {
-              console.error(error);
-              return;
-            }
-            this._tree = Array.isArray(data) ? data : [];
-            if (this._isOpen && this._positionPending) {
-              // show() ran before the tree was available: position now.
-              this._positionPending = false;
-              this._openPath = this._resolveInitialPath();
-            } else {
-              // A reload: stay on the open level as far as it still exists.
-              this._openPath = this._existingPrefix(this._openPath);
-            }
-          },
-        },
-        bubbles: true,
-        composed: true,
-      })
-    );
   }
 
   /** The tree as the modal lists it: without the nodes in `hidden-ids`. */
   get _shownTree() {
-    return withoutNodes(this._tree, this.hiddenIds || []);
+    return withoutNodes(this.tree, this.hiddenIds || []);
   }
 
-  /** Nodes left out while the modal is open: a level through them closes. */
+  /**
+   * A new tree, or nodes left out while the modal is open. A tree that arrives
+   * after show() positions the modal now; any other change keeps the open
+   * level as far as it still exists — a level through a left-out node closes.
+   */
   willUpdate(changed) {
-    if (changed.has('hiddenIds')) {
+    if (changed.has('tree') && this._isOpen && this._positionPending) {
+      this._positionPending = false;
+      this._openPath = this._resolveInitialPath();
+    } else if (changed.has('tree') || changed.has('hiddenIds')) {
       this._openPath = this._existingPrefix(this._openPath);
     }
   }
@@ -190,7 +167,7 @@ class NavigationModal extends LitElement {
   /** The path from a root down to the current location, or [] if unknown. */
   _locationPath() {
     return this.currentLocation
-      ? findPath(this._tree, this.currentLocation)
+      ? findPath(this.tree, this.currentLocation)
       : [];
   }
 
@@ -679,11 +656,10 @@ class NavigationModal extends LitElement {
 
   /**
    * Goes up one level. The page behind follows: it is told the level now
-   * open and the one left, to show both. On the top level there is no node
-   * to show, so nothing is reported and the page stays as it is.
+   * open, to show it. On the top level there is no node to show, so nothing
+   * is reported and the page stays as it is.
    */
   _handleBack() {
-    const childId = this._currentElementId();
     this._openPath = this._openPath.slice(0, -1);
     const id = this._currentElementId();
     if (!id) {
@@ -691,7 +667,7 @@ class NavigationModal extends LitElement {
     }
     this.dispatchEvent(
       new CustomEvent('navigation-level-back', {
-        detail: { id, childId },
+        detail: { id },
         bubbles: true,
         composed: true,
       })
@@ -704,7 +680,7 @@ class NavigationModal extends LitElement {
 
   show() {
     this._isOpen = true;
-    this._positionPending = this._tree.length === 0;
+    this._positionPending = (this.tree || []).length === 0;
     this._openPath = this._resolveInitialPath();
     this.shadowRoot.querySelector('slds-modal').show();
   }
@@ -712,15 +688,6 @@ class NavigationModal extends LitElement {
   hide() {
     this._isOpen = false;
     this.shadowRoot.querySelector('slds-modal').hide();
-  }
-
-  /**
-   * Loads the content tree again — after a node was created, changed,
-   * deleted, published or unpublished. An open modal stays on its level as
-   * far as that level still exists.
-   */
-  reload() {
-    this._loadContents();
   }
 }
 

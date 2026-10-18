@@ -130,7 +130,9 @@ function readFeed(page) {
         hasChildNavigation:
           !!element.shadowRoot?.querySelector('#child-navigation'),
         contentIds: [
-          ...(element.shadowRoot?.querySelectorAll('custom-paragraph') ?? []),
+          ...(element.shadowRoot
+            ?.querySelector('custom-node-contents')
+            ?.shadowRoot?.querySelectorAll('custom-paragraph') ?? []),
         ].map((paragraph) => paragraph.id),
         noChildNavigation: element.hasAttribute('no-child-navigation'),
         canCreateContent: element.hasAttribute('can-create-content'),

@@ -7,7 +7,8 @@ const { cacheLitBundle } = require('../../support/component-page');
 const { withSession } = require('../../support/session');
 
 /**
- * Bearbeiten am Knoten: Anlegen eines Inhalts und Löschen des Knotens.
+ * Editing on the page: adding a content (below, `custom-node-contents`) and
+ * deleting the node (above, `custom-node-view`).
  *
  * Diese Wege gehen über die **neuen** Objektnamen (`content`, `node`) und über
  * die neue Id. Genau daran hängt, ob die Umstellung durchgängig ist: bis
@@ -28,21 +29,21 @@ async function openAsEditor(page) {
   await expect(page.locator('app-bookstore')).toBeAttached();
 }
 
-/** Der untere Knoten — der mit den Inhalten. */
-function contentNode(page) {
-  return page.locator('custom-node[data-role="content"]');
-}
+/** The node shown, with its actions. */
+const nodeView = (page) => page.locator('custom-node-view');
+/** Its contents, with adding one. */
+const nodeContents = (page) => page.locator('custom-node-contents');
 
-test.describe('custom-node: Bearbeiten', () => {
+test.describe('Page: editing the node shown', () => {
   test('zeigt Anlegen und Löschen nur mit den passenden Scopes', async ({
     page,
   }) => {
     await openAsEditor(page);
 
     await expect(
-      contentNode(page).locator('#button-create-content')
+      nodeContents(page).locator('#button-create-content')
     ).toBeVisible();
-    await expect(contentNode(page).locator('#button-delete')).toBeVisible();
+    await expect(nodeView(page).locator('#button-delete')).toBeVisible();
   });
 
   test('ohne Sitzung fehlen beide Schaltflächen', async ({ page }) => {
@@ -50,14 +51,14 @@ test.describe('custom-node: Bearbeiten', () => {
     await cacheLitBundle(page);
     await page.goto('/000c00000000000001');
     await expect(page.locator('app-bookstore')).toBeAttached();
-    await expect(contentNode(page).locator('#node-name')).toHaveText(
+    await expect(nodeView(page).locator('#node-name')).toHaveText(
       'Mock Chapter 1 for Story 1'
     );
 
     await expect(
-      contentNode(page).locator('#button-create-content')
+      nodeContents(page).locator('#button-create-content')
     ).toHaveCount(0);
-    await expect(contentNode(page).locator('#button-delete')).toHaveCount(0);
+    await expect(nodeView(page).locator('#button-delete')).toHaveCount(0);
   });
 
   test('Anlegen schickt object "content" mit der neuen Knoten-Id', async ({
@@ -65,7 +66,7 @@ test.describe('custom-node: Bearbeiten', () => {
   }) => {
     await openAsEditor(page);
     await expect(
-      contentNode(page).locator('#button-create-content')
+      nodeContents(page).locator('#button-create-content')
     ).toBeVisible();
 
     let sent = null;
@@ -76,7 +77,7 @@ test.describe('custom-node: Bearbeiten', () => {
       });
     });
 
-    await contentNode(page).locator('#button-create-content').click();
+    await nodeContents(page).locator('#button-create-content').click();
 
     await expect.poll(() => sent?.object).toBe('content');
     expect(sent.payload.node_id).toBe('000n00000000000001');
@@ -85,11 +86,11 @@ test.describe('custom-node: Bearbeiten', () => {
     expect(sent.payload).not.toHaveProperty('storyId');
   });
 
-  test('Löschen schickt object "node" und räumt die Auswahl auf', async ({
+  test('Löschen schickt object "node", die Seite zeigt den Elternknoten', async ({
     page,
   }) => {
     await openAsEditor(page);
-    await expect(contentNode(page).locator('#button-delete')).toBeVisible();
+    await expect(nodeView(page).locator('#button-delete')).toBeVisible();
 
     page.on('dialog', (dialog) => dialog.accept());
 
@@ -99,27 +100,13 @@ test.describe('custom-node: Bearbeiten', () => {
       return route.fulfill({ json: { success: true } });
     });
 
-    await contentNode(page).locator('#button-delete').click();
+    await nodeView(page).locator('#button-delete').click();
 
     await expect.poll(() => deleteUrl).toContain('object=node');
     expect(deleteUrl).toContain('id=000n00000000000001');
 
-    // Der obere Knoten nimmt das gelöschte Kind aus seiner Auswahl.
-    await expect
-      .poll(async () =>
-        page.evaluate(() => {
-          const app = document.querySelector('app-bookstore');
-          const navigation = app.shadowRoot.querySelector(
-            'custom-node[data-role="navigation"]'
-          );
-          return [
-            ...navigation.shadowRoot.querySelectorAll(
-              '#child-navigation button'
-            ),
-          ].map((button) => button.dataset.nodeId);
-        })
-      )
-      .toEqual(['000n00000000000002']);
+    // The node gone, its parent takes its place.
+    await expect(nodeView(page)).toHaveAttribute('id', '000n00000000000011');
   });
 
   test('Löschen eines Knotens mit Kindern fragt ein zweites Mal', async ({
@@ -154,7 +141,7 @@ test.describe('custom-node: Bearbeiten', () => {
     await cacheLitBundle(page);
     await withSession(page, ['read', 'edit', 'create', 'delete']);
     await page.goto('/000c00000000000001');
-    await expect(contentNode(page).locator('#button-delete')).toBeVisible();
+    await expect(nodeView(page).locator('#button-delete')).toBeVisible();
 
     const messages = [];
     page.on('dialog', (dialog) => {
@@ -168,7 +155,7 @@ test.describe('custom-node: Bearbeiten', () => {
       return route.fulfill({ json: { success: true } });
     });
 
-    await contentNode(page).locator('#button-delete').click();
+    await nodeView(page).locator('#button-delete').click();
 
     await expect.poll(() => messages.length).toBe(2);
     // The kept node's own content is named in the first prompt.

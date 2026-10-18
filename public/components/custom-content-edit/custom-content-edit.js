@@ -146,7 +146,7 @@ class CustomContentEdit extends LitElement {
         icon="utility:edit"
         variant="container-filled"
         size="x-small"
-        title="${this.labels.labelEditContent}"
+        label="${this.labels.labelEditContent}"
         @click=${this.show}
       ></slds-button-icon>
 

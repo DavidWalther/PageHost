@@ -44,8 +44,8 @@ deshalb in `slds-components/slds-layout/`, nicht in einem App-Ordner.
 der **Dateiname** den Aspekt. `slds-layout/` enthält `slds-layout.spec.js` (die
 Komponente selbst) und `layout-classlist-contract.spec.js` (ihr Contract gegenüber
 Consumern). Aus demselben Grund liegen in `custom-node/` mehrere Specs: einer
-für die Komponente selbst, einer für die Auswahl per Combobox, einer für die
-Bearbeitungswege — der Ordner benennt den Gegenstand, der Dateiname den Aspekt.
+für die Komponente selbst, einer für die Auswahl per Combobox, einer für ihre
+Attribute — der Ordner benennt den Gegenstand, der Dateiname den Aspekt.
 
 ### Support-Module
 
@@ -113,16 +113,16 @@ Diese Unterscheidung betrifft den **Mechanismus** (welche Seite der Test lädt),
 „Wo gehört ein neuer Spec hin?"). Ein App-Test kann sehr wohl im Ordner einer
 Komponente liegen.
 
-| Art                  | Specs                                                                                           | Seite                                 |
-| :------------------- | :---------------------------------------------------------------------------------------------- | :------------------------------------ |
-| **App-Tests**        | u. a. `bookstore.smoke`, `navigation-modal`, `node-child-combobox`, `layout-classlist-contract` | echte App (`page.goto('/')`)          |
-| **Komponententests** | die 13 `slds-<name>.spec.js`                                                                    | **leere Seite** (`gotoComponentPage`) |
+| Art                  | Specs                                                                                      | Seite                                 |
+| :------------------- | :----------------------------------------------------------------------------------------- | :------------------------------------ |
+| **App-Tests**        | u. a. `bookstore.smoke`, `navigation-modal`, `node-view-page`, `layout-classlist-contract` | echte App (`page.goto('/')`)          |
+| **Komponententests** | die 13 `slds-<name>.spec.js`                                                               | **leere Seite** (`gotoComponentPage`) |
 
 Ein App-Test ist nötig, wenn der Gegenstand **nur im Zusammenspiel** existiert:
 `layout-classlist-contract` prüft, dass kein Consumer Klassen an einem
 Layout-Host ablegt — das ist ohne die Consumer nicht prüfbar.
-`node-child-combobox` prüft einen Pfad, den erst der Consumer auslöst
-(`custom-node` rendert die Combobox nur ab genügend Kind-Knoten).
+`node-view-page` prüft, dass oben und unten immer derselbe Knoten steht — das
+entsteht erst durch die Verdrahtung im `bookstore`.
 
 Ein Komponententest mountet eine Webkomponente isoliert und prüft ihr Shadow-DOM.
 Er braucht dafür **keine laufende App** — nur eine Seite auf demselben Origin, von
@@ -150,6 +150,12 @@ zwei Funktionen:
 - `cacheLitBundle(page)` — holt das Lit-Bundle **einmal pro Worker** und beantwortet
   weitere Requests aus dem Speicher (es bleibt das echte Bundle). Auch die App-Tests
   nutzen das, weil jede Komponente Lit per CDN importiert.
+
+[`ui-tests/support/node-mount.js`](../ui-tests/support/node-mount.js) baut darauf
+auf: `mountNode(page, { node, attrs, scopes })` montiert ein `custom-node` allein,
+lädt das SLDS-Stylesheet (Layout lässt sich messen) und beantwortet die Abfragen
+des Knotens selbst. Die Seite nutzt `custom-node` nicht mehr, nur noch die Feeds —
+seine Specs laufen deshalb ohne App.
 
 ## Authentifizierung
 

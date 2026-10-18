@@ -1,12 +1,14 @@
 import {
   LitElement,
   html,
+  nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
 import '/components/custom-publishing/custom-publishing.js';
 
 /**
- * Veröffentlicht **einen Inhalt** in einem eigenen Modal.
+ * Veröffentlicht **einen Inhalt** in einem eigenen Modal — mit
+ * `object-name="node"` auch einen Knoten (für `custom-node-view`).
  *
  * **Übergangslösung.** Geplant ist eine einheitliche Komponente, die Inhalte
  * *und Listen von Inhalten* veröffentlicht. Bis es sie gibt, hält diese hier
@@ -19,20 +21,29 @@ import '/components/custom-publishing/custom-publishing.js';
  * herausoperieren.
  */
 class CustomContentPublish extends LitElement {
+  // Per object: what the trigger and the modal call it. An unknown
+  // object-name falls back to a content, as it was before the attribute.
   labels = {
-    modalTitle: 'Absatz veröffentlichen',
-    labelPublishContent: 'Absatz veröffentlichen',
+    content: { modalTitle: 'Absatz veröffentlichen' },
+    node: { modalTitle: 'Knoten veröffentlichen' },
   };
 
   static properties = {
     recordId: { type: String, attribute: 'record-id' },
     publishDate: { type: String, attribute: 'publish-date' },
+    // `content` (default) or `node`: the node view publishes its node here.
+    objectName: { type: String, attribute: 'object-name' },
+    // Size of the trigger: x-small next to a paragraph; empty gives the
+    // default size of slds-button-icon, as the other actions of a node have.
+    triggerSize: { type: String, attribute: 'trigger-size' },
   };
 
   constructor() {
     super();
     this.recordId = '';
     this.publishDate = '';
+    this.objectName = 'content';
+    this.triggerSize = 'x-small';
   }
 
   connectedCallback() {
@@ -44,20 +55,22 @@ class CustomContentPublish extends LitElement {
     if (!this.checkPublishPermission()) {
       return html``;
     }
+    const object = this.labels[this.objectName] ? this.objectName : 'content';
+    const labels = this.labels[object];
 
     return html`
       <slds-button-icon
         icon="utility:upload"
         variant="container-filled"
-        size="x-small"
-        title="${this.labels.labelPublishContent}"
+        size="${this.triggerSize || nothing}"
+        label="${labels.modalTitle}"
         @click=${this.show}
       ></slds-button-icon>
 
-      <slds-modal heading="${this.labels.modalTitle}" footless>
+      <slds-modal heading="${labels.modalTitle}" footless>
         <custom-publishing
           record-id="${this.recordId}"
-          object-name="content"
+          object-name="${object}"
           publish-date="${this.publishDate || ''}"
         ></custom-publishing>
       </slds-modal>

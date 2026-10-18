@@ -20,9 +20,9 @@ modal's events into page changes.
 The component depends on `slds-modal`, `slds-layout` and `slds-layout-item` being
 registered, imports `/modules/content-tree.mjs` for path lookups and embeds
 `custom-chapter-edit` as its create dialog and `custom-node-delete` as its delete
-action. On connect it
-loads the content tree by dispatching a `query` event (`{ object: 'contents' }`)
-which the host wires to the backend.
+action. It asks for no data itself: the host hands it the content tree
+through the property `tree` — the page needs the same tree for the arrows to the
+siblings, and loads it once for everyone.
 
 ---
 
@@ -33,6 +33,7 @@ programmatically:
 
 ```html
 <custom-navigation-modal
+  .tree="${this._tree}"
   current-location="000n00000000000002"
   @navigation-level-open="${this.handleNavigationLevelOpen}"
   @navigation-level-back="${this.handleNavigationLevelBack}"
@@ -50,11 +51,12 @@ nav.hide(); // close the modal
 
 ## Attributes
 
-| Attribute          | Property          | Type     | Description                                                       |
-| ------------------ | ----------------- | -------- | ----------------------------------------------------------------- |
-| `current-location` | `currentLocation` | `String` | Id of the node the page currently stands on.                      |
-| `hidden-ids`       | `hiddenIds`       | `Array`  | Ids of nodes left out, each with everything below it.             |
-| —                  | `marked`          | `Object` | The node marked to be moved, `{ id, name, parentId }`, or `null`. |
+| Attribute          | Property          | Type     | Description                                                        |
+| ------------------ | ----------------- | -------- | ------------------------------------------------------------------ |
+| `current-location` | `currentLocation` | `String` | Id of the node the page currently stands on.                       |
+| `hidden-ids`       | `hiddenIds`       | `Array`  | Ids of nodes left out, each with everything below it.              |
+| —                  | `marked`          | `Object` | The node marked to be moved, `{ id, name, parentId }`, or `null`.  |
+| —                  | `tree`            | `Array`  | The content tree as `/api/1.0/contents` delivers it. Default `[]`. |
 
 ### `current-location`
 
@@ -112,8 +114,8 @@ the top level „Navigation“. A long name is cut short; `title` and `aria-labe
 „Zurück zu ‹name›“. The top level has no way back and therefore **no footer**: the
 missing footer says that this is the top of the tree.
 
-Going back reports `navigation-level-back` with the level now open (`id`) and the
-one left (`childId`), so the page behind can show both. Back onto the top level
+Going back reports `navigation-level-back` with the level now open (`id`), so the
+page behind can show it — the node the heading names. Back onto the top level
 reports nothing — there is no node to show.
 
 ### Opening a tile as a level
@@ -172,8 +174,7 @@ The tile is only the trigger; the action is `custom-node-delete`'s.
 
 ### Moving nodes
 
-A node is marked at the page (`custom-node-move` in the lower node, or in the upper
-one for a root); the host hands
+A node is marked at the page (`custom-node-move` in `custom-node-view`); the host hands
 the mark over as `marked` and leaves the node out with `hidden-ids`. The modal then
 
 - names the mark above the tiles on every level (`#marked-hint`, „‚Name‘ markiert“),
@@ -197,13 +198,12 @@ The tile is only the trigger; the action is `custom-node-move`'s.
 
 ## Events
 
-| Event                    | `detail`                | Description                                                                             |
-| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------- |
-| `navigation-level-open`  | `{ id }`                | A tile with children was opened. The page behind may follow (cover node).               |
-| `navigation-level-back`  | `{ id, childId }`       | One level up: `id` is the level now open, `childId` the one left. Not on the top level. |
-| `navigation-node-select` | `{ id, parentId }`      | A tile without children was chosen. `parentId` is `null` on the top level.              |
-| `node-mark-clear`        | `{ nodeId }`            | The ✕ of the hint: the host should drop the mark.                                       |
-| `query`                  | `{ payload, callback }` | Internal: requests the content tree (`{ object: 'contents' }`).                         |
+| Event                    | `detail`           | Description                                                                |
+| ------------------------ | ------------------ | -------------------------------------------------------------------------- |
+| `navigation-level-open`  | `{ id }`           | A tile with children was opened. The page behind shows that node.          |
+| `navigation-level-back`  | `{ id }`           | One level up: `id` is the level now open. Not on the top level.            |
+| `navigation-node-select` | `{ id, parentId }` | A tile without children was chosen. `parentId` is `null` on the top level. |
+| `node-mark-clear`        | `{ nodeId }`       | The ✕ of the hint: the host should drop the mark.                          |
 
 All events bubble and are composed.
 
@@ -211,13 +211,14 @@ All events bubble and are composed.
 
 ## Methods
 
-| Method     | Description                                                                            |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `show()`   | Opens the modal and positions it from `current-location` (see above).                  |
-| `hide()`   | Closes the modal (delegates to `slds-modal`).                                          |
-| `reload()` | Loads the content tree again; an open modal keeps its level as far as it still exists. |
+| Method   | Description                                                           |
+| -------- | --------------------------------------------------------------------- |
+| `show()` | Opens the modal and positions it from `current-location` (see above). |
+| `hide()` | Closes the modal (delegates to `slds-modal`).                         |
 
-The host calls `reload()` whenever a node was created, changed, deleted, moved, published or
+A new `tree` keeps an open modal on its level as far as that level still exists;
+one that arrives after `show()` positions the modal then. The host loads the tree
+again whenever a node was created, changed, deleted, moved, published or
 unpublished (`app-bookstore` listens for `chapter-created`, `chapter-updated`,
 `node-deleted`, `node-moved`, `published`, `unpublished`; a published **content** does
 not reload).
