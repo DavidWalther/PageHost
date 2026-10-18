@@ -149,15 +149,15 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
   werden soll, und entscheidet anhand der Rückmeldung über Reload oder Toast.
   - **The page shows one node**, in two components that always refer to
     it: **`custom-node-view`** above — the node itself: its name between
-    arrows to the previous and next sibling, the way up as breadcrumbs, its
-    children in a combobox and the actions on it (publish, edit, share, move,
+    arrows to the previous and next sibling, its children in a combobox and the actions on it (publish, edit, share, move,
     delete, each under its scope) — and **`custom-node-contents`** below,
     its contents with adding one; hidden for visitors while the list is empty.
     The `bookstore` keeps the location as **one** value and fetches the node
     once: the view loads it, the contents take the same record. The view
     knows no tree: the `bookstore` loads the content tree (once, again after
-    every change to a node) and hands it the path and the siblings
-    (`findPath`, `findSiblings`), and the modal the tree itself.
+    every change to a node) and hands it the siblings
+    (`findSiblings`), and the modal the tree itself. There are no
+    breadcrumbs: the way up is the modal's.
     → `public/components/custom-node-view/README.md`,
     `public/components/custom-node-contents/README.md`
   - **`custom-node`** shows **one node** in one component: its children to
