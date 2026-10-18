@@ -13,10 +13,10 @@ import '/components/custom-node-move/custom-node-move.js';
  * The node itself — shown above its contents (`custom-node-contents`), both
  * always referring to the same node.
  *
- * It shows the name of the node and the ways from it to other nodes: up
- * (breadcrumbs), sideways (the previous and next sibling) and down (its
- * children). It knows no tree: the host works out the path and the siblings
- * and hands them in. Every way to another node is the same event,
+ * It shows the name of the node and the ways from it to other nodes:
+ * sideways (the previous and next sibling) and down (its children). The way
+ * up is the navigation modal's — there are no breadcrumbs. It knows no tree:
+ * the host works out the siblings and hands them in. Every way to another node is the same event,
  * `node-view-navigate` with its id — what follows is the host's decision.
  */
 class CustomNodeView extends LitElement {
@@ -32,9 +32,6 @@ class CustomNodeView extends LitElement {
     // The siblings just before and after, `{ previous, next }`, each
     // `{ id, name }` or null — from the host, which knows the tree.
     siblings: { type: Object, attribute: false },
-    // The ancestors from the root down, `[{ id, name }]`, without the node
-    // itself — its name stands below. Empty for a root.
-    path: { type: Array, attribute: false },
     // Id of the node marked to be moved, wherever it is. The host owns the
     // mark; the view tells its move action whether that is this node.
     markedId: { type: String },
@@ -65,7 +62,6 @@ class CustomNodeView extends LitElement {
     super();
     this.id = null;
     this.siblings = { previous: null, next: null };
-    this.path = [];
     this.markedId = null;
     this._nodeData = null;
     this._loading = false;
@@ -95,10 +91,10 @@ class CustomNodeView extends LitElement {
     }
 
     return html`
-      <!-- The header holds the way up on the left and the actions on the
-           right; it is no heading, the breadcrumbs are no title. -->
+      <!-- The header holds the actions, on the right; it carries no title,
+           so it is no heading either. -->
       <slds-card no-footer no-header-title>
-        ${this._renderBreadcrumbs()} ${this._renderActions()}
+        ${this._renderActions()}
         <slds-layout id="node-title" vertical-align-center>
           <slds-layout-item id="item-previous">
             ${this._renderArrow('previous', 'utility:chevronleft')}
@@ -115,31 +111,6 @@ class CustomNodeView extends LitElement {
         ${this._renderChildren()}
       </slds-card>
     `;
-  }
-
-  /**
-   * The way up. Every crumb is a link — the trail ends above the node, whose
-   * name stands below — and carries the address of its node, so it can also
-   * be opened or copied as such.
-   */
-  _renderBreadcrumbs() {
-    const path = this.path || [];
-    if (path.length === 0) {
-      return '';
-    }
-    const items = path.map((node) => ({
-      key: node.id,
-      label: node.name || '',
-      href: `/${node.id}`,
-    }));
-    return html`<slds-breadcrumbs
-      slot="header"
-      size="small"
-      no-current-item
-      last-item-as-link
-      .items=${items}
-      @breadcrumb-select=${(event) => this._navigate(event.detail.key)}
-    ></slds-breadcrumbs>`;
   }
 
   /**

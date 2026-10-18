@@ -8,7 +8,7 @@ const { withSession } = require('../../support/session');
  * `custom-node-view` above (the node itself) and `custom-node-contents` below
  * (its contents). Every way through the tree ends at exactly one node — the
  * navigation modal, a deep link, the combobox of the children, an arrow to a
- * sibling, a breadcrumb.
+ * sibling. There are no breadcrumbs: the way up is the modal's.
  *
  *   shelf
  *   ├─ book-a            (one content)
@@ -126,7 +126,6 @@ function readPage(page) {
     return {
       viewId: upper?.getAttribute('id') ?? null,
       contentsId: lower?.getAttribute('id') ?? null,
-      path: (upper?.path ?? []).map((node) => node.id),
       previous: upper?.siblings?.previous?.id ?? null,
       next: upper?.siblings?.next?.id ?? null,
       feedsVisible: !root
@@ -174,17 +173,17 @@ test.describe('Page: one node, above and below', () => {
 
       await expectShown(page, 'part-1');
       const state = await readPage(page);
-      expect(state.path).toEqual(['shelf', 'book-a']);
       expect([state.previous, state.next]).toEqual([null, 'part-2']);
+      await expect(view(page).locator('slds-breadcrumbs')).toHaveCount(0);
       await expect(contents(page).locator('custom-paragraph')).toHaveCount(2);
     });
 
-    test('to a root shows the root, without breadcrumbs', async ({ page }) => {
+    test('to a root shows the root itself', async ({ page }) => {
       await open(page, '/shelf');
 
       await expectShown(page, 'shelf');
-      expect((await readPage(page)).path).toEqual([]);
-      await expect(view(page).locator('slds-breadcrumbs')).toHaveCount(0);
+      const state = await readPage(page);
+      expect([state.previous, state.next]).toEqual([null, 'other']);
     });
 
     test('to a content shows its node and jumps to it', async ({ page }) => {
@@ -277,17 +276,6 @@ test.describe('Page: one node, above and below', () => {
       await expectShown(page, 'part-1');
     });
 
-    test('a breadcrumb leads up', async ({ page }) => {
-      await open(page, '/part-1');
-      await expectShown(page, 'part-1');
-
-      await view(page)
-        .locator('slds-breadcrumbs a', { hasText: 'Shelf' })
-        .click();
-
-      await expectShown(page, 'shelf');
-    });
-
     test('the node is fetched once for both components', async ({ page }) => {
       await open(page, '/book-a');
       await expectShown(page, 'book-a');
@@ -315,32 +303,40 @@ test.describe('Page: one node, above and below', () => {
     test('give way at once when another node is chosen', async ({ page }) => {
       // Before, the old list stayed until the next node had arrived, and was
       // then replaced content by content.
-      await open(page, '/part-1');
-      await expectShown(page, 'part-1');
-      await expect(contents(page).locator('custom-paragraph')).toHaveCount(2);
+      await open(page, '/book-a');
+      await expectShown(page, 'book-a');
+      await expect(contents(page).locator('custom-paragraph')).toHaveCount(1);
 
       let release;
       const held = new Promise((resolve) => (release = resolve));
-      await page.route('**/data/query/node?id=book-a', async (route) => {
+      await page.route('**/data/query/node?id=part-1', async (route) => {
         await held;
         return route.fallback();
       });
 
       await view(page)
-        .locator('slds-breadcrumbs a', { hasText: 'Book A' })
-        .click();
+        .locator('slds-combobox')
+        .evaluate((el) =>
+          el.dispatchEvent(
+            new CustomEvent('combobox-select', {
+              detail: { value: 'part-1' },
+              bubbles: true,
+              composed: true,
+            })
+          )
+        );
       await expect
         .poll(async () => (await readPage(page)).viewId)
-        .toBe('book-a');
+        .toBe('part-1');
 
       // The next node is still on its way: nothing of the old one stays.
       await expect(contents(page).locator('custom-paragraph')).toHaveCount(0);
 
       release();
-      await expectShown(page, 'book-a');
-      await expect(contents(page).locator('custom-paragraph')).toHaveCount(1);
+      await expectShown(page, 'part-1');
+      await expect(contents(page).locator('custom-paragraph')).toHaveCount(2);
       await expect(
-        contents(page).locator('custom-paragraph[id="c-a1"]')
+        contents(page).locator('custom-paragraph[id="c-p1"]')
       ).toBeAttached();
     });
 

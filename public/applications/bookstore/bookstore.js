@@ -248,7 +248,6 @@ class Bookstore extends LitElement {
       >
         <div class="slds-col slds-m-horizontal--small slds-m-bottom--small">
           <custom-node-view
-            .path="${this._pathAbove()}"
             .siblings="${this._siblings()}"
             .markedId="${this._marked?.id ?? null}"
             @loaded="${this._handleNodeViewLoaded}"
@@ -285,13 +284,6 @@ class Bookstore extends LitElement {
     }
     this._currentLocation =
       typeof record === 'string' ? record : (record.id ?? null);
-  }
-
-  /** The ancestors of the node shown, for its breadcrumbs: `[{ id, name }]`. */
-  _pathAbove() {
-    return findPath(this._tree, this._currentLocation)
-      .slice(0, -1)
-      .map(({ id, name }) => ({ id, name }));
   }
 
   /** The siblings of the node shown, for its arrows: `{ previous, next }`. */
@@ -466,7 +458,7 @@ class Bookstore extends LitElement {
    * After a move the page shows the moved node, fetched again — it names its
    * old parent otherwise, which its edit dialog would write back. The mark is
    * used up, the modal closes; the tree reloads with the other changes to a
-   * node, and the breadcrumbs and arrows follow it.
+   * node, and the arrows follow it.
    */
   _handleNodeMoved(event) {
     const { nodeId } = event.detail ?? {};

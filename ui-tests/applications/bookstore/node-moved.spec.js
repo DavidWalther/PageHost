@@ -14,7 +14,7 @@ const { withSession } = require('../../support/session');
  * left out with `hidden-ids`); the modal's ✕ drops it. After `node-moved` the
  * mark is gone, the tree reloads, the modal closes, and the page shows the
  * moved node at its new place: fetched again, it names its new parent, and its
- * breadcrumbs lead there. Moved to the top level it is a root: no breadcrumbs.
+ * arrows lead to its new siblings — at their end, after the last of them.
  */
 
 const [STORY_1, STORY_2] = MOCK_CONTENTS.result;
@@ -120,7 +120,10 @@ function readPage(page) {
       viewParent:
         view.shadowRoot.querySelector('#node-edit')?.getAttribute('story-id') ??
         null,
-      breadcrumbs: (view.path ?? []).map((node) => node.id),
+      siblings: [
+        view.siblings?.previous?.id ?? null,
+        view.siblings?.next?.id ?? null,
+      ],
       viewMarked: view.shadowRoot.querySelector('#node-move')?.marked ?? null,
       modalMarked: modal.marked?.id ?? null,
       modalHidden: modal.hiddenIds ?? [],
@@ -205,8 +208,8 @@ test.describe('Page: moving a node', () => {
     expect(state.viewMarked).toBe(false);
     expect(state.modalMarked).toBeNull();
     await expect
-      .poll(async () => (await readPage(page)).breadcrumbs)
-      .toEqual([STORY_2.id]);
+      .poll(async () => (await readPage(page)).siblings)
+      .toEqual([CHAPTER_3.id, null]);
     expect(treeCalls).toBeGreaterThan(1);
   });
 
@@ -224,8 +227,8 @@ test.describe('Page: moving a node', () => {
       .poll(async () => (await readPage(page)).viewMarked)
       .toBe(false);
     await expect
-      .poll(async () => (await readPage(page)).breadcrumbs)
-      .toEqual([]);
+      .poll(async () => (await readPage(page)).siblings)
+      .toEqual([STORY_2.id, null]);
     const state = await readPage(page);
     expect(state.viewId).toBe(CHILD_1.id);
     expect(state.viewParent).toBe('');

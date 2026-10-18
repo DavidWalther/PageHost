@@ -4,8 +4,8 @@ Shows **the node itself**, above its contents. The page shows a node in two
 components that always refer to the same node: this one for the node,
 `custom-node-contents` below for its `content_node`s.
 
-It knows no tree. The host works out the path and the siblings from the
-content tree and hands them in; every way to another node is one event,
+It knows no tree. The host works out the siblings from the content tree and
+hands them in; every way to another node is one event,
 `node-view-navigate`, and what follows is the host's decision.
 
 ## Usage
@@ -21,28 +21,20 @@ content tree and hands them in; every way to another node is one event,
 
 ## Attributes and properties
 
-| Attribute | Property   | Type   | Description                                                                                |
-| :-------- | :--------- | :----- | :----------------------------------------------------------------------------------------- |
-| `id`      | `id`       | String | Id of the node. Setting it fetches the node (`query`, `object: 'node'`).                   |
-| —         | `siblings` | Object | `{ previous, next }`, each `{ id, name }` or `null`. Default: neither.                     |
-| —         | `path`     | Array  | The ancestors from the root down, `[{ id, name }]`, without the node itself. Default `[]`. |
+| Attribute | Property   | Type   | Description                                                              |
+| :-------- | :--------- | :----- | :----------------------------------------------------------------------- |
+| `id`      | `id`       | String | Id of the node. Setting it fetches the node (`query`, `object: 'node'`). |
+| —         | `siblings` | Object | `{ previous, next }`, each `{ id, name }` or `null`. Default: neither.   |
 
 ## The card
 
 One `slds-card` with `no-footer no-header-title`. Its header holds the
-breadcrumbs on the left (slot `header`) and the actions on the right (slot
-`actions`), in one row; it is no heading — the breadcrumbs are no title, and
-the name stands below. The body holds the name between its arrows, then the
-combobox of the children. A root has no breadcrumbs: its header holds only
-the actions, on the right.
+actions, on the right (slot `actions`); it carries no title, so it is no
+heading either. The body holds the name between its arrows, then the combobox
+of the children.
 
-## The breadcrumbs
-
-In the header, on the left, the way up: the ancestors from the root down, each a link
-(`slds-breadcrumbs` with `no-current-item` and `last-item-as-link`). The node
-itself is not among them — its name stands below. A root has no breadcrumbs.
-Each crumb carries the address of its node (`/<id>`); a click reports
-`node-view-navigate` instead of following it.
+There are **no breadcrumbs**. The way up is the navigation modal's: it opens
+where the node shown stands, and its back button leads up level by level.
 
 ## The arrows to the siblings
 
@@ -85,12 +77,12 @@ once (`chapter-updated`).
 
 ## Events
 
-| Event                | `detail`                          | When                                                                |
-| :------------------- | :-------------------------------- | :------------------------------------------------------------------ |
-| `query`              | `{ payload: { object: 'node' } }` | The component fetches its node (answered by `index.js`).            |
-| `loaded`             | `{ nodeData }`                    | The node is there — fetched, or handed in by `adoptNode`.           |
-| `toast`              | `{ message, variant }`            | The link was copied.                                                |
-| `node-view-navigate` | `{ id }`                          | A way to another node was taken: an arrow, a breadcrumb or a child. |
+| Event                | `detail`                          | When                                                      |
+| :------------------- | :-------------------------------- | :-------------------------------------------------------- |
+| `query`              | `{ payload: { object: 'node' } }` | The component fetches its node (answered by `index.js`).  |
+| `loaded`             | `{ nodeData }`                    | The node is there — fetched, or handed in by `adoptNode`. |
+| `toast`              | `{ message, variant }`            | The link was copied.                                      |
+| `node-view-navigate` | `{ id }`                          | A way to another node was taken: an arrow or a child.     |
 
 All bubble and are composed. `adoptNode` reports `loaded` at once: a listener
 has to hang before the call.

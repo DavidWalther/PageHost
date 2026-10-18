@@ -5,10 +5,10 @@ const { withSession } = require('../../support/session');
 /**
  * `custom-node-view` — the node itself, above its contents.
  *
- * It shows the name of the node, the way up (breadcrumbs), the way sideways
- * (arrows to the previous and next sibling), the way down (a combobox of the
- * children) and the actions on the node. It knows no tree: the host hands in
- * the path and the siblings. Every way to another node is one event,
+ * It shows the name of the node, the way sideways (arrows to the previous and
+ * next sibling), the way down (a combobox of the children) and the actions on
+ * the node. The way up is the navigation modal's: there are no breadcrumbs.
+ * It knows no tree: the host hands in the siblings. Every way to another node is one event,
  * `node-view-navigate` with the id.
  *
  * Mounted on its own; the page answers the query for the node.
@@ -28,11 +28,6 @@ const NODE = {
   contents: [],
 };
 
-const PATH = [
-  { id: 'n-shelf', name: 'Shelf' },
-  { id: 'n-book', name: 'Book' },
-];
-
 const SIBLINGS = {
   previous: { id: 'n-part-1', name: 'Part 1' },
   next: { id: 'n-part-3', name: 'Part 3' },
@@ -43,19 +38,19 @@ const SIBLINGS = {
 const STYLESHEET = '/assets/styles/salesforce-lightning-design-system.min.css';
 
 /**
- * Mounts the view for `node`, with `path` and `siblings` handed in as the
+ * Mounts the view for `node`, with `siblings` handed in as the
  * host would. Every `node-view-navigate` is recorded in `window.__navigated`.
  */
 async function mount(
   page,
-  { node = NODE, path = PATH, siblings = SIBLINGS, scopes = null } = {}
+  { node = NODE, siblings = SIBLINGS, scopes = null } = {}
 ) {
   if (scopes) {
     await withSession(page, scopes);
   }
   await gotoComponentPage(page);
   await page.evaluate(
-    async ({ node, path, siblings, stylesheet }) => {
+    async ({ node, siblings, stylesheet }) => {
       if (!document.querySelector(`link[href="${stylesheet}"]`)) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -79,7 +74,6 @@ async function mount(
         '/slds-components/slds-layout/slds-layout.js',
         '/slds-components/slds-layout/slds-layout-item.js',
         '/slds-components/slds-button-icon/slds-button-icon.js',
-        '/slds-components/slds-breadcrumbs/slds-breadcrumbs.js',
         '/slds-components/slds-combobox/slds-combobox.js',
         '/slds-components/slds-modal/slds-modal.js',
         '/slds-components/slds-toggle/slds-toggle.js',
@@ -89,13 +83,12 @@ async function mount(
         await import(module);
       }
       const el = document.createElement('custom-node-view');
-      el.path = path;
       el.siblings = siblings;
       el.setAttribute('id', node.id);
       document.body.appendChild(el);
       await el.updateComplete;
     },
-    { node, path, siblings, stylesheet: STYLESHEET }
+    { node, siblings, stylesheet: STYLESHEET }
   );
   const host = page.locator('custom-node-view');
   await expect(host.locator('#node-name')).toHaveText(node.name);
@@ -212,33 +205,6 @@ test.describe('custom-node-view', () => {
     });
   });
 
-  test.describe('the breadcrumbs', () => {
-    const crumbs = (host) => host.locator('slds-breadcrumbs');
-
-    test('show the way up, without the node itself', async ({ page }) => {
-      const host = await mount(page);
-
-      await expect(crumbs(host).locator('li')).toHaveText(['Shelf', 'Book']);
-      // The name of the node stands below; no crumb is the current page.
-      await expect(crumbs(host).locator('li[aria-current]')).toHaveCount(0);
-      await expect(crumbs(host).locator('li a')).toHaveCount(2);
-    });
-
-    test('lead up to the node clicked', async ({ page }) => {
-      const host = await mount(page);
-
-      await crumbs(host).locator('a', { hasText: 'Book' }).click();
-
-      expect(await navigated(page)).toEqual(['n-book']);
-    });
-
-    test('are left out for a root', async ({ page }) => {
-      const host = await mount(page, { path: [] });
-
-      await expect(crumbs(host)).toHaveCount(0);
-    });
-  });
-
   test.describe('the children', () => {
     const combobox = (host) => host.locator('slds-combobox');
 
@@ -284,9 +250,8 @@ test.describe('custom-node-view', () => {
     });
   });
 
-  // The header of the card holds the way up on the left and the actions on
-  // the right, in one row; the name with its arrows stands below. The header
-  // is no heading: the breadcrumbs are no title.
+  // The header of the card holds the actions, on the right; the name with its
+  // arrows stands below. The header is no heading: it carries no title.
   test.describe('the card', () => {
     const ALL = ['publish', 'edit', 'create', 'delete'];
     const box = (locator) =>
@@ -309,43 +274,31 @@ test.describe('custom-node-view', () => {
       await expect(card).toHaveAttribute('no-footer', '');
     });
 
-    test('puts the breadcrumbs left and the actions right, in one row', async ({
+    test('shows no breadcrumbs, also for a node with a parent', async ({
       page,
     }) => {
       const host = await mount(page, { scopes: ALL });
-      const crumbs = host.locator('slds-breadcrumbs');
-      const actions = host.locator('#node-actions');
 
-      await expect(crumbs).toHaveAttribute('slot', 'header');
-      await expect(actions).toHaveAttribute('slot', 'actions');
-
-      // The links, not the host: that is a block across the whole left side.
-      const [crumbsBox, actionsBox, titleBox] = await Promise.all([
-        box(crumbs.locator('a').last()),
-        box(actions),
-        box(host.locator('#node-title')),
-      ]);
-      expect(crumbsBox.right).toBeLessThanOrEqual(actionsBox.left);
-      // One row: each overlaps the other vertically.
-      expect(crumbsBox.top).toBeLessThan(actionsBox.bottom);
-      expect(actionsBox.top).toBeLessThan(crumbsBox.bottom);
-      // The name with its arrows below.
-      expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
+      expect(NODE.parent_node_id).toBeTruthy();
+      await expect(host.locator('slds-breadcrumbs')).toHaveCount(0);
     });
 
-    test('keeps the actions in the header of a root, without breadcrumbs', async ({
+    test('puts the actions into the header, on the right, above the name', async ({
       page,
     }) => {
-      const host = await mount(page, { path: [], scopes: ALL });
+      const host = await mount(page, { scopes: ALL });
       const actions = host.locator('#node-actions');
 
-      await expect(host.locator('slds-breadcrumbs')).toHaveCount(0);
       await expect(actions).toHaveAttribute('slot', 'actions');
       const [actionsBox, titleBox] = await Promise.all([
         box(actions),
         box(host.locator('#node-title')),
       ]);
       expect(actionsBox.bottom).toBeLessThanOrEqual(titleBox.top);
+      // On the right: the actions end where the row of the name ends.
+      expect(Math.abs(actionsBox.right - titleBox.right)).toBeLessThanOrEqual(
+        4
+      );
     });
 
     test('shows a visitor only share in the header', async ({ page }) => {

@@ -32,7 +32,7 @@ function readPage(page) {
       nodesShown: isShown(root.querySelector('#bookshelf')),
       viewId: view.getAttribute('id'),
       contentsId: root.querySelector('custom-node-contents').getAttribute('id'),
-      treeLoaded: (view.path ?? []).length > 0 || !!view.siblings?.next,
+      treeLoaded: !!(view.siblings?.previous || view.siblings?.next),
       path: window.location.pathname,
     };
   });

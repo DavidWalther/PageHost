@@ -94,7 +94,7 @@ test.describe('Content tree request', () => {
   });
 
   // One tree serves the whole page — the navigation modal and, above the
-  // node, the breadcrumbs and the arrows to the siblings. It is asked for
+  // node, the arrows to the siblings. It is asked for
   // once, and once more after every change to a node.
   test('asks once when the page starts, and once more after a node changed', async ({
     page,

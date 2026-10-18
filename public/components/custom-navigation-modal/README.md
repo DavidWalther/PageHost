@@ -21,8 +21,8 @@ The component depends on `slds-modal`, `slds-layout` and `slds-layout-item` bein
 registered, imports `/modules/content-tree.mjs` for path lookups and embeds
 `custom-chapter-edit` as its create dialog and `custom-node-delete` as its delete
 action. It asks for no data itself: the host hands it the content tree
-through the property `tree` — the page needs the same tree for the breadcrumbs
-and the arrows to the siblings, and loads it once for everyone.
+through the property `tree` — the page needs the same tree for the arrows to the
+siblings, and loads it once for everyone.
 
 ---
 
