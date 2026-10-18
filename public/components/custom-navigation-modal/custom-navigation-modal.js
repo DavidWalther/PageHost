@@ -111,7 +111,7 @@ class NavigationModal extends LitElement {
     // owns the mark; the modal names it and moves it.
     marked: { type: Object },
     // The content tree, as the host loads it. The modal asks for nothing
-    // itself: the page needs the same tree for the breadcrumbs and siblings.
+    // itself: the page needs the same tree for the siblings.
     tree: { type: Array, attribute: false },
     _openPath: { state: true },
   };
