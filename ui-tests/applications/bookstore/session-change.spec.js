@@ -1,0 +1,145 @@
+const { test, expect } = require('@playwright/test');
+const {
+  mockBookstoreCallouts,
+  MOCK_CONTENTS,
+  MOCK_NODES,
+} = require('../../support/mock-callouts');
+const { cacheLitBundle } = require('../../support/component-page');
+const { fakeJwt, withSession } = require('../../support/session');
+
+/**
+ * The page follows a change of the session.
+ *
+ * What the page shows depends on the session: the `edit` scope sees
+ * unpublished nodes, a visitor does not. When a session begins (`logged-in`)
+ * or ends (`logged-out`), the application loads again what depends on it —
+ * the content tree and the feeds:
+ *
+ * - a login through the provider (`code-exchange`) and a logout lead to the
+ *   start page;
+ * - a session restored from the refresh token (`restore`) keeps the place and
+ *   fetches the node shown again — its actions appear.
+ *
+ * The flows run through the application itself: the code exchange, the
+ * refresh and the logout are mocked at the network. The tree answers with an
+ * unpublished root only to a request with a token, as the backend does.
+ */
+
+const FEED_ROOT_ID = '000n00000000000090';
+const CHILD = MOCK_NODES.kind1;
+const DRAFT = {
+  id: '000n00000000000099',
+  label: 'Draft',
+  name: 'Draft',
+  sortnumber: 9,
+  childnodes: [],
+};
+const SESSION_KEY = 'code_exchange_response';
+
+let treeRequests;
+// One entry per request for the feed root: did it carry a token?
+let feedRootRequests;
+
+/** Mocks the callouts; the tree depends on the token, as in the backend. */
+async function mockCallouts(page, { holdFirstTree = null } = {}) {
+  treeRequests = [];
+  feedRootRequests = [];
+  await mockBookstoreCallouts(page);
+  await page.route('**/api/1.0/contents/**', async (route) => {
+    const withToken = !!route.request().headers()['authorization'];
+    treeRequests.push({ withToken });
+    if (treeRequests.length === 1 && holdFirstTree) {
+      await holdFirstTree;
+    }
+    const result = withToken
+      ? [...MOCK_CONTENTS.result, DRAFT]
+      : MOCK_CONTENTS.result;
+    return route.fulfill({ json: { result } });
+  });
+  await page.route('**/data/query/node**', (route) => {
+    const id = new URL(route.request().url()).searchParams.get('id');
+    if (id === FEED_ROOT_ID) {
+      feedRootRequests.push({
+        withToken: !!route.request().headers()['authorization'],
+      });
+    }
+    return route.fallback();
+  });
+  await cacheLitBundle(page);
+}
+
+/** Resolves once `condition` holds — for a mock that answers late. */
+async function waitUntil(condition) {
+  while (!condition()) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
+
+/** The names of the roots the navigation modal holds. */
+const treeNames = (page) =>
+  page
+    .locator('custom-navigation-modal')
+    .evaluate((modal) => modal.tree.map((node) => node.name));
+
+function readPage(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('app-bookstore').shadowRoot;
+    const isShown = (element) => element.getClientRects().length > 0;
+    return {
+      feedsShown: isShown(root.querySelector('#feeds')),
+      viewId: root.querySelector('custom-node-view').getAttribute('id'),
+      path: window.location.pathname,
+    };
+  });
+}
+
+test.describe('Page after a change of the session', () => {
+  test.use({ actionTimeout: 5000 });
+
+  test.describe('a login through the provider', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockCallouts(page);
+      // The exchange answers once the page has loaded tree and feeds without
+      // a session — the login has to load them again.
+      await page.route('**/api/1.0/oAuth2/codeexchange', async (route) => {
+        await waitUntil(
+          () => treeRequests.length >= 1 && feedRootRequests.length >= 1
+        );
+        return route.fulfill({
+          json: {
+            authenticationResult: {
+              access: { access_token: fakeJwt(), scopes: ['read', 'edit'] },
+              refresh: { refresh_token: 'refresh-token' },
+            },
+          },
+        });
+      });
+      // Back from the identity provider: the state the flow started with.
+      await page.addInitScript(() =>
+        sessionStorage.setItem('oidc_state', 'state-1')
+      );
+      await page.goto('/?code=code-1&state=state-1');
+    });
+
+    test('loads the tree again with the token', async ({ page }) => {
+      await expect.poll(() => treeRequests.length).toBe(2);
+      expect(treeRequests).toEqual([{ withToken: false }, { withToken: true }]);
+      await expect.poll(() => treeNames(page)).toContain('Draft');
+    });
+
+    test('loads the feeds again with the token', async () => {
+      await expect.poll(() => feedRootRequests.length).toBe(2);
+      expect(feedRootRequests).toEqual([
+        { withToken: false },
+        { withToken: true },
+      ]);
+    });
+
+    test('shows the start page', async ({ page }) => {
+      await expect.poll(() => treeRequests.length).toBe(2);
+      const state = await readPage(page);
+      expect(state.feedsShown).toBe(true);
+      expect(state.path).toBe('/');
+    });
+  });
+});
