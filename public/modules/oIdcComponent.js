@@ -459,6 +459,16 @@ class OIDCComponent extends LitElement {
     let event = new CustomEvent('stored', { detail: eventPayload });
     this.dispatchEvent(event);
 
+    // Now the session is there: whoever asks the backend from here on goes
+    // with the token. Out of every shadow root, for the application.
+    this.dispatchEvent(
+      new CustomEvent('logged-in', {
+        bubbles: true,
+        composed: true,
+        detail: { reason: 'code-exchange' },
+      })
+    );
+
     this.requestUpdate();
   }
 }
