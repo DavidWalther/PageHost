@@ -553,11 +553,12 @@ app.get('/api/1.0/contents/*', async (req, res) => {
     })
     .catch((error) => {
       Logging.debugMessage({
-        severity: 'FINER',
+        severity: 'ERROR',
         message: `Error executing contents endpoint: ${error}`,
         location: LOCATION,
       });
-      handleWildcardRequest(req, res, LOCATION);
+      // An error, not the page: the client asked for data.
+      res.status(500).json({ error: 'The content tree could not be loaded' });
     });
 });
 

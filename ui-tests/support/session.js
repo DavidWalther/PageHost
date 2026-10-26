@@ -10,15 +10,15 @@
  * run on the next navigation: call `withSession` before `page.goto`.
  */
 
-/** Dummy JWT that expires in an hour. */
-function fakeJwt() {
+/** Dummy JWT that expires in `seconds` (an hour by default; negative: expired). */
+function fakeJwt(seconds = 60 * 60) {
   const encode = (value) =>
     Buffer.from(JSON.stringify(value))
       .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60;
+  const exp = Math.floor(Date.now() / 1000) + seconds;
   return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
 }
 

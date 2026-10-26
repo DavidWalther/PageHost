@@ -48,6 +48,11 @@ From `oidc-component`:
 | `logout`        | call the logout endpoint, drop the refresh token, toast, re-render      |
 | `rejected`      | toast "Authentication failed" and clear the round-trip from the history |
 
+A failed sign-off — the logout endpoint answers without `ok`, or not at all —
+ends the session all the same: the refresh token is dropped, `oidc-component`
+removes the session, and the toast reads "Logout failed" instead of
+"Logout successful". Nobody stays signed in because the server did not answer.
+
 ## Events it fires
 
 | Event   | `detail`               | When                                       |
@@ -55,6 +60,11 @@ From `oidc-component`:
 | `toast` | `{ message, variant }` | After signing out, and on a failed sign-in |
 
 Bubbles and composed, answered by `public/index.js`.
+
+`logged-in` and `logged-out` of `oidc-component` pass through unchanged — they
+bubble and are composed, and this component does not listen to them. They say
+that the session is now there or gone; see `doc/authentication.md`
+(„Session Events“).
 
 ## Methods
 
@@ -67,21 +77,16 @@ Bubbles and composed, answered by `public/index.js`.
 ## No self-registration
 
 The modal states plainly that no new registrations are possible
-("Neue Regisrierungen sind im Moment nicht möglich."). This is not decoration:
+("Neue Registrierungen sind im Moment nicht möglich."). This is not decoration:
 the backend rejects an unknown email with 401 `No new users allowed`, because
 scopes hang on an identity row that somebody has to create. The notice keeps a
 visitor from walking into that dead end.
-
-> The sentence carries a typo in the source ("Regisrierungen"). It is quoted here
-> verbatim because tests match on the rendered text.
 
 ## Known leftovers
 
 - `handleOIDCAuthenticated` only clears the URL and re-renders; the comment in it
   still suggests storing tokens, which `authTokenManager` has long since taken
   over.
-- The `.warning` rule in `static styles` contains `border-widht` — a typo, so the
-  border width never applies. The notice still renders, only without that border.
 - Button labels are English while the notice is German. The operator surface does
   not fix a language; only the visitor-facing surface does.
 

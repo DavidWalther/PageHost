@@ -171,6 +171,30 @@ test.describe('Page: moving a node', () => {
     expect((await readPage(page)).modalHidden).toEqual([CHILD_1.id]);
   });
 
+  test('a report without a node changes nothing', async ({ page }) => {
+    await open(page);
+    await markAndOpenModal(page);
+
+    await page.evaluate(() => {
+      const root = document.querySelector('app-bookstore').shadowRoot;
+      root.querySelector('custom-node-view').dispatchEvent(
+        new CustomEvent('node-moved', {
+          detail: {},
+          bubbles: true,
+          composed: true,
+        })
+      );
+    });
+
+    // Give an unwanted change the time to happen.
+    await page.waitForTimeout(500);
+    const state = await readPage(page);
+    expect(state.modalOpen).toBe(true);
+    expect(state.modalMarked).toBe(CHILD_1.id);
+    expect(state.viewMarked).toBe(true);
+    expect(state.viewId).toBe(CHILD_1.id);
+  });
+
   test('the ✕ in the modal drops the mark', async ({ page }) => {
     await open(page);
     await markAndOpenModal(page);

@@ -92,6 +92,38 @@ describe('ContentsEndpoint', () => {
     expect(Array.isArray(payload.result)).toBe(true);
   });
 
+  describe('when the facade fails', () => {
+    beforeEach(() => {
+      mockResponseObject.status = jest.fn(() => mockResponseObject);
+    });
+
+    it('answers 500 with a JSON error when the tree fails', async () => {
+      mockGetData.mockImplementation(async ({ request }) => {
+        if (request.table === 'contents') throw new Error('boom');
+        return mockConfiguration;
+      });
+
+      await endpoint.execute();
+
+      expect(mockResponseObject.status).toHaveBeenCalledWith(500);
+      expect(mockResponseObject.json).toHaveBeenCalledWith({
+        error: 'The content tree could not be loaded',
+      });
+    });
+
+    it('answers 500 when the configuration fails', async () => {
+      mockGetData.mockImplementation(async ({ request }) => {
+        if (request.table === 'configuration') throw new Error('boom');
+        return buildRawTree();
+      });
+
+      await endpoint.execute();
+
+      expect(mockResponseObject.status).toHaveBeenCalledWith(500);
+      expect(mockResponseObject.json).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('maps records to Nodes with label === name and nested childnodes', async () => {
     await endpoint.execute();
     const { result } = mockResponseObject.json.mock.calls[0][0];

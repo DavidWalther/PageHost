@@ -43,14 +43,30 @@ class ContentsEndpoint extends EndpointLogic {
       dataFacade.setIncludeUnpublished(true);
     }
 
-    const tree = await dataFacade.getData({
-      returnPromise: true,
-      request: { table: 'contents', id: null },
-    });
-    const configuration = await dataFacade.getData({
-      returnPromise: true,
-      request: { table: 'configuration' },
-    });
+    let tree;
+    let configuration;
+    try {
+      tree = await dataFacade.getData({
+        returnPromise: true,
+        request: { table: 'contents', id: null },
+      });
+      configuration = await dataFacade.getData({
+        returnPromise: true,
+        request: { table: 'configuration' },
+      });
+    } catch (error) {
+      // An error, not a page: the client must be able to tell a failure from
+      // a tree. The cause stays in the log.
+      Logging.debugMessage({
+        severity: 'ERROR',
+        message: `Contents tree could not be loaded: ${error}`,
+        location: LOCATION,
+      });
+      this.responseObject
+        .status(500)
+        .json({ error: 'The content tree could not be loaded' });
+      return;
+    }
 
     Logging.debugMessage({
       severity: 'FINER',

@@ -20,9 +20,10 @@ class LoginComponent extends LitElement {
     logoutButton: 'Logout',
     modalTitle: 'Login',
     googleLoginButton: 'Login with Google',
-    noNewRegistrations: 'Neue Regisrierungen sind im Moment nicht möglich.',
+    noNewRegistrations: 'Neue Registrierungen sind im Moment nicht möglich.',
     loginWithGoogle: 'Login mit Google',
     logoutSuccessful: 'Logout successful',
+    logoutFailed: 'Logout failed',
     authenticationFailed: 'Authentication failed',
   };
 
@@ -32,7 +33,7 @@ class LoginComponent extends LitElement {
     /* Add component-specific styles here */
 
     .warning {
-      border-widht: 1px
+      border-width: 1px;
       border-style: solid;
       border-color: var(--slds-color_warning);
       border-radius: 5px;
@@ -166,17 +167,28 @@ class LoginComponent extends LitElement {
       return;
     }
 
-    await authenticatedFetch('/api/1.0/auth/logout', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }).then(() => {
-      localStorage.removeItem('refresh_token');
+    // Signing off at the backend may fail — the session ends here all the
+    // same: nobody stays signed in because the server did not answer.
+    let signedOff = false;
+    try {
+      const response = await authenticatedFetch('/api/1.0/auth/logout', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      signedOff = response.ok;
+    } catch (error) {
+      console.error('Error during logout callout:', error);
+    }
+    localStorage.removeItem('refresh_token');
+    if (signedOff) {
       this.fireToast(this.labels.logoutSuccessful, 'success');
-      logoutCallback();
-      this.requestUpdate();
-    });
+    } else {
+      this.fireToast(this.labels.logoutFailed, 'error');
+    }
+    logoutCallback();
+    this.requestUpdate();
   }
 
   handleAuthenticationRejection() {

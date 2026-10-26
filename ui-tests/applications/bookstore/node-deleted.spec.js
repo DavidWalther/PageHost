@@ -18,6 +18,8 @@ const { cacheLitBundle } = require('../../support/component-page');
 const ROOT = '000n00000000000011';
 const CHILD_1 = '000n00000000000001';
 const CHILD_2 = '000n00000000000002';
+// Below the other root: neither the node shown nor a child of it.
+const ELSEWHERE = '000n00000000000003';
 
 /** How often each node was asked for. */
 let nodeQueries;
@@ -109,6 +111,20 @@ test.describe('Page after deleting a node', () => {
     });
 
     await expect.poll(async () => (await readPage(page)).viewId).toBe(ROOT);
+  });
+
+  test('another node gone leaves the page alone', async ({ page }) => {
+    await openOn(page, CHILD_1);
+    const before = { ...nodeQueries };
+
+    await reportDeleted(page, { nodeId: ELSEWHERE, nodeIds: [ELSEWHERE] });
+
+    // Give an unwanted request the time to go out.
+    await page.waitForTimeout(500);
+    expect(nodeQueries).toEqual(before);
+    const state = await readPage(page);
+    expect([state.viewId, state.contentsId]).toEqual([CHILD_1, CHILD_1]);
+    expect(state.nodesShown).toBe(true);
   });
 
   test('a node shown gone with its root leads back to the start page', async ({

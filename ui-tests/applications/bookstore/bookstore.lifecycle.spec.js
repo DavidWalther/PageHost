@@ -78,8 +78,8 @@ test.describe('bookstore: lifecycle', () => {
     const reloads = await page.evaluate((nodeId) => {
       const app = window.appUnderTest;
       let count = 0;
-      const original = app._loadContentTree.bind(app);
-      app._loadContentTree = () => {
+      const original = app.loadContentTree.bind(app);
+      app.loadContentTree = () => {
         count += 1;
         return original();
       };
@@ -91,5 +91,46 @@ test.describe('bookstore: lifecycle', () => {
     }, CHILD.id);
 
     expect(reloads).toBe(1);
+  });
+
+  // The session events arrive on `window`, not on the element: those
+  // listeners have to come and go with it as well. `logged-out` is the probe
+  // — the application answers it by loading the tree again.
+  test.describe('on window', () => {
+    /** Reports a logout on window; returns how often the tree was loaded. */
+    function reportLoggedOut(page) {
+      return page.evaluate(() => {
+        const app =
+          window.appUnderTest ?? document.querySelector('app-bookstore');
+        let count = 0;
+        const original = app.loadContentTree.bind(app);
+        app.loadContentTree = () => {
+          count += 1;
+          return original();
+        };
+        window.dispatchEvent(
+          new CustomEvent('logged-out', { detail: { reason: 'expired' } })
+        );
+        app.loadContentTree = original;
+        return count;
+      });
+    }
+
+    test('answers while it is in the document', async ({ page }) => {
+      expect(await reportLoggedOut(page)).toBe(1);
+    });
+
+    test('stops listening when it is taken out', async ({ page }) => {
+      await detach(page);
+
+      expect(await reportLoggedOut(page)).toBe(0);
+    });
+
+    test('listens exactly once after it was put back', async ({ page }) => {
+      await detach(page);
+      await attach(page);
+
+      expect(await reportLoggedOut(page)).toBe(1);
+    });
   });
 });
