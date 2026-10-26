@@ -164,15 +164,22 @@ ended. Both come **after** the session was written or removed, so a listener
 that asks the backend right away already goes with — or without — the token.
 Both reach `window`; `detail.reason` names what happened.
 
-| Event        | `reason`        | Fired by         | When                                                               |
-| ------------ | --------------- | ---------------- | ------------------------------------------------------------------ |
-| `logged-in`  | `code-exchange` | `oidc-component` | the code exchange succeeded and the session is in `sessionStorage` |
-| `logged-out` | `logout`        | `oidc-component` | the logout callback removed the session and the refresh token      |
+| Event        | `reason`        | Fired by           | When                                                                   |
+| ------------ | --------------- | ------------------ | ---------------------------------------------------------------------- |
+| `logged-in`  | `code-exchange` | `oidc-component`   | the code exchange succeeded and the session is in `sessionStorage`     |
+| `logged-out` | `logout`        | `oidc-component`   | the logout callback removed the session and the refresh token          |
+| `logged-in`  | `restore`       | `authTokenManager` | a refresh restored a session — none was stored before                  |
+| `logged-out` | `expired`       | `authTokenManager` | the server refused a refresh while a session was stored; both are gone |
+
+An ordinary refresh (a session was stored) fires nothing, nor does a refused
+restore without a session (a visitor with an old refresh token) or a refresh
+that never reached the server.
 
 `oidc-component` fires them bubbling and composed, so they leave every shadow
-root on the way. The events that come **before** — `authenticated` (fired
-before the session is stored) and `logout` (the request to sign off, answered
-by `custom-login-module`) — are not meant for this.
+root on the way; `authTokenManager` has no element and fires them on `window`.
+The events that come **before** — `authenticated` (fired before the session is
+stored) and `logout` (the request to sign off, answered by
+`custom-login-module`) — are not meant for this.
 
 ### Token Rotation
 
@@ -345,6 +352,8 @@ The `authTokenManager.js` module provides `authenticatedFetch` — a drop-in rep
 2. If expired: calls the refresh endpoint, stores new tokens, then proceeds
 3. Adds `Authorization: Bearer <token>` header automatically
 4. Uses a shared promise to prevent parallel refresh requests from multiple components
+5. Reports on `window` when a refresh begins or ends a session: `logged-in`
+   (reason `restore`) and `logged-out` (reason `expired`) — see „Session Events“
 
 ### Usage
 

@@ -13,6 +13,15 @@ const REFRESH_ENDPOINT = '/api/1.0/auth/refresh';
 let refreshPromise = null;
 
 /**
+ * Tells the page that the session began or ended (`logged-in`,
+ * `logged-out`). The module has no element, so the events go to `window` —
+ * where those of `oidc-component` arrive as well.
+ */
+function fireSessionEvent(name, reason) {
+  window.dispatchEvent(new CustomEvent(name, { detail: { reason } }));
+}
+
+/**
  * Decodes a JWT payload without verification (client-side only).
  */
 function decodeJwtPayload(token) {
@@ -101,8 +110,14 @@ async function _doRefresh() {
     });
 
     if (!response.ok) {
+      const hadSession = !!sessionStorage.getItem(SESSION_STORAGE_KEY);
       localStorage.removeItem(REFRESH_TOKEN_KEY);
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      // The session ran out without a logout. Without one before — a visitor
+      // with an old refresh token — nothing ended.
+      if (hadSession) {
+        fireSessionEvent('logged-out', 'expired');
+      }
       return false;
     }
 
@@ -122,6 +137,12 @@ async function _doRefresh() {
     const newRefreshToken = data?.authenticationResult?.refresh?.refresh_token;
     if (newRefreshToken) {
       localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+    }
+
+    // No session before: this refresh restored one. An ordinary refresh only
+    // renews a session that was there all along.
+    if (!stored) {
+      fireSessionEvent('logged-in', 'restore');
     }
 
     return true;
