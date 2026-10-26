@@ -36,6 +36,13 @@ Fired when **the user** opens another feed, by click or keyboard:
 shown on start and not when `active-feed` is set from outside — the consumer
 already knows about those.
 
+### Method: `reload()`
+
+Loads the feeds again under the same `root-id` — for a consumer whose session
+changed (login, logout): the feeds may then hold other contents. Every tab
+starts unloaded again (see „Loading“); the open one, including one the user
+opened, loads at once. Without a `root-id` it does nothing.
+
 ## What it shows
 
 | Feeds of the root         | Display                                                    |

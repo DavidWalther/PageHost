@@ -100,6 +100,18 @@ class CustomFeed extends LitElement {
     this._loading = false;
   }
 
+  /**
+   * Loads the feeds again under the same root — after a login or a logout
+   * they may hold other contents. Every tab starts unloaded again; the open
+   * one loads as it is shown. Without a root: nothing.
+   */
+  reload() {
+    if (!this.rootId) {
+      return;
+    }
+    this.loadFeeds(this.rootId);
+  }
+
   queryNode(id) {
     return new Promise((resolve) => {
       this.dispatchEvent(
