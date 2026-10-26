@@ -490,6 +490,41 @@ test.describe('Page: one node, above and below', () => {
       expect(await readReloads(page)).toEqual({ view: 1, contents: 0 });
     });
 
+    test('another node changed leaves the page alone', async ({ page }) => {
+      await open(page, '/part-1');
+      await expectShown(page, 'part-1');
+      await expect.poll(async () => (await readPage(page)).next).toBe('part-2');
+      await countReloads(page);
+      const before = { ...nodeQueries };
+
+      await fireOnHost(page, 'chapter-updated', {
+        chapterData: { id: 'book-b', name: 'Book B', parent_node_id: 'shelf' },
+      });
+
+      // Give an unwanted request the time to go out.
+      await page.waitForTimeout(500);
+      expect(nodeQueries).toEqual(before);
+      expect(await readReloads(page)).toEqual({ view: 0, contents: 0 });
+      await expectShown(page, 'part-1');
+    });
+
+    test('a change while the feeds are shown fetches no node', async ({
+      page,
+    }) => {
+      await open(page, '/');
+      await expect
+        .poll(async () => (await readPage(page)).feedsVisible)
+        .toBe(true);
+
+      await fireOnHost(page, 'chapter-updated', {
+        chapterData: { id: 'book-a', name: 'Book A', parent_node_id: 'shelf' },
+      });
+
+      await page.waitForTimeout(500);
+      expect(nodeQueries).toEqual({});
+      expect((await readPage(page)).feedsVisible).toBe(true);
+    });
+
     test('a moved node stays shown and is fetched again', async ({ page }) => {
       await open(page, '/part-1');
       await expectShown(page, 'part-1');
