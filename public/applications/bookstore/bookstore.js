@@ -686,11 +686,16 @@ class Bookstore extends LitElement {
     window.history.replaceState({}, '', '/');
   }
 
-  /** The visitor opened another feed: the address names it, to be shared. */
+  /** The visitor opened another feed. */
   handleFeedSelect(event) {
-    this._activeFeedId = event.detail.id;
+    this.selectFeed(event.detail.id);
+  }
+
+  /** Another feed is open: the address names it, to be shared. */
+  selectFeed(feedId) {
+    this._activeFeedId = feedId;
     this._feedContentNumber = null;
-    window.history.replaceState({}, '', `/${event.detail.id}`);
+    window.history.replaceState({}, '', `/${feedId}`);
   }
 
   /** Einen Datensatz über den Callout-Layer holen, als Promise. */
