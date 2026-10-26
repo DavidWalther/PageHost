@@ -489,7 +489,7 @@ class Bookstore extends LitElement {
       if (parent && !gone.has(parent.id)) {
         this._showNode(parent.id);
       } else {
-        this.handleHome();
+        this.showStartPage();
       }
       return;
     }
@@ -648,12 +648,17 @@ class Bookstore extends LitElement {
     this._feedVisible = false;
   }
 
+  /** The home button in the header. */
+  handleHome() {
+    this.showStartPage();
+  }
+
   /**
-   * Home: back to the start page — the feeds, the first one open, and the
-   * bare address. The feeds were kept while a node was shown, so nothing is
+   * Back to the start page — the feeds, the first one open, and the bare
+   * address. The feeds were kept while a node was shown, so nothing is
    * loaded again; a visitor who entered on a node loads them here.
    */
-  handleHome() {
+  showStartPage() {
     this.showFeed();
     window.history.replaceState({}, '', '/');
   }
