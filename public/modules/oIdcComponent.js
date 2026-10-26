@@ -104,9 +104,9 @@ class OIDCComponent extends LitElement {
         <div class="button-container">
           <div
             name="botton-login"
-            class="button-container-item ${this._showLoginButton
-              ? ''
-              : 'hidden'}"
+            class="button-container-item ${
+              this._showLoginButton ? '' : 'hidden'
+            }"
             role="button"
             tabindex="0"
           >
@@ -114,9 +114,9 @@ class OIDCComponent extends LitElement {
           </div>
           <div
             name="button-logout"
-            class="button-container-item ${this._showLogoutButton
-              ? ''
-              : 'hidden'}"
+            class="button-container-item ${
+              this._showLogoutButton ? '' : 'hidden'
+            }"
           >
             ${this._renderLogoutButton()}
           </div>
