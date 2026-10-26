@@ -5,7 +5,6 @@ import {
   nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
-import OIDCComponent from '/modules/oIdcComponent.js';
 import { findNode, findPath, findSiblings } from '/modules/content-tree.mjs';
 import '/components/custom-node-view/custom-node-view.js';
 import '/components/custom-node-contents/custom-node-contents.js';
@@ -89,11 +88,6 @@ class Bookstore extends LitElement {
 
     this.hydrate();
     this.loadContentTree();
-    this.label = {
-      'setting-login_title': 'Login',
-      'setting-lightswitch_title': 'Lichtschalter',
-      'setting-sessionClear_title': 'Login-Session löschen',
-    };
   }
 
   render() {
@@ -793,93 +787,6 @@ class Bookstore extends LitElement {
 
   // =========== Hydration - End ============
 
-  // =========== Authentication - Start =================
-
-  async getGoogleAuthConfig() {
-    return new Promise((resolve) => {
-      fetch('/api/1.0/env/variables')
-        .then((response) => response.json())
-        .then((variables) => {
-          resolve(variables.auth.google);
-        });
-    });
-  }
-
-  async handleOIDCAuthenticated(event) {
-    /**
-     * Do something with the authentication result
-     * For example, you can store the token in local storage or session storage
-     */
-    this.clearUrlParameter();
-  }
-
-  async handleOIDCClick(event) {
-    const callback = event.detail.callback;
-    const googleAuthConfig = await this.getGoogleAuthConfig();
-
-    callback({
-      client_id: googleAuthConfig.clientId,
-      redirect_uri: googleAuthConfig.redirect_uri,
-      scope: googleAuthConfig.scope,
-      response_type: googleAuthConfig.response_type,
-    });
-  }
-
-  handleAuthenticationRejection() {
-    this.fireToast('Authentication failed', 'error');
-    // clear history
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-
-  // ============  Authentication -End ============
-
-  // ============ Storage methods - Start ============
-
-  readFromStorage(storageType, key) {
-    return new Promise((resolve) => {
-      const event = new CustomEvent('storage', {
-        detail: {
-          storageType,
-          key,
-          action: 'read',
-          callback: resolve,
-        },
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    });
-  }
-
-  writeToStorage(storageType, key, value) {
-    const event = new CustomEvent('storage', {
-      detail: {
-        storageType,
-        key,
-        value,
-        action: 'write',
-      },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
-  clearStorage(storageType, key) {
-    const event = new CustomEvent('storage', {
-      detail: {
-        storageType,
-        key,
-        action: 'clear',
-      },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
-  // ============ Storage methods ============
-
   // ============ event handler  ============
 
   handleToggleLightswitch(event) {
@@ -929,9 +836,6 @@ class Bookstore extends LitElement {
     return initParameter;
   }
 
-  clearUrlParameter() {
-    window.history.replaceState({}, '', window.location.origin);
-  }
   evaluateMetadata(metadata) {
     let pageHeaderHeadline = !metadata.pageHeaderHeadline
       ? '#config:pageHeaderHeadline#'
@@ -952,24 +856,6 @@ class Bookstore extends LitElement {
       });
       document.head.append(...createdMetaTags);
     }
-  }
-
-  // ========== Container methods ===========
-
-  // add content of 'template-story_not_found' into container
-  showStoryNotFound() {
-    const storyContainer = this.storyContainer;
-
-    // Create the story not found content using DOM API
-    const notFoundDiv = document.createElement('div');
-    notFoundDiv.className = 'slds-text-align_center slds-text-heading_large';
-
-    const notFoundSpan = document.createElement('span');
-    notFoundSpan.textContent =
-      'Entschuldigung. Da war leider nichts zu finden.';
-
-    notFoundDiv.appendChild(notFoundSpan);
-    storyContainer.appendChild(notFoundDiv);
   }
 
   // ----- Element getter -----
@@ -995,14 +881,6 @@ class Bookstore extends LitElement {
   /** The contents of the node shown, below. */
   get nodeContents() {
     return this.shadowRoot.querySelector('custom-node-contents');
-  }
-
-  get storyContainer() {
-    return this.shadowRoot.querySelector('#bookshelf > div');
-  }
-
-  get spinner() {
-    return this.shadowRoot.querySelector('#spinner-story');
   }
 
   // ------------------------------------------
