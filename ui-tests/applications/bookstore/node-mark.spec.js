@@ -81,6 +81,27 @@ test.describe('Page: marking a node to move it', () => {
       .toBe(false);
   });
 
+  // Not reachable through the page — its button only unmarks the marked node —
+  // but the page keeps the mark against such a report.
+  test('unmarking another node keeps the mark', async ({ page }) => {
+    await moveButton(page).click();
+    await expect.poll(async () => (await readNodeView(page)).marked).toBe(true);
+
+    await page.evaluate((otherId) => {
+      const root = document.querySelector('app-bookstore').shadowRoot;
+      root.querySelector('custom-node-view').dispatchEvent(
+        new CustomEvent('node-mark-change', {
+          detail: { marked: false, node: { id: otherId } },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }, CHILD_2);
+
+    await page.waitForTimeout(500);
+    expect((await readNodeView(page)).marked).toBe(true);
+  });
+
   test('another node is not marked by the mark of the first', async ({
     page,
   }) => {
