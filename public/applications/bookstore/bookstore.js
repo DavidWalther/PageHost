@@ -266,7 +266,15 @@ class Bookstore extends LitElement {
   }
 
   handleOpenNavigation() {
-    this.shadowRoot.querySelector('custom-navigation-modal').show();
+    this.openNavigation();
+  }
+
+  openNavigation() {
+    this.navigationModal.show();
+  }
+
+  closeNavigation() {
+    this.navigationModal.hide();
   }
 
   /**
@@ -348,7 +356,7 @@ class Bookstore extends LitElement {
   /** A node without children chosen in the modal: shown, the modal closes. */
   handleNavigationNodeSelect(event) {
     this._showNode(event.detail.id);
-    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+    this.closeNavigation();
   }
 
   /** One level up in the modal: the page shows the level now open. */
@@ -489,7 +497,7 @@ class Bookstore extends LitElement {
     if (!nodeId) return;
     this.clearMark();
     this._showNode(nodeId);
-    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+    this.closeNavigation();
   }
 
   /**
@@ -904,6 +912,10 @@ class Bookstore extends LitElement {
   /** The node shown, above. */
   get nodeView() {
     return this.shadowRoot.querySelector('custom-node-view');
+  }
+
+  get navigationModal() {
+    return this.shadowRoot.querySelector('custom-navigation-modal');
   }
 
   /** The contents of the node shown, below. */
