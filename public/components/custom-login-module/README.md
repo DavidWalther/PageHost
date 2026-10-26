@@ -77,21 +77,16 @@ that the session is now there or gone; see `doc/authentication.md`
 ## No self-registration
 
 The modal states plainly that no new registrations are possible
-("Neue Regisrierungen sind im Moment nicht möglich."). This is not decoration:
+("Neue Registrierungen sind im Moment nicht möglich."). This is not decoration:
 the backend rejects an unknown email with 401 `No new users allowed`, because
 scopes hang on an identity row that somebody has to create. The notice keeps a
 visitor from walking into that dead end.
-
-> The sentence carries a typo in the source ("Regisrierungen"). It is quoted here
-> verbatim because tests match on the rendered text.
 
 ## Known leftovers
 
 - `handleOIDCAuthenticated` only clears the URL and re-renders; the comment in it
   still suggests storing tokens, which `authTokenManager` has long since taken
   over.
-- The `.warning` rule in `static styles` contains `border-widht` — a typo, so the
-  border width never applies. The notice still renders, only without that border.
 - Button labels are English while the notice is German. The operator surface does
   not fix a language; only the visitor-facing surface does.
 

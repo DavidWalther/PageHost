@@ -20,7 +20,7 @@ class LoginComponent extends LitElement {
     logoutButton: 'Logout',
     modalTitle: 'Login',
     googleLoginButton: 'Login with Google',
-    noNewRegistrations: 'Neue Regisrierungen sind im Moment nicht möglich.',
+    noNewRegistrations: 'Neue Registrierungen sind im Moment nicht möglich.',
     loginWithGoogle: 'Login mit Google',
     logoutSuccessful: 'Logout successful',
     logoutFailed: 'Logout failed',
@@ -33,7 +33,7 @@ class LoginComponent extends LitElement {
     /* Add component-specific styles here */
 
     .warning {
-      border-widht: 1px
+      border-width: 1px;
       border-style: solid;
       border-color: var(--slds-color_warning);
       border-radius: 5px;
