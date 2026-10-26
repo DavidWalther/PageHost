@@ -401,8 +401,14 @@ class Bookstore extends LitElement {
     return [
       // `custom-chapter-edit` still reports `chapter-created` and
       // `chapter-updated` — the edit component keeps its old names.
-      ['chapter-created', (event) => this._handleNodeChanged(event)],
-      ['chapter-updated', (event) => this._handleNodeChanged(event)],
+      [
+        'chapter-created',
+        (event) => this.applyNodeChange(event.detail?.chapterData),
+      ],
+      [
+        'chapter-updated',
+        (event) => this.applyNodeChange(event.detail?.chapterData),
+      ],
       ['node-deleted', (event) => this._handleNodeDeleted(event)],
       ['node-mark-change', (event) => this._handleMarkChange(event)],
       ['node-mark-clear', () => (this._marked = null)],
@@ -424,8 +430,7 @@ class Bookstore extends LitElement {
    * shown, created or renamed, is in the combobox above: the view fetches
    * the node again, and the contents take the new record with it.
    */
-  _handleNodeChanged(event) {
-    const changed = event.detail?.chapterData;
+  applyNodeChange(changed) {
     const current = this._currentLocation;
     if (!changed?.id || !current) return;
     if (changed.id === current) {
