@@ -250,4 +250,46 @@ test.describe('Page after a change of the session', () => {
       ]);
     });
   });
+
+  // The access token has run out and the server refuses the refresh: the
+  // session is gone without a logout. The first request for the tree never
+  // went out — it had no token left — so without the reload the navigation
+  // stayed empty.
+  test.describe('a session that ran out', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockCallouts(page);
+      await page.route('**/api/1.0/auth/refresh', (route) =>
+        route.fulfill({ status: 401, body: 'Unauthorized' })
+      );
+      await page.addInitScript(
+        ([sessionKey, token]) => {
+          sessionStorage.setItem(
+            sessionKey,
+            JSON.stringify({
+              authenticationResult: {
+                access: { access_token: token, scopes: ['read', 'edit'] },
+              },
+            })
+          );
+          localStorage.setItem('refresh_token', 'refresh-token-1');
+        },
+        [SESSION_KEY, fakeJwt(-60)]
+      );
+      await page.goto(`/${CHILD.id}`);
+    });
+
+    test('loads the tree without the token', async ({ page }) => {
+      await expect
+        .poll(() => treeNames(page))
+        .toEqual(MOCK_CONTENTS.result.map((node) => node.name));
+      expect(treeRequests).toEqual([{ withToken: false }]);
+    });
+
+    test('shows the start page', async ({ page }) => {
+      await expect
+        .poll(async () => (await readPage(page)).feedsShown)
+        .toBe(true);
+      expect((await readPage(page)).path).toBe('/');
+    });
+  });
 });
