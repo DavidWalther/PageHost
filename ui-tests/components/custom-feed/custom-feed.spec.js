@@ -420,4 +420,67 @@ test.describe('custom-feed', () => {
       await expect.poll(async () => (await readFeed(page)).hint).toBe(HINT);
     });
   });
+
+  // After a login or a logout the feeds may hold other contents: the
+  // application asks the component to load again what it shows.
+  test.describe('reload', () => {
+    let requestedNodes;
+    const count = (id) => requestedNodes.filter((asked) => asked === id).length;
+    const reload = (page) =>
+      page.evaluate(() =>
+        document
+          .querySelector('app-bookstore')
+          .shadowRoot.querySelector('#feed-under-test')
+          .reload()
+      );
+
+    test.beforeEach(async ({ page }) => {
+      requestedNodes = await mockFeedCallouts(page, ROOT_WITH_TWO);
+      await page.goto('/');
+    });
+
+    test('asks for the feed root and the open feed again', async ({ page }) => {
+      await mountFeed(page, { 'root-id': 'feed-root' });
+      await expect
+        .poll(async () => nodeOf(await readFeed(page), 'feed-news')?.id)
+        .toBe('feed-news');
+      await expect.poll(() => count('feed-news')).toBe(1);
+
+      await reload(page);
+
+      await expect.poll(() => count('feed-root')).toBe(2);
+      await expect.poll(() => count('feed-news')).toBe(2);
+      expect(count('feed-versions')).toBe(0);
+    });
+
+    test('keeps the feed the visitor opened', async ({ page }) => {
+      await mountFeed(page, { 'root-id': 'feed-root' });
+      await clickTab(page, 'Versionen');
+      await expect.poll(() => count('feed-versions')).toBe(1);
+
+      await reload(page);
+
+      await expect.poll(() => count('feed-versions')).toBe(2);
+      await expect
+        .poll(async () => (await readFeed(page)).tabs)
+        .toEqual([
+          { label: 'News', selected: false },
+          { label: 'Versionen', selected: true },
+        ]);
+      expect(nodeOf(await readFeed(page), 'feed-versions').visible).toBe(true);
+    });
+
+    test('asks for nothing without a feed root', async ({ page }) => {
+      await mountFeed(page);
+      await expect
+        .poll(async () => (await readFeed(page)).hint)
+        .toBe('Keine Inhalte vorhanden');
+      const before = requestedNodes.length;
+
+      await reload(page);
+
+      await page.waitForTimeout(500);
+      expect(requestedNodes).toHaveLength(before);
+    });
+  });
 });
