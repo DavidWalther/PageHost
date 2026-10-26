@@ -238,7 +238,7 @@ class Bookstore extends LitElement {
       <!--
         One node, in two components that always refer to it: above the node
         itself, below its contents. The node is fetched once, above; the
-        contents get the record handed over (_handleNodeViewLoaded).
+        contents get the record handed over (handNodeToContents).
       -->
       <div
         id="bookshelf"
@@ -317,10 +317,18 @@ class Bookstore extends LitElement {
     }
   }
 
-  /** The node above has loaded: the contents below take the same record. */
+  /**
+   * The node above has loaded. Only its own report counts: `loaded` bubbles
+   * and is composed, so one from inside the view would arrive here too.
+   */
   _handleNodeViewLoaded(event) {
-    const nodeData = event.detail?.nodeData;
-    if (event.target !== this.nodeView || !nodeData?.id) return;
+    if (event.target !== this.nodeView) return;
+    this.handNodeToContents(event.detail?.nodeData);
+  }
+
+  /** The contents below take the record the node view loaded. */
+  handNodeToContents(nodeData) {
+    if (!nodeData?.id) return;
     this.nodeContents.contentnumber = this._pendingContentNumber;
     this._pendingContentNumber = null;
     this.nodeContents.adoptNode(nodeData);
