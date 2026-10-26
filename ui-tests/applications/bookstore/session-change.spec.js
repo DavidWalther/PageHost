@@ -39,10 +39,13 @@ const SESSION_KEY = 'code_exchange_response';
 let treeRequests;
 // One entry per request for the feed root: did it carry a token?
 let feedRootRequests;
+// How often each node was asked for.
+let nodeRequests;
 
 /** Mocks the callouts; the tree depends on the token, as in the backend. */
 async function mockCallouts(page, { holdFirstTree = null } = {}) {
   treeRequests = [];
+  nodeRequests = {};
   feedRootRequests = [];
   await mockBookstoreCallouts(page);
   await page.route('**/api/1.0/contents/**', async (route) => {
@@ -58,6 +61,7 @@ async function mockCallouts(page, { holdFirstTree = null } = {}) {
   });
   await page.route('**/data/query/node**', (route) => {
     const id = new URL(route.request().url()).searchParams.get('id');
+    nodeRequests[id] = (nodeRequests[id] ?? 0) + 1;
     if (id === FEED_ROOT_ID) {
       feedRootRequests.push({
         withToken: !!route.request().headers()['authorization'],
@@ -140,6 +144,54 @@ test.describe('Page after a change of the session', () => {
       const state = await readPage(page);
       expect(state.feedsShown).toBe(true);
       expect(state.path).toBe('/');
+    });
+  });
+
+  test.describe('a session restored from the refresh token', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockCallouts(page);
+      // The refresh answers once tree and node were loaded without a
+      // session — the restore has to load them again.
+      await page.route('**/api/1.0/auth/refresh', async (route) => {
+        await waitUntil(
+          () => treeRequests.length >= 1 && (nodeRequests[CHILD.id] ?? 0) >= 1
+        );
+        return route.fulfill({
+          json: {
+            authenticationResult: {
+              access: { access_token: fakeJwt(), scopes: ['read', 'edit'] },
+              refresh: { refresh_token: 'refresh-token-2' },
+            },
+          },
+        });
+      });
+      // A new tab: no session, but the refresh token of an earlier one.
+      await page.addInitScript(() =>
+        localStorage.setItem('refresh_token', 'refresh-token-1')
+      );
+      await page.goto(`/${CHILD.id}`);
+    });
+
+    test('loads the tree again with the token', async ({ page }) => {
+      await expect.poll(() => treeRequests.length).toBe(2);
+      expect(treeRequests).toEqual([{ withToken: false }, { withToken: true }]);
+      await expect.poll(() => treeNames(page)).toContain('Draft');
+    });
+
+    test('fetches the node shown again, its actions appear', async ({
+      page,
+    }) => {
+      await expect.poll(() => nodeRequests[CHILD.id]).toBe(2);
+      await expect(page.locator('custom-node-view #node-edit')).toBeAttached();
+    });
+
+    test('stays where it is', async ({ page }) => {
+      await expect.poll(() => treeRequests.length).toBe(2);
+      await expect.poll(() => nodeRequests[CHILD.id]).toBe(2);
+      const state = await readPage(page);
+      expect(state.feedsShown).toBe(false);
+      expect(state.viewId).toBe(CHILD.id);
+      expect(state.path).toBe(`/${CHILD.id}`);
     });
   });
 });

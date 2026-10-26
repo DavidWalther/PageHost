@@ -468,12 +468,24 @@ class Bookstore extends LitElement {
 
   /**
    * A session began: the tree and the feeds may hold more now. After a login
-   * through the provider the page shows the start page.
+   * through the provider the page shows the start page. A session restored
+   * from the refresh token keeps the place — a deep link stays where it led —
+   * and the node shown is fetched again: its actions depend on the session.
    */
   applyLogin(reason) {
     this.loadContentTree();
     this.reloadFeeds();
+    if (reason === 'restore') {
+      this.reloadShownNode();
+      return;
+    }
     this.showStartPage();
+  }
+
+  /** The node shown is fetched again; the contents follow with the record. */
+  reloadShownNode() {
+    if (!this._currentLocation) return;
+    this.nodeView.reload();
   }
 
   /** The feeds load again what they show; not yet shown, they load nothing. */
