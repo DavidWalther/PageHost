@@ -8,7 +8,6 @@ async function initializeApp() {
 
   const mainApp = document.createElement('app-bookstore');
   attachQueryEventListener(mainApp);
-  attachStorageEventListener(mainApp);
   attachSaveEventListener(mainApp);
   attachToastEventListener(mainApp);
   attachCreateEventListener(mainApp);
@@ -101,27 +100,6 @@ function attachQueryEventListener(element) {
       .catch((error) => {
         callback(error, null);
       });
-  });
-}
-
-/**
- * Description:
- * This function listens for storage events. Depending on the action and storageType, it will read, write, or clear the storage.
- */
-function attachStorageEventListener(element) {
-  element.addEventListener('storage', (event) => {
-    const { storageType, key, value, action, callback } = event.detail;
-    if (storageType === 'session') {
-      accessSessionStorage(key, action, value, callback);
-    } else if (storageType === 'local') {
-      if (action === 'read') {
-        callback(localStorage.getItem(key));
-      } else if (action === 'write') {
-        localStorage.setItem(key, value);
-      } else if (action === 'clear') {
-        localStorage.removeItem(key);
-      }
-    }
   });
 }
 
