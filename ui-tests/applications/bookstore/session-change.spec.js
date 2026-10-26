@@ -194,4 +194,60 @@ test.describe('Page after a change of the session', () => {
       expect(state.path).toBe(`/${CHILD.id}`);
     });
   });
+
+  test.describe('a logout', () => {
+    test.beforeEach(async ({ page }) => {
+      await mockCallouts(page);
+      await page.route('**/api/1.0/auth/logout', (route) =>
+        route.fulfill({ json: { success: true } })
+      );
+      await withSession(page, ['read', 'edit']);
+    });
+
+    /** Signs off with the button in the settings. */
+    async function logOut(page) {
+      await page.locator('#button-settings_open').click();
+      await page.locator('custom-login-module #button-logout').click();
+    }
+
+    test('loads the tree again without the token, the draft is gone', async ({
+      page,
+    }) => {
+      await page.goto(`/${CHILD.id}`);
+      await expect.poll(() => treeNames(page)).toContain('Draft');
+
+      await logOut(page);
+
+      await expect.poll(() => treeRequests.length).toBe(2);
+      expect(treeRequests).toEqual([{ withToken: true }, { withToken: false }]);
+      await expect.poll(() => treeNames(page)).not.toContain('Draft');
+    });
+
+    test('shows the start page', async ({ page }) => {
+      await page.goto(`/${CHILD.id}`);
+      await expect
+        .poll(async () => (await readPage(page)).viewId)
+        .toBe(CHILD.id);
+
+      await logOut(page);
+
+      await expect
+        .poll(async () => (await readPage(page)).feedsShown)
+        .toBe(true);
+      expect((await readPage(page)).path).toBe('/');
+    });
+
+    test('loads the feeds again without the token', async ({ page }) => {
+      await page.goto('/');
+      await expect.poll(() => feedRootRequests.length).toBe(1);
+
+      await logOut(page);
+
+      await expect.poll(() => feedRootRequests.length).toBe(2);
+      expect(feedRootRequests).toEqual([
+        { withToken: true },
+        { withToken: false },
+      ]);
+    });
+  });
 });

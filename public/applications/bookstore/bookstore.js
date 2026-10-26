@@ -463,7 +463,21 @@ class Bookstore extends LitElement {
    * each report arrives exactly once. Built once, like the host listeners.
    */
   createWindowListeners() {
-    return [['logged-in', (event) => this.applyLogin(event.detail?.reason)]];
+    return [
+      ['logged-in', (event) => this.applyLogin(event.detail?.reason)],
+      ['logged-out', (event) => this.applyLogout(event.detail?.reason)],
+    ];
+  }
+
+  /**
+   * A session ended — signed off, or run out (`reason` says which; both are
+   * met alike). The tree and the feeds may hold less now, and the node shown
+   * may be one the visitor must not see: the page goes to the start page.
+   */
+  applyLogout(reason) {
+    this.loadContentTree();
+    this.reloadFeeds();
+    this.showStartPage();
   }
 
   /**
