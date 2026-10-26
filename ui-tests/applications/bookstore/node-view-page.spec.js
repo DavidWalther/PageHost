@@ -138,6 +138,41 @@ function readPage(page) {
   });
 }
 
+/**
+ * Counts the calls of `reload()` on both components from now on. Both ask for
+ * the same node, so the requests alone cannot tell which of them reloaded.
+ */
+function countReloads(page) {
+  return page.evaluate(() => {
+    const root = document.querySelector('app-bookstore').shadowRoot;
+    window.__reloads = { view: 0, contents: 0 };
+    for (const [key, selector] of [
+      ['view', 'custom-node-view'],
+      ['contents', 'custom-node-contents'],
+    ]) {
+      const element = root.querySelector(selector);
+      const original = element.reload.bind(element);
+      element.reload = () => {
+        window.__reloads[key] += 1;
+        original();
+      };
+    }
+  });
+}
+
+const readReloads = (page) => page.evaluate(() => window.__reloads);
+
+/** Fires an event on the application, as the components inside it do. */
+function fireOnHost(page, name, detail) {
+  return page
+    .locator('app-bookstore')
+    .evaluate(
+      (host, [name, detail]) =>
+        host.dispatchEvent(new CustomEvent(name, { detail })),
+      [name, detail]
+    );
+}
+
 /** Waits until both components stand on `id`. */
 async function expectShown(page, id) {
   await expect
@@ -413,6 +448,27 @@ test.describe('Page: one node, above and below', () => {
       );
 
       await expect.poll(() => nodeQueries['book-a']).toBe(before + 1);
+    });
+
+    // The view takes over its own edits; the contents below follow, their
+    // order may have turned.
+    test('the node shown changed: the contents follow, the view does not', async ({
+      page,
+    }) => {
+      await open(page, '/part-1');
+      await expectShown(page, 'part-1');
+      await countReloads(page);
+      const before = nodeQueries['part-1'];
+
+      await fireOnHost(page, 'chapter-updated', {
+        chapterData: { id: 'part-1', name: 'Part 1', parent_node_id: 'book-a' },
+      });
+
+      await expect.poll(() => nodeQueries['part-1']).toBe(before + 1);
+      // Give a second, unwanted request the time to go out.
+      await page.waitForTimeout(500);
+      expect(nodeQueries['part-1']).toBe(before + 1);
+      expect(await readReloads(page)).toEqual({ view: 0, contents: 1 });
     });
 
     test('a moved node stays shown and is fetched again', async ({ page }) => {
