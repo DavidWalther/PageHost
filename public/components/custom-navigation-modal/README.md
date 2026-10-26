@@ -22,7 +22,7 @@ registered, imports `/modules/content-tree.mjs` for path lookups and embeds
 `custom-chapter-edit` as its create dialog and `custom-node-delete` as its delete
 action. It asks for no data itself: the host hands it the content tree
 through the property `tree` — the page needs the same tree for the arrows to the
-siblings, and loads it once for everyone.
+siblings, and one request serves both.
 
 ---
 
@@ -221,7 +221,9 @@ one that arrives after `show()` positions the modal then. The host loads the tre
 again whenever a node was created, changed, deleted, moved, published or
 unpublished (`app-bookstore` listens for `chapter-created`, `chapter-updated`,
 `node-deleted`, `node-moved`, `published`, `unpublished`; a published **content** does
-not reload).
+not reload), and whenever a session begins or ends (`logged-in`, `logged-out` on
+`window`): an operator sees unpublished nodes right after signing in, and no
+longer after signing out. Requests overlap; the tree of the last one counts.
 
 The modal can also be closed via the ESC key, the close button, or a backdrop
 click — these are handled by the underlying `slds-modal`.
