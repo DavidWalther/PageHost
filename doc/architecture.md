@@ -134,7 +134,10 @@ Key trennt zusätzlich Cache-Bereiche über `CACHE_KEY_PREFIX`.
 Login per OpenID-Connect-Code-Exchange; der Server stellt JWTs aus, deren
 **Scopes** (z. B. `edit`) Lese-/Schreibrechte und das Cache-/Publish-Verhalten
 steuern. Frontend-Token-Handling in `public/modules/authTokenManager.js`,
-Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.md`**.
+Server-Module in `private/modules/oAuth2/`. Beginnt oder endet eine Session,
+melden `oidc-component` und `authTokenManager` das auf `window` (`logged-in`,
+`logged-out`); der `bookstore` lädt daraufhin, was von der Session abhängt.
+→ Details: **`doc/authentication.md`** („Session Events“).
 
 ## Frontend-Schichten
 
@@ -154,8 +157,9 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     its contents with adding one; hidden for visitors while the list is empty.
     The `bookstore` keeps the location as **one** value and fetches the node
     once: the view loads it, the contents take the same record. The view
-    knows no tree: the `bookstore` loads the content tree (once, again after
-    every change to a node) and hands it the siblings
+    knows no tree: the `bookstore` loads the content tree (at the start,
+    again after every change to a node and whenever a session begins or
+    ends; the last request counts) and hands it the siblings
     (`findSiblings`), and the modal the tree itself. There are no
     breadcrumbs: the way up is the modal's.
     → `public/components/custom-node-view/README.md`,
@@ -174,7 +178,8 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     without an id in the address, with an unknown one, and for the feed root,
     a feed or a content of a feed it shows the feeds; opening a node through
     the navigation hides them, the home button in the header brings them
-    back. There is no hard-coded entry node any more.
+    back. There is no hard-coded entry node any more. When a session begins
+    or ends, the `bookstore` has the feeds load again.
     → `public/components/custom-feed/README.md`
   - **`custom-navigation-modal`** zeigt den Inhaltsbaum als Kacheln, **Ebene
     für Ebene in beliebiger Tiefe**. Eine Kachel mit Kindern öffnet ihre Ebene
@@ -185,7 +190,8 @@ Server-Module in `private/modules/oAuth2/`. → Details: **`doc/authentication.m
     die nun offene Ebene — der Knoten, den die Überschrift nennt.
     Der Ort ist die Datensatz-Id, wie sie der Baum trägt; markiert wird
     der ganze Pfad (`public/modules/content-tree.mjs`). Nach jeder Änderung an
-    einem Knoten lädt der `bookstore` den Baum neu.
+    einem Knoten und nach jedem Login oder Logout lädt der `bookstore` den
+    Baum neu.
     Mit Scope `create` endet jede Ebene in einer „+“-Kachel (ein weiteres Kind
     des aktuellen Elements, oben eine Wurzel; Dialog: `custom-chapter-edit`),
     mit Scope `delete` jede geöffnete Ebene in einer Lösch-Kachel (sie löscht

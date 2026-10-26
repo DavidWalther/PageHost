@@ -63,6 +63,7 @@ class Bookstore extends LitElement {
     // modal sees a change only when the mark changes.
     this._hiddenIds = [];
     this._hostListeners = this.createHostListeners();
+    this._windowListeners = this.createWindowListeners();
   }
 
   // =========== Lifecycle methods ============
@@ -78,6 +79,9 @@ class Bookstore extends LitElement {
     addGlobalStylesToShadowRoot(this.shadowRoot); // add shared stylesheet
     this._hostListeners.forEach(([name, listener]) =>
       this.addEventListener(name, listener)
+    );
+    this._windowListeners.forEach(([name, listener]) =>
+      window.addEventListener(name, listener)
     );
 
     // read url and identify init-flow
@@ -402,6 +406,9 @@ class Bookstore extends LitElement {
     this._hostListeners.forEach(([name, listener]) =>
       this.removeEventListener(name, listener)
     );
+    this._windowListeners.forEach(([name, listener]) =>
+      window.removeEventListener(name, listener)
+    );
   }
 
   /**
@@ -447,6 +454,57 @@ class Bookstore extends LitElement {
         'unpublished',
       ].map((name) => [name, reloadTree]),
     ];
+  }
+
+  /**
+   * What the application listens for on `window`: the session began or
+   * ended. `oidc-component` and `authTokenManager` both report there — the
+   * one bubbling out of the shadow roots, the other without an element — so
+   * each report arrives exactly once. Built once, like the host listeners.
+   */
+  createWindowListeners() {
+    return [
+      ['logged-in', (event) => this.applyLogin(event.detail?.reason)],
+      ['logged-out', (event) => this.applyLogout(event.detail?.reason)],
+    ];
+  }
+
+  /**
+   * A session ended — signed off, or run out (`reason` says which; both are
+   * met alike). The tree and the feeds may hold less now, and the node shown
+   * may be one the visitor must not see: the page goes to the start page.
+   */
+  applyLogout(reason) {
+    this.loadContentTree();
+    this.reloadFeeds();
+    this.showStartPage();
+  }
+
+  /**
+   * A session began: the tree and the feeds may hold more now. After a login
+   * through the provider the page shows the start page. A session restored
+   * from the refresh token keeps the place — a deep link stays where it led —
+   * and the node shown is fetched again: its actions depend on the session.
+   */
+  applyLogin(reason) {
+    this.loadContentTree();
+    this.reloadFeeds();
+    if (reason === 'restore') {
+      this.reloadShownNode();
+      return;
+    }
+    this.showStartPage();
+  }
+
+  /** The node shown is fetched again; the contents follow with the record. */
+  reloadShownNode() {
+    if (!this._currentLocation) return;
+    this.nodeView.reload();
+  }
+
+  /** The feeds load again what they show; not yet shown, they load nothing. */
+  reloadFeeds() {
+    this.feed.reload();
   }
 
   /**
@@ -923,6 +981,11 @@ class Bookstore extends LitElement {
   /** The node shown, above. */
   get nodeView() {
     return this.shadowRoot.querySelector('custom-node-view');
+  }
+
+  /** The feeds of the start page. */
+  get feed() {
+    return this.shadowRoot.querySelector('custom-feed');
   }
 
   get navigationModal() {

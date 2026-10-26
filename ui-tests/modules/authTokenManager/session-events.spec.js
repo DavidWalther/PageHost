@@ -19,16 +19,7 @@ const { fakeJwt } = require('../../support/session');
 const SESSION_KEY = 'code_exchange_response';
 
 /** A dummy JWT that expired a minute ago. */
-function expiredJwt() {
-  const encode = (value) =>
-    Buffer.from(JSON.stringify(value))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-  const exp = Math.floor(Date.now() / 1000) - 60;
-  return `${encode({ alg: 'HS256' })}.${encode({ exp })}.signature`;
-}
+const expiredJwt = () => fakeJwt(-60);
 
 const session = (token) => ({
   authenticationResult: {
