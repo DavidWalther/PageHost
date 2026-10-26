@@ -252,6 +252,9 @@ test.describe('Page after a change of the session', () => {
         await expect(
           page.locator('custom-node-view #node-edit')
         ).toBeAttached();
+        // Once, not twice: give a second, unwanted request the time to go out.
+        await page.waitForTimeout(500);
+        expect(nodeRequests[CHILD.id]).toBe(2);
       });
 
       test('stays where it is', async ({ page }) => {
