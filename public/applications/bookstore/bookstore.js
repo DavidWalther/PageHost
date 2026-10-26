@@ -48,6 +48,8 @@ class Bookstore extends LitElement {
     this._initPara = null;
     // A jump to a content, waiting for the node it belongs to.
     this._pendingContentNumber = null;
+    // A session began before the entry was shown: fetch its node again then.
+    this._reloadAfterEntry = false;
     this._currentLocation = null;
     this._feedRootId = null;
     this._feedVisible = false;
@@ -490,9 +492,22 @@ class Bookstore extends LitElement {
     this.showStartPage();
   }
 
-  /** The node shown is fetched again; the contents follow with the record. */
-  reloadShownNode() {
+  /**
+   * The node shown is fetched again; the contents follow with the record.
+   * While the entry is still being resolved there is no node shown yet — the
+   * one the address names comes once it is, and is fetched again then.
+   *
+   * The view first finishes an update still pending: a node just handed to
+   * it carries its id into the next update, and a reload before that would
+   * leave the view without the record — it would fetch the node twice.
+   */
+  async reloadShownNode() {
+    if (!this.isHydrated) {
+      this._reloadAfterEntry = true;
+      return;
+    }
     if (!this._currentLocation) return;
+    await this.nodeView.updateComplete;
     this.nodeView.reload();
   }
 
@@ -606,6 +621,12 @@ class Bookstore extends LitElement {
     this.applyEntryPoint(entry);
 
     this.isHydrated = true;
+    // A session began while the entry was on its way: its record may be one
+    // fetched without it.
+    if (this._reloadAfterEntry) {
+      this._reloadAfterEntry = false;
+      this.reloadShownNode();
+    }
   }
 
   /**
