@@ -20,7 +20,7 @@ class LoginComponent extends LitElement {
     logoutButton: 'Logout',
     modalTitle: 'Login',
     googleLoginButton: 'Login with Google',
-    noNewRegistrations: 'Neue Regisrierungen sind im Moment nicht möglich.',
+    noNewRegistrations: 'Neue Registrierungen sind im Moment nicht möglich.',
     loginWithGoogle: 'Login mit Google',
     logoutSuccessful: 'Logout successful',
     logoutFailed: 'Logout failed',
