@@ -5,7 +5,6 @@ import {
   nothing,
 } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { addGlobalStylesToShadowRoot } from '/modules/global-styles.mjs';
-import OIDCComponent from '/modules/oIdcComponent.js';
 import { findNode, findPath, findSiblings } from '/modules/content-tree.mjs';
 import '/components/custom-node-view/custom-node-view.js';
 import '/components/custom-node-contents/custom-node-contents.js';
@@ -89,11 +88,6 @@ class Bookstore extends LitElement {
 
     this.hydrate();
     this.loadContentTree();
-    this.label = {
-      'setting-login_title': 'Login',
-      'setting-lightswitch_title': 'Lichtschalter',
-      'setting-sessionClear_title': 'Login-Session löschen',
-    };
   }
 
   render() {
