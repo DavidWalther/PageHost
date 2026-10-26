@@ -471,6 +471,25 @@ test.describe('Page: one node, above and below', () => {
       expect(await readReloads(page)).toEqual({ view: 0, contents: 1 });
     });
 
+    // Without `parent_node_id` only the tree knows that it is a child.
+    test('a child of it renamed is fetched into the node view', async ({
+      page,
+    }) => {
+      await open(page, '/book-a');
+      await expectShown(page, 'book-a');
+      // The tree has arrived once the arrow to the sibling stands.
+      await expect.poll(async () => (await readPage(page)).next).toBe('book-b');
+      await countReloads(page);
+      const before = nodeQueries['book-a'];
+
+      await fireOnHost(page, 'chapter-updated', {
+        chapterData: { id: 'part-2', name: 'Part 2 renamed' },
+      });
+
+      await expect.poll(() => nodeQueries['book-a']).toBe(before + 1);
+      expect(await readReloads(page)).toEqual({ view: 1, contents: 0 });
+    });
+
     test('a moved node stays shown and is fetched again', async ({ page }) => {
       await open(page, '/part-1');
       await expectShown(page, 'part-1');
