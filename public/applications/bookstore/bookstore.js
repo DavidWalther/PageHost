@@ -414,8 +414,11 @@ class Bookstore extends LitElement {
         (event) =>
           this.applyNodeDeletion(event.detail?.nodeId, event.detail?.nodeIds),
       ],
-      ['node-mark-change', (event) => this._handleMarkChange(event)],
-      ['node-mark-clear', () => (this._marked = null)],
+      [
+        'node-mark-change',
+        (event) => this.changeMark(event.detail?.marked, event.detail?.node),
+      ],
+      ['node-mark-clear', () => this.clearMark()],
       ['node-moved', (event) => this.applyNodeMove(event.detail?.nodeId)],
       ...[
         'chapter-created',
@@ -454,14 +457,18 @@ class Bookstore extends LitElement {
    * Keeps or drops the mark to move a node. There is one mark: marking a node
    * replaces the old one, and unmarking only drops the mark of that node.
    */
-  _handleMarkChange(event) {
-    const { marked, node } = event.detail ?? {};
+  changeMark(marked, node) {
     if (!node?.id) return;
     if (marked) {
       this._marked = { ...node };
     } else if (this._marked?.id === node.id) {
-      this._marked = null;
+      this.clearMark();
     }
+  }
+
+  /** Drops the mark, whichever node carries it. */
+  clearMark() {
+    this._marked = null;
   }
 
   /**
@@ -472,7 +479,7 @@ class Bookstore extends LitElement {
    */
   applyNodeMove(nodeId) {
     if (!nodeId) return;
-    this._marked = null;
+    this.clearMark();
     this._showNode(nodeId);
     this.shadowRoot.querySelector('custom-navigation-modal').hide();
   }
