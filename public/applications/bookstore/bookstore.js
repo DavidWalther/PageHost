@@ -82,7 +82,7 @@ class Bookstore extends LitElement {
     this._initPara = this.createInitializationParameterObject();
 
     this.hydrate();
-    this._loadContentTree();
+    this.loadContentTree();
     this.label = {
       'setting-login_title': 'Login',
       'setting-lightswitch_title': 'Lichtschalter',
@@ -396,7 +396,8 @@ class Bookstore extends LitElement {
    */
   createHostListeners() {
     // Every change to a node changes the content tree of the navigation modal.
-    const reloadTree = (event) => this._reloadNavigationTree(event);
+    const reloadTree = (event) =>
+      this.reloadTreeAfterChange(event.detail?.objectName);
     return [
       // `custom-chapter-edit` still reports `chapter-created` and
       // `chapter-updated` — the edit component keeps its old names.
@@ -524,19 +525,19 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Loads the content tree again after a node changed. Publishing a content
-   * leaves the tree alone — contents are not in it.
+   * Loads the content tree again after a record changed. Only a node counts
+   * (or a sender that names no object): publishing a content leaves the tree
+   * alone — contents are not in it.
    */
-  _reloadNavigationTree(event) {
-    const objectName = event.detail?.objectName;
+  reloadTreeAfterChange(objectName) {
     if (objectName && objectName !== 'node') {
       return;
     }
-    this._loadContentTree();
+    this.loadContentTree();
   }
 
   /** One request for everyone who needs the tree; a failed one keeps the old. */
-  async _loadContentTree() {
+  async loadContentTree() {
     const tree = await this.queryRecord({ object: 'contents' });
     if (Array.isArray(tree)) {
       this._tree = tree;

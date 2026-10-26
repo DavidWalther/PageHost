@@ -78,8 +78,8 @@ test.describe('bookstore: lifecycle', () => {
     const reloads = await page.evaluate((nodeId) => {
       const app = window.appUnderTest;
       let count = 0;
-      const original = app._loadContentTree.bind(app);
-      app._loadContentTree = () => {
+      const original = app.loadContentTree.bind(app);
+      app.loadContentTree = () => {
         count += 1;
         return original();
       };
