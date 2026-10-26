@@ -409,7 +409,11 @@ class Bookstore extends LitElement {
         'chapter-updated',
         (event) => this.applyNodeChange(event.detail?.chapterData),
       ],
-      ['node-deleted', (event) => this._handleNodeDeleted(event)],
+      [
+        'node-deleted',
+        (event) =>
+          this.applyNodeDeletion(event.detail?.nodeId, event.detail?.nodeIds),
+      ],
       ['node-mark-change', (event) => this._handleMarkChange(event)],
       ['node-mark-clear', () => (this._marked = null)],
       ['node-moved', (event) => this._handleNodeMoved(event)],
@@ -481,8 +485,7 @@ class Bookstore extends LitElement {
    * of it gone: the view fetches the node again, its combobox lists one less.
    * The tree still holds the deleted nodes here — it reloads after this.
    */
-  _handleNodeDeleted(event) {
-    const { nodeId, nodeIds } = event.detail ?? {};
+  applyNodeDeletion(nodeId, nodeIds) {
     const current = this._currentLocation;
     if (!nodeId || !current) return;
     const gone = new Set(nodeIds ?? [nodeId]);
