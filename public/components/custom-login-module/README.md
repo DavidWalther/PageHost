@@ -48,6 +48,11 @@ From `oidc-component`:
 | `logout`        | call the logout endpoint, drop the refresh token, toast, re-render      |
 | `rejected`      | toast "Authentication failed" and clear the round-trip from the history |
 
+A failed sign-off — the logout endpoint answers without `ok`, or not at all —
+ends the session all the same: the refresh token is dropped, `oidc-component`
+removes the session, and the toast reads "Logout failed" instead of
+"Logout successful". Nobody stays signed in because the server did not answer.
+
 ## Events it fires
 
 | Event   | `detail`               | When                                       |
