@@ -82,7 +82,7 @@ class Bookstore extends LitElement {
     this._initPara = this.createInitializationParameterObject();
 
     this.hydrate();
-    this._loadContentTree();
+    this.loadContentTree();
     this.label = {
       'setting-login_title': 'Login',
       'setting-lightswitch_title': 'Lichtschalter',
@@ -238,7 +238,7 @@ class Bookstore extends LitElement {
       <!--
         One node, in two components that always refer to it: above the node
         itself, below its contents. The node is fetched once, above; the
-        contents get the record handed over (_handleNodeViewLoaded).
+        contents get the record handed over (handNodeToContents).
       -->
       <div
         id="bookshelf"
@@ -266,7 +266,15 @@ class Bookstore extends LitElement {
   }
 
   handleOpenNavigation() {
-    this.shadowRoot.querySelector('custom-navigation-modal').show();
+    this.openNavigation();
+  }
+
+  openNavigation() {
+    this.navigationModal.show();
+  }
+
+  closeNavigation() {
+    this.navigationModal.hide();
   }
 
   /**
@@ -317,10 +325,18 @@ class Bookstore extends LitElement {
     }
   }
 
-  /** The node above has loaded: the contents below take the same record. */
+  /**
+   * The node above has loaded. Only its own report counts: `loaded` bubbles
+   * and is composed, so one from inside the view would arrive here too.
+   */
   _handleNodeViewLoaded(event) {
-    const nodeData = event.detail?.nodeData;
-    if (event.target !== this.nodeView || !nodeData?.id) return;
+    if (event.target !== this.nodeView) return;
+    this.handNodeToContents(event.detail?.nodeData);
+  }
+
+  /** The contents below take the record the node view loaded. */
+  handNodeToContents(nodeData) {
+    if (!nodeData?.id) return;
     this.nodeContents.contentnumber = this._pendingContentNumber;
     this._pendingContentNumber = null;
     this.nodeContents.adoptNode(nodeData);
@@ -340,7 +356,7 @@ class Bookstore extends LitElement {
   /** A node without children chosen in the modal: shown, the modal closes. */
   handleNavigationNodeSelect(event) {
     this._showNode(event.detail.id);
-    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+    this.closeNavigation();
   }
 
   /** One level up in the modal: the page shows the level now open. */
@@ -396,16 +412,30 @@ class Bookstore extends LitElement {
    */
   createHostListeners() {
     // Every change to a node changes the content tree of the navigation modal.
-    const reloadTree = (event) => this._reloadNavigationTree(event);
+    const reloadTree = (event) =>
+      this.reloadTreeAfterChange(event.detail?.objectName);
     return [
       // `custom-chapter-edit` still reports `chapter-created` and
       // `chapter-updated` — the edit component keeps its old names.
-      ['chapter-created', (event) => this._handleNodeChanged(event)],
-      ['chapter-updated', (event) => this._handleNodeChanged(event)],
-      ['node-deleted', (event) => this._handleNodeDeleted(event)],
-      ['node-mark-change', (event) => this._handleMarkChange(event)],
-      ['node-mark-clear', () => (this._marked = null)],
-      ['node-moved', (event) => this._handleNodeMoved(event)],
+      [
+        'chapter-created',
+        (event) => this.applyNodeChange(event.detail?.chapterData),
+      ],
+      [
+        'chapter-updated',
+        (event) => this.applyNodeChange(event.detail?.chapterData),
+      ],
+      [
+        'node-deleted',
+        (event) =>
+          this.applyNodeDeletion(event.detail?.nodeId, event.detail?.nodeIds),
+      ],
+      [
+        'node-mark-change',
+        (event) => this.changeMark(event.detail?.marked, event.detail?.node),
+      ],
+      ['node-mark-clear', () => this.clearMark()],
+      ['node-moved', (event) => this.applyNodeMove(event.detail?.nodeId)],
       ...[
         'chapter-created',
         'chapter-updated',
@@ -423,8 +453,7 @@ class Bookstore extends LitElement {
    * shown, created or renamed, is in the combobox above: the view fetches
    * the node again, and the contents take the new record with it.
    */
-  _handleNodeChanged(event) {
-    const changed = event.detail?.chapterData;
+  applyNodeChange(changed) {
     const current = this._currentLocation;
     if (!changed?.id || !current) return;
     if (changed.id === current) {
@@ -444,14 +473,18 @@ class Bookstore extends LitElement {
    * Keeps or drops the mark to move a node. There is one mark: marking a node
    * replaces the old one, and unmarking only drops the mark of that node.
    */
-  _handleMarkChange(event) {
-    const { marked, node } = event.detail ?? {};
+  changeMark(marked, node) {
     if (!node?.id) return;
     if (marked) {
       this._marked = { ...node };
     } else if (this._marked?.id === node.id) {
-      this._marked = null;
+      this.clearMark();
     }
+  }
+
+  /** Drops the mark, whichever node carries it. */
+  clearMark() {
+    this._marked = null;
   }
 
   /**
@@ -460,12 +493,11 @@ class Bookstore extends LitElement {
    * used up, the modal closes; the tree reloads with the other changes to a
    * node, and the arrows follow it.
    */
-  _handleNodeMoved(event) {
-    const { nodeId } = event.detail ?? {};
+  applyNodeMove(nodeId) {
     if (!nodeId) return;
-    this._marked = null;
+    this.clearMark();
     this._showNode(nodeId);
-    this.shadowRoot.querySelector('custom-navigation-modal').hide();
+    this.closeNavigation();
   }
 
   /**
@@ -475,8 +507,7 @@ class Bookstore extends LitElement {
    * of it gone: the view fetches the node again, its combobox lists one less.
    * The tree still holds the deleted nodes here — it reloads after this.
    */
-  _handleNodeDeleted(event) {
-    const { nodeId, nodeIds } = event.detail ?? {};
+  applyNodeDeletion(nodeId, nodeIds) {
     const current = this._currentLocation;
     if (!nodeId || !current) return;
     const gone = new Set(nodeIds ?? [nodeId]);
@@ -489,7 +520,7 @@ class Bookstore extends LitElement {
       if (parent && !gone.has(parent.id)) {
         this._showNode(parent.id);
       } else {
-        this.handleHome();
+        this.showStartPage();
       }
       return;
     }
@@ -524,19 +555,19 @@ class Bookstore extends LitElement {
   }
 
   /**
-   * Loads the content tree again after a node changed. Publishing a content
-   * leaves the tree alone — contents are not in it.
+   * Loads the content tree again after a record changed. Only a node counts
+   * (or a sender that names no object): publishing a content leaves the tree
+   * alone — contents are not in it.
    */
-  _reloadNavigationTree(event) {
-    const objectName = event.detail?.objectName;
+  reloadTreeAfterChange(objectName) {
     if (objectName && objectName !== 'node') {
       return;
     }
-    this._loadContentTree();
+    this.loadContentTree();
   }
 
   /** One request for everyone who needs the tree; a failed one keeps the old. */
-  async _loadContentTree() {
+  async loadContentTree() {
     const tree = await this.queryRecord({ object: 'contents' });
     if (Array.isArray(tree)) {
       this._tree = tree;
@@ -648,21 +679,31 @@ class Bookstore extends LitElement {
     this._feedVisible = false;
   }
 
+  /** The home button in the header. */
+  handleHome() {
+    this.showStartPage();
+  }
+
   /**
-   * Home: back to the start page — the feeds, the first one open, and the
-   * bare address. The feeds were kept while a node was shown, so nothing is
+   * Back to the start page — the feeds, the first one open, and the bare
+   * address. The feeds were kept while a node was shown, so nothing is
    * loaded again; a visitor who entered on a node loads them here.
    */
-  handleHome() {
+  showStartPage() {
     this.showFeed();
     window.history.replaceState({}, '', '/');
   }
 
-  /** The visitor opened another feed: the address names it, to be shared. */
+  /** The visitor opened another feed. */
   handleFeedSelect(event) {
-    this._activeFeedId = event.detail.id;
+    this.selectFeed(event.detail.id);
+  }
+
+  /** Another feed is open: the address names it, to be shared. */
+  selectFeed(feedId) {
+    this._activeFeedId = feedId;
     this._feedContentNumber = null;
-    window.history.replaceState({}, '', `/${event.detail.id}`);
+    window.history.replaceState({}, '', `/${feedId}`);
   }
 
   /** Einen Datensatz über den Callout-Layer holen, als Promise. */
@@ -871,6 +912,10 @@ class Bookstore extends LitElement {
   /** The node shown, above. */
   get nodeView() {
     return this.shadowRoot.querySelector('custom-node-view');
+  }
+
+  get navigationModal() {
+    return this.shadowRoot.querySelector('custom-navigation-modal');
   }
 
   /** The contents of the node shown, below. */
