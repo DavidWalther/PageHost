@@ -57,6 +57,20 @@ Das Mapping ist allowlist-basiert — nur `id`/`name`/`sortnumber` werden übern
 interne Felder (`published_date`, `application*`, …) nie in der Response auf. Nodes sind je
 Ebene nach `sortnumber` sortiert.
 
+## Errors
+
+When the data layer fails (database, cache), the endpoint answers
+**`500`** with
+
+```json
+{ "error": "The content tree could not be loaded" }
+```
+
+The cause goes to the log (`ERROR`), not to the client. An error the endpoint
+does not catch gets the same answer from the route in `server.js`. Before, both
+answered with `index.html` and status 200 — the client could not tell a failure
+from a tree.
+
 ## Auth & Sichtbarkeit
 
 | Aufrufer                      | Baum                                   | Cache                              |
