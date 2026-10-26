@@ -864,24 +864,6 @@ class Bookstore extends LitElement {
     }
   }
 
-  // ========== Container methods ===========
-
-  // add content of 'template-story_not_found' into container
-  showStoryNotFound() {
-    const storyContainer = this.storyContainer;
-
-    // Create the story not found content using DOM API
-    const notFoundDiv = document.createElement('div');
-    notFoundDiv.className = 'slds-text-align_center slds-text-heading_large';
-
-    const notFoundSpan = document.createElement('span');
-    notFoundSpan.textContent =
-      'Entschuldigung. Da war leider nichts zu finden.';
-
-    notFoundDiv.appendChild(notFoundSpan);
-    storyContainer.appendChild(notFoundDiv);
-  }
-
   // ----- Element getter -----
 
   get spanHeaderHeadline() {
@@ -905,14 +887,6 @@ class Bookstore extends LitElement {
   /** The contents of the node shown, below. */
   get nodeContents() {
     return this.shadowRoot.querySelector('custom-node-contents');
-  }
-
-  get storyContainer() {
-    return this.shadowRoot.querySelector('#bookshelf > div');
-  }
-
-  get spinner() {
-    return this.shadowRoot.querySelector('#spinner-story');
   }
 
   // ------------------------------------------
