@@ -793,53 +793,6 @@ class Bookstore extends LitElement {
 
   // =========== Hydration - End ============
 
-  // ============ Storage methods - Start ============
-
-  readFromStorage(storageType, key) {
-    return new Promise((resolve) => {
-      const event = new CustomEvent('storage', {
-        detail: {
-          storageType,
-          key,
-          action: 'read',
-          callback: resolve,
-        },
-        bubbles: true,
-        composed: true,
-      });
-      this.dispatchEvent(event);
-    });
-  }
-
-  writeToStorage(storageType, key, value) {
-    const event = new CustomEvent('storage', {
-      detail: {
-        storageType,
-        key,
-        value,
-        action: 'write',
-      },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
-  clearStorage(storageType, key) {
-    const event = new CustomEvent('storage', {
-      detail: {
-        storageType,
-        key,
-        action: 'clear',
-      },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
-  // ============ Storage methods ============
-
   // ============ event handler  ============
 
   handleToggleLightswitch(event) {
