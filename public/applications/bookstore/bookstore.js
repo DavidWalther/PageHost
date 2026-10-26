@@ -57,6 +57,8 @@ class Bookstore extends LitElement {
     this._feedContentNumber = null;
     this._marked = null;
     this._tree = [];
+    // Counts the requests for the tree: only the answer to the last one counts.
+    this._treeRequest = 0;
     // What the modal leaves out: the marked node. One list per mark, so the
     // modal sees a change only when the mark changes.
     this._hiddenIds = [];
@@ -566,9 +568,18 @@ class Bookstore extends LitElement {
     this.loadContentTree();
   }
 
-  /** One request for everyone who needs the tree; a failed one keeps the old. */
+  /**
+   * One request for everyone who needs the tree; a failed one keeps the old.
+   * Requests overlap — the one at the start with one after a change or a
+   * login — and answers may come in any order: an answer to an older request
+   * is dropped, the tree of the last request stays.
+   */
   async loadContentTree() {
+    const request = ++this._treeRequest;
     const tree = await this.queryRecord({ object: 'contents' });
+    if (request !== this._treeRequest) {
+      return;
+    }
     if (Array.isArray(tree)) {
       this._tree = tree;
     }
