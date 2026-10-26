@@ -117,3 +117,52 @@ test.describe('Content tree request', () => {
     expect(requestedUrls).toHaveLength(2);
   });
 });
+
+// Requests for the tree overlap — the one at the start with the one after a
+// change, later the one after a login. Whichever answers last, the tree of
+// the last request stays.
+test.describe('Content tree request, overlapping', () => {
+  test.use({ actionTimeout: 5000 });
+
+  const named = (name) => [{ ...TREE[0], name, label: name }];
+
+  test('an older answer arriving late does not replace a newer one', async ({
+    page,
+  }) => {
+    let releaseFirst;
+    const firstHeld = new Promise((resolve) => (releaseFirst = resolve));
+    let calls = 0;
+    await mockBookstoreCallouts(page);
+    await page.route('**/api/1.0/contents/**', async (route) => {
+      calls += 1;
+      if (calls === 1) {
+        await firstHeld;
+        return route.fulfill({ json: { result: named('Old') } });
+      }
+      return route.fulfill({ json: { result: named('New') } });
+    });
+    await cacheLitBundle(page);
+    await page.goto('/');
+    await expect(page.locator('app-bookstore')).toBeAttached();
+    await expect.poll(() => calls).toBe(1);
+
+    await page.locator('app-bookstore').evaluate((host) =>
+      host.dispatchEvent(
+        new CustomEvent('chapter-updated', {
+          detail: { chapterData: { id: 'level-1', name: 'New' } },
+        })
+      )
+    );
+    const tileNames = () =>
+      page
+        .locator('custom-navigation-modal')
+        .evaluate((modal) => modal.tree.map((node) => node.name));
+    await expect.poll(tileNames).toEqual(['New']);
+
+    releaseFirst();
+    // Give the late answer the time to arrive.
+    await page.waitForTimeout(500);
+
+    expect(await tileNames()).toEqual(['New']);
+  });
+});
