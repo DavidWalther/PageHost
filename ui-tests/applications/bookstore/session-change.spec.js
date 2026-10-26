@@ -42,7 +42,10 @@ let feedRootRequests;
 // How often each node was asked for.
 let nodeRequests;
 
-/** Mocks the callouts; the tree depends on the token, as in the backend. */
+/**
+ * Mocks the callouts; the tree depends on the token, as in the backend.
+ * `holdFirstTree` returns a promise the first tree answer waits for.
+ */
 async function mockCallouts(page, { holdFirstTree = null } = {}) {
   treeRequests = [];
   nodeRequests = {};
@@ -52,7 +55,7 @@ async function mockCallouts(page, { holdFirstTree = null } = {}) {
     const withToken = !!route.request().headers()['authorization'];
     treeRequests.push({ withToken });
     if (treeRequests.length === 1 && holdFirstTree) {
-      await holdFirstTree;
+      await holdFirstTree();
     }
     const result = withToken
       ? [...MOCK_CONTENTS.result, DRAFT]
@@ -145,6 +148,40 @@ test.describe('Page after a change of the session', () => {
       expect(state.feedsShown).toBe(true);
       expect(state.path).toBe('/');
     });
+  });
+
+  // The tree at the start goes out without a session and may answer last —
+  // after the one the login asked for.
+  test('a login keeps its tree when the first answer comes late', async ({
+    page,
+  }) => {
+    await mockCallouts(page, {
+      holdFirstTree: async () => {
+        await waitUntil(() => treeRequests.length >= 2);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      },
+    });
+    await page.route('**/api/1.0/oAuth2/codeexchange', (route) =>
+      route.fulfill({
+        json: {
+          authenticationResult: {
+            access: { access_token: fakeJwt(), scopes: ['read', 'edit'] },
+            refresh: { refresh_token: 'refresh-token' },
+          },
+        },
+      })
+    );
+    await page.addInitScript(() =>
+      sessionStorage.setItem('oidc_state', 'state-1')
+    );
+    await page.goto('/?code=code-1&state=state-1');
+    await expect.poll(() => treeNames(page)).toContain('Draft');
+
+    // Give the late answer the time to arrive.
+    await page.waitForTimeout(800);
+
+    expect(treeRequests).toEqual([{ withToken: false }, { withToken: true }]);
+    expect(await treeNames(page)).toContain('Draft');
   });
 
   test.describe('a session restored from the refresh token', () => {
