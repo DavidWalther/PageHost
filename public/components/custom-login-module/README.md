@@ -87,8 +87,6 @@ visitor from walking into that dead end.
 - `handleOIDCAuthenticated` only clears the URL and re-renders; the comment in it
   still suggests storing tokens, which `authTokenManager` has long since taken
   over.
-- The `.warning` rule in `static styles` contains `border-widht` — a typo, so the
-  border width never applies. The notice still renders, only without that border.
 - Button labels are English while the notice is German. The operator surface does
   not fix a language; only the visitor-facing surface does.
 

@@ -33,7 +33,7 @@ class LoginComponent extends LitElement {
     /* Add component-specific styles here */
 
     .warning {
-      border-widht: 1px
+      border-width: 1px;
       border-style: solid;
       border-color: var(--slds-color_warning);
       border-radius: 5px;
