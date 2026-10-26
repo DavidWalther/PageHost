@@ -110,8 +110,14 @@ async function _doRefresh() {
     });
 
     if (!response.ok) {
+      const hadSession = !!sessionStorage.getItem(SESSION_STORAGE_KEY);
       localStorage.removeItem(REFRESH_TOKEN_KEY);
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      // The session ran out without a logout. Without one before — a visitor
+      // with an old refresh token — nothing ended.
+      if (hadSession) {
+        fireSessionEvent('logged-out', 'expired');
+      }
       return false;
     }
 
