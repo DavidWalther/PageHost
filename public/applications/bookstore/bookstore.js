@@ -416,7 +416,7 @@ class Bookstore extends LitElement {
       ],
       ['node-mark-change', (event) => this._handleMarkChange(event)],
       ['node-mark-clear', () => (this._marked = null)],
-      ['node-moved', (event) => this._handleNodeMoved(event)],
+      ['node-moved', (event) => this.applyNodeMove(event.detail?.nodeId)],
       ...[
         'chapter-created',
         'chapter-updated',
@@ -470,8 +470,7 @@ class Bookstore extends LitElement {
    * used up, the modal closes; the tree reloads with the other changes to a
    * node, and the arrows follow it.
    */
-  _handleNodeMoved(event) {
-    const { nodeId } = event.detail ?? {};
+  applyNodeMove(nodeId) {
     if (!nodeId) return;
     this._marked = null;
     this._showNode(nodeId);
