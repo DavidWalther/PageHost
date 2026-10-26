@@ -793,46 +793,6 @@ class Bookstore extends LitElement {
 
   // =========== Hydration - End ============
 
-  // =========== Authentication - Start =================
-
-  async getGoogleAuthConfig() {
-    return new Promise((resolve) => {
-      fetch('/api/1.0/env/variables')
-        .then((response) => response.json())
-        .then((variables) => {
-          resolve(variables.auth.google);
-        });
-    });
-  }
-
-  async handleOIDCAuthenticated(event) {
-    /**
-     * Do something with the authentication result
-     * For example, you can store the token in local storage or session storage
-     */
-    this.clearUrlParameter();
-  }
-
-  async handleOIDCClick(event) {
-    const callback = event.detail.callback;
-    const googleAuthConfig = await this.getGoogleAuthConfig();
-
-    callback({
-      client_id: googleAuthConfig.clientId,
-      redirect_uri: googleAuthConfig.redirect_uri,
-      scope: googleAuthConfig.scope,
-      response_type: googleAuthConfig.response_type,
-    });
-  }
-
-  handleAuthenticationRejection() {
-    this.fireToast('Authentication failed', 'error');
-    // clear history
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-
-  // ============  Authentication -End ============
-
   // ============ Storage methods - Start ============
 
   readFromStorage(storageType, key) {
@@ -929,9 +889,6 @@ class Bookstore extends LitElement {
     return initParameter;
   }
 
-  clearUrlParameter() {
-    window.history.replaceState({}, '', window.location.origin);
-  }
   evaluateMetadata(metadata) {
     let pageHeaderHeadline = !metadata.pageHeaderHeadline
       ? '#config:pageHeaderHeadline#'
