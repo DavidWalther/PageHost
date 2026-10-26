@@ -56,6 +56,11 @@ From `oidc-component`:
 
 Bubbles and composed, answered by `public/index.js`.
 
+`logged-in` and `logged-out` of `oidc-component` pass through unchanged — they
+bubble and are composed, and this component does not listen to them. They say
+that the session is now there or gone; see `doc/authentication.md`
+(„Session Events“).
+
 ## Methods
 
 | Method             | Description                             |

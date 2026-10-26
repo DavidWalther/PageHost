@@ -86,6 +86,7 @@ sequenceDiagram
 
     Browser->>Browser: Store access_token in sessionStorage
     Browser->>Browser: Store refresh_token in localStorage
+    Browser->>Browser: Fire logged-in (reason: code-exchange)
 ```
 
 ### Automatic Token Refresh
@@ -151,8 +152,27 @@ sequenceDiagram
     ATM-->>Browser: Response
     Browser->>Browser: Remove refresh_token from localStorage
     Browser->>Browser: Clear sessionStorage (via oIdcComponent)
+    Browser->>Browser: Fire logged-out (reason: logout)
     Browser->>Browser: Update UI (show login button)
 ```
+
+### Session Events
+
+Whatever the page shows may depend on the session: an `edit` scope sees
+unpublished nodes, a visitor does not. Two events say that the session began or
+ended. Both come **after** the session was written or removed, so a listener
+that asks the backend right away already goes with — or without — the token.
+Both reach `window`; `detail.reason` names what happened.
+
+| Event        | `reason`        | Fired by         | When                                                               |
+| ------------ | --------------- | ---------------- | ------------------------------------------------------------------ |
+| `logged-in`  | `code-exchange` | `oidc-component` | the code exchange succeeded and the session is in `sessionStorage` |
+| `logged-out` | `logout`        | `oidc-component` | the logout callback removed the session and the refresh token      |
+
+`oidc-component` fires them bubbling and composed, so they leave every shadow
+root on the way. The events that come **before** — `authenticated` (fired
+before the session is stored) and `logout` (the request to sign off, answered
+by `custom-login-module`) — are not meant for this.
 
 ### Token Rotation
 

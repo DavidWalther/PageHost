@@ -275,6 +275,15 @@ class OIDCComponent extends LitElement {
     localStorage.removeItem('refresh_token');
     this._showLogoutButton = false;
     this._showLoginButton = true;
+    // Session and token are gone: whoever asks the backend from here on goes
+    // without them. `logout` above was the request, this is the result.
+    this.dispatchEvent(
+      new CustomEvent('logged-out', {
+        bubbles: true,
+        composed: true,
+        detail: { reason: 'logout' },
+      })
+    );
     this.requestUpdate();
   }
 
@@ -458,6 +467,16 @@ class OIDCComponent extends LitElement {
     };
     let event = new CustomEvent('stored', { detail: eventPayload });
     this.dispatchEvent(event);
+
+    // Now the session is there: whoever asks the backend from here on goes
+    // with the token. Out of every shadow root, for the application.
+    this.dispatchEvent(
+      new CustomEvent('logged-in', {
+        bubbles: true,
+        composed: true,
+        detail: { reason: 'code-exchange' },
+      })
+    );
 
     this.requestUpdate();
   }
